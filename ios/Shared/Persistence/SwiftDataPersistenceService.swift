@@ -340,6 +340,9 @@ public final class SwiftDataPersistenceService {
         guard let record = try context.fetch(descriptor).first else { return }
         record.journalNote = note
         record.satisfactionRating = rating
+        // S5: a journal added after the session synced must re-push,
+        // or it stays local-only forever (lost on wipe/reinstall).
+        record.isDirty = true
         try context.save()
     }
 
@@ -811,6 +814,46 @@ public final class SwiftDataPersistenceService {
         stats.recordSession(result)
     }
 
+    /// Rebuilds DailyStats from all stored sessions (S4). wipeAndSync deletes
+    /// aggregates in phase 2; without this, heatmap/streaks stay empty even
+    /// though the sessions were reinserted in phase 3. Reuses the live-save
+    /// aggregation path so rebuilt totals match live-computed ones exactly.
+    public func rebuildDailyStatsFromSessions() throws {
+        let records = try context.fetch(FetchDescriptor<FocusSessionRecord>(
+            sortBy: [SortDescriptor(\.startedAt)]
+        ))
+        for record in records {
+            guard let mode = record.focusMode else { continue }
+            // Phase is unused by aggregation (recordSession sums by mode);
+            // map to the mode's work phase like ghost abandonments do.
+            let phase: FocusPhase = {
+                switch mode {
+                case .pomodoro: return .work(number: record.pomodoroNumber ?? 1, total: 4)
+                case .flowtime: return .flow
+                case .timeBlock: return .block
+                case .stopwatch: return .freeform
+                }
+            }()
+            let result = FocusSessionResult(
+                id: record.id,
+                mode: mode,
+                phase: phase,
+                startedAt: record.startedAt,
+                endedAt: record.endedAt ?? record.startedAt,
+                targetDuration: record.targetDuration,
+                actualDuration: record.actualDuration,
+                wasCompleted: record.wasCompleted,
+                interruptions: record.interruptions,
+                pomodoroNumber: record.pomodoroNumber,
+                linkedTaskID: record.task?.id,
+                pauseCount: record.pauseCount,
+                totalPauseDuration: record.totalPauseDuration
+            )
+            try updateOrCreateDailyStats(with: result)
+        }
+        try context.save()
+    }
+
     // MARK: - Session Sync
 
     public func fetchDirtySessions() throws -> [FocusSessionRecord] {
@@ -840,9 +883,9 @@ public final class SwiftDataPersistenceService {
     }
 
     public func markAllSyncableDataDirty() throws {
-        let taskDescriptor = FetchDescriptor<TaskItem>(
-            predicate: #Predicate { $0.isLocallyDeleted == false }
-        )
+        // S2: no isLocallyDeleted filter — tombstones must re-push as deletes
+        // after a store switch, or the server copy resurrects on next pull.
+        let taskDescriptor = FetchDescriptor<TaskItem>()
         for task in try context.fetch(taskDescriptor) {
             task.isDirty = true
             task.syncedAt = nil
@@ -889,6 +932,10 @@ public final class SwiftDataPersistenceService {
         record.id = sessionUUID
         record.isDirty = false
         record.syncedAt = Date.now
+        // S5: restore journaled reflections pulled from the server (insert
+        // only — existing local sessions are never overwritten by pulls).
+        record.journalNote = dto.journalNote
+        record.satisfactionRating = dto.satisfactionRating
 
         context.insert(record)
         if saveImmediately {

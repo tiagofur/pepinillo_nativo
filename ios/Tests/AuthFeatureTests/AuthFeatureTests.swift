@@ -113,4 +113,52 @@ struct AuthFeatureTests {
         // Happy path: no alert, goes straight to authenticated
         await store.receive(.delegate(.authenticated(fakeUser)))
     }
+
+    // MARK: - Probe-then-upload merge flow (S1)
+
+    @Test("authSucceeded with server data asks before uploading anything")
+    func authSucceededAsksBeforeUploading() async throws {
+        struct ProbeBypassError: Error {}
+        let oldCanSync = AppGroupDefaults.canBackendSync
+        AppGroupDefaults.canBackendSync = true
+        defer { AppGroupDefaults.canBackendSync = oldCanSync }
+
+        let store = TestStore(initialState: AuthFeature.State()) {
+            AuthFeature()
+        } withDependencies: {
+            $0.persistenceClient.getSessionCount = { 3 }
+            $0.syncClient.serverHasData = { true }
+            // Tripwire: pre-fix code uploads before asking (S1 violation).
+            $0.syncClient.initialUpload = { throw ProbeBypassError() }
+        }
+
+        await store.send(.authSucceeded(makeUser())) {
+            $0.isSyncing = true
+        }
+        await store.receive(.initialSyncCompleted) {
+            $0.isSyncing = false
+            $0.showMergeDialog = true
+        }
+    }
+
+    @Test("authSucceeded with empty server uploads then authenticates")
+    func authSucceededUploadsWhenServerEmpty() async throws {
+        let oldCanSync = AppGroupDefaults.canBackendSync
+        AppGroupDefaults.canBackendSync = true
+        defer { AppGroupDefaults.canBackendSync = oldCanSync }
+        let user = makeUser()
+
+        let store = TestStore(initialState: AuthFeature.State()) {
+            AuthFeature()
+        } withDependencies: {
+            $0.persistenceClient.getSessionCount = { 2 }
+            $0.syncClient.serverHasData = { false }
+            $0.syncClient.initialUpload = { false }
+        }
+
+        await store.send(.authSucceeded(user)) {
+            $0.isSyncing = true
+        }
+        await store.receive(.delegate(.authenticated(user)))
+    }
 }

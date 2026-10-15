@@ -53,17 +53,24 @@ de starts externos. Con tests por regla."
 ## Tasks
 
 - T1 (S1): Flowtime session-total accumulator in FocusEngine. Route:
-  inline parent (coupled engine state). Commit: fix(ios): ...
+  inline parent (coupled engine state). Commit: fb99bb3c fix(ios):
+  accumulate multi-phase focus total in session stop.
 - T2 (S2): Pause re-anchor for anchored sessions. Route: inline parent.
-  Commit: fix(ios): ...
+  Commit: 2d779030 fix(ios): re-anchor widget timer end across pause
+  on resume.
 - T3 (S3): Skip-phase partial credit. Route: inline parent. Commit:
-  fix(ios): ...
-- T4 (S4): Stop-in-hold dedup. Route: inline parent. Commit: fix(ios): ...
+  34347d35 fix(ios): persist partial credit when skipping pomodoro
+  work.
+- T4 (S4): Stop-in-hold dedup. Route: inline parent. Commit: 07e56b4d
+  fix(ios): skip persistence for stop during waiting hold.
 - T5 (S5): Ghost/kill abandonment persistence. Route: inline parent.
-  Commit: fix(ios): ...
+  Commit: 879f98e7 fix(ios): persist abandoned record for killed
+  mid-session ghost.
 - T6 (S6): External-start reconcile on activation. Route: inline parent.
-  Commit: fix(ios): ...
-- T7 (S7): Stop→start drain. Route: inline parent. Commit: fix(ios): ...
+  Commit: 54007012 fix(ios): backfill stale widget starts instead of
+  silently dropping.
+- T7 (S7): Stop→start drain. Route: inline parent. Commit: d76cc7f9
+  fix(ios): drain stop abandon directly instead of via observation.
 
 ## Log
 
@@ -79,3 +86,39 @@ de starts externos. Con tests por regla."
   total en Flowtime, re-anclaje en pausa, persistencia parcial en skip,
   deduplicación del hold, abandono persistido en ghost/kill, consumo
   real de starts externos. Con tests por regla."
+- L3 (T1 done): engine acumula focus por fase en stop/transiciones
+  (breaks excluidos, pausa resuelve fase subyacente); reducer persiste/
+  journal/health-loguea el total en no-pomodoro; pomodoro intacto.
+  Commit fb99bb3c (tests incluidos). Runner no disponible aquí (solo
+  CLI tools, sin Xcode): FocusModels.swift pasa swiftc -typecheck;
+  ejecutar FocusFeatureTests en Xcode/CI antes del merge.
+- L4 (T2 done): resume() y applyExternalResume() desplazan phaseTimerEnd
+  a Date.now + remaining congelado (solo si había ancla; sesiones sin
+  ancla intactas). Commit 2d779030 (test incluido). Mismo caveat de
+  runner que T1.
+- L5 (T3 done): advancePhase() emite .phaseSkipped con partial
+  wasCompleted=false y UUID fresco solo para work de pomodoro (tras el
+  guard terminal para no duplicar con stop()); reducer lo persiste sin
+  teardown/journal/efectos. Flowtime cubierto por acumulador S1.
+  Commit 34347d35 (tests incluidos). Mismo caveat de runner.
+- L6 (T4 done): stop() marca isHoldStop desde pendingNextPhase (lectura
+  síncrona en el actor); reducer no persiste hold-stops en ninguna rama.
+  El hold no pasa por applyPhaseTransition: plegado único. Commit
+  07e56b4d (tests incluidos). Mismo caveat de runner.
+- L7 (T5 done): SessionReconcilePolicy snapshottea el ghost (validador
+  puro: excluye holds e inactivos, clamp a anclas, umbral 60s anti-streak)
+  antes del clear; launch lo persiste como abandoned via
+  FocusSessionResult(ghost:) (fases por modo, task UUID, target recuperado).
+  Snapshot en primitivas (Shared compila en extensiones). Commit 879f98e7
+  (6 tests en AppGroupContainerTests). Mismo caveat de runner.
+- L8 (T6 done): take atómico snapshot+clear de starts stale (frescos
+  adoptan normal); ventana servida = completed, parcial = abandoned,
+  open-ended cap 12h. Acción reconcileStaleExternalStart concatenada
+  antes de consume en launch/activation + cold launch antes del ghost
+  takeoff; skip con engine corriendo. Commit 54007012 (7 tests +
+  wiring AppFeature por diff review). Mismo caveat de runner.
+- L9 (T7 done): stop() extraído a takeTerminalResult compartido;
+  abandonSession() retorna sin emitir; stopTapped cancela + drena vía
+  .stopAbandoned (persist-only, respeta isHoldStop, sin teardown/journal).
+  Stream sin copia: ni drop ni doble. Commit d76cc7f9 (engine test +
+  reducer test behavioral-RED + 2 tests actualizados). Mismo caveat.

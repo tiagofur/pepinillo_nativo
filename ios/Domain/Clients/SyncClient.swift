@@ -55,6 +55,9 @@ public struct SyncClient: Sendable {
     public var syncSessions: @Sendable () async throws -> Void
     public var syncSettings: @Sendable () async throws -> Void
     public var initialUpload: @Sendable () async throws -> Bool  // returns hasExistingData
+    /// Read-only probe: does the server hold any tasks/sessions/settings? (S1)
+    /// Used by the login merge flow to ask before uploading anything.
+    public var serverHasData: @Sendable () async throws -> Bool
     public var performInitialSync: @Sendable () async throws -> Void
     public var wipeAndSync: @Sendable () async throws -> Void
     public var hasLocalData: @Sendable () async -> Bool = { false }
@@ -170,7 +173,10 @@ extension SyncClient: DependencyKey {
                         focusedSecondsStopwatch: focusedSecondsStopwatch,
                         activeSessionId: nil,
                         isDeleted: false,
-                        subTasks: subTaskDTOs.isEmpty ? nil : subTaskDTOs,
+                        // S6: always send the list, even empty. The backend replaces
+                        // subtasks only for non-nil slices (LWW-gated), so nil
+                        // ("don't touch") resurrected deleted subtasks on the next pull.
+                        subTasks: subTaskDTOs,
                         updatedAt: iso.string(from: task.updatedAt)
                     )
                     taskDTOs.append(dto)
@@ -231,6 +237,9 @@ extension SyncClient: DependencyKey {
                         pauseCount: session.pauseCount,
                         totalPauseSeconds: Int(session.totalPauseDuration),
                         wasCompleted: session.wasCompleted,
+                        // S5: journal travels with the session (backend upserts it).
+                        journalNote: session.journalNote,
+                        satisfactionRating: session.satisfactionRating,
                         createdAt: iso.string(from: session.startedAt),
                         updatedAt: iso.string(from: session.startedAt)
                     )
@@ -365,7 +374,10 @@ extension SyncClient: DependencyKey {
                         priority: task.priority.rawValue,
                         estimatedPomodoros: task.estimatedPomodoros,
                         completedPomodoros: task.completedPomodoros,
-                        subTasks: subTaskDTOs.isEmpty ? nil : subTaskDTOs,
+                        // S6: same explicit-empty rule as the dirty push above.
+                        // Safe in merges: the backend LWW-gates incoming tasks, so
+                        // an older [] never wipes newer server subtasks.
+                        subTasks: subTaskDTOs,
                         updatedAt: iso.string(from: task.updatedAt)
                     ))
                 }
@@ -386,6 +398,9 @@ extension SyncClient: DependencyKey {
                         pauseCount: session.pauseCount,
                         totalPauseSeconds: Int(session.totalPauseDuration),
                         wasCompleted: session.wasCompleted,
+                        // S5: journal travels with the session (backend upserts it).
+                        journalNote: session.journalNote,
+                        satisfactionRating: session.satisfactionRating,
                         createdAt: iso.string(from: session.startedAt),
                         updatedAt: iso.string(from: session.startedAt)
                     )
@@ -447,6 +462,18 @@ extension SyncClient: DependencyKey {
                 PreferenceDirtyTracker.clearAll()
 
                 return response.hasExistingData
+            },
+            serverHasData: {
+                guard await keychain.hasTokens() else {
+                    throw SyncError.notAuthenticated
+                }
+                // S1: read-only probe for the login merge flow. First page only:
+                // settings ride the first page per server contract, so one small
+                // page answers "does the server hold anything?".
+                let response = try await apiClient.getFullSync(nil, nil, 1)
+                return !response.tasks.items.isEmpty
+                    || !response.sessions.items.isEmpty
+                    || !response.settings.isEmpty
             },
             performInitialSync: {
                 guard await keychain.hasTokens() else {
@@ -606,6 +633,9 @@ extension SyncClient: DependencyKey {
                         try await persistence.upsertSessionFromServer(serverSession, false)
                     }
                 }
+                // S4: phase 2 wiped DailyStats — rebuild aggregates from the
+                // reinserted sessions so heatmap/streaks are not left empty.
+                try await persistence.rebuildDailyStatsFromSessions()
                 // Resolve inbound task links (taskSyncId / taskId → local task)
                 for serverSession in allServerSessions {
                     guard let sessionUUID = UUID(uuidString: serverSession.id) else { continue }

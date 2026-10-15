@@ -258,6 +258,11 @@ public struct FocusSessionSyncDTO: Codable, Sendable, Equatable {
     public let pauseCount: Int
     public let totalPauseSeconds: Int
     public let wasCompleted: Bool
+    /// Post-session reflection (S5). Nil when the user wrote none; the backend
+    /// upserts these alongside the session. Defaulted so payloads without the
+    /// keys (both directions, old clients/servers) keep decoding.
+    public let journalNote: String?
+    public let satisfactionRating: Int?
     public let sharedWithTaskIds: String?
     public let createdAt: String
     public let updatedAt: String
@@ -269,7 +274,7 @@ public struct FocusSessionSyncDTO: Codable, Sendable, Equatable {
         mode: String, phase: String,
         durationSeconds: Int, elapsedSeconds: Int,
         pauseCount: Int = 0, totalPauseSeconds: Int = 0,
-        wasCompleted: Bool = false, sharedWithTaskIds: String? = nil,
+        wasCompleted: Bool = false, journalNote: String? = nil, satisfactionRating: Int? = nil, sharedWithTaskIds: String? = nil,
         createdAt: String, updatedAt: String
     ) {
         self.id = id
@@ -285,6 +290,8 @@ public struct FocusSessionSyncDTO: Codable, Sendable, Equatable {
         self.pauseCount = pauseCount
         self.totalPauseSeconds = totalPauseSeconds
         self.wasCompleted = wasCompleted
+        self.journalNote = journalNote
+        self.satisfactionRating = satisfactionRating
         self.sharedWithTaskIds = sharedWithTaskIds
         self.createdAt = createdAt
         self.updatedAt = updatedAt

@@ -687,20 +687,28 @@ struct AppFeature {
                     )))
                 }
                 
+                // S7: drain task-completion commands (not time-sensitive — no TTL,
+                // survives stale-discard by design since clearExternalCommands
+                // doesn't know these keys). take...() reads + clears atomically;
+                // early exits above leave it queued for the next round.
+                var completeTaskEffect: Effect<Action> = .none
+                if let completedTaskID = AppGroupDefaults.takeExternalCompleteTask() {
+                    completeTaskEffect = .send(.tasks(.setTaskCompleted(completedTaskID, true)))
+                }
                 AppGroupDefaults.clearExternalCommands()
 
                 // Killed mid-session: App Group still says active but FocusEngine is idle.
                 if AppGroupDefaults.SessionReconcilePolicy.clearGhostSessionIfNeeded(
                     engineIsRunning: state.focus.isRunning
                 ) {
-                    return ghostSessionClearedEffects()
+                    return .merge(completeTaskEffect, ghostSessionClearedEffects())
                 }
                 
                 // Sync idle mode selection from widget to app if no session is running
                 if !state.focus.isRunning, let widgetModeID = AppGroupDefaults.widgetSelectedMode,
                    let widgetMode = FocusMode(rawValue: widgetModeID),
                    widgetMode != state.focus.selectedMode {
-                    return .send(.focus(.modeSelected(widgetMode)))
+                    return .merge(completeTaskEffect, .send(.focus(.modeSelected(widgetMode))))
                 }
 
                 // Reconnect WebSocket if authenticated
@@ -713,6 +721,7 @@ struct AppFeature {
                     }
                 }()
                 return .merge(
+                    completeTaskEffect,
                     timerSync,
                     .run { [keychain, webSocketClient, canBackendSync = state.subscriptionState.capabilities.backendSync] _ in
                         guard canBackendSync else { return }

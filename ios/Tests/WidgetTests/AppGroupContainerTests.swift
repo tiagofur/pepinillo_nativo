@@ -397,6 +397,24 @@ struct AppGroupContainerTests {
         #expect(AppGroupDefaults.activeSessionTimerEnd != nil)
     }
 
+    @Test("CompleteTaskFromWidgetIntent enqueues a command without touching the store")
+    func completeTaskIntentEnqueuesCommand() async throws {
+        let saved = AppGroupDefaultsSnapshot.capture()
+        defer { saved.restore() }
+
+        AppGroupDefaults.clearExternalCommands()
+        AppGroupDefaults.externalCompleteTaskRequested = false
+        AppGroupDefaults.externalCompleteTaskID = nil
+
+        let taskID = UUID().uuidString
+        _ = try await CompleteTaskFromWidgetIntent(taskID: taskID).perform()
+
+        // S7 RED pre-fix: the intent wrote SwiftData directly and set no command.
+        #expect(AppGroupDefaults.externalCompleteTaskRequested == true)
+        #expect(AppGroupDefaults.externalCompleteTaskID == taskID)
+        #expect(AppGroupDefaults.externalCommandID != nil)
+        #expect(AppGroupDefaults.externalCommandIssuedAt != nil)
+
     @Test("CompleteTaskFromWidgetIntent cannot bypass entitlement")
     func completeTaskFromWidgetIntentCannotBypassEntitlement() {
         let saved = AppGroupDefaultsSnapshot.capture()
@@ -706,6 +724,8 @@ struct AppGroupDefaultsSnapshot {
     var externalStopRequested: Bool
     var externalPauseRequested: Bool
     var externalResumeRequested: Bool
+    var externalCompleteTaskRequested: Bool
+    var externalCompleteTaskID: String?
     var externalCommandID: String?
     var externalCommandIssuedAt: Date?
     var requestedMode: String?
@@ -745,6 +765,8 @@ struct AppGroupDefaultsSnapshot {
             externalStopRequested: AppGroupDefaults.externalStopRequested,
             externalPauseRequested: AppGroupDefaults.externalPauseRequested,
             externalResumeRequested: AppGroupDefaults.externalResumeRequested,
+            externalCompleteTaskRequested: AppGroupDefaults.externalCompleteTaskRequested,
+            externalCompleteTaskID: AppGroupDefaults.externalCompleteTaskID,
             externalCommandID: AppGroupDefaults.externalCommandID,
             externalCommandIssuedAt: AppGroupDefaults.externalCommandIssuedAt,
             requestedMode: AppGroupDefaults.requestedMode,
@@ -785,6 +807,8 @@ struct AppGroupDefaultsSnapshot {
         AppGroupDefaults.externalStopRequested = externalStopRequested
         AppGroupDefaults.externalPauseRequested = externalPauseRequested
         AppGroupDefaults.externalResumeRequested = externalResumeRequested
+        AppGroupDefaults.externalCompleteTaskRequested = externalCompleteTaskRequested
+        AppGroupDefaults.externalCompleteTaskID = externalCompleteTaskID
         AppGroupDefaults.externalCommandID = externalCommandID
         AppGroupDefaults.externalCommandIssuedAt = externalCommandIssuedAt
         AppGroupDefaults.requestedMode = requestedMode

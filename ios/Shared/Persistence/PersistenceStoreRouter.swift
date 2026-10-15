@@ -16,6 +16,9 @@ private let syncRouterLogger = Logger(subsystem: "com.pepinillo.app", category: 
 enum PersistenceStoreRouterTesting {
     nonisolated(unsafe) static var migrationOverride: ((ModelContainer, ModelContainer) throws -> Void)?
     nonisolated(unsafe) static var openAppleCloudContainerOverride: (() throws -> ModelContainer)?
+    /// Observer fired when the router attempts a legacy-store import (S3).
+    /// Unlike the overrides above it never replaces behavior.
+    nonisolated(unsafe) static var legacyImportObserver: (() -> Void)?
 }
 #endif
 
@@ -95,6 +98,15 @@ final class PersistenceStoreRouter: ObservableObject {
     private func performReconcile(capabilities: UserCapabilities) async {
         if capabilities.backendSync {
             do {
+                // S3: import the legacy CloudKit store here too — the Apple
+                // Cloud seed (the only previous caller) never runs on this
+                // branch, leaving previous history invisible. Best-effort: a
+                // corrupt legacy file must not block paid-tier activation.
+                do {
+                    try await Self.importLegacyStoreIfNeeded(into: localContainer)
+                } catch {
+                    syncRouterLogger.error("Legacy store import failed, continuing without it: \(String(describing: error), privacy: .public)")
+                }
                 try await exportAppleCloudDataToLocalIfNeeded(markDirtyForBackend: true)
                 appleCloudContainer = nil
                 switchToLocal(mode: .backend, status: .backendActive)
@@ -250,6 +262,9 @@ final class PersistenceStoreRouter: ObservableObject {
     private nonisolated static func importLegacyStoreIfNeeded(into localContainer: ModelContainer) async throws {
         try await Task(priority: .utility) {
             try Task.checkCancellation()
+            #if DEBUG
+            PersistenceStoreRouterTesting.legacyImportObserver?()
+            #endif
             try LocalToCloudStoreMigrator.importLegacyStoreIfNeeded(into: localContainer)
         }.value
     }

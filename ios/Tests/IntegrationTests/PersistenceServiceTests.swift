@@ -157,6 +157,162 @@ struct PersistenceServiceTests {
         #expect(unknown == nil)
     }
 
+    @Test("markAllSyncableDataDirty includes soft-deleted tombstones")
+    func markAllSyncableDataDirtyIncludesTombstones() throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("pepinillo-test-persistence-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        let schema = Schema(versionedSchema: SchemaV5.self)
+        let config = ModelConfiguration(schema: schema, url: dir.appendingPathComponent("test.sqlite"), cloudKitDatabase: .none)
+        let container = try ModelContainer(for: schema, configurations: [config])
+        let context = container.mainContext
+        let service = SwiftDataPersistenceService(context: context)
+
+        let live = TaskItem(title: "Live")
+        live.isDirty = false
+        context.insert(live)
+        let tombstone = TaskItem(title: "Gone")
+        tombstone.isLocallyDeleted = true
+        tombstone.isDirty = false
+        tombstone.syncId = "sync-gone"
+        context.insert(tombstone)
+        try context.save()
+
+        try service.markAllSyncableDataDirty()
+
+        // Both re-push after a store switch — the tombstone as a delete (S2).
+        #expect(live.isDirty == true)
+        #expect(tombstone.isDirty == true)
+    }
+
+    @Test("rebuildDailyStatsFromSessions recomputes aggregates per day and mode")
+    func rebuildDailyStatsRecomputesAggregates() throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("pepinillo-test-persistence-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        let schema = Schema(versionedSchema: SchemaV5.self)
+        let config = ModelConfiguration(schema: schema, url: dir.appendingPathComponent("test.sqlite"), cloudKitDatabase: .none)
+        let container = try ModelContainer(for: schema, configurations: [config])
+        let context = container.mainContext
+        let service = SwiftDataPersistenceService(context: context)
+
+        // Midday anchors: immune to midnight boundary flakiness.
+        let todayNoon = try #require(Calendar.current.date(byAdding: .hour, value: 12, to: Calendar.current.startOfDay(for: Date.now)))
+        let yesterdayNoon = try #require(Calendar.current.date(byAdding: .day, value: -1, to: todayNoon))
+
+        func insertSession(mode: String, start: Date, seconds: TimeInterval) {
+            context.insert(FocusSessionRecord(
+                mode: mode,
+                phase: "work",
+                startedAt: start,
+                endedAt: start.addingTimeInterval(seconds),
+                actualDuration: seconds,
+                targetDuration: seconds,
+                wasCompleted: true,
+                interruptions: 0,
+                pauseCount: 0,
+                totalPauseDuration: 0
+            ))
+        }
+        insertSession(mode: "pomodoro", start: todayNoon, seconds: 1500)
+        insertSession(mode: "flowtime", start: todayNoon.addingTimeInterval(3600), seconds: 600)
+        insertSession(mode: "stopwatch", start: yesterdayNoon, seconds: 300)
+        try context.save()
+
+        try service.deleteAllStats()
+        try service.rebuildDailyStatsFromSessions()
+
+        let stats = try context.fetch(FetchDescriptor<DailyStats>())
+        #expect(stats.count == 2)
+        let day = Calendar.current.startOfDay(for: Date.now)
+        let todayStats = try #require(stats.first(where: { $0.date == day }))
+        #expect(todayStats.totalFocusSeconds == 2100)
+        #expect(todayStats.pomodoroSeconds == 1500)
+        #expect(todayStats.flowtimeSeconds == 600)
+        #expect(todayStats.sessionsCompleted == 2)
+        #expect(todayStats.hadFocusSession == true)
+        let prevDay = try #require(Calendar.current.date(byAdding: .day, value: -1, to: day))
+        let yesterdayStats = try #require(stats.first(where: { $0.date == prevDay }))
+        #expect(yesterdayStats.totalFocusSeconds == 300)
+    }
+
+    @Test("saveJournalEntry marks the session dirty for re-push")
+    func saveJournalEntryMarksSessionDirty() throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("pepinillo-test-persistence-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        let schema = Schema(versionedSchema: SchemaV5.self)
+        let config = ModelConfiguration(schema: schema, url: dir.appendingPathComponent("test.sqlite"), cloudKitDatabase: .none)
+        let container = try ModelContainer(for: schema, configurations: [config])
+        let context = container.mainContext
+        let service = SwiftDataPersistenceService(context: context)
+
+        let record = FocusSessionRecord(
+            mode: "pomodoro",
+            phase: "work",
+            startedAt: Date.now,
+            endedAt: nil,
+            actualDuration: 1500,
+            targetDuration: 1500,
+            wasCompleted: true,
+            interruptions: 0,
+            pauseCount: 0,
+            totalPauseDuration: 0
+        )
+        record.isDirty = false // simulate an already-synced session
+        context.insert(record)
+        try context.save()
+
+        try service.saveJournalEntry(sessionID: record.id, note: "Great flow", rating: 5)
+
+        #expect(record.journalNote == "Great flow")
+        #expect(record.satisfactionRating == 5)
+        // S5 RED pre-fix: the journal stays clean and never re-pushes.
+        #expect(record.isDirty == true)
+    }
+
+    @Test("upsertSessionFromServer restores journal fields on insert")
+    func upsertRestoresJournalFields() throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("pepinillo-test-persistence-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        let schema = Schema(versionedSchema: SchemaV5.self)
+        let config = ModelConfiguration(schema: schema, url: dir.appendingPathComponent("test.sqlite"), cloudKitDatabase: .none)
+        let container = try ModelContainer(for: schema, configurations: [config])
+        let context = container.mainContext
+        let service = SwiftDataPersistenceService(context: context)
+
+        let dto = FocusSessionSyncDTO(
+            id: UUID().uuidString,
+            startedAt: "2024-01-01T00:00:00Z",
+            endedAt: "2024-01-01T00:25:00Z",
+            mode: "pomodoro",
+            phase: "work",
+            durationSeconds: 1500,
+            elapsedSeconds: 1500,
+            journalNote: "Great flow",
+            satisfactionRating: 5,
+            wasCompleted: true,
+            createdAt: "2024-01-01T00:00:00Z",
+            updatedAt: "2024-01-01T00:25:00Z"
+        )
+
+        try service.upsertSessionFromServer(dto, true)
+
+        let records = try context.fetch(FetchDescriptor<FocusSessionRecord>())
+        #expect(records.count == 1)
+        #expect(records.first?.journalNote == "Great flow")
+        #expect(records.first?.satisfactionRating == 5)
+    }
+
     // MARK: - Issue #74: saveTaskOrder batch reorder
 
     @Test("saveTaskOrder persists new sort orders in a single transaction and marks dirty")

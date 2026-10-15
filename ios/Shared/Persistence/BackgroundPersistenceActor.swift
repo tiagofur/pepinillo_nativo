@@ -162,6 +162,10 @@ public actor BackgroundPersistenceActor {
         try service.saveSession(result)
     }
 
+    func rebuildDailyStatsFromSessions() throws {
+        try service.rebuildDailyStatsFromSessions()
+    }
+
     func fetchSessions(from start: Date, to end: Date) throws -> [SessionRecordDTO] {
         try service.fetchSessions(from: start, to: end).map { SessionRecordDTO(from: $0) }
     }

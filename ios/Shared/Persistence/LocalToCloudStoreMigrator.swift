@@ -66,10 +66,16 @@ enum LocalToCloudStoreMigrator {
         )
         let sourceTasks = try source.fetch(descriptor)
 
-        for sourceTask in sourceTasks where !sourceTask.isLocallyDeleted {
+        for sourceTask in sourceTasks {
             let task = try upsertTask(sourceTask, in: target)
             taskByID[sourceTask.id] = task
-            try copySubtasks(from: sourceTask, to: task, in: target)
+            // S2: tombstones migrate too — applyTaskFields preserves syncId/
+            // serverId/isDirty, so a pending delete survives the store switch
+            // instead of resurrecting on the next pull. Subtasks under a
+            // deleted parent are unreachable: skip copying them.
+            if !sourceTask.isLocallyDeleted {
+                try copySubtasks(from: sourceTask, to: task, in: target)
+            }
         }
     }
 
