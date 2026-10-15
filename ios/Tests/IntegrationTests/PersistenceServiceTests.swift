@@ -298,14 +298,14 @@ struct PersistenceServiceTests {
             phase: "work",
             durationSeconds: 1500,
             elapsedSeconds: 1500,
+            wasCompleted: true,
             journalNote: "Great flow",
             satisfactionRating: 5,
-            wasCompleted: true,
             createdAt: "2024-01-01T00:00:00Z",
             updatedAt: "2024-01-01T00:25:00Z"
         )
 
-        try service.upsertSessionFromServer(dto, true)
+        try service.upsertSessionFromServer(dto, saveImmediately: true)
 
         let records = try context.fetch(FetchDescriptor<FocusSessionRecord>())
         #expect(records.count == 1)
@@ -386,7 +386,7 @@ struct PersistenceServiceTests {
             updatedAt: "2024-01-01T00:00:00Z"
         )
 
-        try service.upsertTaskFromServer(dto, true)
+        try service.upsertTaskFromServer(dto, saveImmediately: true)
 
         let after = try #require(try context.fetch(FetchDescriptor<TaskItem>()).first)
         // S6 RED pre-fix: the dirty guard drops the newer server state.
@@ -420,7 +420,7 @@ struct PersistenceServiceTests {
             updatedAt: "2020-01-01T00:00:00Z"
         )
 
-        try service.upsertTaskFromServer(dto, true)
+        try service.upsertTaskFromServer(dto, saveImmediately: true)
 
         let after = try #require(try context.fetch(FetchDescriptor<TaskItem>()).first)
         #expect(after.title == "Local")
@@ -447,7 +447,7 @@ struct PersistenceServiceTests {
             updatedAt: "2024-01-01T00:25:00Z"
         )
 
-        try service.upsertTaskFromServer(dto, true)
+        try service.upsertTaskFromServer(dto, saveImmediately: true)
 
         let record = try #require(try context.fetch(FetchDescriptor<TaskItem>()).first)
         #expect(record.isCompleted == true)

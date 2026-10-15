@@ -9,7 +9,7 @@ import Foundation
 import ComposableArchitecture
 @testable import Pepinillo
 
-@Suite("SettingsFeature")
+@Suite("SettingsFeature", .serialized, .appGroupDefaultsSerialized)
 @MainActor
 struct SettingsFeatureTests {
 
@@ -104,6 +104,18 @@ struct SettingsFeatureTests {
 
     @Test("onAppear loads preferences and populates state")
     func testOnAppearLoadsPreferences() async {
+        // See above: pin the shared sync globals.
+        let savedSyncStatus = AppGroupDefaults.syncStatus
+        let savedSyncError = AppGroupDefaults.lastAppleCloudActivationError
+        let savedCanAppleCloudSync = AppGroupDefaults.canAppleCloudSync
+        defer {
+            AppGroupDefaults.syncStatus = savedSyncStatus
+            AppGroupDefaults.lastAppleCloudActivationError = savedSyncError
+            AppGroupDefaults.canAppleCloudSync = savedCanAppleCloudSync
+        }
+        AppGroupDefaults.syncStatus = .idle
+        AppGroupDefaults.lastAppleCloudActivationError = nil
+        AppGroupDefaults.canAppleCloudSync = false
         let prefs = customPrefs()
         let store = makeStore(prefs: prefs)
         store.exhaustivity = .off
@@ -134,13 +146,25 @@ struct SettingsFeatureTests {
             $0.healthLoggingEnabled = true
             $0.adhdFriendlyEnabled = true
             $0.calendarIntegrationEnabled = true
-            $0.isProUser = true
             $0.currentStreakDays = 14
         }
     }
 
     @Test("onAppear does nothing when already loading")
     func testOnAppearGuardsAgainstDoubleLoad() async {
+        // onAppear reads shared sync globals synchronously: pin them so
+        // parallel tests cannot leak values in.
+        let savedSyncStatus = AppGroupDefaults.syncStatus
+        let savedSyncError = AppGroupDefaults.lastAppleCloudActivationError
+        let savedCanAppleCloudSync = AppGroupDefaults.canAppleCloudSync
+        defer {
+            AppGroupDefaults.syncStatus = savedSyncStatus
+            AppGroupDefaults.lastAppleCloudActivationError = savedSyncError
+            AppGroupDefaults.canAppleCloudSync = savedCanAppleCloudSync
+        }
+        AppGroupDefaults.syncStatus = .idle
+        AppGroupDefaults.lastAppleCloudActivationError = nil
+        AppGroupDefaults.canAppleCloudSync = false
         var state = SettingsFeature.State()
         state.isLoading = true
 
@@ -648,8 +672,20 @@ struct SettingsFeatureTests {
 
     // MARK: - isProUser
 
-    @Test("isProUser reflects loaded preference")
-    func testIsProUserReflectsPreference() async {
+    @Test("isProUser is never reloaded from stale prefs (#207)")
+    func testIsProUserNotReloadedFromStalePrefs() async {
+        // See above: pin the shared sync globals.
+        let savedSyncStatus = AppGroupDefaults.syncStatus
+        let savedSyncError = AppGroupDefaults.lastAppleCloudActivationError
+        let savedCanAppleCloudSync = AppGroupDefaults.canAppleCloudSync
+        defer {
+            AppGroupDefaults.syncStatus = savedSyncStatus
+            AppGroupDefaults.lastAppleCloudActivationError = savedSyncError
+            AppGroupDefaults.canAppleCloudSync = savedCanAppleCloudSync
+        }
+        AppGroupDefaults.syncStatus = .idle
+        AppGroupDefaults.lastAppleCloudActivationError = nil
+        AppGroupDefaults.canAppleCloudSync = false
         var prefs = defaultPrefs()
         prefs.isProUser = true
 
@@ -662,7 +698,9 @@ struct SettingsFeatureTests {
 
         await store.receive(\.preferencesLoaded) {
             $0.isLoading = false
-            $0.isProUser = true
+            // Owned by AppFeature.applySubscriptionUpdate — stale prefs must
+            // not flip it, even when they claim pro.
+            $0.isProUser = false
         }
     }
 

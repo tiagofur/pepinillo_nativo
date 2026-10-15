@@ -17,9 +17,11 @@ struct FocusWidgetEntry: TimelineEntry {
     let preferredModeID: String?
     let preferredTimerText: String
     /// Widget configuration toggles (S2). Views hide the streak row and mode
-    /// breakdown unless these are on. Defaults match ConfigureFocusWidgetIntent.
-    let showStreak: Bool = true
-    let showModeBreakdown: Bool = false
+    /// breakdown unless these are on. Defaults match ConfigureFocusWidgetIntent
+    /// and live on the explicit init below (a default here would pre-initialize
+    /// the constant and forbid both passing and assigning it under Swift 6.4).
+    let showStreak: Bool
+    let showModeBreakdown: Bool
 
     // Session state (nil if no active session)
     let isSessionActive: Bool
@@ -50,6 +52,61 @@ struct FocusWidgetEntry: TimelineEntry {
 
     // Mode breakdown for large widget
     let modeMinutes: [String: Int]  // ["pomodoro": 45, "flowtime": 30, ...]
+
+    /// Explicit memberwise init (S2): Xcode 27's synthesized init does not
+    /// accept the defaulted toggle arguments explicitly, so this pins the
+    /// full parameter list with the same defaults.
+    init(
+        date: Date,
+        isProUser: Bool,
+        preferredModeID: String?,
+        preferredTimerText: String,
+        showStreak: Bool = true,
+        showModeBreakdown: Bool = false,
+        isSessionActive: Bool,
+        isPaused: Bool,
+        isWaiting: Bool,
+        focusMode: String?,
+        phase: String?,
+        timerText: String?,
+        progress: Double?,
+        pomodoroNumber: Int?,
+        totalPomodoros: Int?,
+        linkedTaskTitle: String?,
+        timerStart: Date?,
+        timerEnd: Date?,
+        todayFocusMinutes: Int,
+        todaySessionsCompleted: Int,
+        currentStreakDays: Int,
+        streakProtectionApplied: Bool,
+        dominantMode: String?,
+        modeMinutes: [String: Int]
+    ) {
+        self.date = date
+        self.isProUser = isProUser
+        self.preferredModeID = preferredModeID
+        self.preferredTimerText = preferredTimerText
+        self.showStreak = showStreak
+        self.showModeBreakdown = showModeBreakdown
+        self.isSessionActive = isSessionActive
+        self.isPaused = isPaused
+        self.isWaiting = isWaiting
+        self.focusMode = focusMode
+        self.phase = phase
+        self.timerText = timerText
+        self.progress = progress
+        self.pomodoroNumber = pomodoroNumber
+        self.totalPomodoros = totalPomodoros
+        self.linkedTaskTitle = linkedTaskTitle
+        self.timerStart = timerStart
+        self.timerEnd = timerEnd
+        self.todayFocusMinutes = todayFocusMinutes
+        self.todaySessionsCompleted = todaySessionsCompleted
+        self.currentStreakDays = currentStreakDays
+        self.streakProtectionApplied = streakProtectionApplied
+        self.dominantMode = dominantMode
+        self.modeMinutes = modeMinutes
+    }
 
     static let placeholder = FocusWidgetEntry(
         date: Date(),

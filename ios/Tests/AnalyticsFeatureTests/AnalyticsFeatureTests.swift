@@ -36,6 +36,10 @@ struct AnalyticsFeatureTests {
             $0.persistenceClient.fetchSessions = { _, _ in [] }
             $0.persistenceClient.fetchPreferences = { prefs }
             $0.persistenceClient.fetchDailyStatsRange = { _, _ in [] }
+            $0.persistenceClient.fetchSessionCount = { _ in 0 }
+            $0.persistenceClient.fetchEarlyBirdSessionCount = { _ in 0 }
+            $0.persistenceClient.fetchCompletedPomodoroCount = { _ in 0 }
+            $0.persistenceClient.fetchCompletedFlowtimeCount = { _ in 0 }
         }
         store.exhaustivity = .off
 
@@ -54,6 +58,10 @@ struct AnalyticsFeatureTests {
             $0.persistenceClient.fetchSessions = { _, _ in [] }
             $0.persistenceClient.fetchPreferences = { prefs }
             $0.persistenceClient.fetchDailyStatsRange = { _, _ in [] }
+            $0.persistenceClient.fetchSessionCount = { _ in 0 }
+            $0.persistenceClient.fetchEarlyBirdSessionCount = { _ in 0 }
+            $0.persistenceClient.fetchCompletedPomodoroCount = { _ in 0 }
+            $0.persistenceClient.fetchCompletedFlowtimeCount = { _ in 0 }
         }
         store.exhaustivity = .off
 
@@ -76,6 +84,10 @@ struct AnalyticsFeatureTests {
             $0.persistenceClient.fetchSessions = { _, _ in [] }
             $0.persistenceClient.fetchPreferences = { prefs }
             $0.persistenceClient.fetchDailyStatsRange = { _, _ in [] }
+            $0.persistenceClient.fetchSessionCount = { _ in 0 }
+            $0.persistenceClient.fetchEarlyBirdSessionCount = { _ in 0 }
+            $0.persistenceClient.fetchCompletedPomodoroCount = { _ in 0 }
+            $0.persistenceClient.fetchCompletedFlowtimeCount = { _ in 0 }
         }
         store.exhaustivity = .off
 
@@ -311,6 +323,10 @@ struct AnalyticsFeatureTests {
             $0.persistenceClient.fetchSessions = { _, _ in [] }
             $0.persistenceClient.fetchPreferences = { prefs }
             $0.persistenceClient.fetchDailyStatsRange = { _, _ in [] }
+            $0.persistenceClient.fetchSessionCount = { _ in 0 }
+            $0.persistenceClient.fetchEarlyBirdSessionCount = { _ in 0 }
+            $0.persistenceClient.fetchCompletedPomodoroCount = { _ in 0 }
+            $0.persistenceClient.fetchCompletedFlowtimeCount = { _ in 0 }
         }
         store.exhaustivity = .off
 
@@ -406,6 +422,7 @@ struct AnalyticsFeatureTests {
 struct TaskAnalyticsFeatureFailureTests {
 
     @Test("load failure releases spinner instead of wedging on")
+    @MainActor
     func loadFailureReleasesSpinner() async {
         struct AnalyticsError: Error {}
         let store = TestStore(

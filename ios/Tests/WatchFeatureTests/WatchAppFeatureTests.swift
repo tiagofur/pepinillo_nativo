@@ -646,7 +646,9 @@ struct WatchAppFeatureTests {
 
     @Test("timer child modeSelected passes through parent")
     func timerChildModeSelectedPassesThrough() async {
-        let store = TestStore(initialState: WatchAppFeature.State()) {
+        var state = WatchAppFeature.State()
+        state.timer.isProUser = true
+        let store = TestStore(initialState: state) {
             WatchAppFeature()
         }
 
