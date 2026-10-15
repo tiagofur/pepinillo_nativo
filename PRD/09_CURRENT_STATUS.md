@@ -1,10 +1,8 @@
 # Pepinillo — Current Implementation Status
 
-**Date:** 2026-03-24  
-**Version:** 3.0.0  
-**Status:** Active Development  
-**Last Updated:** 2026-08-05  
-**Update Cadence:** Per sprint
+**Last Updated:** 2026-08-23
+**Version:** 3.x  
+**Status:** Production + Growth Validation Phase
 
 ---
 
@@ -42,6 +40,9 @@
   - [x] `Pepinillo.storekit` — renamed to "Pepinillo+" / "Everywhere/AI+ Monthly" / "Everywhere/AI+ Annual", prices $19.99/$4.99/$34.99
   - [x] Mock display names and prices aligned to v3.1
 - **Implementation status (external — manual tasks remaining):**
+  - [x] Repository secret hardening: current tracked credentials/tokens sanitized; redacted CI scanner added (#613)
+  - [ ] **[BLOCKER]** Revoke/rotate the exposed RevenueCat server key and update the production runtime (#613)
+  - [ ] Enable GitHub Secret Protection/push protection and decide coordinated history remediation (#613)
   - [ ] **[BLOCKER]** Update revoked API keys in RevenueCat (App Store Connect API: `22YZT9D55J` · In-App Purchase: `Z95PS2LD73`)
   - [ ] Complete metadata + rename products in App Store Connect
   - [ ] Create `pepinillo_plus` + `everywhere_plus` entitlements in RevenueCat
@@ -56,909 +57,200 @@
 - **Current runtime baseline during transition:** iPhone ships `Focus / Plan / Dashboard / More`; Android phone is converging to the same shell while ownership is consolidated.
 - **Current product gaps:** task depth is still too light, Dashboard/reviews are not yet a unified reflection engine, and AI positioning is more defined in strategy than in product behavior.
 - **Immediate product priority:** stop accumulating disconnected surfaces and redesign screen ownership before major new feature expansion.
+# 1. Product Phase
+
+Pepinillo has moved from a product construction phase into a **growth validation phase**.
+
+The main objective is no longer maximizing feature count. The objective is validating that real users:
+
+1. Discover Pepinillo.
+2. Understand its value.
+3. Complete focus sessions.
+4. Build a recurring habit.
+5. Are willing to pay for premium features.
+
+See:
+
+- `docs/strategy/PRODUCT_DIRECTION.md`
+- `docs/strategy/GROWTH_VALIDATION_PLAN.md`
 
 ---
 
-## 2. iOS — Implemented
+# 2. Platform Status
 
-### Focus Engine ✅
-
-- **FocusEngine** (Swift Actor) with 4 strategies: Pomodoro, Flowtime, TimeBlock, Stopwatch
-- Strategy pattern via `FocusModeProtocol` — all 4 modes share ~80% of code
-- Session journaling (detailed record per session)
-- Task linking (link active task to focus session)
-- Soundscape picker integrated in focus view
-- Mode Intelligence banner (suggests optimal mode based on history)
-- ADHD-friendly breaks (configurable per mode)
-
-### Tasks ✅
-
-- Full CRUD with drag-to-reorder
-- Subtasks (nested tasks)
-- Priority + energy levels (deep/shallow/admin)
-- Recurring tasks (iCalendar RRULE format: daily, weekly, monthly, custom)
-- Estimated and completed pomodoros per task
-- Import from Apple Reminders (one-way, via EventKit)
-
-### Analytics ✅
-
-- 7-day, 30-day, and 1-year views
-- Breakdown by focus mode
-- Achievements (6 types)
-- Weekly Review (current week vs. previous week comparison, trends, dominant mode)
-- Monthly Review (monthly review with aggregated metrics)
-- AI Reports (Apple Foundation Models + template fallback when model unavailable)
-- Per-task analytics drill-down
-
-### Apple Ecosystem ✅
-
-- **watchOS app:** timer with 4 modes, task list, dashboard, enhanced Smart Stack widgets (rectangular with live countdown + phase + linked task, circular with actual progress, corner with live countdown), smart relevance scoring (100 active / 10 idle), 5-minute refresh when active, Tasks complication (accessoryRectangular, accessoryCircular, accessoryCorner)
-- **Watch-Phone connectivity:** bidirectional state sync via WatchConnectivity — transport split: `updateApplicationContext` for state/stats/dashboard (background-safe), `transferUserInfo` for tasks (queued FIFO), `sendMessage` kept as fast path when reachable only. Complications and tiles now read from shared app group UserDefaults (`group.com.pepinillo.app`). See §10 for full details.
-- **Widgets:** Home Screen (S/M/L) + Lock Screen, all mode-aware
-- **Live Activity + Dynamic Island:** 4 distinct UIs per active mode
-- **Siri / App Intents:** multi-mode commands in 3 languages (EN, ES, PT)
-- **Control Center widget:** quick session toggle (iOS 18+)
-- **Spotlight indexing:** tasks indexed for system search
-
-### Integrations ✅
-
-- **Apple Health:** Mindful Minutes (logs sessions as `HKCategorySample.mindfulSession`)
-- **Apple Focus Modes:** `FocusFilterIntent` to auto-activate/deactivate DND
-- **Apple Reminders import:** one-way import via EventKit
-- **Sign in with Apple:** native authentication
-- **CloudKit sync:** deferred from 1.0; launch is local-first and uses `PepinilloLocal.sqlite` so devices with a legacy CloudKit-backed `Pepinillo.sqlite` do not block startup
-
-### Design ✅
-
-- 4 named themes (Classic, Forest, Ocean, Sunset)
-- iOS 26 **system glass** aesthetic (`.glassEffect`, adaptive materials, widget glass) applied always-on and free — distinct from the selectable themes above (#28).
-- **Theme picker:** horizontal scroll cards with preview
-- **Appearance selector:** Light / Dark / System
-- **Focus mode colors:** consistent colors per mode (Pomodoro=red, TimeBlock=purple, Chrono=green)
-- **PRO gating:** Forest, Ocean, Sunset require PRO subscription
-- Glassmorphism in key components
-- Contextual haptic feedback
-- Reduce Motion support (accessibility)
-- 3 languages: English, Spanish, Portuguese
-
-### Billing ✅
-
-- **RevenueCat iOS:** fully configured
-  - SDK v5+ (wrapping StoreKit 2) with legacy 3-product setup (monthly, annual, lifetime)
-  - iOS Public API Key: `appl_xnChlVXXtUFhusIfJyNrNDcMGLj` (configured in code)
-  - Entitlement: `pro` via RevenueCat Offerings/Packages (legacy single-flag model)
-  - User identification integrated with Sign in with Apple flow
-  - Grace period support via RevenueCat entitlements
-  - Paywall implemented
-  - **Target packaging:** Pepinillo+ + Everywhere/AI+ Monthly + Everywhere/AI+ Annual
-
-### RevenueCat Backend: Secret API key configured
-
-- Secret API Key (V2): `sk_namFzNibPWRnKGIOqmwHfPVQrbfyZ` (label: "Pepinillo Backend")
-- Environment variable: `REVENUECAT_SECRET_KEY` (loaded via `backend/internal/config/config.go`)
-- Webhook handler: `POST /api/v1/webhooks/revenuecat` (implemented and tested)
-- Webhook URL (pending deployment): `https://{YOUR_DOMAIN}/api/v1/webhooks/revenuecat`
-- **Authoritative billing endpoint:** `POST /api/v1/billing/verify` (use instead of legacy verification paths)
-- **RevenueCat dashboard:** products and entitlements
-  - iOS products imported (monthly, annual, lifetime)
-  - Entitlements linked (premium/pro)
-  - S2S notifications configured
-
-### Auth Hardening — P0 + P1 Complete (2026-04-20) ✅
-
-**P0 — Apple Sign-In hardening (all platforms):**
-- Backend now requires `APPLE_BUNDLE_ID` in production (`backend/internal/config/config.go`).
-- Backend `/api/v1/auth/apple` now requires `nonce` in request payload (`backend/internal/adapters/handlers/oauth_handler.go`).
-- Apple token verification hardened in backend with:
-  - retry/backoff when fetching Apple JWKS,
-  - strict `iat` validation (missing, too old, or future tokens rejected),
-  - existing issuer/audience/expiration/nonce checks preserved (`backend/internal/services/oauth_service.go`).
-- iOS Apple login request now requires non-optional nonce in DTO and guarded flow before backend exchange (`ios/Domain/Models/APIDTOs.swift`, `ios/Features/Auth/AuthView.swift`, `ios/App/AppFeature.swift`).
-- Added focused backend tests for production config and Apple token validation branches (`backend/internal/config/config_test.go`, `backend/internal/services/oauth_service_validation_test.go`, `backend/internal/adapters/handlers/oauth_handler_test.go`).
-
-**P1.1 — Email verification gate (backend + iOS + Android):**
-- Backend embeds `emailVerified` in JWT access/refresh claims (`backend/internal/adapters/middleware/jwt_middleware.go`, `backend/internal/services/auth_service.go`, `backend/internal/services/oauth_service.go`).
-- New `RequireEmailVerified()` middleware blocks unverified users from all data endpoints with `403 email_not_verified` (`backend/internal/adapters/middleware/email_verification.go`).
-- Route restructure: all data routes (tasks, focus, pomodoro, AI, analytics, sync, preferences, push) moved under `verified` group; auth routes + `GET /users/me` + billing remain accessible to unverified users (`backend/internal/adapters/handlers/routes.go`).
-- `VerifyEmail` backend endpoint now returns fresh tokens with `emailVerified: true` so clients update Keychain/EncryptedSharedPreferences atomically on success (`backend/internal/services/auth_service.go`, `backend/internal/adapters/handlers/auth_handler.go`).
-- iOS: `EmailVerificationFeature` + `EmailVerificationView` added; `AuthFeature` sends `.emailVerificationRequired` delegate when backend returns unverified user; `AppFeature` shows non-dismissible verification sheet (`ios/Features/Auth/EmailVerificationFeature.swift`, `ios/Features/Auth/EmailVerificationView.swift`, `ios/App/AppFeature.swift`, `ios/App/AppView.swift`).
-- Android: `handleAuthSuccess` in `AuthViewModel` gates on `emailVerified`; new `EmailVerificationScreen` composable added; route `email-verification/{email}` wired in `MainActivity` (`android/app/.../feature/auth/EmailVerificationScreen.kt`, `AuthViewModel.kt`, `MainActivity.kt`).
-
-**P1.2 — deviceId Keychain migration (iOS):**
-- `getOrCreateDeviceId` migrated from `UserDefaults` to iOS Keychain (`kSecAttrAccessibleAfterFirstUnlock`) with transparent legacy migration path (`ios/Domain/Clients/KeychainClient.swift`).
-
-### Navigation Parity R1 Progress (2026-04-20) ✅ / Transitional
-
-- The current runtime phone baseline is `Focus`, `Plan`, `Dashboard`, and `More`.
-- `More` is the current shipping label for the Account / Admin surface, and owns profile, auth, subscription, settings, export, and support on iPhone.
-- Android phone is actively converging toward the same shell and ownership model.
-- That 4-surface baseline is still considered **transitional** under the product reset.
-- Next IA target: `Focus`, `Plan`, and `Dashboard` as primary productivity destinations, with `Account / Admin` holding Settings, Profile, Subscription, and support outside the main productivity axis.
-- Reviews and calendar entry points should consolidate under `Dashboard` or `Plan`, instead of remaining scattered across drawers and duplicated shortcuts.
-
-### Widget/Build Stabilization (2026-04-20) ✅
-
-- Fixed multiple Swift syntax and state-construction errors in widget providers (`ios/PepinilloWidget/DashboardWidgetProvider.swift`, `ios/PepinilloWidget/FocusWidgetProvider.swift`, `ios/PepinilloWidget/DashboardWidget.swift`).
-- Removed duplicated `isProUser` declaration causing compile failure (`ios/Shared/Persistence/AppGroupContainer.swift`).
-- Fixed SwiftUI style API mismatch in email verification view (`ios/Features/Auth/EmailVerificationView.swift`).
-- Addressed Swift concurrency capture violations in `AppFeature` async effects (`ios/App/AppFeature.swift`).
-- Regenerated Xcode project from `project.yml` to ensure source inclusion consistency (`ios/Pepinillo.xcodeproj`).
-
-### Pending iOS
-
-| Item                                | Priority | Notes                                                                                                  |
-| ----------------------------------- | -------- | ------------------------------------------------------------------------------------------------------ |
-| ✅ Product reset IA + screen ownership | DONE     | 4-tab runtime baseline: Focus / Plan / Dashboard / More, with More owning account/admin surfaces |
-| ✅ Account tab full-screen navigation | DONE     | Profile, Subscription, Export, Help all push as NavigationLink (Phase 5 complete) |
-| ✅ AI Reports enabled              | DONE  | `AppConfig.aiInsightsEnabled = true`; Apple Foundation Models + template fallback active |
-| ✅ CSV/PDF Export                  | DONE  | Export to CSV and PDF implemented and Pro-gated (`ios/Features/Account/ExportView.swift`) |
-| ✅ Streak Protection (1 skip/week) | DONE  | `StreakProtectionService` shared by app + widgets + watch bridge (`ios/Domain/Services/`) |
-| ✅ Dashboard P4 design package (7-day chart hero) | DONE | Streak hero, 7-day bar chart with avg rule, compact stats row, review rows with live preview lines, toolbar menu — `ios/Features/Dashboard/DashboardView.swift` |
-| ✅ Compact stats / chart alignment bug fix | DONE | `DashboardCompactStats` now reads `weekFormattedTotalTime` / `weekSessionsCompleted` (both derived from `weekChartData`); stats and chart always show the same 7-day window regardless of period picker. Unit test added: `weekPeriodChartSumMatchesTotals` in `AnalyticsFeatureTests`. |
-| ✅ Demo data verification | DONE | `-seedDemoData` verified with simulator: Dashboard, AI Reports, charts all display correctly. Math check: avg (~8h29m) × 7 = "59h 25m" matches compact stats row and Revisión Semanal preview. |
-| ✅ Dashboard live refresh + estadísticas Pomodoro | DONE (2026-06-12) | Bug corregido: `AnalyticsFeature` permanecía congelado por guardia `!hasLoadedData`; se agregó acción `.refresh` que la bypasea. Cada intervalo WORK de Pomodoro ahora persiste un `FocusSessionRecord` inmediatamente. Push a Watch corregido para incluir todos los campos del dashboard. Commit: `e0bb3df`. |
-| ✅ WatchConnectivity transport fix | DONE | phone→watch updates no longer dropped when watch is backgrounded; transport split by message type; complications read from shared app group UserDefaults. See §10. |
-| Paywall redesign for Pepinillo+ / Everywhere/AI+ | P0 | Two-tier paywall: one-time vs subscription, Próximamente section |
-| RevenueCat entitlement reconfiguration | P0     | Map `pro.lifetime` → `pepinillo_plus`, `pro.monthly`/`pro.annual` → `everywhere_plus` |
-| App Store Connect metadata update | P0       | New names, descriptions, and screenshots for the 3 products |
-| Feature gating enforcement | ✅ Done   | Legacy single-pro gating is in place; entitlement names updated for new tiers |
-| Xcode setup (non-code)              | P0       | App Group, CloudKit container, StoreKit config, targets, SPM, Info.plist, audio assets, localization |
-| macOS target                        | P2       | Included in roadmap but not implemented                                                                |
-| iPad layouts                        | ✅ Done  | Full parity with iPhone: landscape uses NavigationSplitView (sidebar + detail), portrait uses top-menu Picker; same 4 tabs as iPhone (Focus/Plan/Dashboard/Account). Responsive Dashboard (1-col compact, 2-col regular). Task detail always in sheet. Stage Manager + keyboard shortcuts remain. |
+| Platform | Status | Notes |
+| --- | --- | --- |
+| Android | Active Production Platform | Native Android app released and available. Current focus: stability, acquisition and retention. |
+| iOS | Active Production Platform | Native iOS app released and available. Current focus: stability, acquisition and retention. |
+| watchOS | Active Companion Platform | Supports Apple ecosystem experience. Maintained as part of iOS strategy. |
+| Wear OS | Active Companion Platform | Supports Android ecosystem experience. Maintained as part of Android strategy. |
+| Backend | Active Infrastructure | Required services and infrastructure should prioritize current mobile needs. |
+| Windows | Paused Experiment | Technical feasibility validated. Not an active roadmap commitment. |
+| Web Companion | Paused Experiment | Technical feasibility explored. Not an active roadmap commitment. |
 
 ---
 
-## 3. Android — Implemented
+# 3. Active Product Priorities
 
-### Focus Engine ✅
+Current priorities:
 
-- **FocusEngine** (`@Singleton`, based on coroutines + StateFlow)
-- 4 modes with strategies: Pomodoro, Flowtime, TimeBlock, Stopwatch
-- Foreground Service (`START_STICKY`, `FOREGROUND_SERVICE_SPECIAL_USE`)
-- Persistent notification with actions (Pause/Resume/Stop)
-- Session journaling and task linking
+## User Growth
 
-### Tasks ✅
+- Improve onboarding.
+- Improve store conversion.
+- Acquire first meaningful group of real users.
+- Collect qualitative feedback.
 
-- Full CRUD with subtasks
-- Priority + energy levels (deep/shallow/admin)
-- Energy batching UI (visual grouping by energy level + hourly suggestions)
-- Recurring tasks (auto-generate next instance on completion)
-- Google Tasks import (OAuth + REST via play-services-auth)
+## Retention
 
-### Analytics ✅
+- Improve the Focus → Complete → Return loop.
+- Understand which focus modes create the most value.
+- Improve daily and weekly engagement.
 
-- Dashboard with charts (Vico library)
-- Mode breakdown (by focus mode)
-- AI Reports (on-device + template fallback)
-- Weekly Review (weekly comparison)
-- Monthly Review (monthly review)
-- Achievements with visual progress
+## Reliability
 
-### Android Ecosystem ✅
+- Maintain Android and iOS production quality.
+- Resolve critical bugs quickly.
+- Improve automated confidence.
 
-- **Wear OS app:** timer, task list, stats, diagnostics
-- **Wear Focus Timer Tile:** enhanced `FocusTileService` with progress arc (colored by mode), timer display, phase label, session counter, linked task name. Distinct idle/running/paused states. Built with Tiles 1.4.1 + ProtoLayout Material 1.2.1. Free users now see a locked Pepinillo+ state sourced from synced `isPro` snapshot data.
-- **Wear Tasks Tile:** `TasksTileService` showing top 4 tasks with energy emoji, truncated title, pomodoro progress, and completed/total header. Free users now see a locked Pepinillo+ state sourced from synced `isPro` snapshot data.
-- **WearSnapshotStore extended:** now persists linkedTaskId, linkedTaskName, completedSessions, and theme colors for tile access.
-- **Wear Complication:** `FocusComplicationDataSource` (SHORT_TEXT + LONG_TEXT + ranged value), with locked fallback for free users based on synced `isPro` snapshot data.
-- **Wear Data Layer sync:** bidirectional (phone-watch) with local fallback
-- **Glance widgets:** FocusTimerWidget, DailyStatsWidget (Home Screen)
-- **Lock Screen widget:** LockScreenTimerWidget (Android 14+, category KEYGUARD)
-- **Quick Settings Tile:** FocusTileService (Android 7+)
-- **Google Assistant App Actions:** 3 BIIs + 4 shortcuts + deep links `pepinillo://focus/`
-- **Ongoing notification:** with Pause/Resume/Stop actions
-- **Adaptive layouts:** WindowSizeClass, NavigationRail (medium), PermanentNavigationDrawer (expanded)
-- **Two-pane layouts:** FocusScreen, TaskListScreen master-detail, DashboardScreen multi-column, SettingsScreen two-column
-- **Foldable:** hinge avoidance via `androidx.window` 1.3.0
+## Monetization
 
-### Integrations ✅
-
-- **Google Calendar UI:** runtime permissions, toggle in Settings, time blocking when WORK sessions are completed
-- **Health Connect:** Mindful Sessions (experimental API)
-- **JWT auth + Go backend:** login/register via Ktor
-- **Room + Sync Engine:** dirty-flag strategy, last-write-wins by `updatedAt`, WorkManager periodic sync every 15 min
-- **DND / Focus Mode:** `DndManager` activates Do Not Disturb during sessions
-
-### Design ✅
-
-- **Unified theme system:** 4 named themes (Classic, Forest, Ocean, Sunset) + Material You dynamic colors
-- **Theme picker:** horizontal scroll cards with per-theme preview
-- **Focus mode colors:** consistent per mode (Pomodoro=red, TimeBlock=purple, Chrono=green)
-- **PRO gating:** Forest, Ocean, Sunset require PRO subscription
-- **Wear OS theme sync:** selected phone theme syncs to watch via Data Layer API
-- Material 3 + Material You (dynamic color)
-- Adaptive layouts (phone, tablet, foldable with hinge avoidance)
-- Shimmer loading placeholders
-- 3 languages: English, Spanish, Portuguese
-- Adaptive app icon with monochrome support (Android 13+)
-
-### Billing ✅
-
-- **RevenueCat Android:** fully configured
-  - SDK v8.10.0 (Purchases SDK) integrated
-  - Android Public API Key: `goog_ITPYSPEdubAzAeoNGxezZuZJELT` (configured in code)
-  - Legacy Product IDs: com.pepinillo.app.pro.monthly, com.pepinillo.app.pro.annual, com.pepinillo.app.pro.lifetime
-  - Entitlement: `premium` (legacy naming drift from iOS `pro`)
-  - User identification integrated with auth flow
-  - Grace period support via RevenueCat entitlements
-  - Paywall implemented
-- **Cross-platform billing stack parity:** iOS and Android both use RevenueCat (core setup completed)
-  - iOS uses RevenueCat SDK v5+ (wrapping StoreKit 2)
-  - Android uses RevenueCat Purchases SDK v8.10.0
-  - Packaging still needs migration to Pepinillo+ + Everywhere/AI+ (external RevenueCat + App Store Connect config pending)
-- **RevenueCat Backend:** Secret API key configured
-  - Secret API Key (V2): `sk_namFzNibPWRnKGIOqmwHfPVQrbfyZ` (label: "Pepinillo Backend")
-  - Webhook handler: `POST /api/v1/webhooks/revenuecat` (implemented)
-- Feature gating for subtasks and recurrence is implemented (PRO badges, disabled inputs for free users)
-
-### Production Hardening (Completed 2026-04-02)
-
-| Fix | Status | Details |
-| --- | ------ | ------- |
-| Ktor logging restricted in release | ✅ | `LogLevel.NONE` for release, `LogLevel.BODY` for debug only |
-| RevenueCat API key moved to BuildConfig | ✅ | Removed hardcoded constant, uses `BuildConfig.REVENUECAT_API_KEY` |
-| Wear OS R8 minification enabled | ✅ | `isMinifyEnabled = true` with dedicated ProGuard rules |
-| Network security config added | ✅ | Cleartext disabled, `api.ppn.creapolis.dev` domain pinned, debug overrides for user certs |
-| WebSocket heartbeat/ping | ✅ | 30s ping interval, 10s pong timeout, auto-reconnect on timeout |
-| Backup rules configured | ✅ | Encrypted prefs and Room DB excluded from cloud backup and device transfer |
-| Unused imports cleaned | ✅ | Removed `runBlocking` import from MainActivity |
-| Full sync pagination | ✅ | Already implemented in `InitialSyncManager` with cursor-based loops |
-
-### Android/Wear Build Stabilization (2026-04-20) ✅
-
-- Fixed unresolved DI import for `SubscriptionManager` in `MainActivity` (`android/app/src/main/java/dev/creapolis/pepinillo/MainActivity.kt`).
-- Fixed WorkManager network constraint compile issue by restoring `NetworkType` import (`android/app/src/main/java/dev/creapolis/pepinillo/data/sync/SyncWorker.kt`).
-- Fixed timer service widget timestamp calculation using `remainingMillis` derived from state (`android/app/src/main/java/dev/creapolis/pepinillo/service/FocusTimerService.kt`).
-- Fixed Glance widget compilation issues in focus widget (misplaced imports, key conflict, invalid countdown API usage, color type mismatch) (`android/app/src/main/java/dev/creapolis/pepinillo/widget/FocusTimerWidget.kt`).
-- Fixed Wear presentation compile blockers (`Alignment`/`height` imports in stats screen; `Stop` icon import in timer screen) (`android/wear/src/main/java/dev/creapolis/pepinillo/presentation/StatsScreen.kt`, `android/wear/src/main/java/dev/creapolis/pepinillo/presentation/TimerScreen.kt`).
-- Validation: `:app:assembleDebug` and `:wear:assembleDebug` both successful.
-
-### Pending Android
-
-| Item                           | Priority | Notes                                                                        |
-| ------------------------------ | -------- | ---------------------------------------------------------------------------- |
-| Product reset IA + screen ownership | P0    | Active runtime parity phase uses `Focus / Plan / Dashboard / More`; final 3-surface IA remains target-state |
-| More hub parity closures       | P0       | ✅ Help/Support, About, Export, Profile all have dedicated screens wired in nav |
-| Feature gating enforcement     | P0       | ✅ All features gated: modes, tasks, subtasks, recurrence, export, themes, analytics (periods/reviews/AI), widgets (focus+stats), Wear tiles/complications, task analytics |
-| Complete paywall UI            | P0       | ✅ v3.1 two-tier design: Pepinillo+ (one-time) + Everywhere/AI+ (subscription) cards, dynamic CTA |
-| ✅ Focus engine tick 10Hz → 4Hz | DONE   | Battery optimization; matches iOS tick rate. See §10. |
-| ✅ Widget reload scoped to affected class | DONE | Prevents redundant full widget reloads. See §10. |
-| ✅ Paywall/CTA text scales with large fonts | DONE | WCAG compliance; matches iOS Dynamic Type fix. See §10. |
-| ✅ Streak dashboard hero + dedup | DONE  | Streak now top-of-dashboard emotional hero, no duplicate display. Matches iOS. See §10. |
-| ✅ Timer ring display floor (count-up modes) | DONE | Ring floor in Stopwatch/Chrono; matches iOS + Wear OS. See §10. |
-| ✅ Onboarding full-bleed scenes + WCAG skip pill | DONE | Matches iOS onboarding visual redesign. See §10. |
-| Firebase Analytics/Crashlytics | P1       | Plugins commented out; missing `google-services.json`                        |
-| CI/CD pipeline                 | P1       | GitHub Actions (build + lint + tests)                                        |
-| Play Store listing             | P1       | Screenshots, ASO, description                                                |
-| Test coverage                  | P1       | 16 test files, ~200+ tests across phone and wear                            |
-| OEM testing                    | P2       | Samsung, Pixel, Xiaomi, OnePlus                                              |
-| Release keystore               | P1       | Generate and store in secure vault                                           |
+- Validate premium positioning.
+- Measure conversion.
+- Improve paywall clarity.
 
 ---
 
-## 3b. Windows — P0–P3 packaging (2026-08-03)
+# 4. Product Direction
 
-**Stack:** C# / WinUI 3 / Windows App SDK 1.6 / .NET 9 / EF Core SQLite / MSIX tooling  
-**Path:** `windows/` (`Pepinillo.Core`, `Pepinillo.WinUI`, `Pepinillo.Core.Tests`)  
-**Store docs:** `windows/store/` · **Pack:** `windows/scripts/pack-msix.ps1`  
-**Docs:** [11_WINDOWS_APP_PRD_AND_ROADMAP.md](11_WINDOWS_APP_PRD_AND_ROADMAP.md) · [12_WINDOWS_EXECUTION_PLAN.md](12_WINDOWS_EXECUTION_PLAN.md)  
-**Excellence (perfect parity + desktop craft):** [13_WINDOWS_EXCELLENCE_PLAN.md](13_WINDOWS_EXCELLENCE_PLAN.md) · epic [#573](https://github.com/tiagofur/pepinillo_nativo/issues/573) · **W0–W15 code merged** (through #604) · remaining ops: smoke [#575](https://github.com/tiagofur/pepinillo_nativo/issues/575) · Store [#568](https://github.com/tiagofur/pepinillo_nativo/issues/568)
+Pepinillo is a native deep-work companion.
 
-### Present (P0 + P1 + P2 coded + P3 packaging)
+The core experience is:
 
-- **DI composition root** (`App` + `AddPepinilloCore` + WinUI desktop/service overrides)
-- **NavigationView → Frame:** Focus, Tasks, **Calendar (W13)**, Analytics, Soundscapes, Account, Upgrade/Paywall, Settings
-- **SQLite** under local app data (`EnsureCreated`/migrations); wipe `pepinillo.db` after schema changes
-- **FocusPage** + engine: Pomodoro work→break, Stopwatch, **Flowtime** (soft target), **Time Block** (no auto-break), pause/resume/skip, session persist, optional task link, **post-session journal**; calendar can pre-configure Time Blocking via `TryConfigureTimeBlock` (preserved across Focus page load)
-- **Tasks (W12 #586):** Today/Upcoming/Inbox/All; priority/energy/recurrence/pomodoro estimates; subtasks; **keyboard excellence** (Ctrl+N focus title, Enter create, refocus for rapid entry; caption “Ctrl+N new · Enter add”); **per-filter empty states** (icon + localized hint + Accent “Add a task” CTA focusing composer); **free-tier gate UX** (StatusMessage upgrade copy + `PremiumFeatureRequested` → Paywall for limit/subtasks/recurrence); denser list rows with priority/energy/estimate caption chips; filter Pivot headers from localized ViewModel labels. **Residual:** no SortOrder/reorder (model has no field); Google Tasks import out of scope; WinUI smoke on Windows pending
-- **Calendar / day planner (W13 #587):** `PlannedTimeBlock` entity + EF migration; `ITimeBlockPlanService` create/list/delete (premium create via `CanUseFocusMode(TimeBlocking)`); `CalendarViewModel` + `CalendarPage` — local day header prev/next/today, hours 6–22 add buttons, planned block cards (Start → Focus Time Blocking configure + navigate, Delete), optional task link; free → Paywall; EN/ES/PT `Calendar.*` + `Nav.Calendar`; a11y names. **Residual:** no Outlook/Google calendar sync; no full drag/pixel grid overlay; WinUI smoke on Windows pending
-- **Settings** + theme + language preference + Privacy/Terms links + Upgrade CTA
-- **Design system (W2 partial→improved):** `Resources/DesignTokens.xaml` (card radius, page margin, mode color brushes); theme picker System/Light/Dark (free) + Forest/Ocean/Sunset (premium via `IEntitlementService.CanUseTheme`); OLEDBlack aliases Dark; `ThemeHelper` applies ElementTheme + accent tokens + Mica when `UseMicaBackdrop`; Focus mode chips colored; Tasks/Analytics empty copy polish; Paywall “not a subscription” badge + tokens
-- **Analytics / Reflect (W4 #578):** today minutes, 7-day hours (free), current/best streak (UTC), mode breakdown bars, recent sessions + empty-state; **6 FREE achievements** (horizontal progress cards from local sessions; Early Bird = StartedAt hour &lt; 07:00 UTC); **Weekly Review** (Mon–Sun UTC vs previous week) + **Monthly Review** (calendar month UTC) with hours/sessions/top mode/trend — premium details, free locked teaser → Paywall
-- **Soundscapes (W3 #577):** EN catalog (4 free + 3 premium); packaged placeholder loop mp3s under `Assets/Soundscapes/`; `WindowsMediaPlayerService` loop + ~500ms fade; premium gate → Paywall; missing-asset status (no crash); `SoundscapeSessionCoordinator` auto-play on focus work / pause on break / stop on session end; Settings `EnableSoundscapes` + `AutoPlaySoundscapeOnFocus`; preferred track id; Focus chip “Soundscape: …”
-- **Auth (W10 #584):** PasswordVault token store; Account login/register/logout; nested token parse + refresh; register auto-sign-in when tokens present; email validation; offline vs signed-in labels; busy-disable; LastSyncAt + LastError surfaces; free/local copy: “Cloud sync needs Everywhere. Local data always works.”
-- **Sync (W10 #584):** local-first push of unsynced sessions via **wrapped** `SessionSyncRequest` (not raw array) with `FocusModeSyncMapper` + server DTO mapping; pull sessions from POST response and `GET /sync/full`; SQLite upsert LWW by elapsed; `X-Device-ID` + `LastSyncAtUtc` on UserSettings; 403 → Everywhere subscription message; subscription status pull. **Residual:** bidirectional task/settings sync
-- **Commerce / Paywall (W11 #585):** `IStoreCommerceService` + `CommerceResult`/`LastError`/`RestorePurchasesAsync`; Core free default + backend merge; `WindowsStoreCommerceService` StoreContext license scan + `RequestPurchaseAsync` with `InitializeWithWindow`, honest cancel/network/identity messages; tier merge prefers Everywhere &gt; Pepinillo+ &gt; Free; Paywall restore CTA, busy disable, tier·source label, manage-in-Store link, Pepinillo+ one-time badge; post-purchase `IEntitlementService.ApplyStatus` refreshes gates. **Residual:** Partner Center SKUs / sandbox proof (#568); Windows receipt verify not on backend
-- **Export + streak protection (W6 #580):** `IExportService` / `ExportService` — sessions CSV (Id, Mode, StartedAtUtc, CompletedAtUtc, ElapsedSeconds, TargetDurationSeconds, JournalNote, EnergyRating, TaskItemId; UTF-8 BOM) + simple multipage PDF 1.4 text (no NuGet); `IEntitlementService.CanExport` = IsPremium; Analytics Export CSV/PDF buttons → WinUI `FileSavePicker` + `InitializeWithWindow`; free → Paywall. Streak: `UserSettings.StreakProtectionWeekStartUtc` + `StreakProtectionUsesThisWeek` (EF migration); `IStreakProtectionService` 1 skip/ISO week; `GetStreaksAsync` auto-bridges one missing day/week for premium and consumes skip; free no bridge; Analytics status caption.
-- **Onboarding (W7 #581):** first-run 5-step guide (`OnboardingViewModel` + `OnboardingPage`) — Welcome → Modes (Pomodoro/Stopwatch free, Flowtime/Time Block Plus note) → Desktop power (tray, Win+Shift+P/S/M, mini timer) → Account teaser → Done; Skip/Finish set `UserSettings.HasCompletedOnboarding` + optional `PreferredFocusMode` (EF migration); MainWindow gates launch when incomplete and hides NavView pane; Settings “Show welcome guide” replay; English UI + a11y titles/Tab order; Focus applies preferred mode when idle/entitled.
-- **Mode Intelligence (W5 #579):** `IModeIntelligenceService` / `ModeIntelligenceService` — task-linked scoring (min 3 completed, completionRate×0.6 + durationNorm×0.4, confidence ≥0.7, margin ≥0.1); energy-level path (min 5); **global time-of-day fallback** (last 30d UTC, prefer hour ±2 when ≥5); Pepinillo+ Focus banner (reason + Apply + Dismiss); free locked golden teaser “Upgrade for Mode Intelligence” → Paywall; no cloud AI / calendar.
-- **Localization (W8 #582):** in-memory `LocalizationService` full EN/ES/PT catalog for primary surfaces (nav shell, Focus, Tasks, Analytics, Soundscapes, Account, Paywall, Settings, Onboarding, Common); professional neutral ES/PT; ViewModels wire `GetString`; Settings note “Language applies to screens when reopened”; shell nav re-labels on save. **Residual:** optional WinUI `.resw` wrapper later; some secondary XAML copy still English
-- **Accessibility + keyboard (W15 #589):** English `AutomationProperties.Name` (and HelpText where useful) on Focus modes/Start/Pause/Stop/Skip/Mini/task link/journal, Tasks filters/add/complete/delete/empty CTA, Paywall buy/subscribe/restore/manage Store, Settings toggles/hotkeys/Save, Analytics export CSV/PDF + review upgrade + achievements, Account email/password/auth/sync, Soundscapes volume/play/stop, Mini timer elapsed (`LiveSetting=Polite` on Focus + mini timer); page accelerators Ctrl+Enter start/resume, Ctrl+Space pause, Ctrl+N new task; Settings caption documents accelerators (EN/ES/PT); ThemeResource text on cards/badges for HC; Core `A11yNames` + unit test; smoke `windows/store/A11Y_SMOKE.md` + cert §7. **Residual:** Narrator/HC/200% smoke on real Windows (G8)
-- **Multi-monitor + shell excellence (W14 #588):** `UserSettings.MiniTimerX/Y/Width/Height` (nullable, EF `AddMiniTimerBounds`); `MiniTimerController` restore/save + off-screen clamp via `MiniTimerPlacement` + `DisplayArea` (never crash on Move); Jump List Start Pomodoro / Open Tasks / Pause-Resume / Mini (`JumpListService` + Core `JumpListArgumentParser`); cold-start args pending until `MainWindow` shell ready; tray tooltip `status · mm:ss · task` truncated (~120). **Residual:** multi-monitor WinUI smoke; optional single-instance warm-start redirect; Jump List may no-op unpackaged
-- **P1 desktop power:** tray, mini-timer, hotkeys, toasts, Focus Assist honest status
-- **P1 desktop power v2 (W9 #583):** toast action buttons (Pause/Resume/Stop/Skip) + `NotificationInvoked`; `LaunchAtWindowsStartup` (StartupTask / HKCU Run); hotkey rebind UI + `HotkeyChordParser` + `RefreshFromSettings`; Focus Assist intent + diagnostic status (never fake OS DND)
-- **P3 packaging:** Store/tile/splash logos; `Directory.Build.props` version; MSIX pack + dev-cert scripts; CI pack artifact; listing/IAP/cert/runbook docs under `windows/store/`
-- Core unit tests: green (includes theme entitlement + Reflect W4 + W9 + W10 auth/sync mapper, wrapped body, push/pull, register auto-login)
-- Manifest: `internetClient` + `runFullTrust` + `windows.startupTask` (PepinilloStartup)
+```
+Plan → Focus → Complete → Reflect
+```
 
-### Missing (blocks full product / live Store)
+Primary pillars:
 
-**Excellence feature code (W0–W15) is merged.** Only ops remain for launch certainty:
+## Focus
 
-| Blocker | Issue | Action |
-| ------- | ----- | ------ |
-| **WinUI hardware smoke** | **#575** | Run `windows/store/LAUNCH_CHECKLIST.md` Phase B + `A11Y_SMOKE.md` on Windows 10/11 |
-| **Store / Partner Center** | **#568** | Screenshots, production publisher CN, IAP SKUs (D1), Internal flight |
-| **Licensed soundscape audio** | (post-#577) | Replace placeholder mp3s under `Assets/Soundscapes/` before public Store |
-| **Optional residuals** | — | Task bi-sync; `.resw`; SortOrder reorder; external calendar; single-instance Jump List; Fluent depth polish |
+Helping users enter meaningful work sessions with minimal friction.
 
-### Pending Windows (priority bands)
+Supported methods:
 
-| Band | Goal | Status |
-| ---- | ---- | ------ |
-| **P0–P2 + excellence W0–W15** | Full product surface (focus, tasks, calendar, reflect, audio, auth/sync, commerce, a11y, i18n, shell) | **Merged to main** |
-| **#575** | Hardware WinUI smoke + quality bar | **Open** — run on Windows 10/11 |
-| **#568 / P3** | Partner Center, IAP sandbox, Internal flight | **Open** — Store ops |
+- Pomodoro
+- Flowtime
+- Time Block
+- Stopwatch
 
-**Pricing (D1 resolved):** Pepinillo+ Windows **$9.99** durable (platform-scoped); Everywhere **$4.99/mo · $34.99/yr** (match global mobile). Launch path: [`windows/store/LAUNCH_CHECKLIST.md`](../windows/store/LAUNCH_CHECKLIST.md) · issue [#568](https://github.com/tiagofur/pepinillo_nativo/issues/568).
+## Plan
+
+Tasks exist to support focused execution.
+
+Pepinillo is not intended to become a complete project management platform.
+
+## Reflect
+
+Analytics and reviews help users understand their work patterns.
 
 ---
 
-## 4. Detailed Parity Matrix
+# 5. Platform Decisions
 
-### Focus Engine
+## Active
 
-| Feature                            | iOS              | Android               | Notes                                  |
-| ---------------------------------- | ---------------- | --------------------- | -------------------------------------- |
-| FocusEngine (core engine)          | ✅               | ✅                    | Swift Actor vs Kotlin coroutines       |
-| Pomodoro Strategy                  | ✅               | ✅                    |                                        |
-| Flowtime Strategy                  | ✅               | ✅                    |                                        |
-| TimeBlock Strategy                 | ✅               | ✅                    |                                        |
-| Stopwatch Strategy                 | ✅               | ✅                    |                                        |
-| Session journaling                 | ✅               | ✅                    |                                        |
-| Task linking                       | ✅               | ✅                    |                                        |
-| ADHD-friendly breaks               | ✅               | ✅                    |                                        |
-| Foreground Service / Live Activity | ✅ Live Activity | ✅ Foreground Service | Different mechanisms, same user outcome |
-| Dynamic Island                     | ✅               | N/A                   | iOS only                               |
+- Android
+- iOS
+- watchOS
+- Wear OS
+- Backend services required for production functionality
 
-### Tasks
-
-| Feature                            | iOS           | Android | Notes                                           |
-| ---------------------------------- | ------------- | ------- | ----------------------------------------------- |
-| Basic CRUD                         | ✅            | ✅      |                                                 |
-| Drag-to-reorder                    | ✅            | ⬜      | Android reorder is not implemented              |
-| Subtasks                           | ✅            | ✅      |                                                 |
-| Priority levels                    | ✅            | ✅      |                                                 |
-| Energy levels (deep/shallow/admin) | ✅            | ✅      |                                                 |
-| Energy batching UI                 | ✅            | ✅      | Energy grouping by level + time-of-day suggestion |
-| Recurring tasks                    | ✅ iCal RRULE | ✅      | iOS uses iCalendar format                        |
-| Estimated/completed pomodoros      | ✅            | ✅      |                                                 |
-| Apple Reminders import             | ✅            | N/A     | iOS only                                        |
-| Google Tasks import                | N/A           | ✅      | Android only                                    |
-
-### Analytics
-
-| Feature                       | iOS                    | Android                 | Notes                                    |
-| ----------------------------- | ---------------------- | ----------------------- | ---------------------------------------- |
-| Dashboard with charts         | ✅ SwiftCharts         | ✅ Vico                 |                                          |
-| 7-day / 30-day / 1-year views | ✅                     | ✅                      |                                          |
-| Mode breakdown                | ✅                     | ✅                      |                                          |
-| Achievements                  | ✅ 6 types             | ✅                      |                                          |
-| Weekly Review                 | ✅                     | ✅                      |                                          |
-| Monthly Review                | ✅                     | ✅                      |                                          |
-| AI Reports                    | ✅ Apple FM + fallback | ✅ On-device + fallback |                                          |
-| Per-task drill-down           | ✅                     | ⬜                      | Android does not have per-task drill-down |
-
-### Ecosystem
-
-| Feature                              | iOS                                               | Android                 | Notes                                                    |
-| ------------------------------------ | ------------------------------------------------- | ----------------------- | -------------------------------------------------------- |
-| Watch/Wear app (timer)               | ✅ watchOS                                        | ✅ Wear OS              |                                                          |
-| Watch/Wear tasks                     | ✅                                                | ✅                      |                                                          |
-| Watch/Wear dashboard/stats           | ✅                                                | ✅                      |                                                          |
-| Watch/Wear complications (enhanced)  | ✅ Enhanced (live countdown, progress, relevance) | ✅                      | Both platforms have rich complications                   |
-| Wear Focus Timer Tile (enhanced)     | N/A                                               | ✅                      | Progress arc, phase label, session counter, linked task |
-| Wear Tasks Tile                      | N/A                                               | ✅                      | Top 4 tasks with energy emoji + pomodoro progress       |
-| watchOS Tasks Complication           | ✅                                                | N/A                     | accessoryRectangular, accessoryCircular, accessoryCorner |
-| watchOS Smart Stack widgets          | ✅ Enhanced (live countdown, relevance scoring)   | N/A                     | Rectangular, circular, corner complications              |
-| Watch-Phone sync                     | ✅ WatchConnectivity (transport fix 2026-06-11)   | ✅ Data Layer           | iOS: updateApplicationContext/transferUserInfo split; complications use app group UserDefaults |
-| Home Screen widgets                  | ✅                                                | ✅ Glance               |                                                          |
-| Lock Screen widget                   | ✅                                                | ✅ Android 14+          |                                                          |
-| Live Activity / Ongoing notification | ✅ Live Activity + DI                             | ✅ Foreground Service   |                                                          |
-| Quick Settings Tile                  | N/A                                               | ✅                      | Android only                                             |
-| Control Center widget                | ✅ iOS 18+                                        | N/A                     | iOS only                                                 |
-| Siri / Google Assistant              | ✅ App Intents (3 langs)                          | ✅ App Actions (3 BIIs) |                                                          |
-| Spotlight / Search indexing          | ✅                                                | ⬜                      | Android does not have search indexing                    |
-| iPad layouts                         | ⬜                                                | N/A                     | Planned but not implemented                              |
-| Tablet/foldable layouts              | N/A                                               | ✅                      | WindowSizeClass + hinge avoidance                        |
-| macOS target                         | ⬜                                                | N/A                     | Planned but not implemented                              |
-| Web companion                        | ⬜ (approved plan)                                | ⬜ (approved plan)      | [PRD/14](14_WEB_CLIENT_DECISION_BRIEF.md); Free local + Everywhere; not marketed until ship |
-
-### Integrations
-
-| Feature                           | iOS                              | Android            | Notes                                  |
-| --------------------------------- | -------------------------------- | ------------------ | -------------------------------------- |
-| Health (Mindful Minutes/Sessions) | ✅ HealthKit                     | ✅ Health Connect  |                                        |
-| Calendar integration              | ✅ Apple Calendar (EventKit)     | ✅ Google Calendar |                                        |
-| System Focus Mode / DND           | ✅ FocusFilterIntent             | ✅ DndManager      |                                        |
-| Soundscapes                       | ✅ AVAudioPlayer (4 soundscapes) | ⬜ Not implemented | Android missing; iOS has 4 functional  |
-| Mode Intelligence                 | ✅                               | ✅                 |                                        |
-
-### Auth and Sync
-
-| Feature                   | iOS                   | Android                                           | Notes                                                  |
-| ------------------------- | --------------------- | ------------------------------------------------- | ------------------------------------------------------ |
-| Auth                      | ✅ Sign in with Apple | ✅ JWT + Go backend                              |                                                        |
-| Anonymous user support    | ✅ IdentityClient     | ✅ IdentityManager state machine                 | Both: full offline use without account                 |
-| Sync                      | ✅ CloudKit + Backend | ✅ Room + SyncEngine + WorkManager + WebSocket   | Commercial split now distinguishes Apple-local sync from Everywhere backend sync |
-| Settings sync             | ✅ PreferenceDirtyTracker (17 keys, per-key LWW) | ✅ SettingsSyncEngine (17 keys, per-key LWW)     | Both: bidirectional via user_preferences table |
-| Batch session sync        | ✅ SyncClient.syncSessions() | ✅ POST /sync/sessions                       | Both: replaces individual POSTs                        |
-| Initial upload            | ✅ SyncClient.initialUpload() | ✅ POST /sync/initial-upload                    | Both: atomic upload on anonymous-to-registered         |
-| New device full sync      | ✅ SyncClient.performInitialSync() (cursor) | ✅ GET /sync/full (cursor pagination)  | Both: cursor-based pagination                          |
-| Real-time WebSocket sync  | ✅ WebSocketClient (URLSessionWebSocketTask) | ✅ SyncWebSocketClient + SyncLifecycleObserver | Both: notification-only, triggers HTTP sync        |
-| Data merge dialog         | ✅ DataMergeView (SwiftUI sheet) | ✅ DataMergeDialog composable            | Both: upload local vs download cloud choice            |
-| Offline support           | ✅                    | ✅ dirty-flag + last-write-wins                   |                                                        |
-
-### Billing
-
-| Feature                             | iOS                                | Android                                 | Notes                                                    |
-| ----------------------------------- | ---------------------------------- | --------------------------------------- | -------------------------------------------------------- |
-| Billing SDK                         | ✅ RevenueCat SDK v5+ (StoreKit 2) | ✅ RevenueCat SDK v8.10.0 (Purchases)   | Core cross-platform billing parity established           |
-| Paywall UI                          | ✅                                 | ✅                                      | Available on both platforms                              |
-| Feature gating                      | ✅ Legacy gating enforced          | ⚠️ Partial                              | Next step is capability-based gating for Pepinillo+ vs Everywhere/AI+ |
-| Products (current runtime)          | ✅ monthly/annual/lifetime         | ✅ monthly/annual/lifetime              | Legacy single-tier model still configured                |
-| Products (target rollout)           | 📋 Pepinillo+ + Everywhere/AI+     | 📋 Everywhere/AI+ monthly/annual        | Approved commercial direction (v3.1, 2026-04-22). iOS code aligned; RC + ASC config pending |
-| Entitlements verification           | ✅ RevenueCat entitlements (`pro`) | ✅ RevenueCat entitlements (`premium`)  | Naming drift still needs harmonization and capability split |
-| AI credit ledger                    | ⬜                                  | ⬜                                       | Backend work not started                                 |
-
-### Design and Accessibility
-
-| Feature                                 | iOS                       | Android                   | Notes                                         |
-| --------------------------------------- | ------------------------- | ------------------------- | --------------------------------------------- |
-| Theming                                 | ✅ 4 themes + iOS 26 system glass | ✅ 4 themes + Material You | Strong parity baseline                        |
-| Theme picker (horizontal scroll)        | ✅                        | ✅                        | Available on both platforms                   |
-| Appearance selector (Light/Dark/System) | ✅                        | ✅                        |                                               |
-| Focus mode colors (red/purple/green)    | ✅                        | ✅                        | Consistent on both platforms                  |
-| Wear OS / watchOS theme sync            | ✅ WatchConnectivity (#546) | ✅ Data Layer             | Phone → watch on both platforms               |
-| Glassmorphism                           | ✅                        | ⬜                        | iOS only                                      |
-| Haptic feedback                         | ✅                        | ⬜                        | Android haptics not fully implemented         |
-| Reduce Motion                           | ✅                        | ⬜                        |                                               |
-| VoiceOver / TalkBack                    | ✅                        | ✅                        |                                               |
-| Dynamic Type / Font scaling             | ✅                        | ✅                        |                                               |
-| Shimmer loading                         | ⬜                        | ✅                        | Android only                                  |
-| Localization (EN, ES, PT)               | ✅                        | ✅                        |                                               |
-
----
-
-## 5. Current Stack
+## Paused
 
 ### Windows
 
-| Layer | Technology | Notes |
-| ----- | ---------- | ----- |
-| Language | C# / .NET 9 | |
-| UI | WinUI 3 + Windows App SDK 1.6 | Fluent NavigationView shell |
-| Architecture | MVVM (`CommunityToolkit.Mvvm`) | DI wired (`AddPepinilloCore` + WinUI overrides) |
-| Persistence | EF Core SQLite | Local-first target |
-| Desktop | H.NotifyIcon, Compact Overlay, hotkeys, toasts | **P1 coded** (Focus Assist best-effort) |
-| Commerce | `Windows.Services.Store` | StoreContext path + free/backend fallback; D1 prices resolved |
-| Packaging | MSIX | Logos present; dev publisher `CN=PepinilloDev`; pack scripts |
-| CI | GitHub Actions `windows-build.yml` | Build + tests + MSIX pack artifact |
+Status: Archived exploration.
 
-### iOS
+Reason:
 
-| Layer           | Technology                        | Version   | Notes                                             |
-| --------------- | --------------------------------- | --------- | ------------------------------------------------- |
-| Language        | Swift                             | 6         |                                                   |
-| Architecture    | TCA (The Composable Architecture) | >= 1.17   |                                                   |
-| Persistence     | SwiftData                         | iOS 17+   |                                                   |
-| Sync            | CloudKit                          | native    | Free, transparent                                 |
-| UI              | SwiftUI                           | iOS 17+   |                                                   |
-| Widgets         | WidgetKit                         | iOS 17+   | Home + Lock Screen                                |
-| Live Activities | ActivityKit                       | iOS 16.1+ | + Dynamic Island                                  |
-| Watch           | WatchConnectivity                 | watchOS 10+ |                                                 |
-| Intents         | App Intents                       | iOS 17+   | 3 languages                                       |
-| Health          | HealthKit                         | iOS 17+   | Mindful Minutes                                   |
-| Billing         | RevenueCat SDK v5+                | iOS 17+   | Wraps StoreKit 2, 3 products, entitlement: `pro`  |
-| Audio           | AVAudioPlayer                     | native    | Soundscapes                                       |
+The implementation validated technical feasibility, but current business validation must happen on mobile first.
 
-### Android
+Resume criteria:
 
-| Layer              | Technology                               | Version        | Notes                                                          |
-| ------------------ | ---------------------------------------- | -------------- | -------------------------------------------------------------- |
-| Language           | Kotlin                                   | 2.0.21         | Limited by Hilt 2.52 (no Kotlin 2.1.x metadata support)       |
-| KSP                | ksp                                      | 2.0.21-1.0.28  | Must match Kotlin                                              |
-| Build              | AGP                                      | 8.10.0         | Gradle 8.14.3                                                  |
-| UI                 | Jetpack Compose + Material 3             | BOM 2025.03.00 |                                                                |
-| Architecture       | Circuit (MVI)                            | 0.24.0         | Manual wiring in AppModule (without `@CircuitInject` KSP)     |
-| DI                 | Hilt                                     | 2.52           | `@AssistedInject` for Circuit Presenters                       |
-| Persistence        | Room                                     | 2.7.0          | KSP, exportSchema=true                                         |
-| Networking         | Ktor                                     | 3.1.0          | OkHttp engine                                                  |
-| Widgets            | Glance                                   | 1.1.1          | PreferencesGlanceStateDefinition                               |
-| Sync               | WorkManager                              | 2.10.0         | hilt-work 1.2.0                                                |
-| Charts             | Vico                                     | 1.14.0         | compose-m3                                                     |
-| Audio              | Media3/ExoPlayer                         | 1.5.0          | Soundscapes                                                    |
-| Billing            | RevenueCat Purchases SDK                 | v8.10.0        | Fully integrated with shared `premium` entitlement             |
-| Health             | Health Connect                           | 1.1.0-rc01     | Experimental API                                               |
-| Adaptive           | material3-window-size-class              | via BOM        | WindowWidthSizeClass                                           |
-| Foldable           | androidx.window                          | 1.3.0          | FoldingFeature + hinge avoidance                               |
-| Wear Tiles         | Tiles 1.4.1 + ProtoLayout Material 1.2.1 | 1.4.1          | Enhanced FocusTileService + TasksTileService                  |
-| Wear Complications | watchface-complications                  | 1.2.1          | SuspendingComplicationDataSourceService                        |
-| Wear Data Layer    | play-services-wearable                   | 18.2.0         | DataClient + MessageClient                                     |
-| Firebase           | --                                       | --             | Plugins commented out; enable with `google-services.json`      |
+- Proven mobile traction.
+- User demand.
+- Clear business justification.
+
+### Web Companion
+
+Status: Archived exploration.
+
+Reason:
+
+The companion experience was technically explored, but browser access is not a current growth priority.
+
+Resume criteria:
+
+- User demand.
+- Sync maturity.
+- Clear acquisition or retention benefit.
 
 ---
 
-## 6. Backend (Go)
+# 6. Monetization Direction
 
-### Architecture
+Current model:
 
-- **Pattern:** Hexagonal (ports and adapters)
-- **Language:** Go 1.24
-- **HTTP Framework:** Fiber v2
-- **ORM / DB:** GORM + PostgreSQL
-- **Directory:** `backend/`
+## Pepinillo+
 
-### Backend Status
+One-time purchase.
 
-| Component                           | Status             | Detail                                                                          |
-| ----------------------------------- | ------------------ | ------------------------------------------------------------------------------- |
-| Complete REST API                   | ✅ Implemented     | Auth (email/password), tasks CRUD + sync, sessions, stats, user profile        |
-| Billing verification (both stores)  | ✅ Implemented     | App Store and Google Play receipt verification via RevenueCat                   |
-| RevenueCat webhook endpoint         | ✅ Implemented     | `POST /api/v1/webhooks/revenuecat` for subscription lifecycle events            |
-| RevenueCat REST API client          | ✅ Implemented     | Server-side client for entitlement verification                                 |
-| Direct App Store/Play verification  | ✅ Implemented     | Fallback verification when RevenueCat is unavailable                            |
-| Subscription lifecycle events       | ✅ Implemented     | purchase, renewal, cancellation, expiration, billing issues                     |
-| Push notifications                  | ✅ Implemented     | APNS (iOS) + FCM (Android)                                                      |
-| WebSocket                           | ✅ Implemented     | Real-time communication channel                                                 |
-| AI Insights                         | ✅ Implemented     | Gemini integration for productivity reports                                     |
-| OAuth social login                  | 🔄 Partial         | Sign in with Apple is implemented on iOS + backend; Android Google Sign-In/provider linking rollout is still pending |
-| Real-time multi-device coordination | ❌ Not implemented | WebSocket exists but cross-device coordination logic is still missing           |
-| Deployment                          | ❌ Not deployed    | Needs cloud hosting (Railway/Fly.io/VPS) + PostgreSQL + Redis                  |
+Provides premium local capabilities.
 
-### Implemented Endpoints
+## Everywhere / AI+
 
-| Endpoint                         | Method     | Description                                              |
-| -------------------------------- | ---------- | -------------------------------------------------------- |
-| `/api/v1/auth/register`          | POST       | User registration (email/password)                       |
-| `/api/v1/auth/login`             | POST       | JWT login                                                |
-| `/api/v1/tasks`                  | GET/POST   | List and create tasks                                    |
-| `/api/v1/tasks/:id`              | PUT/DELETE | Update and delete tasks                                  |
-| `/api/v1/tasks/sync`             | POST       | Task synchronization with dirty flags                    |
-| `/api/v1/sessions`               | GET/POST   | List and create focus sessions                           |
-| `/api/v1/stats`                  | GET        | Productivity stats                                       |
-| `/api/v1/user`                   | GET/PUT    | User profile                                             |
-| `/api/v1/billing/verify`         | POST       | Receipt verification (App Store + Google Play)           |
-| `/api/v1/notifications/register` | POST       | Device token registration (APNS/FCM)                     |
-| `/ws`                            | WebSocket  | Real-time communication channel                          |
+Subscription model for recurring-cost capabilities such as:
 
-### Client Integration
+- cloud features;
+- advanced AI capabilities;
+- future cross-device services.
 
-| Platform | Status         | Detail                                                             |
-| -------- | -------------- | ------------------------------------------------------------------ |
-| Android  | 🔄 Partial     | Auth client + SyncEngine exist and connect to backend endpoints    |
-| iOS      | ✅ Implemented | SyncClient + IdentityClient + WebSocketClient + APIClient (TCA)   |
-| Wear OS  | 🔄 Partial     | Inherits Android phone sync via Data Layer                         |
-| watchOS  | 🔄 Partial     | Inherits iOS phone state via WatchConnectivity (sync via phone)    |
-
-### Applied Migrations
-
-| Migration | Description                                       |
-| --------- | ------------------------------------------------- |
-| 000001    | Initial tables (users, tasks, sessions)          |
-| 000002    | Base fields                                       |
-| 000003    | `energy_level` + recurrence fields in tasks       |
-| 000004    | Device tokens for push notifications              |
-
-### Pending Backend Work (priority order)
-
-| #   | Task                                                                  | Priority | Dependencies       | Estimate |
-| --- | --------------------------------------------------------------------- | -------- | ------------------ | -------- |
-| 1   | Deploy backend to cloud hosting                                       | P0       | None               | 4-8h     |
-| 2   | Complete remaining OAuth rollout (Google provider, account linking hardening) | P0 | #1 (deployment) | 8-12h |
-| 3   | Android: add Google Sign-In via Credential Manager                    | P0       | #2 (OAuth rollout) | 6-8h     |
-| 4   | ~~iOS: create API client, connect auth + sync to backend~~            | ✅ DONE  | #2 (OAuth backend) | Done     |
-| 5   | Improve sync engine (WebSocket real-time, bidirectional multi-device) | P1       | #1 (deployment)    | 12-16h   |
-| 6   | Monetization v2 capability split (`local_premium`, sync, AI credits)  | P0       | #1                 | 8-12h    |
-| 7   | AI credit ledger + monthly reset policy                               | P1       | #1, #6             | 10-14h   |
-| 8   | Cross-platform subscription verification                              | P1       | #1, #4, #6         | 8-12h    |
-| 9   | Account/profile parity refinement (both platforms)                    | P1       | #2, #3, #4, #8     | 8-12h    |
+The monetization strategy should be validated through real user behavior before expanding complexity.
 
 ---
 
-## 7. Production Audit Fixes (2026-03-20)
+# 7. Important Product Rules
 
-The following issues were identified during a production readiness audit and have been fixed:
+Before implementing major features, evaluate:
 
-### Monetization Fixes
+- Does this improve activation?
+- Does this improve retention?
+- Does this improve monetization?
+- Is there evidence users need it?
 
-| Fix                               | Platform | Details                                                                                                     |
-| --------------------------------- | -------- | ----------------------------------------------------------------------------------------------------------- |
-| Subtasks & recurrence PRO gating  | Android  | `FeatureGate` injected into `TaskDetailViewModel`; UI shows PRO badges and disables inputs for free users |
-| `acknowledgePurchase` retry logic | Android  | Exponential backoff (3 retries), persistent fallback to SharedPreferences, retry on next app launch       |
-| Subscription grace period buffer  | iOS      | 3-day buffer added before revoking access after subscription expiry                                         |
-
-### Stability Fixes
-
-| Fix                                   | Platform | Details                                                                                 |
-| ------------------------------------- | -------- | --------------------------------------------------------------------------------------- |
-| Timer crash recovery for Paused state | Android  | Timer now saves `Paused` state (previously only saved `Running`/`WaitingForNext`)      |
-| POST_NOTIFICATIONS permission check   | Android  | `FocusTimerService` checks permission before calling `notify()` on Android 13+ (API 33) |
-
-### Quality Fixes
-
-| Fix                              | Platform | Details                                                                                     |
-| -------------------------------- | -------- | ------------------------------------------------------------------------------------------- |
-| Notification string localization | iOS      | 12 notification strings now use `String(localized:)` instead of hardcoded English          |
-| Notification string localization | Android  | 8 strings in `FocusTimerService` + `DailyReminderWorker` now use `getString(R.string.xxx)` |
-| Wear OS data sync retry          | Wear OS  | Data layer sync now retries failed pushes up to 2 times with 1-second delay                |
-
-### Remaining Items (Not Yet Fixed)
-
-| Item                         | Platform | Details                                                 |
-| ---------------------------- | -------- | ------------------------------------------------------- |
-| Live Activity is a stub      | iOS      | ✅ Fully wired to TCA with 4-mode Dynamic Island UIs    |
-| SwiftData migration strategy | iOS      | ✅ SchemaV4 migration implemented with VersionedSchema  |
-| Soundscapes not implemented  | Android  | iOS has 4 functional soundscapes; Android still missing |
-| Accessibility labels         | iOS      | 29 labels currently; could use more coverage            |
+If the answer is unclear, document the idea but avoid prioritizing implementation.
 
 ---
 
-## 8. Sync Engine Fixes (2026-03-22)
+# 8. Documentation Rules
 
-Sync implementation enhancements to improve cross-platform reliability and data completeness.
+Source of truth:
 
-### Android SyncEngine Fixes
+- `PRD/` → product requirements, roadmap and official status.
+- `docs/strategy/` → strategic context and decision reasoning.
+- `docs/` → technical documentation, guides and operational notes.
 
-| Fix                       | Details                                                                                          |
-| ------------------------- | ------------------------------------------------------------------------------------------------ |
-| Subtasks in sync DTOs     | Subtasks now included in task sync payloads (previously omitted, breaking subtask sync)         |
-| PomodoroSessionDto userId | Now populates `userId` from AuthStore (previously empty/null)                                   |
-| PomodoroSessionDto taskId | Now resolves `linkedTaskId` -> `serverId` before sending (previously empty/null)                |
-| Task soft-delete for sync | Changed `deleteTaskById` (hard-delete) to `softDelete` in TaskRepository for sync compatibility |
-
-### iOS SyncClient Fixes
-
-| Fix                   | Details                                                        |
-| --------------------- | -------------------------------------------------------------- |
-| Subtasks in sync DTOs | Subtask inclusion fixed for cross-platform parity with Android |
-| userId population     | Session sync now properly populates `userId` field            |
-
-### Remaining Sync Gaps
-
-| Gap               | Platform(s) | Impact                                                      | Priority |
-| ----------------- | ----------- | ----------------------------------------------------------- | -------- |
-| ~~Session sync stub~~ | ~~iOS~~ | ~~Session data not synced to backend~~ (FIXED: SyncClient.syncSessions) | ✅ Done  |
-| Focus config sync | Both        | Focus configs (`GET/PUT /pomodoro/config`) not implemented | P2       |
-| Daily stats sync  | Both        | No sync fields defined on DailyStats entity                 | P2       |
+Avoid duplicated product status documents.
 
 ---
 
-## 9. Watch Complication Fixes & Task Parity (2026-03-24)
+# 9. Current Strategic Statement
 
-### Pomodoro Live Countdown Fixes
+Pepinillo already has a strong technical foundation.
 
-| Fix                                  | Platform | Details                                                                                  |
-| ------------------------------------ | -------- | ---------------------------------------------------------------------------------------- |
-| Tile countdown updates live          | Wear OS  | Pomodoro timer tile was stuck/static; now updates countdown in real time                 |
-| Complication countdown at progress=0 | watchOS  | Pomodoro complication now shows live countdown even when progress=0 (timer just started) |
+The next challenge is not building more software. The next challenge is proving product value with real users.
 
-### watchOS Tasks Complication (New)
+Technology enables the experience.
 
-| Complication Family  | Content                               |
-| -------------------- | ------------------------------------- |
-| accessoryRectangular | Top task list with completion status  |
-| accessoryCircular    | Completed tasks count                 |
-| accessoryCorner      | Task count badge                      |
-
-**Cross-platform parity update:** task complication/tile is now available on both Wear OS (`TasksTileService`) and watchOS (`TasksComplication`). Pomodoro live countdown is verified on both platforms.
-
----
-
-## 10. WatchConnectivity Transport Fix & Android Parity Ports (2026-06-11) ✅
-
-**Branch:** `fix/ios-release-config-blockers`
-
-### iOS/watchOS — WatchConnectivity Transport Overhaul (commits 76da584, f564391)
-
-Critical bug: all phone→watch updates (session state, stats, dashboard, tasks) were sent via `sendMessage`, which is silently dropped when the watch app is backgrounded. This caused complications and tiles to show stale data.
-
-**Fix — transport split by message type:**
-
-| Message type | Transport now used | Reason |
-|---|---|---|
-| Session state / stats / dashboard | `updateApplicationContext` | Background-safe; watch picks it up on next activation |
-| Task list updates | `transferUserInfo` | Queued FIFO delivery; guaranteed even when watch is backgrounded |
-| Low-latency control (pause/stop while reachable) | `sendMessage` | Kept as fast path only when watch is reachable |
-
-**Additional fixes in the same branch:**
-
-- Watch-side persistence and complication/widget providers now read from the app group UserDefaults suite (`group.com.pepinillo.app`), so complications (separate process) can read stats and tasks without relying on the main app being alive.
-- `messageStream()` converted to multicast so multiple subscribers receive the same events.
-
-**Files affected:** `ios/Domain/Clients/WatchConnectivityClient.swift`, `ios/PepinilloWatch/Features/WatchTimerFeature.swift`
-
-### Android/Wear OS — Parity Ports (commits fd659a7–db592e1)
-
-| Change | Platform | Details |
-|---|---|---|
-| Focus engine tick 10Hz → 4Hz | Android | Matches iOS; reduces battery drain during active sessions |
-| Widget reload scoped to affected class | Android | Prevents full widget reload on unrelated state changes |
-| Paywall text/CTAs scale with large font sizes | Android | Matches iOS Dynamic Type fix; WCAG compliance |
-| Streak promoted to dashboard emotional hero, deduplicated | Android | Matches iOS dashboard P4 design (streak hero at top, single source of truth) |
-| Timer ring display floor for count-up modes | Android + Wear OS | Matches iOS; prevents ring from showing 0% at session start in Stopwatch/Chrono |
-| Onboarding full-bleed color scenes + WCAG skip pill | Android | Matches iOS onboarding visual redesign; skip button meets WCAG 2.1 AA contrast |
-
-### Parity Audit Findings (no action needed)
-
-| Finding | Status |
-|---|---|
-| Android Wear connectivity (DataClient/DataItems) | Already correct — no iOS-style transport bug existed |
-| Wear complications/tiles reading from persisted SharedPreferences snapshot | Already correct — separate process data access was never broken |
-| Wear session haptics and material chips | Already at parity with iOS |
-
----
-
-## 11. Summary of Critical Gaps (updated 2026-08-03)
-
-### Windows (desktop — new platform)
-
-- P0–P2 product path **coded**; P3 packaging/docs/CI **in-repo ready**
-- Manual WinUI smoke still required on Windows
-- Microsoft Store submission still manual (Partner Center identity, live IAP, real screenshots, flights) — track #568
-- Track remaining work in [12_WINDOWS_EXECUTION_PLAN.md](12_WINDOWS_EXECUTION_PLAN.md)
-
-### Both Platforms (mobile)
-
-| Gap                          | iOS                 | Android                    | Impact                                                                               |
-| ---------------------------- | ------------------- | -------------------------- | ------------------------------------------------------------------------------------ |
-| Sync engine gaps             | ✅ Full sync impl   | ⚠️ Partial                 | iOS: full sync architecture implemented; Android: subtasks/sessions improved; daily stats sync still pending on both |
-| Feature gating not enforced  | ⚠️                  | ⚠️ Partial                 | Android: subtasks/recurrence gated. iOS + other Android features still need gating |
-| Missing backend endpoints    | Low (uses CloudKit) | High (depends on backend)  | Stats and billing verification                                                       |
-
-### iOS Only
-
-| Gap                               | Impact                     | Effort               |
-| --------------------------------- | -------------------------- | -------------------- |
-| Xcode setup (non-code)            | Blocks any build           | 2-4h manual          |
-| Outdated StoreKit prices          | Suboptimal revenue         | 1h                   |
-| iPad/macOS not implemented        | Reduces TAM                | 48h (Phase 2 roadmap) |
-
-### Android Only
-
-| Gap                           | Impact                           | Effort                    |
-| ----------------------------- | -------------------------------- | ------------------------- |
-| Firebase not configured       | No analytics or crash reporting  | 2h + `google-services.json` |
-| No CI/CD                      | No automated build               | 4-6h                      |
-| Minimal test coverage (~20)   | Regression risk                  | 15-20h                    |
-| Release keystore not generated| Blocks release                   | 1h                        |
-| OEM testing pending           | Bugs on Samsung/Xiaomi           | 20h                       |
-| Paywall UI incomplete         | Lower paid conversion            | 8-10h                     |
-| Backend CI failures           | ✅ FIXED (2026-05-14) | Resolved interface mismatches and redeclaration errors in test suite |
-
----
-
-## 12. Backend CI & Stability Hardening (2026-05-14) ✅
-
-Resolved critical compilation errors in the Go backend test suite that were blocking CI:
-
-- **Interface Parity**: Updated `fakeUserRepo` (services), `MockUserRepository` (mocks), `fakeUserRepository` (handlers), and `integrationUserRepo` (tests) to implement the missing `ConsumeAiCredit` and `RefreshAiCredits` methods required by the `UserRepository` interface.
-- **Symbol Unification**: Centralized `fakeUserRepo` in `backend/internal/services/fakes_test.go` and `fakeUserRepository` in `backend/internal/adapters/handlers/fakes_test.go`, eliminating multiple redeclaration errors across test files.
-- **Cleanup**: Removed redundant/conflicting helper functions (`strPtr`, `joseConcatSignature`) and unused imports from various test files.
-- **Verification**: Successfully ran the full backend test suite (`go test ./...`), passing all 100+ tests including services, handlers, and integration flows.
-
----
-
-## 13. iOS — Optimización de Rendimiento: Capa de Persistencia en Background (2026-06-09) ✅
-
-**Branch:** `perf/ios-startup-and-reads`
-
-Resuelto un problema de rendimiento crítico en iOS donde SwiftData leía y escribía en el **hilo principal**, congelando la UI durante segundos en el arranque y en la navegación entre tabs.
-
-### Cambios implementados
-
-| Área | Cambio | Archivos afectados |
-|------|--------|--------------------|
-| `BackgroundPersistenceActor` | Nuevo `@ModelActor` en `ios/Shared/Persistence/` que posee su propio `ModelContext` de fondo. Todo el mapeo `@Model → DTO` ocurre dentro del aislamiento del actor; ningún `@Model` escapa. `PersistenceClient.live` hace `await actor` en lugar de despachar a `MainActor`. | `ios/Shared/Persistence/` |
-| Router ownership del actor | `PersistenceStoreRouter` posee y vende el actor via caja thread-safe; lo recrea en el swap local ↔ CloudKit en `reconcile`. | `ios/Shared/Persistence/` |
-| Eliminación de N+1 en `fetchTasks` | Subtask progress se batch-fetches una sola vez en `[parentTaskID: (completed, total)]` en lugar de faultar `task.subtasks` por fila. | `ios/Domain/Clients/PersistenceClient.swift` |
-| Guardia `hasLoadedData` en `TaskListFeature` | Flag que evita re-fetch en `.onAppear` pasivos y tab switches. Reloads explícitos (store swap, cambio de día, pull-to-refresh, dismiss de detalle, fin de sesión) usan `.refresh` para bypassear la guardia. | `ios/Features/Tasks/TaskListFeature.swift` |
-| Predicados en escrituras | `saveTask` y `markSessionsSynced` usan predicate fetches en lugar de full-table scans. `AuthFeature` usa `getSessionCount()` en lugar de materializar todas las sesiones. `PlanTaskList.filteredTasks` extrae invariantes de Calendar fuera del loop por ítem. | `ios/Domain/Clients/PersistenceClient.swift`, `ios/Features/Auth/AuthFeature.swift`, `ios/Features/Tasks/TaskListView.swift` |
-
-### Estado de verificación
-
-| Check | Estado |
-|-------|--------|
-| Build (simulador) | ✅ Exitoso |
-| Tests unitarios (iOS) | ✅ Pasan |
-| Medición real en dispositivo con Instruments | ⏳ Pendiente — se recomienda medir cold start con Time Profiler en iPhone real |
-
-### Pendientes de seguimiento
-
-| Item | Prioridad | Detalle |
-|------|-----------|---------|
-| Medición cold start con Instruments | P1 | Validar mejora real en dispositivo físico (iPhone 14+). No se dispone de métricas numéricas previas al cambio. |
-| Reset de `hasLoadedData` en wipe local | LOW | Si en el futuro se agrega un path que borra datos locales (logout-wipe, reset de cuenta), ese path debe resetear `hasLoadedData = false` para forzar recarga limpia. |
-
----
-
-## 13. Judgment Day — Dashboard Refresh & Pomodoro Stats (2026-06-12) ✅
-
-Sesión de revisión adversarial dual (Judgment Day) sobre el dashboard de iOS. Android/Wear OS verificado y confirmado correcto — iOS estaba detrás y se niveló.
-
-### Correcciones aplicadas — iOS (commit `e0bb3df`, branch `feat/android-expressive-m3`)
-
-| Área | Problema | Corrección |
-|------|----------|------------|
-| `AnalyticsFeature.onAppear` | Guardia `!hasLoadedData` bloqueaba permanentemente el refresh post-sesión y el pull-to-refresh después del primer carga. El dashboard quedaba congelado hasta reiniciar la app. | Se agregó acción `.refresh` dedicada que bypasea la guardia. La finalización de sesión, el stop manual y el pull-to-refresh la usan en lugar de `.onAppear`. |
-| Persistencia Pomodoro | Solo se guardaba `FocusSessionRecord` al terminar el ciclo completo; un intervalo WORK completado era invisible durante la siguiente ronda. | Cada intervalo WORK completado persiste un `FocusSessionRecord` inmediatamente. El `sessionCompleted` final ya no duplica el guardado en modo Pomodoro. |
-| Push de stats a Watch | El push post-save enviaba solo 3 campos, zeroeando el desglose por modo en el Watch. | El push ahora incluye todos los campos del dashboard (total, sesiones, desglose por modo). |
-| UUID race al inicio de sesión | Timer-tick sintético generaba una condición de carrera con el UUID en el arranque de sesión. | Eliminado. |
-
-**Build:** exitoso (scheme "Pepinillo Dev").
-
-### Hallazgo de paridad cross-platform — Android/Wear OS (commit `945b37f`)
-
-Android y Wear OS **no tenían** los bugs de iOS: el dashboard ya es reactivo via Room Flow y ya persistía cada intervalo WORK de Pomodoro. El commit de Android corrigió tres problemas distintos descubiertos durante la misma sesión:
-
-| Área | Corrección |
-|------|------------|
-| Ventanas de estadísticas semana/mes | Las ventanas `week`/`month` estaban congeladas; ahora son reactivas. |
-| Solapamiento de días en ventana mes anterior | Corregido el cálculo de offset que incluía días del mes corriente. |
-| Etiqueta de descanso Wear OS (regresión) | La etiqueta optimista de break en Wear había regresionado; restaurada. |
-| Throttle de escritura en recovery state | La escritura del estado de recuperación del timer estaba limitada innecesariamente; corregida. |
-
-**Build:** `compileDebugKotlin` exitoso para `:app` y `:wear`.
-
-### Problemas conocidos pendientes (identificados durante la sesión, no corregidos)
-
-| Problema | Plataforma | Impacto |
-|----------|------------|---------|
-| `upsertSessionFromServer` no actualiza `DailyStats` | iOS | Sesiones sincronizadas desde el servidor pueden subcontar el streak. |
-| `actualDuration` usa elapsed local de fase | iOS | Subestima la duración de sesiones Pomodoro abandonadas a mitad de ciclo. |
-| `getSessionsForDate` usa offset fijo de 86400000 ms | Android | Edge case en el cambio horario de verano (DST-night). |
-| `recordSession` read-modify-write fuera de `@Transaction` | Android | Condición de carrera si el path de sincronización también invoca el método. |
-| Stats de Wear pueden ir un ciclo de WorkManager atrás | Wear OS | Retraso visible en la pantalla de stats después de una sesión. |
-| Gate `isPro` en stats de Wear sin fallback local | Wear OS | Pantalla bloqueada en pairings recientes sin snapshot local de `isPro`. |
-
----
-
-## 14. Judgment Day — iOS Auto-Start Settings Parity (2026-06-12) ✅
-
-Sesión de revisión adversarial dual (Judgment Day) sobre el comportamiento de transición de fase en Pomodoro. Problema raíz: iOS ignoraba los ajustes `autoStartBreaks` y `autoStartWork` y avanzaba siempre a la siguiente fase de forma automática. Android ya implementaba la gate correcta vía el estado `WaitingForNext`.
-
-### Correcciones aplicadas — iOS (commit `805b4b1`, branch `feat/android-expressive-m3`)
-
-| Área | Problema | Corrección |
-|------|----------|------------|
-| `FocusEngine` | Al completar un intervalo WORK o BREAK, el motor avanzaba sin consultar los ajustes de auto-start. | Se introduce un estado de espera ("waiting for next phase"): sin cuenta regresiva activa. El motor queda detenido hasta que el usuario o los ajustes habiliten el avance. |
-| `FocusFeature` / reducer | No existía acción ni lógica para el estado de espera. | Se agrega la acción `.startNextPhase` y el manejo del estado hold; la UI emite el CTA correspondiente ("Start break" / "Start long break" / "Start focus"). |
-| Widget intent | El intent de Resume podía ser invocado durante el hold, lo que habría contabilizado el doble de un intervalo. | Guardias añadidas en el handler del widget-intent para rechazar Resume mientras `activeSessionIsWaiting` sea verdadero. |
-| Siri intent | Mismo riesgo de doble conteo vía Siri/App Intents. | Guard simétrico añadido en el Siri intent handler. |
-| Flag cross-process `activeSessionIsWaiting` | Sin esta bandera, el widget y los intents no podían conocer el estado del motor. | Flag persistido en App Group para que widget, watchOS y Siri-intent lean el estado sin acceder al proceso principal. |
-| watchOS / widgets | Las superficies mostraban estado de running durante el hold. | Ahora consumen `activeSessionIsWaiting` para mostrar el estado de espera apropiado. |
-| Localización | Strings de CTA y estado de espera ausentes en ES/PT. | Añadidas en `Localizable.xcstrings` para EN, ES y PT. |
-
-**Build:** exitoso (scheme "Pepinillo Dev").
-
-### Rondas de hardening (Judgment Day)
-
-El fix inicial introdujo un CRITICAL en ronda 1 (el intent de widget podía double-count un intervalo Pomodoro durante el hold). Se requirieron 3 rondas de revisión adversarial hasta confirmar el cierre completo:
-
-| Ronda | Veredicto | Acción |
-|-------|-----------|--------|
-| 1 | CRITICAL (widget Resume double-count) | Guards en widget-intent + flag cross-process |
-| 2 | WARNING (Siri intent sin guard) | Guard simétrico en Siri intent |
-| 3 | PASS — sin CRITICALs ni WARNINGs | Cierre confirmado |
-
-### Estado post-fix
-
-| Plataforma | Auto-start respetado | Estado de espera en UI |
-|------------|---------------------|------------------------|
-| Android | ✅ (`WaitingForNext` state — preexistente) | ✅ |
-| iOS | ✅ (corregido, commit `805b4b1`) | ✅ CTA en FocusView |
-| watchOS | ✅ (UI implementada, commit `0200791`) | ✅ Pause/Resume ocultos; CTA phase-aware en Apple Watch |
-| Wear OS | ✅ (preexistente en Android) | ✅ |
-
----
-
-## 15. watchOS — Waiting-for-Next-Phase UI (2026-06-12) ✅
-
-La sección 14 registró el flag `activeSessionIsWaiting` en el bridge de WatchConnectivity, pero la UI del Apple Watch no estaba implementada en ese momento. Commit `0200791` (`feat(watchos): reflect waiting-for-next-phase hold on Apple Watch`, branch `feat/android-expressive-m3`) cierra esa brecha:
-
-- Durante el hold, el Apple Watch oculta los botones Pause/Resume y muestra un CTA phase-aware ("Start break" / "Start long break" / "Start focus") que arranca la fase pendiente.
-- Se añadió el campo `isWaiting` al payload de WatchConnectivity y el comando `.startNextPhase` a `WatchCommand`.
-- El teléfono empuja estado fresco al watch al entrar y salir del hold; el tick loop queda suspendido durante el hold.
-- Revisado con dual adversarial review: Judge A APPROVED; Judge B solo ítems menores no bloqueantes (flicker sub-segundo en la transición, gap pre-existente en mirror de tests).
-- **Build:** exitoso (scheme "Pepinillo Dev"). Cierra el gap registrado en `scratch/watch-waiting-gap-issue.md`.
+Focused work is the product.

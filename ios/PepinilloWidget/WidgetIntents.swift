@@ -123,6 +123,20 @@ struct StopFocusFromWidgetIntent: AppIntent {
     }
 }
 
+// MARK: - Start Focus from Tasks Widget
+
+struct StartFocusFromTasksWidgetIntent: AppIntent {
+    static let title: LocalizedStringResource = "Start Focus from Tasks"
+    static let description = IntentDescription("Start a focus session from the Tasks widget.")
+    static let openAppWhenRun: Bool = false
+
+    func perform() async throws -> some IntentResult {
+        guard TasksWidgetAccess.isCurrentUserAuthorized() else { return .result() }
+        _ = try await StartFocusFromWidgetIntent().perform()
+        return .result()
+    }
+}
+
 // MARK: - Start Focus with Task from Widget
 
 struct StartFocusWithTaskIntent: AppIntent {
@@ -140,6 +154,7 @@ struct StartFocusWithTaskIntent: AppIntent {
     }
 
     func perform() async throws -> some IntentResult {
+        guard TasksWidgetAccess.isCurrentUserAuthorized() else { return .result() }
         let selectedMode = AppGroupDefaults.widgetSelectedMode ?? "pomodoro"
         try? refreshDurationsFromSharedStore()
         let taskTitle = try? Self.taskTitle(for: taskID)
@@ -180,7 +195,7 @@ struct CompleteTaskFromWidgetIntent: AppIntent {
     }
 
     func perform() async throws -> some IntentResult {
-        guard let uuid = UUID(uuidString: taskID) else { return .result() }
+        guard let uuid = Self.authorizedTaskID(taskID) else { return .result() }
         // S7: never write SwiftData from the extension process — the app's
         // cached contexts can overwrite it (lost update). Enqueue a completion
         // command instead; the app applies it on next activation. The widget
@@ -191,5 +206,10 @@ struct CompleteTaskFromWidgetIntent: AppIntent {
         AppGroupDefaults.externalCompleteTaskID = uuid.uuidString
         WidgetCenter.shared.reloadAllTimelines()
         return .result()
+    }
+
+    static func authorizedTaskID(_ taskID: String, now: Date = Date()) -> UUID? {
+        guard TasksWidgetAccess.isCurrentUserAuthorized(now: now) else { return nil }
+        return UUID(uuidString: taskID)
     }
 }

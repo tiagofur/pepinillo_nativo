@@ -54,7 +54,7 @@ APP STORE CONNECT API list-builds RESPONSE:
     "Content-Type" = "application/json";
     Date = "Sat, 25 Apr 2026 04:07:57 GMT";
     Server = "daiquiri/5";
-    "Set-Cookie" = "dqsid=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE3NzcwOTAwNzYsImp0aSI6IkllZ2JQazFWQ3N4Tk1FZ3NKak1ZOEEifQ.idZ_ODam_JRXdrVzs95XfOX_OaxGUpLlY4kL8vJqKNA; Max-Age=1800; Expires=Sat, 25 Apr 2026 04:37:56 GMT; Path=/; Secure; HTTPOnly";
+    "Set-Cookie" = "dqsid=[REDACTED_TOKEN]; Max-Age=1800; Expires=Sat, 25 Apr 2026 04:37:56 GMT; Path=/; Secure; HTTPOnly";
     "Strict-Transport-Security" = "max-age=31536000; includeSubDomains; preload";
     "apple-originating-system" = UnknownOriginatingSystem;
     "apple-seq" = "0.0";
@@ -140,7 +140,7 @@ APP STORE CONNECT API list-buildUploads RESPONSE:
     "Content-Type" = "application/json";
     Date = "Sat, 25 Apr 2026 04:07:57 GMT";
     Server = "daiquiri/5";
-    "Set-Cookie" = "dqsid=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE3NzcwOTAwNzcsImp0aSI6IkdyeXZpWlZTa2xIVFhhTjFOaEtHSkEifQ.NyfPhYrGS4rJYbp-LxC-sXZBWFBq10Kyi0OI2R1lGKI; Max-Age=1800; Expires=Sat, 25 Apr 2026 04:37:57 GMT; Path=/; Secure; HTTPOnly";
+    "Set-Cookie" = "dqsid=[REDACTED_TOKEN]; Max-Age=1800; Expires=Sat, 25 Apr 2026 04:37:57 GMT; Path=/; Secure; HTTPOnly";
     "Strict-Transport-Security" = "max-age=31536000; includeSubDomains; preload";
     "apple-originating-system" = UnknownOriginatingSystem;
     "apple-seq" = "0.0";
@@ -263,7 +263,7 @@ APP STORE CONNECT API RESPONSE:
     "Content-Type" = "application/json";
     Date = "Sat, 25 Apr 2026 04:07:57 GMT";
     Server = "daiquiri/5";
-    "Set-Cookie" = "dqsid=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE3NzcwOTAwNzcsImp0aSI6IkdyeXZpWlZTa2xIVFhhTjFOaEtHSkEifQ.NyfPhYrGS4rJYbp-LxC-sXZBWFBq10Kyi0OI2R1lGKI; Max-Age=1800; Expires=Sat, 25 Apr 2026 04:37:57 GMT; Path=/; Secure; HTTPOnly";
+    "Set-Cookie" = "dqsid=[REDACTED_TOKEN]; Max-Age=1800; Expires=Sat, 25 Apr 2026 04:37:57 GMT; Path=/; Secure; HTTPOnly";
     "Strict-Transport-Security" = "max-age=31536000; includeSubDomains; preload";
     "apple-originating-system" = UnknownOriginatingSystem;
     "apple-seq" = "0.0";
@@ -372,7 +372,7 @@ APP STORE CONNECT API RESPONSE:
         warnings =         (
         );
     };
-    assetToken = "PurpleSource211/v4/1d/1a/af/1d1aaf6c-047c-afa8-0dd0-bff9e85b1984/96ed82c2-b2de-49ec-abfb-c14be76d7dd8";
+    assetToken = "[REDACTED_TOKEN]";
     assetType = "ASSET_SPI";
     fileName = "DTAppAnalyzerExtractorOutput-FDBA2B48-FFCE-41F6-A42B-EE30B1E57D7E.zip";
     fileSize = 18312126;
@@ -405,7 +405,7 @@ APP STORE CONNECT API RESPONSE:
         warnings =         (
         );
     };
-    assetToken = "PurpleSource211/v4/1d/1a/af/1d1aaf6c-047c-afa8-0dd0-bff9e85b1984/7898dc2a-ad0a-4ccc-95a0-dc6431ebe5bf";
+    assetToken = "[REDACTED_TOKEN]";
     assetType = "ASSET_DESCRIPTION";
     fileName = "asset-description-58DD1ADE-AECA-4F5B-AA56-2B02961DB31A.xml";
     fileSize = 1903548;
@@ -477,7 +477,7 @@ APP STORE CONNECT API list-builds RESPONSE:
     "Content-Type" = "application/json";
     Date = "Sat, 25 Apr 2026 04:08:04 GMT";
     Server = "daiquiri/5";
-    "Set-Cookie" = "dqsid=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE3NzcwOTAwODQsImp0aSI6ImRTam1rYXR4NUMzeF81MGNNSm1MbWcifQ.o2A20Nxl3ulbKhJk6SNRLShD8dL0lCaYfE5xmT9MYfI; Max-Age=1800; Expires=Sat, 25 Apr 2026 04:38:04 GMT; Path=/; Secure; HTTPOnly";
+    "Set-Cookie" = "dqsid=[REDACTED_TOKEN]; Max-Age=1800; Expires=Sat, 25 Apr 2026 04:38:04 GMT; Path=/; Secure; HTTPOnly";
     "Strict-Transport-Security" = "max-age=31536000; includeSubDomains; preload";
     "apple-originating-system" = UnknownOriginatingSystem;
     "apple-seq" = "0.0";
@@ -563,7 +563,7 @@ APP STORE CONNECT API list-buildUploads RESPONSE:
     "Content-Type" = "application/json";
     Date = "Sat, 25 Apr 2026 04:08:04 GMT";
     Server = "daiquiri/5";
-    "Set-Cookie" = "dqsid=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE3NzcwOTAwODQsImp0aSI6Imh3SHNBQy1mR3Z3aVFVdXBRcGVNeGcifQ.fnDW2Lgr52MANtHYW7OJ9fX_aUEtHt6uL9u0Kpobr7M; Max-Age=1800; Expires=Sat, 25 Apr 2026 04:38:04 GMT; Path=/; Secure; HTTPOnly";
+    "Set-Cookie" = "dqsid=[REDACTED_TOKEN]; Max-Age=1800; Expires=Sat, 25 Apr 2026 04:38:04 GMT; Path=/; Secure; HTTPOnly";
     "Strict-Transport-Security" = "max-age=31536000; includeSubDomains; preload";
     "apple-originating-system" = UnknownOriginatingSystem;
     "apple-seq" = "0.0";
@@ -686,7 +686,7 @@ APP STORE CONNECT API RESPONSE:
     "Content-Type" = "application/json";
     Date = "Sat, 25 Apr 2026 04:08:05 GMT";
     Server = "daiquiri/5";
-    "Set-Cookie" = "dqsid=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE3NzcwOTAwODQsImp0aSI6Imh3SHNBQy1mR3Z3aVFVdXBRcGVNeGcifQ.fnDW2Lgr52MANtHYW7OJ9fX_aUEtHt6uL9u0Kpobr7M; Max-Age=1800; Expires=Sat, 25 Apr 2026 04:38:05 GMT; Path=/; Secure; HTTPOnly";
+    "Set-Cookie" = "dqsid=[REDACTED_TOKEN]; Max-Age=1800; Expires=Sat, 25 Apr 2026 04:38:05 GMT; Path=/; Secure; HTTPOnly";
     "Strict-Transport-Security" = "max-age=31536000; includeSubDomains; preload";
     "apple-originating-system" = UnknownOriginatingSystem;
     "apple-seq" = "0.0";
@@ -795,7 +795,7 @@ APP STORE CONNECT API RESPONSE:
         warnings =         (
         );
     };
-    assetToken = "PurpleSource211/v4/1d/1a/af/1d1aaf6c-047c-afa8-0dd0-bff9e85b1984/96ed82c2-b2de-49ec-abfb-c14be76d7dd8";
+    assetToken = "[REDACTED_TOKEN]";
     assetType = "ASSET_SPI";
     fileName = "DTAppAnalyzerExtractorOutput-FDBA2B48-FFCE-41F6-A42B-EE30B1E57D7E.zip";
     fileSize = 18312126;
@@ -828,7 +828,7 @@ APP STORE CONNECT API RESPONSE:
         warnings =         (
         );
     };
-    assetToken = "PurpleSource211/v4/1d/1a/af/1d1aaf6c-047c-afa8-0dd0-bff9e85b1984/7898dc2a-ad0a-4ccc-95a0-dc6431ebe5bf";
+    assetToken = "[REDACTED_TOKEN]";
     assetType = "ASSET_DESCRIPTION";
     fileName = "asset-description-58DD1ADE-AECA-4F5B-AA56-2B02961DB31A.xml";
     fileSize = 1903548;
@@ -928,7 +928,7 @@ APP STORE CONNECT API build-uploads RESPONSE:
     "Content-Type" = "application/json";
     Date = "Sat, 25 Apr 2026 04:08:05 GMT";
     Server = "daiquiri/5";
-    "Set-Cookie" = "dqsid=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE3NzcwOTAwODUsImp0aSI6IkJPcW1DLTJPWl9MTkt2MVp5V2RhRWcifQ.kBWuDrstJ180g7rzZIVXfvcAZAAfDT9kuh_ZzWd7dFY; Max-Age=1800; Expires=Sat, 25 Apr 2026 04:38:05 GMT; Path=/; Secure; HTTPOnly";
+    "Set-Cookie" = "dqsid=[REDACTED_TOKEN]; Max-Age=1800; Expires=Sat, 25 Apr 2026 04:38:05 GMT; Path=/; Secure; HTTPOnly";
     "Strict-Transport-Security" = "max-age=31536000; includeSubDomains; preload";
     "apple-originating-system" = UnknownOriginatingSystem;
     "apple-seq" = "0.0";
@@ -1045,7 +1045,7 @@ APP STORE CONNECT API RESPONSE:
     "Content-Type" = "application/json";
     Date = "Sat, 25 Apr 2026 04:08:06 GMT";
     Server = "daiquiri/5";
-    "Set-Cookie" = "dqsid=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE3NzcwOTAwODUsImp0aSI6IkJPcW1DLTJPWl9MTkt2MVp5V2RhRWcifQ.kBWuDrstJ180g7rzZIVXfvcAZAAfDT9kuh_ZzWd7dFY; Max-Age=1800; Expires=Sat, 25 Apr 2026 04:38:06 GMT; Path=/; Secure; HTTPOnly";
+    "Set-Cookie" = "dqsid=[REDACTED_TOKEN]; Max-Age=1800; Expires=Sat, 25 Apr 2026 04:38:06 GMT; Path=/; Secure; HTTPOnly";
     "Strict-Transport-Security" = "max-age=31536000; includeSubDomains; preload";
     "apple-originating-system" = UnknownOriginatingSystem;
     "apple-seq" = "0.0";
@@ -1154,7 +1154,7 @@ APP STORE CONNECT API RESPONSE:
         warnings =         (
         );
     };
-    assetToken = "PurpleSource211/v4/1d/1a/af/1d1aaf6c-047c-afa8-0dd0-bff9e85b1984/96ed82c2-b2de-49ec-abfb-c14be76d7dd8";
+    assetToken = "[REDACTED_TOKEN]";
     assetType = "ASSET_SPI";
     fileName = "DTAppAnalyzerExtractorOutput-FDBA2B48-FFCE-41F6-A42B-EE30B1E57D7E.zip";
     fileSize = 18312126;
@@ -1187,7 +1187,7 @@ APP STORE CONNECT API RESPONSE:
         warnings =         (
         );
     };
-    assetToken = "PurpleSource211/v4/1d/1a/af/1d1aaf6c-047c-afa8-0dd0-bff9e85b1984/7898dc2a-ad0a-4ccc-95a0-dc6431ebe5bf";
+    assetToken = "[REDACTED_TOKEN]";
     assetType = "ASSET_DESCRIPTION";
     fileName = "asset-description-58DD1ADE-AECA-4F5B-AA56-2B02961DB31A.xml";
     fileSize = 1903548;
@@ -1274,7 +1274,7 @@ RETRIEVE UPLOAD OPERATIONS (UPLOADING ASSET DESCRIPTION) RESPONSE:
     Date = "Sat, 25 Apr 2026 04:08:17 GMT";
     Location = "https://appstoreconnect.apple.com/iris/provider/62ce890c-6f5c-478c-bce5-0e2220409609/v1/buildUploadFiles/dbed7a4a-1225-45cd-afe6-67111a6a607f";
     Server = "daiquiri/5";
-    "Set-Cookie" = "dqsid=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE3NzcwOTAwOTcsImp0aSI6Imd4RkRqeUdXcHZTSGxRRk10S2Nvd2cifQ.3fDb8oUweob-Ix4wBIHCSAnO58Tm48jBUTxm3DNlxCc; Max-Age=1800; Expires=Sat, 25 Apr 2026 04:38:17 GMT; Path=/; Secure; HTTPOnly";
+    "Set-Cookie" = "dqsid=[REDACTED_TOKEN]; Max-Age=1800; Expires=Sat, 25 Apr 2026 04:38:17 GMT; Path=/; Secure; HTTPOnly";
     "Strict-Transport-Security" = "max-age=31536000; includeSubDomains; preload";
     "apple-originating-system" = UnknownOriginatingSystem;
     "apple-seq" = "0.0";
@@ -1389,7 +1389,7 @@ UPDATE buildUploadFiles CHECKSUM RESPONSE:
     "Content-Type" = "application/json";
     Date = "Sat, 25 Apr 2026 04:08:18 GMT";
     Server = "daiquiri/5";
-    "Set-Cookie" = "dqsid=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE3NzcwOTAwOTcsImp0aSI6Imd4RkRqeUdXcHZTSGxRRk10S2Nvd2cifQ.3fDb8oUweob-Ix4wBIHCSAnO58Tm48jBUTxm3DNlxCc; Max-Age=1800; Expires=Sat, 25 Apr 2026 04:38:18 GMT; Path=/; Secure; HTTPOnly";
+    "Set-Cookie" = "dqsid=[REDACTED_TOKEN]; Max-Age=1800; Expires=Sat, 25 Apr 2026 04:38:18 GMT; Path=/; Secure; HTTPOnly";
     "Strict-Transport-Security" = "max-age=31536000; includeSubDomains; preload";
     "apple-originating-system" = UnknownOriginatingSystem;
     "apple-seq" = "0.0";
@@ -1526,7 +1526,7 @@ GET UPLOAD STATE (ASSET_DESCRIPTION) RESPONSE:
     "Content-Type" = "application/json";
     Date = "Sat, 25 Apr 2026 04:08:21 GMT";
     Server = "daiquiri/5";
-    "Set-Cookie" = "dqsid=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE3NzcwOTAwOTcsImp0aSI6Imd4RkRqeUdXcHZTSGxRRk10S2Nvd2cifQ.3fDb8oUweob-Ix4wBIHCSAnO58Tm48jBUTxm3DNlxCc; Max-Age=1800; Expires=Sat, 25 Apr 2026 04:38:20 GMT; Path=/; Secure; HTTPOnly";
+    "Set-Cookie" = "dqsid=[REDACTED_TOKEN]; Max-Age=1800; Expires=Sat, 25 Apr 2026 04:38:20 GMT; Path=/; Secure; HTTPOnly";
     "Strict-Transport-Security" = "max-age=31536000; includeSubDomains; preload";
     "apple-originating-system" = UnknownOriginatingSystem;
     "apple-seq" = "0.0";
@@ -1653,7 +1653,7 @@ CHANGE UPLOAD STATE TO COMPLETE (UPLOADING ASSET DESCRIPTION) RESPONSE:
     "Content-Type" = "application/json";
     Date = "Sat, 25 Apr 2026 04:08:22 GMT";
     Server = "daiquiri/5";
-    "Set-Cookie" = "dqsid=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE3NzcwOTAwOTcsImp0aSI6Imd4RkRqeUdXcHZTSGxRRk10S2Nvd2cifQ.3fDb8oUweob-Ix4wBIHCSAnO58Tm48jBUTxm3DNlxCc; Max-Age=1800; Expires=Sat, 25 Apr 2026 04:38:21 GMT; Path=/; Secure; HTTPOnly";
+    "Set-Cookie" = "dqsid=[REDACTED_TOKEN]; Max-Age=1800; Expires=Sat, 25 Apr 2026 04:38:21 GMT; Path=/; Secure; HTTPOnly";
     "Strict-Transport-Security" = "max-age=31536000; includeSubDomains; preload";
     "apple-originating-system" = UnknownOriginatingSystem;
     "apple-seq" = "0.0";
@@ -1765,7 +1765,7 @@ GET UPLOAD STATE (ASSET_DESCRIPTION) RESPONSE:
     "Content-Type" = "application/json";
     Date = "Sat, 25 Apr 2026 04:08:23 GMT";
     Server = "daiquiri/5";
-    "Set-Cookie" = "dqsid=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE3NzcwOTAwOTcsImp0aSI6Imd4RkRqeUdXcHZTSGxRRk10S2Nvd2cifQ.3fDb8oUweob-Ix4wBIHCSAnO58Tm48jBUTxm3DNlxCc; Max-Age=1800; Expires=Sat, 25 Apr 2026 04:38:22 GMT; Path=/; Secure; HTTPOnly";
+    "Set-Cookie" = "dqsid=[REDACTED_TOKEN]; Max-Age=1800; Expires=Sat, 25 Apr 2026 04:38:22 GMT; Path=/; Secure; HTTPOnly";
     "Strict-Transport-Security" = "max-age=31536000; includeSubDomains; preload";
     "apple-originating-system" = UnknownOriginatingSystem;
     "apple-seq" = "0.0";
@@ -1875,7 +1875,7 @@ GET UPLOAD STATE (ASSET_DESCRIPTION) RESPONSE:
     "Content-Type" = "application/json";
     Date = "Sat, 25 Apr 2026 04:08:23 GMT";
     Server = "daiquiri/5";
-    "Set-Cookie" = "dqsid=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE3NzcwOTAwOTcsImp0aSI6Imd4RkRqeUdXcHZTSGxRRk10S2Nvd2cifQ.3fDb8oUweob-Ix4wBIHCSAnO58Tm48jBUTxm3DNlxCc; Max-Age=1800; Expires=Sat, 25 Apr 2026 04:38:23 GMT; Path=/; Secure; HTTPOnly";
+    "Set-Cookie" = "dqsid=[REDACTED_TOKEN]; Max-Age=1800; Expires=Sat, 25 Apr 2026 04:38:23 GMT; Path=/; Secure; HTTPOnly";
     "Strict-Transport-Security" = "max-age=31536000; includeSubDomains; preload";
     "apple-originating-system" = UnknownOriginatingSystem;
     "apple-seq" = "0.0";
@@ -1985,7 +1985,7 @@ GET UPLOAD STATE (ASSET_DESCRIPTION) RESPONSE:
     "Content-Type" = "application/json";
     Date = "Sat, 25 Apr 2026 04:08:28 GMT";
     Server = "daiquiri/5";
-    "Set-Cookie" = "dqsid=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE3NzcwOTAwOTcsImp0aSI6Imd4RkRqeUdXcHZTSGxRRk10S2Nvd2cifQ.3fDb8oUweob-Ix4wBIHCSAnO58Tm48jBUTxm3DNlxCc; Max-Age=1800; Expires=Sat, 25 Apr 2026 04:38:28 GMT; Path=/; Secure; HTTPOnly";
+    "Set-Cookie" = "dqsid=[REDACTED_TOKEN]; Max-Age=1800; Expires=Sat, 25 Apr 2026 04:38:28 GMT; Path=/; Secure; HTTPOnly";
     "Strict-Transport-Security" = "max-age=31536000; includeSubDomains; preload";
     "apple-originating-system" = UnknownOriginatingSystem;
     "apple-seq" = "0.0";
@@ -2095,7 +2095,7 @@ GET UPLOAD STATE (ASSET_DESCRIPTION) RESPONSE:
     "Content-Type" = "application/json";
     Date = "Sat, 25 Apr 2026 04:08:33 GMT";
     Server = "daiquiri/5";
-    "Set-Cookie" = "dqsid=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE3NzcwOTAwOTcsImp0aSI6Imd4RkRqeUdXcHZTSGxRRk10S2Nvd2cifQ.3fDb8oUweob-Ix4wBIHCSAnO58Tm48jBUTxm3DNlxCc; Max-Age=1800; Expires=Sat, 25 Apr 2026 04:38:33 GMT; Path=/; Secure; HTTPOnly";
+    "Set-Cookie" = "dqsid=[REDACTED_TOKEN]; Max-Age=1800; Expires=Sat, 25 Apr 2026 04:38:33 GMT; Path=/; Secure; HTTPOnly";
     "Strict-Transport-Security" = "max-age=31536000; includeSubDomains; preload";
     "apple-originating-system" = UnknownOriginatingSystem;
     "apple-seq" = "0.0";
@@ -2205,7 +2205,7 @@ GET UPLOAD STATE (ASSET_DESCRIPTION) RESPONSE:
     "Content-Type" = "application/json";
     Date = "Sat, 25 Apr 2026 04:08:38 GMT";
     Server = "daiquiri/5";
-    "Set-Cookie" = "dqsid=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE3NzcwOTAwOTcsImp0aSI6Imd4RkRqeUdXcHZTSGxRRk10S2Nvd2cifQ.3fDb8oUweob-Ix4wBIHCSAnO58Tm48jBUTxm3DNlxCc; Max-Age=1800; Expires=Sat, 25 Apr 2026 04:38:38 GMT; Path=/; Secure; HTTPOnly";
+    "Set-Cookie" = "dqsid=[REDACTED_TOKEN]; Max-Age=1800; Expires=Sat, 25 Apr 2026 04:38:38 GMT; Path=/; Secure; HTTPOnly";
     "Strict-Transport-Security" = "max-age=31536000; includeSubDomains; preload";
     "apple-originating-system" = UnknownOriginatingSystem;
     "apple-seq" = "0.0";
@@ -2315,7 +2315,7 @@ GET UPLOAD STATE (ASSET_DESCRIPTION) RESPONSE:
     "Content-Type" = "application/json";
     Date = "Sat, 25 Apr 2026 04:08:44 GMT";
     Server = "daiquiri/5";
-    "Set-Cookie" = "dqsid=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE3NzcwOTAwOTcsImp0aSI6Imd4RkRqeUdXcHZTSGxRRk10S2Nvd2cifQ.3fDb8oUweob-Ix4wBIHCSAnO58Tm48jBUTxm3DNlxCc; Max-Age=1800; Expires=Sat, 25 Apr 2026 04:38:44 GMT; Path=/; Secure; HTTPOnly";
+    "Set-Cookie" = "dqsid=[REDACTED_TOKEN]; Max-Age=1800; Expires=Sat, 25 Apr 2026 04:38:44 GMT; Path=/; Secure; HTTPOnly";
     "Strict-Transport-Security" = "max-age=31536000; includeSubDomains; preload";
     "apple-originating-system" = UnknownOriginatingSystem;
     "apple-seq" = "0.0";
@@ -2425,7 +2425,7 @@ GET UPLOAD STATE (ASSET_DESCRIPTION) RESPONSE:
     "Content-Type" = "application/json";
     Date = "Sat, 25 Apr 2026 04:08:49 GMT";
     Server = "daiquiri/5";
-    "Set-Cookie" = "dqsid=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE3NzcwOTAwOTcsImp0aSI6Imd4RkRqeUdXcHZTSGxRRk10S2Nvd2cifQ.3fDb8oUweob-Ix4wBIHCSAnO58Tm48jBUTxm3DNlxCc; Max-Age=1800; Expires=Sat, 25 Apr 2026 04:38:49 GMT; Path=/; Secure; HTTPOnly";
+    "Set-Cookie" = "dqsid=[REDACTED_TOKEN]; Max-Age=1800; Expires=Sat, 25 Apr 2026 04:38:49 GMT; Path=/; Secure; HTTPOnly";
     "Strict-Transport-Security" = "max-age=31536000; includeSubDomains; preload";
     "apple-originating-system" = UnknownOriginatingSystem;
     "apple-seq" = "0.0";
@@ -2549,7 +2549,7 @@ RETRIEVE UPLOAD OPERATIONS (UPLOADING SPI ANALYSIS) RESPONSE:
     Date = "Sat, 25 Apr 2026 04:08:49 GMT";
     Location = "https://appstoreconnect.apple.com/iris/provider/62ce890c-6f5c-478c-bce5-0e2220409609/v1/buildUploadFiles/86b4ee18-b0a8-45f3-987c-fe6cf5017d4e";
     Server = "daiquiri/5";
-    "Set-Cookie" = "dqsid=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE3NzcwOTAwOTcsImp0aSI6Imd4RkRqeUdXcHZTSGxRRk10S2Nvd2cifQ.3fDb8oUweob-Ix4wBIHCSAnO58Tm48jBUTxm3DNlxCc; Max-Age=1800; Expires=Sat, 25 Apr 2026 04:38:49 GMT; Path=/; Secure; HTTPOnly";
+    "Set-Cookie" = "dqsid=[REDACTED_TOKEN]; Max-Age=1800; Expires=Sat, 25 Apr 2026 04:38:49 GMT; Path=/; Secure; HTTPOnly";
     "Strict-Transport-Security" = "max-age=31536000; includeSubDomains; preload";
     "apple-originating-system" = UnknownOriginatingSystem;
     "apple-seq" = "0.0";
@@ -2700,7 +2700,7 @@ UPDATE buildUploadFiles CHECKSUM RESPONSE:
     "Content-Type" = "application/json";
     Date = "Sat, 25 Apr 2026 04:08:50 GMT";
     Server = "daiquiri/5";
-    "Set-Cookie" = "dqsid=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE3NzcwOTAwOTcsImp0aSI6Imd4RkRqeUdXcHZTSGxRRk10S2Nvd2cifQ.3fDb8oUweob-Ix4wBIHCSAnO58Tm48jBUTxm3DNlxCc; Max-Age=1800; Expires=Sat, 25 Apr 2026 04:38:50 GMT; Path=/; Secure; HTTPOnly";
+    "Set-Cookie" = "dqsid=[REDACTED_TOKEN]; Max-Age=1800; Expires=Sat, 25 Apr 2026 04:38:50 GMT; Path=/; Secure; HTTPOnly";
     "Strict-Transport-Security" = "max-age=31536000; includeSubDomains; preload";
     "apple-originating-system" = UnknownOriginatingSystem;
     "apple-seq" = "0.0";
@@ -2907,7 +2907,7 @@ GET UPLOAD STATE (ASSET_SPI) RESPONSE:
     "Content-Type" = "application/json";
     Date = "Sat, 25 Apr 2026 04:09:07 GMT";
     Server = "daiquiri/5";
-    "Set-Cookie" = "dqsid=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE3NzcwOTAwOTcsImp0aSI6Imd4RkRqeUdXcHZTSGxRRk10S2Nvd2cifQ.3fDb8oUweob-Ix4wBIHCSAnO58Tm48jBUTxm3DNlxCc; Max-Age=1800; Expires=Sat, 25 Apr 2026 04:39:06 GMT; Path=/; Secure; HTTPOnly";
+    "Set-Cookie" = "dqsid=[REDACTED_TOKEN]; Max-Age=1800; Expires=Sat, 25 Apr 2026 04:39:06 GMT; Path=/; Secure; HTTPOnly";
     "Strict-Transport-Security" = "max-age=31536000; includeSubDomains; preload";
     "apple-originating-system" = UnknownOriginatingSystem;
     "apple-seq" = "0.0";
@@ -3070,7 +3070,7 @@ CHANGE UPLOAD STATE TO COMPLETE (UPLOADING SPI ANALYSIS) RESPONSE:
     "Content-Type" = "application/json";
     Date = "Sat, 25 Apr 2026 04:09:09 GMT";
     Server = "daiquiri/5";
-    "Set-Cookie" = "dqsid=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE3NzcwOTAwOTcsImp0aSI6Imd4RkRqeUdXcHZTSGxRRk10S2Nvd2cifQ.3fDb8oUweob-Ix4wBIHCSAnO58Tm48jBUTxm3DNlxCc; Max-Age=1800; Expires=Sat, 25 Apr 2026 04:39:07 GMT; Path=/; Secure; HTTPOnly";
+    "Set-Cookie" = "dqsid=[REDACTED_TOKEN]; Max-Age=1800; Expires=Sat, 25 Apr 2026 04:39:07 GMT; Path=/; Secure; HTTPOnly";
     "Strict-Transport-Security" = "max-age=31536000; includeSubDomains; preload";
     "apple-originating-system" = UnknownOriginatingSystem;
     "apple-seq" = "0.0";
@@ -3182,7 +3182,7 @@ GET UPLOAD STATE (ASSET_SPI) RESPONSE:
     "Content-Type" = "application/json";
     Date = "Sat, 25 Apr 2026 04:09:09 GMT";
     Server = "daiquiri/5";
-    "Set-Cookie" = "dqsid=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE3NzcwOTAwOTcsImp0aSI6Imd4RkRqeUdXcHZTSGxRRk10S2Nvd2cifQ.3fDb8oUweob-Ix4wBIHCSAnO58Tm48jBUTxm3DNlxCc; Max-Age=1800; Expires=Sat, 25 Apr 2026 04:39:09 GMT; Path=/; Secure; HTTPOnly";
+    "Set-Cookie" = "dqsid=[REDACTED_TOKEN]; Max-Age=1800; Expires=Sat, 25 Apr 2026 04:39:09 GMT; Path=/; Secure; HTTPOnly";
     "Strict-Transport-Security" = "max-age=31536000; includeSubDomains; preload";
     "apple-originating-system" = UnknownOriginatingSystem;
     "apple-seq" = "0.0";
@@ -3292,7 +3292,7 @@ GET UPLOAD STATE (ASSET_SPI) RESPONSE:
     "Content-Type" = "application/json";
     Date = "Sat, 25 Apr 2026 04:09:09 GMT";
     Server = "daiquiri/5";
-    "Set-Cookie" = "dqsid=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE3NzcwOTAwOTcsImp0aSI6Imd4RkRqeUdXcHZTSGxRRk10S2Nvd2cifQ.3fDb8oUweob-Ix4wBIHCSAnO58Tm48jBUTxm3DNlxCc; Max-Age=1800; Expires=Sat, 25 Apr 2026 04:39:09 GMT; Path=/; Secure; HTTPOnly";
+    "Set-Cookie" = "dqsid=[REDACTED_TOKEN]; Max-Age=1800; Expires=Sat, 25 Apr 2026 04:39:09 GMT; Path=/; Secure; HTTPOnly";
     "Strict-Transport-Security" = "max-age=31536000; includeSubDomains; preload";
     "apple-originating-system" = UnknownOriginatingSystem;
     "apple-seq" = "0.0";
@@ -3402,7 +3402,7 @@ GET UPLOAD STATE (ASSET_SPI) RESPONSE:
     "Content-Type" = "application/json";
     Date = "Sat, 25 Apr 2026 04:09:14 GMT";
     Server = "daiquiri/5";
-    "Set-Cookie" = "dqsid=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE3NzcwOTAwOTcsImp0aSI6Imd4RkRqeUdXcHZTSGxRRk10S2Nvd2cifQ.3fDb8oUweob-Ix4wBIHCSAnO58Tm48jBUTxm3DNlxCc; Max-Age=1800; Expires=Sat, 25 Apr 2026 04:39:14 GMT; Path=/; Secure; HTTPOnly";
+    "Set-Cookie" = "dqsid=[REDACTED_TOKEN]; Max-Age=1800; Expires=Sat, 25 Apr 2026 04:39:14 GMT; Path=/; Secure; HTTPOnly";
     "Strict-Transport-Security" = "max-age=31536000; includeSubDomains; preload";
     "apple-originating-system" = UnknownOriginatingSystem;
     "apple-seq" = "0.0";
@@ -3512,7 +3512,7 @@ GET UPLOAD STATE (ASSET_SPI) RESPONSE:
     "Content-Type" = "application/json";
     Date = "Sat, 25 Apr 2026 04:09:19 GMT";
     Server = "daiquiri/5";
-    "Set-Cookie" = "dqsid=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE3NzcwOTAwOTcsImp0aSI6Imd4RkRqeUdXcHZTSGxRRk10S2Nvd2cifQ.3fDb8oUweob-Ix4wBIHCSAnO58Tm48jBUTxm3DNlxCc; Max-Age=1800; Expires=Sat, 25 Apr 2026 04:39:19 GMT; Path=/; Secure; HTTPOnly";
+    "Set-Cookie" = "dqsid=[REDACTED_TOKEN]; Max-Age=1800; Expires=Sat, 25 Apr 2026 04:39:19 GMT; Path=/; Secure; HTTPOnly";
     "Strict-Transport-Security" = "max-age=31536000; includeSubDomains; preload";
     "apple-originating-system" = UnknownOriginatingSystem;
     "apple-seq" = "0.0";
@@ -3622,7 +3622,7 @@ GET UPLOAD STATE (ASSET_SPI) RESPONSE:
     "Content-Type" = "application/json";
     Date = "Sat, 25 Apr 2026 04:09:24 GMT";
     Server = "daiquiri/5";
-    "Set-Cookie" = "dqsid=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE3NzcwOTAwOTcsImp0aSI6Imd4RkRqeUdXcHZTSGxRRk10S2Nvd2cifQ.3fDb8oUweob-Ix4wBIHCSAnO58Tm48jBUTxm3DNlxCc; Max-Age=1800; Expires=Sat, 25 Apr 2026 04:39:24 GMT; Path=/; Secure; HTTPOnly";
+    "Set-Cookie" = "dqsid=[REDACTED_TOKEN]; Max-Age=1800; Expires=Sat, 25 Apr 2026 04:39:24 GMT; Path=/; Secure; HTTPOnly";
     "Strict-Transport-Security" = "max-age=31536000; includeSubDomains; preload";
     "apple-originating-system" = UnknownOriginatingSystem;
     "apple-seq" = "0.0";

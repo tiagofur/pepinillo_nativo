@@ -1570,6 +1570,9 @@ struct AppFeature {
         state.analytics.isProUser = isPro
         state.tasks.isProUser = isPro
         AppGroupDefaults.userCapabilities = effectiveSub.capabilities
+        AppGroupDefaults.subscriptionTierIdentifier = effectiveSub.canonicalTierIdentifier
+        if let expirationDate = effectiveSub.expirationDate { AppGroupDefaults.subscriptionExpirationDate = expirationDate }
+        else if !effectiveSub.capabilities.backendSync { AppGroupDefaults.subscriptionExpirationDate = nil }
         AppGroupDefaults.isProUser = isPro
         AppGroupDefaults.canBackendSync = canSync
         AppGroupDefaults.canAppleCloudSync = effectiveSub.capabilities.appleCloudSync && !effectiveSub.capabilities.backendSync

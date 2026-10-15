@@ -261,7 +261,7 @@ struct PaywallFeatureTests {
             $0.isLoading = false
             $0.subscriptionState = .everywherePlus
             $0.purchaseResult = PaywallFeature.State.PurchaseResultAlert(
-                message: String(localized: "Welcome to Pepinillo Pro! 🎉"),
+                message: String(localized: "Welcome to Everywhere/AI+! 🎉"),
                 isSuccess: true
             )
         }
@@ -293,7 +293,7 @@ struct PaywallFeatureTests {
             $0.isLoading = false
             $0.subscriptionState = .pepinilloPlus
             $0.purchaseResult = PaywallFeature.State.PurchaseResultAlert(
-                message: String(localized: "Welcome to Pepinillo Pro! 🎉"),
+                message: String(localized: "Welcome to Pepinillo+! 🎉"),
                 isSuccess: true
             )
         }
@@ -327,7 +327,7 @@ struct PaywallFeatureTests {
             $0.isLoading = false
             $0.subscriptionState = .everywherePlus
             $0.purchaseResult = PaywallFeature.State.PurchaseResultAlert(
-                message: String(localized: "Welcome to Pepinillo Pro! 🎉"),
+                message: String(localized: "Welcome to Everywhere/AI+! 🎉"),
                 isSuccess: true
             )
         }
@@ -383,7 +383,7 @@ struct PaywallFeatureTests {
 
         await store.receive(.purchaseFinished(.success(productID: ""))) {
             $0.purchaseResult = PaywallFeature.State.PurchaseResultAlert(
-                message: String(localized: "Welcome to Pepinillo Pro! 🎉"),
+                message: String(localized: "Welcome to Pepinillo+! 🎉"),
                 isSuccess: true
             )
         }
