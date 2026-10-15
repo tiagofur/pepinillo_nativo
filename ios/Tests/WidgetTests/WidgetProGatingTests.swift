@@ -29,44 +29,33 @@ struct WidgetProGatingTests {
         #expect(AppGroupDefaults.isProUser == false)
     }
 
-    // MARK: - Widget cold-start capability read (spec: "iOS Widget launches before main app")
-
-    @Test("Widget cold start with no App Group data → free semantics (no access)")
-    func widgetColdStartNoCapabilitiesDefaultsFree() {
-        let saved = AppGroupDefaults.userCapabilities
-        defer { AppGroupDefaults.userCapabilities = saved }
-
-        // Simulate clean state (fresh install / uninstall)
-        AppGroupDefaults.userCapabilities = nil
-
-        // Widget gating logic: capabilities?.hasAnyPremium == true
-        let shouldShowPremiumContent = AppGroupDefaults.userCapabilities?.hasAnyPremium == true
-        #expect(shouldShowPremiumContent == false, "No capabilities → free tier → no premium widget content")
-    }
-
-    @Test("Widget cold start with cached pepinilloPlus → premium content shown")
-    func widgetColdStartWithPepinilloPlusShowsPremiumContent() {
-        let saved = AppGroupDefaults.userCapabilities
-        defer { AppGroupDefaults.userCapabilities = saved }
-
-        // Main app wrote capabilities before widget launched
-        AppGroupDefaults.userCapabilities = .pepinilloPlus
-
-        let shouldShowPremiumContent = AppGroupDefaults.userCapabilities?.hasAnyPremium == true
-        #expect(shouldShowPremiumContent == true, "Cached pepinilloPlus → show premium content")
-    }
-
-    @Test("Widget cold start with cached everywherePlus → premium content shown")
-    func widgetColdStartWithEverywherePlusShowsPremiumContent() {
-        let saved = AppGroupDefaults.userCapabilities
-        defer { AppGroupDefaults.userCapabilities = saved }
-
-        AppGroupDefaults.userCapabilities = .everywherePlus
-
-        let shouldShowPremiumContent = AppGroupDefaults.userCapabilities?.hasAnyPremium == true
-        let hasBackendSync = AppGroupDefaults.userCapabilities?.backendSync == true
-        #expect(shouldShowPremiumContent == true, "Cached everywherePlus → show premium content")
-        #expect(hasBackendSync == true, "Everywhere+ tier always has backendSync")
+    @Test("Tasks widget access and provider loader enforce canonical entitlement states")
+    func tasksWidgetAccessMatrix() {
+        var unknown = UserCapabilities.pepinilloPlus
+        unknown.localAI = false
+        let now = Date(timeIntervalSince1970: 1_800_000_000)
+        let saved = AppGroupDefaultsSnapshot.capture()
+        defer { saved.restore() }
+        let cases: [(String?, UserCapabilities?, Date?, Date?, Bool, TimeInterval)] = [
+            (nil, nil, nil, nil, false, 900), (nil, .pepinilloPlus, nil, nil, false, 900),
+            ("free", .free, now, nil, false, 900), ("pepinillo_plus", .pepinilloPlus, nil, nil, true, 900),
+            ("everywhere_plus", .everywherePlus, now.addingTimeInterval(-TasksWidgetAccess.everywhereOfflineGracePeriod + 60), nil, true, 60), ("everywhere_plus", .everywherePlus, now, now.addingTimeInterval(30), true, 30),
+            ("everywhere_plus", .everywherePlus, nil, nil, false, 900), ("everywhere_plus", .everywherePlus, now, now.addingTimeInterval(-1), false, 900),
+            ("everywhere_plus", .everywherePlus, now.addingTimeInterval(-TasksWidgetAccess.everywhereOfflineGracePeriod), nil, false, 900), ("everywhere_plus", .everywherePlus, now.addingTimeInterval(1), nil, false, 900), ("pepinillo_plus", unknown, nil, nil, false, 900),
+        ]
+        for (tier, capabilities, verified, expiration, expected, refreshInterval) in cases {
+            AppGroupDefaults.subscriptionTierIdentifier = tier
+            AppGroupDefaults.userCapabilities = capabilities
+            AppGroupDefaults.lastVerifiedDate = verified
+            AppGroupDefaults.subscriptionExpirationDate = expiration
+            var loaded = false
+            let value = TasksWidgetAccess.loadIfAuthorized(now: now) { loaded = true }
+            #expect((value != nil) == expected)
+            #expect(loaded == expected)
+            #expect(TasksWidgetAccess.nextRefreshDate(
+                now: now, normalRefresh: now.addingTimeInterval(900)
+            ) == now.addingTimeInterval(refreshInterval))
+        }
     }
 
     // MARK: - Widget gating logic matches provider pattern
@@ -80,16 +69,6 @@ struct WidgetProGatingTests {
         // Reproduces: guard AppGroupDefaults.userCapabilities?.hasAnyPremium == true else { return .proRequired }
         let isBlocked = AppGroupDefaults.userCapabilities?.hasAnyPremium != true
         #expect(isBlocked, "Dashboard widget should return proRequired when capabilities nil")
-    }
-
-    @Test("Tasks widget guard pattern — nil caps → proRequired")
-    func tasksWidgetGuardNilCaps() {
-        let saved = AppGroupDefaults.userCapabilities
-        defer { AppGroupDefaults.userCapabilities = saved }
-
-        AppGroupDefaults.userCapabilities = nil
-        let isBlocked = AppGroupDefaults.userCapabilities?.hasAnyPremium != true
-        #expect(isBlocked, "Tasks widget should return proRequired when capabilities nil")
     }
 
     @Test("Focus widget guard — free caps → isPro false")

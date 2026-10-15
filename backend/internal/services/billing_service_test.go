@@ -193,7 +193,7 @@ func TestBillingVerifyReceiptAndroidServiceAccountOAuthSuccess(t *testing.T) {
 	result, err := service.VerifyReceipt(context.Background(), user.ID, VerifyReceiptInput{
 		Platform:      "android",
 		ProductID:     "com.pepinillo.app.pro.monthly",
-		PurchaseToken: "purchase-token-oauth",
+		PurchaseToken: "test-purchase-token",
 	})
 	if err != nil {
 		t.Fatalf("verify receipt failed: %v", err)

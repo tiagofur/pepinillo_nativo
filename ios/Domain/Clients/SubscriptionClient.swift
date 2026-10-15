@@ -6,7 +6,7 @@
 //
 // Products:
 //   - Pepinillo+ (one-time): local premium + iCloud sync + Apple Intelligence
-//   - Everywhere/AI+ Monthly/Annual (subscription): everything + backend sync + cloud AI credits
+//   - Everywhere/AI+ Monthly/Annual (subscription): everything + backend sync + account recovery
 //
 // Legacy products (grandfathered):
 //   - Pro Monthly/Annual → mapped to Everywhere/AI+
@@ -55,6 +55,12 @@ struct SubscriptionState: Equatable, Sendable {
 
     /// Human-readable tier name.
     var tierName: String { capabilities.tierDisplayName }
+
+    /// Exact canonical tier identity persisted for extension-side authorization.
+    var canonicalTierIdentifier: String? {
+        capabilities == .free ? "free" : capabilities == .pepinilloPlus ? "pepinillo_plus"
+            : capabilities == .everywherePlus ? "everywhere_plus" : nil
+    }
 
     // MARK: Static presets
 
@@ -537,7 +543,7 @@ private extension PepinilloProduct {
         switch self {
         case .monthly:
             return ProductInfo(id: rawValue, displayName: "Everywhere/AI+ Monthly",
-                               description: "Everything in Pepinillo+ plus backend sync and advanced cloud AI.", displayPrice: "$4.99",
+                               description: "Everything in Pepinillo+ plus Pepinillo account sync and recovery.", displayPrice: "$4.99",
                                billingPeriod: "month")
         case .annual:
             return ProductInfo(id: rawValue, displayName: "Everywhere/AI+ Annual",

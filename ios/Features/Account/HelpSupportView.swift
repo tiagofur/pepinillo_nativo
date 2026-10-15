@@ -71,11 +71,11 @@ private struct FAQItem: Identifiable {
         ),
         FAQItem(
             question: String(localized: "How do I sync across devices?"),
-            answer: String(localized: "Pepinillo+ (one-time purchase) syncs tasks, sessions, and analytics across your Apple devices using your iCloud account — no Pepinillo sign-in required. Everywhere/AI+ (subscription) uses Pepinillo cloud sync through our servers so your data can travel beyond Apple devices and power cloud AI features. Check Settings → iCloud Sync for your current status.")
+            answer: String(localized: "Pepinillo+ (one-time purchase) syncs tasks, sessions, settings, and analytics between iPhone and iPad using your iCloud account — no Pepinillo sign-in required. Everywhere/AI+ (subscription) syncs tasks, focus sessions, and settings through your Pepinillo account and can recover synced data after you sign in again. Check Settings → iCloud Sync for your current status.")
         ),
         FAQItem(
             question: String(localized: "Can I use Pepinillo without a subscription?"),
-            answer: String(localized: "Yes! The free tier includes the Pomodoro timer, basic task management, and daily streaks. Upgrade to Pro for all focus modes, advanced analytics, and cross-device sync.")
+            answer: String(localized: "Yes! The free tier includes the Pomodoro timer, basic task management, and daily streaks. Pepinillo+ adds all focus modes, advanced analytics, and iCloud sync between iPhone and iPad. Everywhere/AI+ adds Pepinillo account sync and recovery.")
         ),
         FAQItem(
             question: String(localized: "How do I cancel my subscription?"),
@@ -83,7 +83,7 @@ private struct FAQItem: Identifiable {
         ),
         FAQItem(
             question: String(localized: "Why didn't my streak update?"),
-            answer: String(localized: "Streaks require at least one completed focus session per day. Make sure you complete a session (not just start one). Pro users get one free streak skip per week.")
+            answer: String(localized: "Streaks require at least one completed focus session per day. Make sure you complete a session (not just start one). Pepinillo+ and Everywhere/AI+ users get one free streak skip per week.")
         ),
     ]
 }

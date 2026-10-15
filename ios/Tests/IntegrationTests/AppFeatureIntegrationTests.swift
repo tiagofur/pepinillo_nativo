@@ -737,8 +737,8 @@ struct AppFeatureIntegrationTests {
     // MARK: - UserCapabilities propagation to App Group
 
     @Test func subscriptionStateLoadedWritesCapabilitiesToAppGroup() async {
-        let saved = AppGroupDefaults.userCapabilities
-        defer { AppGroupDefaults.userCapabilities = saved }
+        let saved = AppGroupDefaultsSnapshot.capture()
+        defer { saved.restore() }
         AppGroupDefaults.userCapabilities = nil
 
         // Neutralise the sticky -proMode flag that DemoDataSeeder reads from UserDefaults.standard;
@@ -756,6 +756,7 @@ struct AppFeatureIntegrationTests {
             AppFeature()
         } withDependencies: {
             $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
+            $0.persistenceClient.savePreferences = { _ in }
             $0.syncModeClient.reconcile = { _ in }
             $0.keychainClient.hasTokens = { false }
             $0.syncClient.syncAll = { }
@@ -776,17 +777,19 @@ struct AppFeatureIntegrationTests {
         let caps = AppGroupDefaults.userCapabilities
         #expect(caps?.backendSync == true)
         #expect(caps?.hasAnyPremium == true)
+        #expect(AppGroupDefaults.subscriptionTierIdentifier == "everywhere_plus")
     }
 
     @Test func subscriptionUpdatedWritesCapabilitiesToAppGroup() async {
-        let saved = AppGroupDefaults.userCapabilities
-        defer { AppGroupDefaults.userCapabilities = saved }
+        let saved = AppGroupDefaultsSnapshot.capture()
+        defer { saved.restore() }
         AppGroupDefaults.userCapabilities = nil
 
         let store = TestStore(initialState: AppFeature.State()) {
             AppFeature()
         } withDependencies: {
             $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
+            $0.persistenceClient.savePreferences = { _ in }
             $0.syncModeClient.reconcile = { _ in }
             $0.keychainClient.hasTokens = { false }
             $0.syncClient.syncAll = { }
@@ -807,11 +810,12 @@ struct AppFeatureIntegrationTests {
         #expect(caps?.backendSync == false)
         #expect(caps?.localPremium == true)
         #expect(caps?.hasAnyPremium == true)
+        #expect(AppGroupDefaults.subscriptionTierIdentifier == "pepinillo_plus")
     }
 
     @Test func subscriptionUpdatedFreeWritesFreeCapabilities() async {
-        let saved = AppGroupDefaults.userCapabilities
-        defer { AppGroupDefaults.userCapabilities = saved }
+        let saved = AppGroupDefaultsSnapshot.capture()
+        defer { saved.restore() }
         AppGroupDefaults.userCapabilities = .everywherePlus
 
         // Same sticky-flag guard as subscriptionStateLoadedWritesCapabilitiesToAppGroup above.
@@ -827,6 +831,7 @@ struct AppFeatureIntegrationTests {
             AppFeature()
         } withDependencies: {
             $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
+            $0.persistenceClient.savePreferences = { _ in }
             $0.syncModeClient.reconcile = { _ in }
             $0.keychainClient.hasTokens = { false }
             $0.syncClient.syncAll = { }
@@ -846,6 +851,7 @@ struct AppFeatureIntegrationTests {
         let caps = AppGroupDefaults.userCapabilities
         #expect(caps?.backendSync == false)
         #expect(caps?.hasAnyPremium == false)
+        #expect(AppGroupDefaults.subscriptionTierIdentifier == "free")
     }
 
     @Test func subscriptionStateLoadedUpdatesProStatus() async {
