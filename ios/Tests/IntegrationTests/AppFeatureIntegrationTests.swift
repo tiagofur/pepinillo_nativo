@@ -60,6 +60,14 @@ struct AppFeatureIntegrationTests {
     // timeout headroom all verified. Needs live debugging with Xcode
     // breakpoints at AppFeature.tasksLoaded observer + the merge return.
     // Re-enable after root-causing; see Sprint-5 stabilization notes.
+    // QUARANTINED: taskTapped never arrives although the observer demonstrably
+    // runs (pendingDeepLinkTaskID is consumed) and the lookup data is present
+    // (tasks contains the id) — verified via temporary #expect probes.
+    // Static analysis exhausted: composition order, case reachability, stub
+    // coverage, merge-vs-send, timeout headroom. Prime suspect: effect
+    // delivery downstream of the firing observer under TCA 1.26.
+    // Needs live debugging with Xcode breakpoints at AppFeature.tasksLoaded
+    // observer + the merge return. Re-enable after root-causing.
     @Test(.disabled())
     func spotlightTaskDeepLinkOpensTaskDetail() async throws {
         let taskID = UUID()
@@ -91,7 +99,7 @@ struct AppFeatureIntegrationTests {
         }
 
         await store.send(.tasks(.tasksLoaded([taskState])))
-        await store.receive(.tasks(.taskTapped(taskID)), timeout: .seconds(5))
+        await store.receive(.tasks(.taskTapped(taskID)))
 
         #expect(store.state.pendingDeepLinkTaskID == nil)
         #expect(store.state.tasks.detail?.taskID == taskID)
