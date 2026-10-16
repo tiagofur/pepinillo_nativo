@@ -351,12 +351,16 @@ struct AnalyticsFeature {
                     calendar: calendar
                 )
 
-                let achievements = buildAchievements(
-                    totalSessions: allTimeTotal,
-                    currentStreak: streakResult.days,
-                    pomodoroCompleted: pomodoroCompleted,
-                    flowtimeCompleted: flowtimeCompleted,
-                    earlyBirdCount: earlyBirdCount
+                // Seed the store on first load and overlay stored first-unlock
+                // dates over recomputed `now` stamps (S1-S2).
+                let achievements = try await persistence.resolveAchievements(
+                    buildAchievements(
+                        totalSessions: allTimeTotal,
+                        currentStreak: streakResult.days,
+                        pomodoroCompleted: pomodoroCompleted,
+                        flowtimeCompleted: flowtimeCompleted,
+                        earlyBirdCount: earlyBirdCount
+                    )
                 )
 
                 // Generate weekly insights (C6)

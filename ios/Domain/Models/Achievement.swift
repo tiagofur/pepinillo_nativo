@@ -5,8 +5,9 @@
 // Mirrors Android's Achievement enum for cross-platform parity.
 
 import Foundation
+import SwiftData
 
-enum Achievement: String, CaseIterable, Equatable, Sendable {
+public enum Achievement: String, CaseIterable, Equatable, Sendable {
     case firstSession
     case weekStreak
     case pomodoroMaster
@@ -70,8 +71,8 @@ enum Achievement: String, CaseIterable, Equatable, Sendable {
     }
 }
 
-struct UserAchievement: Equatable, Identifiable, Sendable {
-    var id: String { achievement.rawValue }
+public struct UserAchievement: Equatable, Identifiable, Sendable {
+    public var id: String { achievement.rawValue }
     let achievement: Achievement
     let unlockedAt: Date?
     let progress: Int
@@ -81,4 +82,48 @@ struct UserAchievement: Equatable, Identifiable, Sendable {
     var progressFraction: Double {
         min(1.0, Double(progress) / Double(achievement.requiredCount))
     }
+}
+
+// MARK: - Persistence (S1-S2)
+
+/// SwiftData-backed achievement record. Progress continues to be derived from
+/// live counters (single source of truth); unlockedAt is persisted on first
+/// unlock because recomputation can only ever stamp now.
+@Model
+public final class AchievementRecord {
+    @Attribute(.unique) public var id: String
+    public var progress: Int
+    public var unlockedAt: Date?
+
+    public init(achievementID: String, progress: Int, unlockedAt: Date? = nil) {
+        self.id = achievementID
+        self.progress = progress
+        self.unlockedAt = unlockedAt
+    }
+}
+
+/// One-shot import of in-memory achievements into the store. Idempotent:
+/// existing records are never duplicated and an existing unlockedAt is never
+/// overwritten (first unlock wins). Migrated unlocks stamp now — historical
+/// unlock dates were never recorded (see feature doc L3).
+/// Internal like UserAchievement: the engine-facing migration API is not public surface.
+func migrateAchievementsIfNeeded(_ achieved: [UserAchievement], into context: ModelContext) throws {
+    var byID: [String: AchievementRecord] = [:]
+    for record in try context.fetch(FetchDescriptor<AchievementRecord>()) {
+        byID[record.id] = record
+    }
+    for item in achieved {
+        let id = item.achievement.rawValue
+        if let record = byID[id] {
+            if record.unlockedAt == nil, let unlocked = item.unlockedAt {
+                record.unlockedAt = unlocked
+                record.progress = item.progress
+            }
+            continue
+        }
+        let record = AchievementRecord(achievementID: id, progress: item.progress, unlockedAt: item.unlockedAt)
+        context.insert(record)
+        byID[id] = record
+    }
+    try context.save()
 }

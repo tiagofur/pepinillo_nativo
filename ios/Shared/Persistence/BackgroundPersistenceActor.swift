@@ -219,6 +219,25 @@ public actor BackgroundPersistenceActor {
         try service.fetchDailyStatsRange(from: start, to: end).map { DailyStatsDTO(from: $0) }
     }
 
+    // MARK: - Achievements (S1-S2)
+
+    /// Seed the store from derived achievements on first load and overlay
+    /// stored first-unlock dates (idempotent; see migrateAchievementsIfNeeded).
+    func resolveAchievements(_ derived: [UserAchievement]) throws -> [UserAchievement] {
+        try migrateAchievementsIfNeeded(derived, into: modelContext)
+        let stored = try modelContext.fetch(FetchDescriptor<AchievementRecord>())
+        var unlockedAtByID: [String: Date] = [:]
+        for record in stored {
+            if let unlocked = record.unlockedAt {
+                unlockedAtByID[record.id] = unlocked
+            }
+        }
+        return derived.map { item in
+            guard let stored = unlockedAtByID[item.achievement.rawValue] else { return item }
+            return UserAchievement(achievement: item.achievement, unlockedAt: stored, progress: item.progress)
+        }
+    }
+
     // MARK: - Preferences
 
     func fetchPreferences() throws -> UserPreferencesDTO {

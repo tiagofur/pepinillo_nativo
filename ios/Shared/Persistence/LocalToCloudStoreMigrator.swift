@@ -412,7 +412,7 @@ enum LocalToCloudStoreMigrator {
     // MARK: - Legacy Container
 
     private static func openLegacyModelContainer(at url: URL) throws -> ModelContainer {
-        let schema = Schema(versionedSchema: SchemaV5.self)
+        let schema = Schema(versionedSchema: SchemaV6.self)
         let config = ModelConfiguration(
             schema: schema,
             url: url,
