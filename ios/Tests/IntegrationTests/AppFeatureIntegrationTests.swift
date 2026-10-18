@@ -17,6 +17,7 @@ struct AppFeatureIntegrationTests {
         let store = TestStore(initialState: AppFeature.State()) {
             AppFeature()
         } withDependencies: {
+            $0.persistenceClient.resolveAchievements = { derived in derived }
             $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
             $0.persistenceClient.savePreferences = { _ in }
             $0.persistenceClient.fetchSessions = { _, _ in [] }
@@ -41,6 +42,7 @@ struct AppFeatureIntegrationTests {
         let store = TestStore(initialState: AppFeature.State()) {
             AppFeature()
         } withDependencies: {
+            $0.persistenceClient.resolveAchievements = { derived in derived }
             $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
         }
 
@@ -85,6 +87,7 @@ struct AppFeatureIntegrationTests {
         let store = TestStore(initialState: AppFeature.State()) {
             AppFeature()
         } withDependencies: {
+            $0.persistenceClient.resolveAchievements = { derived in derived }
             $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
             $0.persistenceClient.generateRecurringTasks = { }
             $0.persistenceClient.fetchTasks = { [TaskItemDTO(id: taskID, title: "Spotlight task")] }
@@ -110,6 +113,7 @@ struct AppFeatureIntegrationTests {
         let store = TestStore(initialState: AppFeature.State()) {
             AppFeature()
         } withDependencies: {
+            $0.persistenceClient.resolveAchievements = { derived in derived }
             $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
             $0.persistenceClient.savePreferences = { _ in }
         }
@@ -144,6 +148,7 @@ struct AppFeatureIntegrationTests {
         let store = TestStore(initialState: initialState) {
             AppFeature()
         } withDependencies: {
+            $0.persistenceClient.resolveAchievements = { derived in derived }
             $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
             $0.persistenceClient.fetchSessions = { _, _ in [] }
             $0.focusClient.start = { _, _, _, _, _, _, _ in }
@@ -200,6 +205,7 @@ struct AppFeatureIntegrationTests {
         let store = TestStore(initialState: initialState) {
             AppFeature()
         } withDependencies: {
+            $0.persistenceClient.resolveAchievements = { derived in derived }
             $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
             $0.persistenceClient.fetchTasks = { [refreshedTask] }
             $0.persistenceClient.fetchDailyStats = { _ in nil }
@@ -262,6 +268,7 @@ struct AppFeatureIntegrationTests {
         let store = TestStore(initialState: initialState) {
             AppFeature()
         } withDependencies: {
+            $0.persistenceClient.resolveAchievements = { derived in derived }
             $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
             $0.persistenceClient.saveSession = { result in savedSessions.withValue { $0.append(result) } }
             $0.persistenceClient.fetchTasks = { [refreshedTask] }
@@ -305,6 +312,7 @@ struct AppFeatureIntegrationTests {
         let store = TestStore(initialState: AppFeature.State()) {
             AppFeature()
         } withDependencies: {
+            $0.persistenceClient.resolveAchievements = { derived in derived }
             $0.persistenceClient.fetchPreferences = { completedPrefs }
             $0.signInWithAppleClient.observeCredentialRevocation = { AsyncStream { $0.finish() } }
             $0.persistenceClient.savePreferences = { _ in }
@@ -350,6 +358,7 @@ struct AppFeatureIntegrationTests {
         let store = TestStore(initialState: AppFeature.State()) {
             AppFeature()
         } withDependencies: {
+            $0.persistenceClient.resolveAchievements = { derived in derived }
             $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
             $0.persistenceClient.savePreferences = { _ in }
             $0.persistenceClient.fetchCachedUser = { nil }
@@ -387,6 +396,7 @@ struct AppFeatureIntegrationTests {
         let store = TestStore(initialState: AppFeature.State()) {
             AppFeature()
         } withDependencies: {
+            $0.persistenceClient.resolveAchievements = { derived in derived }
             $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
             $0.persistenceClient.savePreferences = { _ in }
             $0.persistenceClient.fetchCachedUser = { nil }
@@ -484,6 +494,7 @@ struct AppFeatureIntegrationTests {
         let store = TestStore(initialState: AppFeature.State()) {
             AppFeature()
         } withDependencies: {
+            $0.persistenceClient.resolveAchievements = { derived in derived }
             $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
             $0.watchConnectivityClient.sendSessionState = { _, _ in }
         }
@@ -498,6 +509,7 @@ struct AppFeatureIntegrationTests {
         let store = TestStore(initialState: AppFeature.State()) {
             AppFeature()
         } withDependencies: {
+            $0.persistenceClient.resolveAchievements = { derived in derived }
             $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
             $0.watchConnectivityClient.sendSessionState = { _, _ in }
         }
@@ -512,6 +524,7 @@ struct AppFeatureIntegrationTests {
         let store = TestStore(initialState: AppFeature.State()) {
             AppFeature()
         } withDependencies: {
+            $0.persistenceClient.resolveAchievements = { derived in derived }
             $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
             $0.persistenceClient.fetchDailyStats = { _ in nil }
             $0.persistenceClient.fetchSessions = { _, _ in [] }
@@ -537,6 +550,7 @@ struct AppFeatureIntegrationTests {
         let store = TestStore(initialState: AppFeature.State()) {
             AppFeature()
         } withDependencies: {
+            $0.persistenceClient.resolveAchievements = { derived in derived }
             $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
             $0.persistenceClient.fetchSessions = { _, _ in [] }
             $0.watchConnectivityClient.sendSessionState = { _, _ in }
@@ -562,6 +576,7 @@ struct AppFeatureIntegrationTests {
         let store = TestStore(initialState: initialState) {
             AppFeature()
         } withDependencies: {
+            $0.persistenceClient.resolveAchievements = { derived in derived }
             $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
             $0.watchConnectivityClient.sendSessionState = { _, _ in }
             $0.focusClient.start = { _, _, _, _, _, _, _ in }
@@ -602,6 +617,7 @@ struct AppFeatureIntegrationTests {
         let store = TestStore(initialState: AppFeature.State()) {
             AppFeature()
         } withDependencies: {
+            $0.persistenceClient.resolveAchievements = { derived in derived }
             $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
             $0.liveActivityClient.end = { _ in liveActivityEnded.withValue { $0 = true } }
             $0.notificationClient.clearActiveSession = { notificationsCleared.withValue { $0 = true } }
@@ -670,6 +686,7 @@ struct AppFeatureIntegrationTests {
         let store = TestStore(initialState: AppFeature.State()) {
             AppFeature()
         } withDependencies: {
+            $0.persistenceClient.resolveAchievements = { derived in derived }
             $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
             $0.persistenceClient.fetchSessions = { _, _ in [] }
             $0.persistenceClient.fetchDailyStats = { _ in nil }
@@ -741,6 +758,7 @@ struct AppFeatureIntegrationTests {
         let store = TestStore(initialState: AppFeature.State()) {
             AppFeature()
         } withDependencies: {
+            $0.persistenceClient.resolveAchievements = { derived in derived }
             $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
             $0.persistenceClient.fetchSessions = { _, _ in [] }
             $0.persistenceClient.fetchTasks = { [taskDTO] }
@@ -788,6 +806,7 @@ struct AppFeatureIntegrationTests {
         let store = TestStore(initialState: AppFeature.State()) {
             AppFeature()
         } withDependencies: {
+            $0.persistenceClient.resolveAchievements = { derived in derived }
             $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
         }
 
@@ -803,6 +822,7 @@ struct AppFeatureIntegrationTests {
         let store = TestStore(initialState: initialState) {
             AppFeature()
         } withDependencies: {
+            $0.persistenceClient.resolveAchievements = { derived in derived }
             $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
         }
 
@@ -844,6 +864,7 @@ struct AppFeatureIntegrationTests {
         let store = TestStore(initialState: AppFeature.State()) {
             AppFeature()
         } withDependencies: {
+            $0.persistenceClient.resolveAchievements = { derived in derived }
             $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
             $0.persistenceClient.savePreferences = { _ in }
             $0.syncModeClient.reconcile = { _ in }
@@ -877,6 +898,7 @@ struct AppFeatureIntegrationTests {
         let store = TestStore(initialState: AppFeature.State()) {
             AppFeature()
         } withDependencies: {
+            $0.persistenceClient.resolveAchievements = { derived in derived }
             $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
             $0.persistenceClient.savePreferences = { _ in }
             $0.syncModeClient.reconcile = { _ in }
@@ -919,6 +941,7 @@ struct AppFeatureIntegrationTests {
         let store = TestStore(initialState: AppFeature.State()) {
             AppFeature()
         } withDependencies: {
+            $0.persistenceClient.resolveAchievements = { derived in derived }
             $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
             $0.persistenceClient.savePreferences = { _ in }
             $0.syncModeClient.reconcile = { _ in }
@@ -947,6 +970,7 @@ struct AppFeatureIntegrationTests {
         let store = TestStore(initialState: AppFeature.State()) {
             AppFeature()
         } withDependencies: {
+            $0.persistenceClient.resolveAchievements = { derived in derived }
             $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
             $0.persistenceClient.savePreferences = { _ in }
             $0.syncModeClient.reconcile = { _ in }
@@ -973,6 +997,7 @@ struct AppFeatureIntegrationTests {
         let store = TestStore(initialState: initialState) {
             AppFeature()
         } withDependencies: {
+            $0.persistenceClient.resolveAchievements = { derived in derived }
             $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
             $0.persistenceClient.savePreferences = { _ in }
             $0.syncModeClient.reconcile = { _ in }
@@ -997,6 +1022,7 @@ struct AppFeatureIntegrationTests {
         let store = TestStore(initialState: AppFeature.State()) {
             AppFeature()
         } withDependencies: {
+            $0.persistenceClient.resolveAchievements = { derived in derived }
             $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
         }
         store.exhaustivity = .off
@@ -1014,6 +1040,7 @@ struct AppFeatureIntegrationTests {
         let store = TestStore(initialState: initialState) {
             AppFeature()
         } withDependencies: {
+            $0.persistenceClient.resolveAchievements = { derived in derived }
             $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
             $0.persistenceClient.savePreferences = { _ in }
         }
@@ -1042,6 +1069,7 @@ struct AppFeatureIntegrationTests {
         let store = TestStore(initialState: initialState) {
             AppFeature()
         } withDependencies: {
+            $0.persistenceClient.resolveAchievements = { derived in derived }
             $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
             $0.persistenceClient.savePreferences = { _ in }
             $0.notificationClient.cancelDailyReminder = {
@@ -1073,6 +1101,7 @@ struct AppFeatureIntegrationTests {
         let store = TestStore(initialState: initialState) {
             AppFeature()
         } withDependencies: {
+            $0.persistenceClient.resolveAchievements = { derived in derived }
             $0.focusClient.startNextPhase = {
                 startNextPhaseCalled.setValue(true)
             }
@@ -1112,6 +1141,7 @@ struct AppFeatureIntegrationTests {
         let store = TestStore(initialState: AppFeature.State()) {
             AppFeature()
         } withDependencies: {
+            $0.persistenceClient.resolveAchievements = { derived in derived }
             $0.continuousClock = ImmediateClock()
             $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
             $0.persistenceClient.savePreferences = { _ in }
@@ -1181,6 +1211,7 @@ struct AppFeatureIntegrationTests {
         let store = TestStore(initialState: AppFeature.State()) {
             AppFeature()
         } withDependencies: {
+            $0.persistenceClient.resolveAchievements = { derived in derived }
             $0.continuousClock = ImmediateClock()
             $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
             $0.persistenceClient.savePreferences = { _ in }
@@ -1254,6 +1285,7 @@ struct AppFeatureIntegrationTests {
         let store = TestStore(initialState: AppFeature.State()) {
             AppFeature()
         } withDependencies: {
+            $0.persistenceClient.resolveAchievements = { derived in derived }
             $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
             $0.persistenceClient.savePreferences = { _ in }
             $0.subscriptionClient.logIn = { userID in
