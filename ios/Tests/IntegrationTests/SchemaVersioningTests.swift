@@ -18,22 +18,23 @@ struct SchemaVersioningTests {
     @Test("PepinilloMigrationPlan lists versioned schemas in order")
     func migrationPlanSchemasOrdered() {
         let schemas = PepinilloMigrationPlan.schemas
-        #expect(schemas.count == 5)
+        #expect(schemas.count == 6)
         #expect(schemas[0].versionIdentifier == Schema.Version(1, 0, 0))
         #expect(schemas[1].versionIdentifier == Schema.Version(2, 0, 0))
         #expect(schemas[2].versionIdentifier == Schema.Version(3, 0, 0))
         #expect(schemas[3].versionIdentifier == Schema.Version(4, 0, 0))
         #expect(schemas[4].versionIdentifier == Schema.Version(5, 0, 0))
+        #expect(schemas[5].versionIdentifier == Schema.Version(6, 0, 0))
     }
 
-    @Test("PepinilloMigrationPlan has four sequential stages")
-    func migrationPlanHasFourStages() {
-        #expect(PepinilloMigrationPlan.stages.count == 4)
+    @Test("PepinilloMigrationPlan has five sequential stages")
+    func migrationPlanHasFiveStages() {
+        #expect(PepinilloMigrationPlan.stages.count == 5)
     }
 
-    @Test("Current schema (V5) includes all persisted models")
+    @Test("Current schema (V6) includes all persisted models")
     func currentSchemaIncludesAllModels() {
-        let modelNames = Set(SchemaV5.models.map { String(describing: $0) })
+        let modelNames = Set(SchemaV6.models.map { String(describing: $0) })
         #expect(modelNames.contains("TaskItem"))
         #expect(modelNames.contains("SubTask"))
         #expect(modelNames.contains("FocusSessionRecord"))
@@ -41,6 +42,7 @@ struct SchemaVersioningTests {
         #expect(modelNames.contains("UserPreferences"))
         #expect(modelNames.contains("ProductivityReport"))
         #expect(modelNames.contains("CachedUser"))
+        #expect(modelNames.contains("AchievementRecord"))
     }
 
     @Test("ModelContainer loads with versioned schema V5")
