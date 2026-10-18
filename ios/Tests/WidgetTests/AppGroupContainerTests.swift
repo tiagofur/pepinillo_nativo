@@ -405,6 +405,10 @@ struct AppGroupContainerTests {
         AppGroupDefaults.clearExternalCommands()
         AppGroupDefaults.externalCompleteTaskRequested = false
         AppGroupDefaults.externalCompleteTaskID = nil
+        // Entitlement gate (perform() starts with authorizedTaskID): authorize first
+        // so the test exercises the command path, not the gate rejection.
+        AppGroupDefaults.userCapabilities = .pepinilloPlus
+        AppGroupDefaults.subscriptionTierIdentifier = "pepinillo_plus"
 
         let taskID = UUID().uuidString
         _ = try await CompleteTaskFromWidgetIntent(taskID: taskID).perform()
@@ -414,6 +418,7 @@ struct AppGroupContainerTests {
         #expect(AppGroupDefaults.externalCompleteTaskID == taskID)
         #expect(AppGroupDefaults.externalCommandID != nil)
         #expect(AppGroupDefaults.externalCommandIssuedAt != nil)
+    }
 
     @Test("CompleteTaskFromWidgetIntent cannot bypass entitlement")
     func completeTaskFromWidgetIntentCannotBypassEntitlement() {
