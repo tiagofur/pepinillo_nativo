@@ -9,6 +9,7 @@ import io.mockk.coVerify
 import io.mockk.mockk
 import io.mockk.slot
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -50,10 +51,16 @@ private class FakeFocusSessionDao : FocusSessionDao {
 }
 
 private class FakeDailyStatsDao : DailyStatsDao {
+    /** Captured (startDate, endDate) pairs so range-boundary tests can assert exact bounds. */
+    val ranges = mutableListOf<Pair<Long, Long>>()
+
     override suspend fun upsert(stats: DailyStatsEntity) = Unit
     override suspend fun getStatsForDate(date: Long): DailyStatsEntity? = null
     override fun observeStatsForDate(date: Long): Flow<DailyStatsEntity?> = flowOf(null)
-    override fun getStatsInRange(startDate: Long, endDate: Long): Flow<List<DailyStatsEntity>> = flowOf(emptyList())
+    override fun getStatsInRange(startDate: Long, endDate: Long): Flow<List<DailyStatsEntity>> {
+        ranges += startDate to endDate
+        return flowOf(emptyList())
+    }
     override fun getAllDaysWithSessions(): Flow<List<DailyStatsEntity>> = flowOf(emptyList())
     override suspend fun deleteAll() = Unit
     override suspend fun getDirtyStats(): List<DailyStatsEntity> = emptyList()
@@ -245,6 +252,47 @@ class SessionRepositoryTest {
         // buckets[11]=30, [12]=30. Window (11,12)=60.
         // 11->"11 AM", 13->"1 PM"
         assertEquals("11 AM\u20131 PM", result)
+    }
+
+    @Test
+    fun `computePeakHours two hour window wraps midnight when 23h and 0h are busiest`() {
+        val sessions = listOf(
+            sessionAt(hour = 23, durationMinutes = 30),
+            sessionAt(hour = 0, durationMinutes = 30),
+        )
+        val result = repo.computePeakHours(sessions)
+        // buckets[23]=30, [0]=30. Only the wrapping window (23,0) sums to 60.
+        // 23->"11 PM", (23+2)%24=1 ->"1 AM"
+        assertEquals("11 PM\u20131 AM", result)
+    }
+
+    // -----------------------------------------------------------------------
+    // getStatsForMonth range bounds
+    // -----------------------------------------------------------------------
+
+    @Test
+    fun `getStatsForMonth upper bound stays inside the requested month`() = runTest {
+        val dao = FakeDailyStatsDao()
+        val monthRepo = SessionRepository(
+            sessionDao = FakeFocusSessionDao(),
+            dailyStatsDao = dao,
+        )
+
+        monthRepo.getStatsForMonth(2025, Calendar.JUNE).collect { }
+
+        val (start, end) = dao.ranges.single()
+        val june1 = Calendar.getInstance().apply {
+            set(2025, Calendar.JUNE, 1, 0, 0, 0)
+            set(Calendar.MILLISECOND, 0)
+        }.timeInMillis
+        val july1 = Calendar.getInstance().apply {
+            set(2025, Calendar.JULY, 1, 0, 0, 0)
+            set(Calendar.MILLISECOND, 0)
+        }.timeInMillis
+        assertEquals(june1, start)
+        // Day keys are exact midnights and the DAO bound is inclusive (date <= end),
+        // so the last millis of June must not bleed into July 1st.
+        assertEquals(july1 - 1, end)
     }
 
     // -----------------------------------------------------------------------

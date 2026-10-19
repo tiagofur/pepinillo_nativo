@@ -213,7 +213,14 @@ class SoundscapeManager @Inject constructor(
             val t = i.toFloat() / FADE_STEPS
             val volume = from + (to - from) * t
             val clamped = volume.coerceIn(0f, 1f)
-            mediaPlayer?.setVolume(clamped, clamped)
+            // stop()/stopInternal() can release the player mid-fade (audio focus loss,
+            // soundscape switch) — a released MediaPlayer throws IllegalStateException,
+            // which would crash the application-scoped coroutine (super-review C4).
+            try {
+                mediaPlayer?.setVolume(clamped, clamped)
+            } catch (_: Exception) {
+                // Ignore — player may already be released
+            }
             delay(stepDuration)
         }
         if (to > 0f) {

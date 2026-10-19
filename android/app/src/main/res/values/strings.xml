@@ -832,4 +832,19 @@
     <string name="paywall_save_pct">Save %1$d%%</string>
     <string name="paywall_risk_reversal">Cancel anytime. Keep your data.</string>
     <string name="banner_offline">You\'re offline — changes will sync when you reconnect</string>
+
+    <!-- Task enum labels (localized priority/energy/recurrence) -->
+    <string name="priority_none">None</string>
+    <string name="priority_low">Low</string>
+    <string name="priority_medium">Medium</string>
+    <string name="priority_high">High</string>
+    <string name="energy_deep">Deep Work</string>
+    <string name="energy_regular">Regular</string>
+    <string name="energy_light">Light</string>
+    <string name="recurrence_none">None</string>
+    <string name="recurrence_daily">Daily</string>
+    <string name="recurrence_weekdays">Weekdays</string>
+    <string name="recurrence_weekly">Weekly</string>
+    <string name="recurrence_biweekly">Every 2 weeks</string>
+    <string name="recurrence_monthly">Monthly</string>
 </resources>

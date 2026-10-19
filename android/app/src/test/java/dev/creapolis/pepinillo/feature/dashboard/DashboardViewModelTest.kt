@@ -202,6 +202,30 @@ class DashboardViewModelTest {
     }
 
     // -----------------------------------------------------------------------
+    // focusScore denominator (calendar days of the period, not days with rows)
+    // -----------------------------------------------------------------------
+
+    @Test
+    fun `focusScore divides by calendar days of the period so rest days are not free points`() = runTest {
+        // 2 active days of a 7-day week, 210 minutes each:
+        // consistency = 2/7 (not 2/2 = 1.0), avg = 420/7 = 60 -> minuteScore = 1.
+        // score = floor(2f/7 * 60 + 40) = 57. Old denominator (days with rows) gave 100.
+        val today = SessionRepository.startOfDay(System.currentTimeMillis())
+        val yesterday = SessionRepository.addDays(today, -1)
+        val rows = listOf(
+            DailyStatsEntity(date = today, totalMinutes = 210, sessionsCompleted = 3),
+            DailyStatsEntity(date = yesterday, totalMinutes = 210, sessionsCompleted = 3),
+        )
+        every { sessionRepository.getWeekStats() } returns flowOf(rows)
+
+        val vm = createViewModel()
+        collectStats(vm)
+        advanceUntilIdle()
+
+        assertEquals(57, vm.stats.value.focusScore)
+    }
+
+    // -----------------------------------------------------------------------
     // reflectionPreviews tests
     // -----------------------------------------------------------------------
 
