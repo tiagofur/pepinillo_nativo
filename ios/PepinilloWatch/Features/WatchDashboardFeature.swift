@@ -54,7 +54,7 @@ struct WatchDashboardFeature {
 
             case .onAppear:
                 return .run { [watchClient] _ in
-                    await watchClient.sendCommand(.requestDashboard)
+                    _ = await watchClient.sendCommand(.requestDashboard)
                 }
 
             case .statsReceived(let minutes, let sessions, let streak):
