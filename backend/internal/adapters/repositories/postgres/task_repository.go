@@ -168,6 +168,60 @@ func (r *TaskRepository) Delete(ctx context.Context, userID string, taskID int) 
 		Updates(map[string]any{"is_deleted": true, "updated_at": time.Now().UTC()}).Error
 }
 
+// taskSyncChunkSize bounds one upsert transaction (R4). The old Sync held a
+// single transaction (and pool connection) for the whole batch while also
+// preloading everything into memory. Chunks are idempotent upserts, so a
+// mid-batch failure retries cleanly: dirty rows stay dirty until acked.
+const taskSyncChunkSize = 200
+
+// upsertSyncItem applies one incoming task row: force-insert without sync ID,
+// LWW update on match, insert on miss — with the Save-by-PK IDOR guards.
+// Extracted per-row step of Sync so the batch can be chunked across
+// transactions. incoming is passed by value: caller slices are never mutated.
+func (r *TaskRepository) upsertSyncItem(tx *gorm.DB, userID string, incoming domain.Task, now time.Time, applied, rejected *[]string) error {
+	incoming.UserID = userID
+	// D2: compare AND store on the same (device) timeline.
+	clientUpdatedAt := resolveSyncTimestamp(incoming.UpdatedAt, now)
+
+	if incoming.SyncID == "" {
+		// No sync id: force INSERT. Never trust a client-supplied ID,
+		// which could overwrite another user's row via Save-by-PK.
+		incoming.ID = 0
+		incoming.UpdatedAt = clientUpdatedAt
+		if err := tx.Save(&incoming).Error; err != nil {
+			return err
+		}
+		return nil
+	}
+
+	var existing domain.Task
+	err := tx.Where("user_id = ? AND sync_id = ?", userID, incoming.SyncID).First(&existing).Error
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		return err
+	}
+
+	if err == nil {
+		if !shouldApplyClientUpdate(existing.UpdatedAt, clientUpdatedAt) {
+			*rejected = append(*rejected, incoming.SyncID)
+			return nil
+		}
+		incoming.ID = existing.ID
+	} else {
+		// Lookup missed: do NOT trust the client-supplied ID; force INSERT.
+		incoming.ID = 0
+	}
+
+	// D2: store the (clamped) client stamp, not server now — see
+	// resolveSyncTimestamp. Comparing and storing on different
+	// timelines systematically rejects slow-clock devices.
+	incoming.UpdatedAt = clientUpdatedAt
+	if err := tx.Save(&incoming).Error; err != nil {
+		return err
+	}
+	*applied = append(*applied, incoming.SyncID)
+	return nil
+}
+
 func (r *TaskRepository) Sync(ctx context.Context, userID string, tasks []domain.Task, deletedSyncIDs []string, since *time.Time) (*ports.TaskSyncResult, error) {
 	now := time.Now().UTC()
 
@@ -176,50 +230,24 @@ func (r *TaskRepository) Sync(ctx context.Context, userID string, tasks []domain
 	applied := make([]string, 0, len(tasks))
 	rejected := make([]string, 0, len(tasks))
 
-	err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		for i := range tasks {
-			incoming := tasks[i]
-			incoming.UserID = userID
-			// D2: compare AND store on the same (device) timeline.
-			clientUpdatedAt := resolveSyncTimestamp(incoming.UpdatedAt, now)
-
-			if incoming.SyncID == "" {
-				// No sync id: force INSERT. Never trust a client-supplied ID,
-				// which could overwrite another user's row via Save-by-PK.
-				incoming.ID = 0
-				incoming.UpdatedAt = clientUpdatedAt
-				if err := tx.Save(&incoming).Error; err != nil {
+	// R4: upsert in bounded chunks (see taskSyncChunkSize). The download
+	// below runs once afterwards and reflects all applied chunks.
+	for start := 0; start < len(tasks); start += taskSyncChunkSize {
+		end := min(start+taskSyncChunkSize, len(tasks))
+		chunk := tasks[start:end]
+		if err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+			for i := range chunk {
+				if err := r.upsertSyncItem(tx, userID, chunk[i], now, &applied, &rejected); err != nil {
 					return err
 				}
-				continue
 			}
-
-			var existing domain.Task
-			err := tx.Where("user_id = ? AND sync_id = ?", userID, incoming.SyncID).First(&existing).Error
-			if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-				return err
-			}
-
-			if err == nil {
-				if !shouldApplyClientUpdate(existing.UpdatedAt, clientUpdatedAt) {
-					rejected = append(rejected, incoming.SyncID)
-					continue
-				}
-				incoming.ID = existing.ID
-			} else {
-				// Lookup missed: do NOT trust the client-supplied ID; force INSERT.
-				incoming.ID = 0
-			}
-
-			// D2: store the (clamped) client stamp, not server now — see
-			// resolveSyncTimestamp. Comparing and storing on different
-			// timelines systematically rejects slow-clock devices.
-			incoming.UpdatedAt = clientUpdatedAt
-			if err := tx.Save(&incoming).Error; err != nil {
-				return err
-			}
-			applied = append(applied, incoming.SyncID)
+			return nil
+		}); err != nil {
+			return nil, err
 		}
+	}
+
+	err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		if len(deletedSyncIDs) > 0 {
 			if err := tx.Model(&domain.Task{}).
 				Where("user_id = ? AND sync_id IN ?", userID, deletedSyncIDs).

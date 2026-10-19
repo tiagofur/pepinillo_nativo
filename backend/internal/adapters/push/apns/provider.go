@@ -17,6 +17,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"pepinillo/backend/internal/ports"
 )
 
 var (
@@ -105,6 +107,11 @@ func (p *Provider) Send(ctx context.Context, platform, token, title, body string
 
 	if resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden {
 		return ErrAPNSNotConfigured
+	}
+	// A3: APNS 410 Gone means the device token is unregistered — prune it
+	// instead of retrying it forever.
+	if resp.StatusCode == http.StatusGone {
+		return ports.ErrPushTokenUnregistered
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return fmt.Errorf("apns_send_failed: status_%d", resp.StatusCode)

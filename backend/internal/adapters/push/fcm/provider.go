@@ -13,14 +13,28 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"strings"
 	"sync"
 	"time"
+
+	"pepinillo/backend/internal/ports"
 )
 
 var ErrFCMNotConfigured = errors.New("fcm_not_configured")
+
+// responseIndicatesUnregistered reports whether an FCM error body carries the
+// UNREGISTERED error code (dead token). The body is bounded: error payloads
+// are small JSON documents.
+func responseIndicatesUnregistered(resp *http.Response) bool {
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 4096))
+	if err != nil {
+		return false
+	}
+	return strings.Contains(string(body), "UNREGISTERED")
+}
 
 type Config struct {
 	ProjectID                string
@@ -106,6 +120,11 @@ func (p *Provider) Send(ctx context.Context, platform, token, title, body string
 		return ErrFCMNotConfigured
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		// A3: dead tokens must be pruned, not retried forever. FCM v1
+		// reports them as 404 + UNREGISTERED in the error details.
+		if resp.StatusCode == http.StatusNotFound && responseIndicatesUnregistered(resp) {
+			return ports.ErrPushTokenUnregistered
+		}
 		return fmt.Errorf("fcm_send_failed: status_%d", resp.StatusCode)
 	}
 	return nil
