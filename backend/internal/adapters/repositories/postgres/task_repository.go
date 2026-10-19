@@ -40,8 +40,11 @@ func (r *TaskRepository) ListByUserPaginated(ctx context.Context, userID string,
 		Where("user_id = ?", userID)
 
 	if cursor != nil {
+		// D1: task IDs are integers ordered numerically. The old
+		// CAST(id AS TEXT) compared lexicographically, skipping ids
+		// 100-999 when a same-timestamp tie group ended on id 99.
 		query = query.Where(
-			"(updated_at > ? OR (updated_at = ? AND CAST(id AS TEXT) > ?))",
+			"(updated_at > ? OR (updated_at = ? AND id > CAST(? AS INTEGER)))",
 			cursor.UpdatedAt, cursor.UpdatedAt, cursor.ID,
 		)
 	}
@@ -177,16 +180,14 @@ func (r *TaskRepository) Sync(ctx context.Context, userID string, tasks []domain
 		for i := range tasks {
 			incoming := tasks[i]
 			incoming.UserID = userID
-			clientUpdatedAt := incoming.UpdatedAt
-			if clientUpdatedAt.IsZero() {
-				clientUpdatedAt = now
-			}
+			// D2: compare AND store on the same (device) timeline.
+			clientUpdatedAt := resolveSyncTimestamp(incoming.UpdatedAt, now)
 
 			if incoming.SyncID == "" {
 				// No sync id: force INSERT. Never trust a client-supplied ID,
 				// which could overwrite another user's row via Save-by-PK.
 				incoming.ID = 0
-				incoming.UpdatedAt = now
+				incoming.UpdatedAt = clientUpdatedAt
 				if err := tx.Save(&incoming).Error; err != nil {
 					return err
 				}
@@ -210,7 +211,10 @@ func (r *TaskRepository) Sync(ctx context.Context, userID string, tasks []domain
 				incoming.ID = 0
 			}
 
-			incoming.UpdatedAt = now
+			// D2: store the (clamped) client stamp, not server now — see
+			// resolveSyncTimestamp. Comparing and storing on different
+			// timelines systematically rejects slow-clock devices.
+			incoming.UpdatedAt = clientUpdatedAt
 			if err := tx.Save(&incoming).Error; err != nil {
 				return err
 			}
@@ -253,16 +257,23 @@ func (r *TaskRepository) Sync(ctx context.Context, userID string, tasks []domain
 	}
 
 	return &ports.TaskSyncResult{
-		ServerTasks:    serverTasks,
-		DeletedSyncIDs: deleted,
-		AppliedSyncIDs: applied,
+		ServerTasks:     serverTasks,
+		DeletedSyncIDs:  deleted,
+		AppliedSyncIDs:  applied,
 		RejectedSyncIDs: rejected,
-		SyncedAt:       now,
+		SyncedAt:        now,
 	}, nil
 }
 
 func shouldApplyClientUpdate(existingUpdatedAt, clientUpdatedAt time.Time) bool {
 	return !existingUpdatedAt.After(clientUpdatedAt)
+}
+
+// resolveSyncTimestamp normalizes a device-stamped updatedAt for LWW (D2).
+// Canonical logic lives in domain.ResolveSyncTimestamp; this wrapper keeps
+// the repo-internal call sites (and their tests) stable.
+func resolveSyncTimestamp(clientUpdatedAt, now time.Time) time.Time {
+	return domain.ResolveSyncTimestamp(clientUpdatedAt, now)
 }
 
 func (r *TaskRepository) UpdateTrackingMode(ctx context.Context, userID string, taskID int, mode string) error {

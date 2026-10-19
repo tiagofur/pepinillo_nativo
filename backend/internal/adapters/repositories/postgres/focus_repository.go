@@ -243,6 +243,38 @@ func (r *FocusRepository) GetTaskStats(ctx context.Context, userID string, taskI
 	return &result, nil
 }
 
+// sessionUpsertConflict builds the ON CONFLICT clause for session batches.
+// D3: last-write-wins + monotonic ended_at. The old unconditional DO UPDATE
+// let a stale device resurrect a closed session (its copy still had
+// ended_at=NULL) and silently drop newer server edits (journal, ratings).
+// Now: rows apply only when strictly newer, and ended_at can only transition
+// NULL→set, never back (the domain has no reopen; a NULL incoming ended_at
+// over a closed row is always a stale copy, not a reopen).
+func sessionUpsertConflict() clause.OnConflict {
+	return clause.OnConflict{
+		Columns: []clause.Column{{Name: "id"}},
+		DoUpdates: clause.Assignments(map[string]any{
+			"ended_at":            gorm.Expr("CASE WHEN EXCLUDED.ended_at IS NULL THEN focus_sessions.ended_at ELSE EXCLUDED.ended_at END"),
+			"duration_seconds":    gorm.Expr("EXCLUDED.duration_seconds"),
+			"elapsed_seconds":     gorm.Expr("EXCLUDED.elapsed_seconds"),
+			"task_id":             gorm.Expr("EXCLUDED.task_id"),
+			"mode":                gorm.Expr("EXCLUDED.mode"),
+			"phase":               gorm.Expr("EXCLUDED.phase"),
+			"was_completed":       gorm.Expr("EXCLUDED.was_completed"),
+			"pause_count":         gorm.Expr("EXCLUDED.pause_count"),
+			"total_pause_seconds": gorm.Expr("EXCLUDED.total_pause_seconds"),
+			"interruptions":       gorm.Expr("EXCLUDED.interruptions"),
+			"pomodoro_number":     gorm.Expr("EXCLUDED.pomodoro_number"),
+			"satisfaction_rating": gorm.Expr("EXCLUDED.satisfaction_rating"),
+			"journal_note":        gorm.Expr("EXCLUDED.journal_note"),
+				"updated_at":          gorm.Expr("EXCLUDED.updated_at"),
+		}),
+		Where: clause.Where{Exprs: []clause.Expression{
+			gorm.Expr("EXCLUDED.updated_at > focus_sessions.updated_at"),
+		}},
+	}
+}
+
 func (r *FocusRepository) UpsertSessionBatch(ctx context.Context, sessions []domain.FocusSession) error {
 	if len(sessions) == 0 {
 		return nil
@@ -285,16 +317,7 @@ func (r *FocusRepository) UpsertSessionBatch(ctx context.Context, sessions []dom
 		}
 
 		filtered := dropForeignSessionIDs(sessions, allowedIDs)
-		return tx.Clauses(clause.OnConflict{
-			Columns: []clause.Column{{Name: "id"}},
-			DoUpdates: clause.AssignmentColumns([]string{
-				"ended_at", "duration_seconds", "elapsed_seconds",
-				"task_id", "mode", "phase",
-				"was_completed", "pause_count", "total_pause_seconds",
-				"interruptions", "pomodoro_number", "satisfaction_rating",
-				"journal_note", "updated_at",
-			}),
-		}).Create(&filtered).Error
+		return tx.Clauses(sessionUpsertConflict()).Create(&filtered).Error
 	})
 }
 
@@ -351,6 +374,14 @@ func (r *FocusRepository) RecomputeStatsForDates(ctx context.Context, userID str
 	}
 
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		// D4: serialize concurrent recomputes for this user. Without this,
+		// two overlapping SyncSessions interleave aggregate-read +
+		// stats-write and the stale computation wins (silent undercount
+		// until that date is recomputed again). The lock is scoped to the
+		// transaction (released on commit/rollback).
+		if err := tx.Exec("SELECT pg_advisory_xact_lock(hashtext(?))", "stats:"+userID).Error; err != nil {
+			return err
+		}
 		for _, date := range dates {
 			dateStr := date.Format("2006-01-02")
 
@@ -388,7 +419,8 @@ func (r *FocusRepository) RecomputeStatsForDates(ctx context.Context, userID str
 					COUNT(*) FILTER (WHERE mode = 'stopwatch') AS stopwatch_count,
 					COALESCE(MAX(elapsed_seconds), 0) AS longest_session_seconds
 				FROM focus_sessions
-				WHERE user_id = ? AND DATE(started_at) = ?
+				-- D5: canonical UTC day bucket, matching collectAffectedDates.
+				WHERE user_id = ? AND (started_at AT TIME ZONE 'UTC')::date = ?
 			`, userID, dateStr).Scan(&result).Error
 			if err != nil {
 				return err
