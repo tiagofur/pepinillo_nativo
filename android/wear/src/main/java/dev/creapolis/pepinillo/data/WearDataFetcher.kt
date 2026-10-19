@@ -16,6 +16,12 @@ object WearDataFetcher {
             val buffer = Wearable.getDataClient(context).dataItems.await()
             try {
                 Log.d(TAG, "DataClient items count: ${buffer.count}")
+                // P2(h): DataItems are a replicated store — they can be STALE snapshots of
+                // the last connection. Only a live node query may mark the phone connected,
+                // otherwise the UI claims "connected" from cached data while offline.
+                val liveConnected = runCatching {
+                    Wearable.getNodeClient(context).connectedNodes.await().isNotEmpty()
+                }.getOrDefault(false)
                 buffer.forEach { item ->
                     val path = item.uri.path ?: return@forEach
                     Log.d(TAG, "DataItem path=$path uri=${item.uri}")
@@ -51,7 +57,7 @@ object WearDataFetcher {
                                 displayTime = map.getString("displayTime", "00:00"),
                                 phaseLabel = map.getString("phaseLabel", "Focus"),
                                 progress = map.getFloat("progress", 0f),
-                                isConnected = true,
+                                isConnected = liveConnected,
                                 linkedTaskId = lid.ifEmpty { null },
                                 linkedTaskName = map.getString("linkedTaskName", "").ifEmpty { null },
                                 completedSessions = map.getInt("completedSessions", 0),
@@ -62,6 +68,9 @@ object WearDataFetcher {
                             )
                             WearDataStore.updateTimer(timerState)
                             WearSnapshotStore.persistTimerState(context, timerState)
+                            // E2: fetched timer DataItem counts as an authoritative phone
+                            // confirmation for the command watchdog.
+                            WearDataStore.recordRemoteTimerRevision()
                         }
 
                         WearDataPaths.PATH_TASKS -> {

@@ -28,6 +28,10 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.rotary.onRotaryScrollEvent
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -127,10 +131,40 @@ fun TasksScreen(
             items(tasks) { task ->
                 val progress = if (task.pomodoroProgress.isNotBlank()) task.pomodoroProgress else null
                 val isLinked = timerState?.linkedTaskId == task.id
+
+                // P2(c): TalkBack access. The touch overlay below only serves pointer input —
+                // semantics see an inert button. Expose the two row actions as accessibility
+                // custom actions (complete + link/unlink) and describe the row contents, so
+                // the long-press link gesture is discoverable without seeing the screen.
+                val completeActionLabel = stringResource(R.string.cd_task_complete_action)
+                val linkActionLabel = stringResource(
+                    if (isLinked) R.string.cd_task_unlink_action else R.string.cd_task_link_action,
+                )
+                val linkedLabel = stringResource(R.string.linked_to_timer)
+                val rowDescription = buildString {
+                    append(task.title)
+                    if (progress != null) append(". ").append(progress)
+                    if (isLinked) append(". ").append(linkedLabel)
+                }
+
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 2.dp),
+                        .padding(vertical = 2.dp)
+                        .semantics {
+                            contentDescription = rowDescription
+                            customActions = listOf(
+                                CustomAccessibilityAction(completeActionLabel) {
+                                    taskToComplete = task
+                                    true
+                                },
+                                CustomAccessibilityAction(linkActionLabel) {
+                                    WearHaptics.onConfirm(haptics)
+                                    onToggleTaskLink(task.id, task.title)
+                                    true
+                                },
+                            )
+                        },
                 ) {
                     // M3 has no Chip — use FilledTonalButton (linked) or OutlinedButton (normal)
                     // with a custom column layout to replicate label + secondaryLabel + icon.

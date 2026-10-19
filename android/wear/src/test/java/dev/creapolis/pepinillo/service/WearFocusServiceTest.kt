@@ -1,7 +1,10 @@
 package dev.creapolis.pepinillo.service
 
+import dev.creapolis.pepinillo.data.WearTimerState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -120,5 +123,57 @@ class WearFocusServiceTest {
                 WearFocusService.isForegroundServiceStatus(status),
             )
         }
+    }
+
+    // ── P2: notification chronometer keeps the ongoing body ticking ────
+    // buildNotification previously froze the display time computed at (re)build time.
+    // The fix anchors a NotificationCompat chronometer to the phase anchors so the
+    // notification body ticks; these tests pin the pure anchor selection.
+
+    @Test
+    fun `running countdown notification anchors chronometer at phase end counting down`() {
+        val state = WearTimerState(
+            mode = "Pomodoro",
+            status = "Running",
+            phaseEndEpochMs = 1_700_000_300_000L,
+            totalDurationMs = 25L * 60_000L,
+        )
+
+        val chronometer = notificationChronometerFor(state)
+
+        assertNotNull(chronometer)
+        assertEquals(1_700_000_300_000L, chronometer!!.baseEpochMs)
+        assertTrue(chronometer.countDown)
+    }
+
+    @Test
+    fun `running count-up notification anchors chronometer at phase start counting up`() {
+        val state = WearTimerState(
+            mode = "Flow",
+            status = "Running",
+            phaseStartEpochMs = 1_700_000_000_000L,
+        )
+
+        val chronometer = notificationChronometerFor(state)
+
+        assertNotNull(chronometer)
+        assertEquals(1_700_000_000_000L, chronometer!!.baseEpochMs)
+        assertFalse(chronometer.countDown)
+    }
+
+    @Test
+    fun `paused and idle notifications use no chronometer`() {
+        assertNull(
+            notificationChronometerFor(
+                WearTimerState(status = "Paused", phaseEndEpochMs = 1_700_000_300_000L),
+            ),
+        )
+        assertNull(notificationChronometerFor(WearTimerState(status = "Idle")))
+        assertNull(notificationChronometerFor(WearTimerState(status = "WaitingForNext")))
+    }
+
+    @Test
+    fun `running without usable phase anchors uses no chronometer`() {
+        assertNull(notificationChronometerFor(WearTimerState(status = "Running")))
     }
 }

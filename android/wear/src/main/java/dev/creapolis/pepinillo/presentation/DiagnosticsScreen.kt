@@ -34,12 +34,15 @@ fun DiagnosticsScreen(
     syncStatusLabel: String?,
     isSyncStale: Boolean,
     diagnostics: WearDiagnosticsState,
+    isActive: Boolean = true,
 ) {
     val listState = rememberScalingLazyListState()
     val focusRequester = remember { FocusRequester() }
     val coroutineScope = rememberCoroutineScope()
 
-    LaunchedEffect(Unit) { focusRequester.requestFocus() }
+    // Only steal rotary/crown focus while this page is the settled pager page,
+    // matching Stats/Tasks — the pager pre-composes neighbour pages.
+    LaunchedEffect(isActive) { if (isActive) focusRequester.requestFocus() }
 
     val diagTitle = stringResource(R.string.diag_title)
     val diagNoSync = stringResource(R.string.diag_no_sync)
