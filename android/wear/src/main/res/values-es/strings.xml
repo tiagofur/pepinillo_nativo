@@ -24,6 +24,10 @@
     <string name="cd_voice_start">Iniciar con voz</string>
     <string name="cd_pro_badge">Requiere Everywhere+</string>
     <string name="msg_pro_required">Requiere Everywhere+ en el tel\u00e9fono</string>
+    <string name="msg_voice_unavailable">Inicio por voz no disponible</string>
+    <string name="cd_task_complete_action">Completar tarea</string>
+    <string name="cd_task_link_action">Vincular al temporizador</string>
+    <string name="cd_task_unlink_action">Desvincular del temporizador</string>
 
     <!-- TasksScreen -->
     <string name="tasks_count">Tareas (%d)</string>

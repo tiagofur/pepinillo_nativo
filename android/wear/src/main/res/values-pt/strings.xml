@@ -80,6 +80,12 @@
     <!-- Voice prompt (#508) -->
     <string name="voice_prompt_mode">Diga um modo de foco</string>
 
+    <!-- Task row accessibility + voice fallback -->
+    <string name="msg_voice_unavailable">Início por voz indisponível</string>
+    <string name="cd_task_complete_action">Concluir tarefa</string>
+    <string name="cd_task_link_action">Vincular ao temporizador</string>
+    <string name="cd_task_unlink_action">Desvincular do temporizador</string>
+
     <!-- Notification channel (#508) -->
     <string name="notif_channel_focus_name">Temporizador de foco</string>
     <string name="notif_channel_focus_desc">Exibe a contagem regressiva do temporizador de foco</string>

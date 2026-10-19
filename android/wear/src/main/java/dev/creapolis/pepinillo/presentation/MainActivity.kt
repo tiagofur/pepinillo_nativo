@@ -97,7 +97,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-private const val TOTAL_PAGES = 3
+private const val TOTAL_PAGES = 4
 
 @OptIn(androidx.wear.compose.foundation.ExperimentalWearFoundationApi::class)
 @Composable
@@ -108,6 +108,7 @@ private fun WearApp(viewModel: WearViewModel, isAmbient: Boolean = false) {
     val isPro by viewModel.isPro.collectAsStateWithLifecycle()
     val pendingCommandCount by viewModel.pendingCommandCount.collectAsStateWithLifecycle()
     val lastSyncAtMillis by viewModel.lastSyncAtMillis.collectAsStateWithLifecycle()
+    val diagnostics by viewModel.diagnostics.collectAsStateWithLifecycle()
 
     val pagerState = rememberPagerState(initialPage = 1, pageCount = { TOTAL_PAGES })
     val context = androidx.compose.ui.platform.LocalContext.current
@@ -156,13 +157,25 @@ private fun WearApp(viewModel: WearViewModel, isAmbient: Boolean = false) {
                             onStop = viewModel::stopTimer,
                             onSkip = viewModel::skipPhase,
                         )
-                        else -> TasksScreen(
+                        2 -> TasksScreen(
                             tasks = tasks,
                             timerState = timerState,
                             syncStatusLabel = syncStatus.label,
                             isSyncStale = syncStatus.isStale,
                             onCompleteTask = viewModel::completeTask,
                             onToggleTaskLink = viewModel::toggleTaskLink,
+                            isActive = page == pagerState.settledPage,
+                        )
+                        // P2(f): cheap support surface — the diagnostics screen existed but
+                        // was unreachable from the 3-page pager.
+                        else -> DiagnosticsScreen(
+                            timerState = timerState,
+                            tasks = tasks,
+                            stats = stats,
+                            pendingCommandCount = pendingCommandCount,
+                            syncStatusLabel = syncStatus.label,
+                            isSyncStale = syncStatus.isStale,
+                            diagnostics = diagnostics,
                             isActive = page == pagerState.settledPage,
                         )
                     }

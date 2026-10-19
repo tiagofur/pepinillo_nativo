@@ -174,8 +174,14 @@ class WearSyncListenerService : WearableListenerService() {
                         totalDurationMs = totalMillis,
                     )
                     processor.onTimerData(timerState)
-                    
-                    if (status == "Running" || status == "Paused") {
+                    // E2: this DataItem is the phone's authoritative confirmation of a
+                    // timer command — bump the revision the command watchdog waits on.
+                    WearDataStore.recordRemoteTimerRevision()
+
+                    // E3: keep the foreground service (notification + day-change receiver
+                    // + day-change backstop) alive for every status WearFocusService treats
+                    // as foreground-worthy — WaitingForNext too, not just Running/Paused.
+                    if (WearFocusService.isForegroundServiceStatus(status)) {
                         WearFocusService.start(this@WearSyncListenerService)
                     } else {
                         WearFocusService.stop(this@WearSyncListenerService)

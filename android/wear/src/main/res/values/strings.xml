@@ -26,6 +26,10 @@
     <string name="cd_voice_start">Start with voice</string>
     <string name="cd_pro_badge">Everywhere+ required</string>
     <string name="msg_pro_required">Everywhere+ required on phone</string>
+    <string name="msg_voice_unavailable">Voice start unavailable</string>
+    <string name="cd_task_complete_action">Complete task</string>
+    <string name="cd_task_link_action">Link to timer</string>
+    <string name="cd_task_unlink_action">Unlink from timer</string>
 
     <!-- Modes -->
     <string name="mode_pomodoro">Pomodoro</string>

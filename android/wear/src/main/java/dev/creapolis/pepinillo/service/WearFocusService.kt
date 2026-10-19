@@ -31,6 +31,35 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
+/**
+ * Chronometer anchoring for the ongoing notification (P2: stale notification body).
+ * `buildNotification` is only re-run when the timer state changes, so a static
+ * content time freezes between pushes. These values let the system chronometer
+ * tick the notification body instead.
+ */
+internal data class NotificationChronometer(
+    val baseEpochMs: Long,
+    val countDown: Boolean,
+)
+
+/**
+ * Countdown modes anchor the chronometer at the phase end and count down; count-up
+ * modes anchor at the phase start. Paused/idle/waiting states keep the static text
+ * (their display time is genuinely frozen). Returns null when no chronometer applies.
+ */
+internal fun notificationChronometerFor(state: WearTimerState): NotificationChronometer? {
+    if (state.status != "Running") return null
+    return if (WearTimerDisplay.isCountUpMode(state.mode)) {
+        state.phaseStartEpochMs
+            .takeIf { it > 0L }
+            ?.let { NotificationChronometer(baseEpochMs = it, countDown = false) }
+    } else {
+        state.phaseEndEpochMs
+            .takeIf { it > 0L }
+            ?.let { NotificationChronometer(baseEpochMs = it, countDown = true) }
+    }
+}
+
 class WearFocusService : Service() {
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var isStarted = false
@@ -103,10 +132,13 @@ class WearFocusService : Service() {
         }
         val ticked = WearTimerDisplay.tick(state)
         val displayTime = ticked.displayTime
-        val text = if (state.linkedTaskName != null) {
-            "${state.linkedTaskName} • $displayTime"
-        } else {
-            displayTime
+        // P2: when a chronometer drives the time display, drop the frozen string from the
+        // body — only the linked task remains, so nothing in the notification goes stale.
+        val chronometer = notificationChronometerFor(state)
+        val text: String? = when {
+            chronometer != null -> state.linkedTaskName
+            state.linkedTaskName != null -> "${state.linkedTaskName} • $displayTime"
+            else -> displayTime
         }
 
         val intent = Intent(this, MainActivity::class.java).apply {
@@ -127,6 +159,13 @@ class WearFocusService : Service() {
             .setCategory(NotificationCompat.CATEGORY_STATUS)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setContentIntent(pendingIntent)
+
+        if (chronometer != null) {
+            notificationBuilder
+                .setUsesChronometer(true)
+                .setChronometerCountDown(chronometer.countDown)
+                .setWhen(chronometer.baseEpochMs)
+        }
 
         // Build OngoingActivity Status
         val statusBuilder = Status.Builder()

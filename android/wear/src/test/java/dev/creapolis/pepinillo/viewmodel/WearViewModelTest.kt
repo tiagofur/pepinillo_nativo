@@ -27,6 +27,7 @@ class WearViewModelTest {
         WearDataStore.updatePendingCount(0)
         WearDataStore.updateLastSyncAtMillis(null)
         WearDataStore.resetDiagnostics()
+        WearDataStore.resetRemoteTimerRevisions()
     }
 
     // ── startTimer optimistic update ────────────────────────────────────
@@ -514,5 +515,37 @@ class WearViewModelTest {
         assertEquals("Idle", timer.status)
         assertEquals(0L, timer.phaseEndEpochMs)
         assertEquals(0L, timer.totalDurationMs)
+    }
+
+    // ── E2: command confirmation signal (WearCommandWatchdog) ──────────
+    // The watchdog distinguishes phone-confirmed timer pushes from local optimistic
+    // updates via WearDataStore.remoteTimerRevisions. Only the remote path may bump it.
+
+    @Test
+    fun `optimistic timer updates do not bump the remote confirmation revision`() {
+        // Simulate one prior authoritative phone push.
+        WearDataStore.recordRemoteTimerRevision()
+        val before = WearDataStore.remoteTimerRevisions.value
+
+        // Simulate: WearViewModel.startTimer("Pomodoro") optimistic update.
+        WearDataStore.updateTimer(
+            WearDataStore.timerState.value.copy(
+                mode = "Pomodoro",
+                status = "Running",
+                phaseLabel = "Focus",
+            ),
+        )
+
+        assertEquals(before, WearDataStore.remoteTimerRevisions.value)
+    }
+
+    @Test
+    fun `remote timer data bumps the confirmation revision`() {
+        val before = WearDataStore.remoteTimerRevisions.value
+
+        // Simulate: PATH_TIMER DataItem applied by WearSyncListenerService/WearDataFetcher.
+        WearDataStore.recordRemoteTimerRevision()
+
+        assertEquals(before + 1L, WearDataStore.remoteTimerRevisions.value)
     }
 }
