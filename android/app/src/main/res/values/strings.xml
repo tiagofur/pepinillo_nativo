@@ -160,7 +160,6 @@
     <string name="ai_report_insights">Insights</string>
     <string name="ai_report_recommendations">Recommendations</string>
     <string name="ai_report_button">AI Report</string>
-    <string name="ai_credits_left">%1$d credits left this month</string>
 
     <!-- Template Report -->
     <string name="report_title_strong">A Strong %1$s of Focus</string>
@@ -468,7 +467,6 @@
     <string name="dashboard_completion">Completion</string>
     <string name="dashboard_longest_session">Longest</string>
     <string name="dashboard_today">Today</string>
-    <string name="dashboard_today_sessions_compact">%1$d sessions today</string>
     <string name="streak_protected">Protected</string>
     <string name="cd_streak_protected">Streak protection active</string>
     <string name="dashboard_focus_score_qualitative_low">Warming up</string>
@@ -484,7 +482,6 @@
     <string name="dashboard_no_sessions">No focus sessions yet</string>
     <string name="dashboard_empty_desc">Start your first focus session to see your analytics here</string>
     <string name="dashboard_btn_start">Start your first focus</string>
-    <string name="dashboard_days_count">%1$d days</string>
     <string name="cd_weekly_review">Weekly Review</string>
     <string name="cd_monthly_review">Monthly Review</string>
     <string name="cd_calendar">Calendar</string>
@@ -494,7 +491,6 @@
     <string name="tasks_title">Plan</string>
     <string name="select_task_to_view_details">Select a task to view its details</string>
     <string name="select_dashboard_detail">Select an item to view details</string>
-    <string name="tasks_active_count">%1$d active</string>
     <string name="tasks_active_limit">%1$d/%2$d active</string>
     <string name="tasks_no_tasks">No tasks yet</string>
     <string name="tasks_empty_desc">Type below to add your first task</string>
@@ -631,9 +627,6 @@
     <string name="btn_ok">OK</string>
     <string name="settings_sync_never">Never</string>
     <string name="settings_sync_just_now">Just now</string>
-    <string name="settings_sync_min_ago">%1$d min ago</string>
-    <string name="settings_sync_hr_ago">%1$d hr ago</string>
-    <string name="settings_sync_days_ago">%1$d days ago</string>
 
     <!-- App Setup Screen -->
     <string name="setup_title">Permissions &amp; Background</string>
@@ -853,4 +846,7 @@
     <string name="cd_calendar_today">Today</string>
     <string name="cd_calendar_day_has_activity">Has activity</string>
     <string name="chart_minutes_compact">%1$dm</string>
+    <string name="duration_under_minute">&lt; 1 min</string>
+    <string name="dashboard_stats_unavailable_title">Couldn\'t load your stats</string>
+    <string name="dashboard_stats_unavailable_desc">Your history is safe. Check your connection and try again.</string>
 </resources>

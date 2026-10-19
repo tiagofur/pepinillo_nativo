@@ -214,6 +214,7 @@ class DashboardViewModel @Inject constructor(
             weeklyData = if (period == AnalyticsPeriod.Week) chartData else emptyList(),
             modeBreakdown = modeBreakdown,
             isLoading = false,
+            hasHistory = allDays.isNotEmpty(),
             selectedPeriod = period,
             periodMinutes = periodMinutes,
             periodSessions = periodSessionCount,

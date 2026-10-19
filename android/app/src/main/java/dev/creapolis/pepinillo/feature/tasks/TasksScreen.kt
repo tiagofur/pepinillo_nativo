@@ -71,6 +71,7 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.material.icons.rounded.ArrowUpward
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -165,7 +166,7 @@ fun TasksScreen(
                         text = if (!uiState.isPro) {
                             stringResource(R.string.tasks_active_limit, uiState.activeCount, FeatureGate.FREE_TASK_LIMIT)
                         } else {
-                            stringResource(R.string.tasks_active_count, uiState.activeCount)
+                            pluralStringResource(R.plurals.tasks_active_count, uiState.activeCount, uiState.activeCount)
                         },
                         style = MaterialTheme.typography.bodyMedium,
                         color = if (!uiState.isPro && uiState.activeCount >= FeatureGate.FREE_TASK_LIMIT) {

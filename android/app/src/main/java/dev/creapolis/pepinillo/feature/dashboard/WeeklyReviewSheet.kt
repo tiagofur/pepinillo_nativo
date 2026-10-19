@@ -33,7 +33,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import dev.creapolis.pepinillo.ui.localization.localizedModeName
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import dev.creapolis.pepinillo.feature.dashboard.components.FocusChart
@@ -143,7 +145,7 @@ fun WeeklyReviewSheet(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                             Text(
-                                text = report.dominantMode,
+                                text = localizedModeName(report.dominantMode),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                             )
@@ -203,7 +205,7 @@ fun WeeklyReviewSheet(
                                     Text(text = modeEmoji(mode.modeLabel))
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Text(
-                                        text = mode.modeLabel,
+                                        text = localizedModeName(mode.modeLabel),
                                         style = MaterialTheme.typography.bodyMedium,
                                     )
                                 }
@@ -239,7 +241,7 @@ fun WeeklyReviewSheet(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                         Text(
-                            text = stringResource(R.string.dashboard_days_count, report.currentStreak),
+                            text = pluralStringResource(R.plurals.days_count, report.currentStreak, report.currentStreak),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                         )
@@ -332,11 +334,17 @@ private fun modeEmoji(mode: String): String = when (mode) {
     else -> "\uD83C\uDFAF"
 }
 
+@Composable
 private fun formatMinutes(totalMinutes: Int, hasSessions: Boolean = false): String {
-    if (totalMinutes == 0 && hasSessions) return "< 1m"
+    if (totalMinutes == 0 && hasSessions) return stringResource(R.string.duration_under_minute)
     val hours = totalMinutes / 60
     val minutes = totalMinutes % 60
-    return if (hours > 0) "${hours}h ${minutes}m" else "${minutes}m"
+    return if (hours > 0) {
+        pluralStringResource(R.plurals.duration_hours, hours, hours) + " " +
+            pluralStringResource(R.plurals.duration_minutes, minutes, minutes)
+    } else {
+        pluralStringResource(R.plurals.duration_minutes, minutes, minutes)
+    }
 }
 
 /**

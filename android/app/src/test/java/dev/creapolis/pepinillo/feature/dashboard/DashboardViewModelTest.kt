@@ -10,6 +10,7 @@ import dev.creapolis.pepinillo.data.repository.SessionRepository
 import dev.creapolis.pepinillo.data.repository.TaskRepository
 import dev.creapolis.pepinillo.feature.dashboard.model.DashboardStats
 import dev.creapolis.pepinillo.feature.dashboard.model.ReflectionPreviews
+import dev.creapolis.pepinillo.feature.dashboard.model.isEmpty
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
@@ -182,6 +183,29 @@ class DashboardViewModelTest {
 
         val stats = vm.stats.value
         assertEquals(0.0, stats.completionRate, 0.001)
+    }
+
+    @Test
+    fun `stats sets hasHistory when older history exists but current period is empty`() = runTest {
+        every { sessionRepository.getAllDaysWithSessions() } returns
+            flowOf(listOf(DailyStatsEntity(date = 1_767_312_000_000L)))
+
+        val vm = createViewModel()
+        collectStats(vm)
+        advanceUntilIdle()
+
+        val stats = vm.stats.value
+        assertEquals(true, stats.hasHistory)
+        assertEquals(true, stats.isEmpty)
+    }
+
+    @Test
+    fun `stats hasHistory is false for a brand-new account`() = runTest {
+        val vm = createViewModel()
+        collectStats(vm)
+        advanceUntilIdle()
+
+        assertEquals(false, vm.stats.value.hasHistory)
     }
 
     @Test
