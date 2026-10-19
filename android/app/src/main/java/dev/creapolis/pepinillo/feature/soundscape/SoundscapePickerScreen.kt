@@ -214,11 +214,10 @@ private fun SoundscapeRow(
             modifier = Modifier.weight(1f),
         )
 
-        // Preview button
+        // Preview button — default 48dp IconButton touch target (super-review P2l: was 36dp).
         if (onPreview != null) {
             IconButton(
                 onClick = onPreview,
-                modifier = Modifier.size(36.dp),
             ) {
                 Icon(
                     imageVector = if (isPreviewing) Icons.Rounded.Stop else Icons.Rounded.PlayArrow,

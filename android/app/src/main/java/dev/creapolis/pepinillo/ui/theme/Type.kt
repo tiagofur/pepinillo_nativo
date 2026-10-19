@@ -145,3 +145,23 @@ val Typography = Typography(
         letterSpacing = 0.5.sp,
     ),
 )
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Hero timer numeral — the huge time readout inside the Focus screen ring.
+// Referenced by the Type.kt header comment ("hero timer numeral"); kept as named
+// tokens instead of inline `fontSize = 62.sp` copies at the call site (super-review P2d).
+// Values match what the Focus screen shipped before: the display-large cut with the
+// in-session (62sp) and idle (56sp) sizes and a slightly wider tracking for legibility.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Hero timer numeral, idle state (56sp). */
+val HeroTimerTextStyle = TextStyle(
+    fontFamily = MontserratFontFamily,
+    fontWeight = FontWeight.Normal,
+    fontSize = 56.sp,
+    lineHeight = 64.sp,
+    letterSpacing = 1.5.sp,
+)
+
+/** Hero timer numeral while a session is active (62sp — slightly larger for emphasis). */
+val HeroTimerTextStyleActive = HeroTimerTextStyle.copy(fontSize = 62.sp)

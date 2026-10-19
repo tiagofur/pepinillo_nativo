@@ -834,4 +834,11 @@
     <string name="paywall_save_pct">Ahorra %1$d%%</string>
     <string name="paywall_risk_reversal">Cancela cuando quieras. Mantén tus datos.</string>
     <string name="banner_offline">Sin conexión — los cambios se sincronizarán al reconectar</string>
+
+    <!-- Super review (F1/F3/P2g/P2i/P2k): a11y + localization additions -->
+    <string name="cd_focus_timer">%1$s: %2$s, modo %3$s</string>
+    <string name="cd_mode_locked">Bloqueado</string>
+    <string name="cd_calendar_today">Hoy</string>
+    <string name="cd_calendar_day_has_activity">Con actividad</string>
+    <string name="chart_minutes_compact">%1$d min</string>
 </resources>

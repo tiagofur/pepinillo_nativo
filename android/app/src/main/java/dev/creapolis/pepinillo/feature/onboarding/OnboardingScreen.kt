@@ -30,7 +30,10 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -44,6 +47,7 @@ import androidx.compose.ui.unit.dp
 import dev.creapolis.pepinillo.R
 import dev.creapolis.pepinillo.ui.theme.MotionScheme
 import dev.creapolis.pepinillo.ui.theme.PepinilloShapeTokens
+import dev.creapolis.pepinillo.ui.theme.isReduceMotionEnabled
 import kotlinx.coroutines.launch
 
 private data class OnboardingPage(
@@ -109,19 +113,29 @@ fun OnboardingScreen(
     val scope = rememberCoroutineScope()
     val isLastPage = pagerState.currentPage == pages.size - 1
 
-    // Animate the full-bleed background across page transitions
+    // Animate the full-bleed background across page transitions — gated behind Reduce motion
+    // (super-review P2m): the colors snap instantly instead of tweening.
+    val reduceMotion = isReduceMotionEnabled()
     val targetBg = pageBackground(pagerState.currentPage)
-    val animatedBg by animateColorAsState(
-        targetValue = targetBg,
-        animationSpec = tween(MotionScheme.DURATION_ONBOARDING),
-        label = "onboardingBg",
-    )
+    val animatedBg by if (reduceMotion) {
+        remember(targetBg) { mutableStateOf(targetBg) }
+    } else {
+        animateColorAsState(
+            targetValue = targetBg,
+            animationSpec = tween(MotionScheme.DURATION_ONBOARDING),
+            label = "onboardingBg",
+        )
+    }
     val targetContent = pageContentColor(pagerState.currentPage)
-    val animatedContent by animateColorAsState(
-        targetValue = targetContent,
-        animationSpec = tween(MotionScheme.DURATION_ONBOARDING),
-        label = "onboardingContent",
-    )
+    val animatedContent by if (reduceMotion) {
+        remember(targetContent) { mutableStateOf(targetContent) }
+    } else {
+        animateColorAsState(
+            targetValue = targetContent,
+            animationSpec = tween(MotionScheme.DURATION_ONBOARDING),
+            label = "onboardingContent",
+        )
+    }
 
     // Persist page changes
     LaunchedEffect(pagerState) {

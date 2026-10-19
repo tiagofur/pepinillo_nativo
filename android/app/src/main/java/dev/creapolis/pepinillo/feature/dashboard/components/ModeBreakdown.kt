@@ -24,6 +24,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import dev.creapolis.pepinillo.feature.dashboard.model.ModeUsage
+import dev.creapolis.pepinillo.ui.localization.localizedModeName
 import dev.creapolis.pepinillo.ui.theme.ModeColors
 
 @Composable
@@ -72,7 +73,9 @@ private fun ModeRow(mode: ModeUsage) {
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 Text(
-                    text = mode.modeLabel,
+                    // Localized mode name (super-review F3): modeLabel is the raw persisted
+                    // enum name ("Pomodoro", "Flow", ...), which must not reach es/pt users.
+                    text = localizedModeName(mode.modeLabel),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onSurface,
