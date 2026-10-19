@@ -10,6 +10,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import io.ktor.client.plugins.auth.providers.BearerTokens
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import java.security.GeneralSecurityException
 import java.util.UUID
@@ -33,24 +34,24 @@ open class AuthStore @Inject constructor(
     }
 
     /**
-     * Thrown when EncryptedSharedPreferences cannot be opened even after a clear+retry.
-     *
-     * Rather than falling back to plaintext SharedPreferences (which would store access
-     * and refresh tokens unencrypted on disk), we fail closed: the caller treats this as
-     * "no stored session" and forces the user to re-authenticate. This is the safer
-     * trade-off — a transient Keystore/FBE issue is recoverable by re-login, whereas
-     * leaked plaintext tokens are not.
+     * True when EncryptedSharedPreferences failed unrecoverably and this store degraded to
+     * an in-memory, process-local session (B3). While true the app starts anonymous
+     * (isLoggedIn=false) and credentials never touch disk — observers can use this flag to
+     * surface a re-login prompt.
      */
-    class AuthStorageUnavailableException(message: String, cause: Throwable) :
-        Exception(message, cause)
+    private val _storageUnavailable = MutableStateFlow(false)
+    val storageUnavailable: StateFlow<Boolean> = _storageUnavailable.asStateFlow()
 
     /**
-     * Fail-closed lazy initializer.
+     * Fail-soft lazy initializer.
      *
      * 1. Try EncryptedSharedPreferences.
      * 2. On failure, clear the corrupted file and retry once.
-     * 3. If the retry also throws, throw [AuthStorageUnavailableException] — the app must
-     *    NOT silently fall back to plaintext storage. The caller forces re-login instead.
+     * 3. If the retry also throws, degrade to an in-memory store (B3): no exception escapes
+     *    this initializer. Previously the throw crashed every first-touch caller — including
+     *    Hilt's @Singleton provisioning — in a startup crash loop. The degraded store keeps
+     *    the session anonymous (null tokens, isLoggedIn=false) and still never falls back to
+     *    plaintext on-disk storage.
      */
     private val prefs: SharedPreferences by lazy {
         try {
@@ -65,15 +66,12 @@ open class AuthStore @Inject constructor(
             } catch (e2: Exception) {
                 Log.e(
                     TAG,
-                    "EncryptedSharedPreferences unrecoverable after retry; failing closed " +
-                        "(no plaintext fallback). User must re-authenticate.",
+                    "EncryptedSharedPreferences unrecoverable after retry; degrading to " +
+                        "in-memory auth store (anonymous session, re-login required)",
                     e2,
                 )
-                throw AuthStorageUnavailableException(
-                    "Secure token storage is unavailable (Keystore/FBE failure). " +
-                        "Failing closed — no plaintext fallback.",
-                    e2,
-                )
+                _storageUnavailable.value = true
+                InMemorySharedPreferences()
             }
         }
     }
@@ -229,5 +227,102 @@ open class AuthStore @Inject constructor(
             Log.e(TAG, "Failed to read encrypted pref, keeping auth", e)
             null
         }
+    }
+}
+
+/**
+ * Process-local [SharedPreferences] used only as the degraded fallback when
+ * EncryptedSharedPreferences cannot be created (B3). It keeps a freshly-signed-in session
+ * usable for the current process without ever persisting credentials to disk.
+ */
+private class InMemorySharedPreferences : SharedPreferences {
+    private val map = mutableMapOf<String, Any?>()
+    private val lock = Any()
+
+    override fun getAll(): Map<String, *> = synchronized(lock) { map.toMap() }
+
+    override fun getString(key: String, defValue: String?): String? =
+        synchronized(lock) { map[key] as? String ?: defValue }
+
+    @Suppress("UNCHECKED_CAST")
+    override fun getStringSet(key: String, defValues: Set<String>?): Set<String>? =
+        synchronized(lock) { map[key] as? Set<String> ?: defValues }
+
+    override fun getInt(key: String, defValue: Int): Int =
+        synchronized(lock) { map[key] as? Int ?: defValue }
+
+    override fun getLong(key: String, defValue: Long): Long =
+        synchronized(lock) { map[key] as? Long ?: defValue }
+
+    override fun getFloat(key: String, defValue: Float): Float =
+        synchronized(lock) { map[key] as? Float ?: defValue }
+
+    override fun getBoolean(key: String, defValue: Boolean): Boolean =
+        synchronized(lock) { map[key] as? Boolean ?: defValue }
+
+    override fun contains(key: String): Boolean = synchronized(lock) { map.containsKey(key) }
+
+    override fun edit(): SharedPreferences.Editor = Editor()
+
+    override fun registerOnSharedPreferenceChangeListener(
+        listener: SharedPreferences.OnSharedPreferenceChangeListener,
+    ) = Unit
+
+    override fun unregisterOnSharedPreferenceChangeListener(
+        listener: SharedPreferences.OnSharedPreferenceChangeListener,
+    ) = Unit
+
+    private inner class Editor : SharedPreferences.Editor {
+        private val pending = mutableMapOf<String, Any?>()
+        private var clearFirst = false
+
+        override fun putString(key: String, value: String?): SharedPreferences.Editor {
+            pending[key] = value; return this
+        }
+
+        override fun putStringSet(key: String, value: Set<String>?): SharedPreferences.Editor {
+            pending[key] = value; return this
+        }
+
+        override fun putInt(key: String, value: Int): SharedPreferences.Editor {
+            pending[key] = value; return this
+        }
+
+        override fun putLong(key: String, value: Long): SharedPreferences.Editor {
+            pending[key] = value; return this
+        }
+
+        override fun putFloat(key: String, value: Float): SharedPreferences.Editor {
+            pending[key] = value; return this
+        }
+
+        override fun putBoolean(key: String, value: Boolean): SharedPreferences.Editor {
+            pending[key] = value; return this
+        }
+
+        override fun remove(key: String): SharedPreferences.Editor {
+            pending[key] = REMOVE_SENTINEL; return this
+        }
+
+        override fun clear(): SharedPreferences.Editor {
+            clearFirst = true; return this
+        }
+
+        override fun commit(): Boolean {
+            apply(); return true
+        }
+
+        override fun apply() {
+            synchronized(lock) {
+                if (clearFirst) map.clear()
+                pending.forEach { (k, v) ->
+                    if (v === REMOVE_SENTINEL) map.remove(k) else map[k] = v
+                }
+            }
+        }
+    }
+
+    private companion object {
+        private val REMOVE_SENTINEL = Any()
     }
 }

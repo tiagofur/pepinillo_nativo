@@ -34,6 +34,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import dev.creapolis.pepinillo.R
+import dev.creapolis.pepinillo.feature.auth.components.DataMergeDialog
 import dev.creapolis.pepinillo.ui.theme.PepinilloShapeTokens
 
 @Composable
@@ -48,6 +49,17 @@ fun EmailVerificationScreen(
 
     LaunchedEffect(uiState.isAuthenticated) {
         if (uiState.isAuthenticated) onVerificationSuccess()
+    }
+
+    // B2: verifyEmail can surface a merge conflict just like login/register — render the
+    // same dialog with the same resolution callbacks so the verification route is not a
+    // dead-end when local and server data both exist.
+    if (uiState.showMergeDialog) {
+        DataMergeDialog(
+            onMerge = viewModel::onMergeData,
+            onUseAccountOnly = viewModel::onUseAccountOnly,
+            onDismiss = viewModel::dismissMergeDialog,
+        )
     }
 
     Column(

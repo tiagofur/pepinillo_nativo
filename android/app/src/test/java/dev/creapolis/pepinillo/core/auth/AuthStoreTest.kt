@@ -200,20 +200,70 @@ class AuthStoreTest {
     // ------------------------------------------------------------------------
 
     @Test
-    fun `fails closed when encrypted storage is unrecoverable — no plaintext fallback`() = runBlocking {
-        // #349: When EncryptedSharedPreferences cannot be opened even after retry, the
-        // store must NOT fall back to plaintext SharedPreferences. Instead it throws
-        // AuthStorageUnavailableException so the caller forces re-login.
+    fun `degraded store starts anonymous with isLoggedIn false`() = runBlocking {
+        // B3: right after degradation the store must present an anonymous session —
+        // no tokens (nothing readable on disk), isLoggedIn=false — so the user is
+        // routed to login again instead of a crash loop.
         val store = createFallbackStore()
 
-        val exception = org.junit.Assert.assertThrows(AuthStore.AuthStorageUnavailableException::class.java) {
-            // Triggering prefs lazy init via any operation that reads/writes prefs
-            store.saveTokens("should", "fail")
-        }
-        org.junit.Assert.assertTrue(
-            "Exception message should mention fail-closed behavior",
-            exception.message!!.contains("Failing closed"),
-        )
+        assertNull(store.getAccessToken())
+        assertNull(store.getRefreshToken())
+        assertFalse(store.isLoggedIn.first())
+    }
+
+    @Test
+    fun `degraded store flags storageUnavailable for a re-login prompt`() = runBlocking {
+        val store = createFallbackStore()
+        store.saveTokens("access", "refresh") // triggers prefs init + degradation
+
+        assertTrue(store.storageUnavailable.first())
+    }
+
+    @Test
+    fun `degraded store keeps an in-memory session and supports clearAll`() = runBlocking {
+        val store = createFallbackStore()
+        store.saveTokens("access", "refresh")
+        store.saveUser("u1", "name", "e@x.com", emailVerified = true)
+
+        assertEquals("access", store.getAccessToken())
+        assertEquals("u1", store.getUserId())
+        assertTrue(store.isEmailVerified())
+
+        store.clearAll()
+
+        assertNull(store.getAccessToken())
+        assertFalse(store.isLoggedIn.first())
+    }
+
+    @Test
+    fun `degraded store never writes tokens to disk — no plaintext fallback`() = runBlocking {
+        // #349 invariant preserved under B3: degradation must not leak tokens into the
+        // on-disk (plaintext-capable) prefs file backing the Context.
+        val store = createFallbackStore()
+
+        store.saveTokens("secret-access", "secret-refresh")
+
+        assertNull(fakePrefs.getString("access_token", null))
+        assertNull(fakePrefs.getString("refresh_token", null))
+        assertTrue(store.storageUnavailable.first())
+    }
+
+    // ------------------------------------------------------------------------
+    // Degraded mode (B3) — in-memory fallback instead of DI crash loop
+    // ------------------------------------------------------------------------
+
+    @Test
+    fun `unrecoverable encrypted storage degrades to in-memory store instead of throwing`() = runBlocking {
+        // B3: an unrecoverable Keystore failure used to escape the prefs initializer and
+        // crash every caller (Hilt provisioning at startup, login writes). The store must
+        // degrade to an in-memory session instead of throwing.
+        val store = createFallbackStore()
+
+        store.saveTokens("access", "refresh")
+
+        assertEquals("access", store.getAccessToken())
+        assertEquals("refresh", store.getRefreshToken())
+        assertTrue(store.isLoggedIn.first())
     }
 
     @Test

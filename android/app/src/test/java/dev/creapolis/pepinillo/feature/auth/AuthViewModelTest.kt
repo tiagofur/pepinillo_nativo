@@ -295,6 +295,59 @@ class AuthViewModelTest {
     }
 
     // -----------------------------------------------------------------------
+    // Verify → merge conflict resolution from the email-verification route (B2)
+    // -----------------------------------------------------------------------
+
+    @Test
+    fun `verifyEmail merge conflict then merge resolution sets authenticated`() = runTest {
+        // B2: the merge dialog now also renders on EmailVerificationScreen; its merge
+        // callback must complete the deferred upload flow and authenticate the user.
+        val verifyResponse = verifyEmailResponse()
+        coEvery { apiClient.verifyEmail(any(), any()) } returns NetworkResult.Success(verifyResponse)
+        coEvery {
+            sessionManager.completeAuthSuccessFromVerify(any(), any())
+        } returns PostAuthFlowResult.MergeConflict(showMergeDialog = true)
+
+        viewModel.restoreEmailVerificationState("test@test.com")
+        viewModel.verifyEmail("123456")
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value.showMergeDialog)
+
+        viewModel.onMergeData()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        coVerify { sessionManager.onMergeResolved() }
+        assertTrue(viewModel.uiState.value.isAuthenticated)
+        assertFalse(viewModel.uiState.value.showMergeDialog)
+        assertNull(viewModel.uiState.value.emailVerificationRequired)
+    }
+
+    @Test
+    fun `verifyEmail merge conflict then useAccountOnly resolution sets authenticated`() = runTest {
+        // B2: the dialog's "use account only" callback must wipe-and-sync and
+        // authenticate the user from the verification route too.
+        val verifyResponse = verifyEmailResponse()
+        coEvery { apiClient.verifyEmail(any(), any()) } returns NetworkResult.Success(verifyResponse)
+        coEvery {
+            sessionManager.completeAuthSuccessFromVerify(any(), any())
+        } returns PostAuthFlowResult.MergeConflict(showMergeDialog = true)
+
+        viewModel.restoreEmailVerificationState("test@test.com")
+        viewModel.verifyEmail("123456")
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value.showMergeDialog)
+
+        viewModel.onUseAccountOnly()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        coVerify { sessionManager.onUseAccountOnly() }
+        assertTrue(viewModel.uiState.value.isAuthenticated)
+        assertFalse(viewModel.uiState.value.showMergeDialog)
+    }
+
+    // -----------------------------------------------------------------------
     // Logout wipe isolation (#333, #351)
     // -----------------------------------------------------------------------
 
