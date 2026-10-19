@@ -197,7 +197,10 @@ class SessionRepository @Inject constructor(
         cal.set(Calendar.MILLISECOND, 0)
         val start = cal.timeInMillis
         cal.add(Calendar.MONTH, 1)
-        val end = cal.timeInMillis
+        // getStatsInRange's upper bound is inclusive (date <= end) and day keys are exact
+        // midnights — keep the bound inside the requested month so the next month's first
+        // day is not pulled in.
+        val end = cal.timeInMillis - 1
         return dailyStatsDao.getStatsInRange(start, end)
             .catch { e -> Log.e(TAG, "Error loading month stats", e); emit(emptyList()) }
     }
@@ -323,11 +326,11 @@ class SessionRepository @Inject constructor(
             val hour = cal.get(Calendar.HOUR_OF_DAY)
             hourBuckets[hour] += (s.durationMillis / 60_000).toInt()
         }
-        // Find best 2-hour window
+        // Find best 2-hour window — windows may wrap midnight ((23, 0) is valid)
         var bestStart = 0
-        var bestSum = hourBuckets[0] + hourBuckets[1]
-        for (h in 1 until 23) {
-            val sum = hourBuckets[h] + hourBuckets[h + 1]
+        var bestSum = -1
+        for (h in 0 until 24) {
+            val sum = hourBuckets[h] + hourBuckets[(h + 1) % 24]
             if (sum > bestSum) {
                 bestSum = sum
                 bestStart = h

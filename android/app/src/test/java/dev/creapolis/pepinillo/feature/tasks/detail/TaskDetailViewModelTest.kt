@@ -25,6 +25,8 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import java.util.Calendar
+import java.util.TimeZone
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class TaskDetailViewModelTest {
@@ -186,6 +188,117 @@ class TaskDetailViewModelTest {
                     task.isRecurringTemplate
             })
         }
+    }
+
+    // ── Title / notes length caps (iOS parity: 200 / 2000) ──
+
+    @Test
+    fun `updateTitle caps title at 200 characters`() = runTest {
+        val task = Task(id = "task-1", title = "Original")
+        coEvery { taskRepository.getTaskById("task-1") } returns task
+        coEvery { taskRepository.updateTask(any()) } returns Result.success(Unit)
+
+        viewModel.updateTitle("y".repeat(500))
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        coVerify { taskRepository.updateTask(match { it.title.length == 200 }) }
+    }
+
+    @Test
+    fun `updateNotes caps notes at 2000 characters`() = runTest {
+        val task = Task(id = "task-1", title = "Original", notes = "old")
+        coEvery { taskRepository.getTaskById("task-1") } returns task
+        coEvery { taskRepository.updateTask(any()) } returns Result.success(Unit)
+
+        viewModel.updateNotes("z".repeat(5000))
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        coVerify { taskRepository.updateTask(match { (it.notes?.length ?: 0) == 2000 }) }
+    }
+
+    // ── Due date picker canonicalization: local-midnight storage (C1) ──
+
+    @Test
+    fun `updateDueDate stores picker selection as local midnight in UTC-4`() {
+        withDefaultZone("GMT-04:00") {
+            runTest {
+                arrangeForDueDateUpdate()
+
+                viewModel.updateDueDate(pickerMillisOfTomorrow())
+                testDispatcher.scheduler.advanceUntilIdle()
+
+                coVerify { taskRepository.updateTask(match { it.dueDate == localMidnightOfTomorrow() }) }
+            }
+        }
+    }
+
+    @Test
+    fun `updateDueDate stores picker selection as local midnight in UTC+5-30`() {
+        withDefaultZone("GMT+05:30") {
+            runTest {
+                arrangeForDueDateUpdate()
+
+                viewModel.updateDueDate(pickerMillisOfTomorrow())
+                testDispatcher.scheduler.advanceUntilIdle()
+
+                coVerify { taskRepository.updateTask(match { it.dueDate == localMidnightOfTomorrow() }) }
+            }
+        }
+    }
+
+    @Test
+    fun `updateDueDate null clears the due date`() = runTest {
+        arrangeForDueDateUpdate()
+
+        viewModel.updateDueDate(null)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        coVerify { taskRepository.updateTask(match { it.dueDate == null }) }
+    }
+
+    private fun arrangeForDueDateUpdate() {
+        val task = Task(id = "task-1", title = "With due date")
+        taskFlow.value = task
+        coEvery { taskRepository.getTaskById("task-1") } returns task
+        coEvery { taskRepository.updateTask(any()) } returns Result.success(Unit)
+    }
+
+    /** Runs [block] with the JVM default timezone swapped to [zoneId], restoring after. */
+    private fun withDefaultZone(zoneId: String, block: () -> Unit) {
+        val original = TimeZone.getDefault()
+        TimeZone.setDefault(TimeZone.getTimeZone(zoneId))
+        try {
+            block()
+        } finally {
+            TimeZone.setDefault(original)
+        }
+    }
+
+    /** UTC-midnight millis of tomorrow's local calendar date — what DatePicker.selectedDateMillis reports. */
+    private fun pickerMillisOfTomorrow(): Long {
+        val t = tomorrowFields()
+        return Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply {
+            clear()
+            set(t[0], t[1], t[2], 0, 0, 0)
+        }.timeInMillis
+    }
+
+    /** Local-midnight millis of tomorrow's local calendar date — the canonical storage encoding. */
+    private fun localMidnightOfTomorrow(): Long {
+        val t = tomorrowFields()
+        return Calendar.getInstance().apply {
+            clear()
+            set(t[0], t[1], t[2], 0, 0, 0)
+        }.timeInMillis
+    }
+
+    private fun tomorrowFields(): IntArray {
+        val tomorrow = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, 1) }
+        return intArrayOf(
+            tomorrow.get(Calendar.YEAR),
+            tomorrow.get(Calendar.MONTH),
+            tomorrow.get(Calendar.DAY_OF_MONTH),
+        )
     }
 
     @Test

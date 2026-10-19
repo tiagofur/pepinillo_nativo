@@ -9,6 +9,7 @@ import kotlinx.serialization.json.Json
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
+import java.util.TimeZone
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -69,7 +70,12 @@ class ReportDataBuilder @Inject constructor(
     private val sessionDao: FocusSessionDao,
 ) {
     private val json = Json { ignoreUnknownKeys = true }
-    private val isoFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US)
+
+    // The 'Z' suffix claims UTC — format the epoch millis AS UTC so the label is truthful
+    // instead of rendering local-time digits under a Z suffix (super-review P2).
+    private val isoFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US).apply {
+        timeZone = TimeZone.getTimeZone("UTC")
+    }
 
     suspend fun buildPayload(period: String): ReportPayload {
         val cal = Calendar.getInstance()
@@ -162,16 +168,16 @@ class ReportDataBuilder @Inject constructor(
         val dominant = modeMinutes.maxByOrNull { it.value }?.key
 
         val cal = Calendar.getInstance()
-        // Peak hours
+        // Peak hours — 2-hour windows may wrap midnight ((23, 0) is a valid window)
         val hourBuckets = IntArray(24)
         for (s in sessions) {
             cal.timeInMillis = s.startTime
             hourBuckets[cal.get(Calendar.HOUR_OF_DAY)] += (s.durationMillis / 60_000).toInt()
         }
         var bestStart = 0
-        var bestSum = hourBuckets[0] + hourBuckets.getOrElse(1) { 0 }
-        for (h in 1 until 23) {
-            val sum = hourBuckets[h] + hourBuckets[h + 1]
+        var bestSum = -1
+        for (h in 0 until 24) {
+            val sum = hourBuckets[h] + hourBuckets[(h + 1) % 24]
             if (sum > bestSum) { bestSum = sum; bestStart = h }
         }
         val peakRange = if (bestSum > 0) {

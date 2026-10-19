@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.size
@@ -71,6 +72,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.takeOrElse
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.style.TextDecoration
@@ -82,6 +85,8 @@ import dev.creapolis.pepinillo.R
 import dev.creapolis.pepinillo.feature.tasks.model.EnergyLevel
 import dev.creapolis.pepinillo.feature.tasks.model.RecurrenceOption
 import dev.creapolis.pepinillo.feature.tasks.model.TaskPriority
+import dev.creapolis.pepinillo.feature.tasks.model.labelRes
+import dev.creapolis.pepinillo.domain.tasks.DueDateEncoding
 import dev.creapolis.pepinillo.ui.haptics.PepinilloHaptics
 import dev.creapolis.pepinillo.ui.theme.DomainColors
 import dev.creapolis.pepinillo.ui.theme.priorityColor
@@ -152,6 +157,7 @@ fun TaskDetailScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
+                .imePadding()
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp),
@@ -452,10 +458,10 @@ fun TaskDetailScreen(
                 // Due date row
                 var showDatePicker by remember { mutableStateOf(false) }
                 if (task.dueDate != null) {
+                    // due_date is stored as local midnight — format in the local zone so
+                    // the label matches the picked calendar day (C1).
                     val dateFormat = remember {
-                        SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).apply {
-                            timeZone = java.util.TimeZone.getTimeZone("UTC")
-                        }
+                        SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
                     }
                     val formattedDate = dateFormat.format(Date(task.dueDate))
 
@@ -527,8 +533,12 @@ fun TaskDetailScreen(
                 }
 
                 if (showDatePicker) {
+                    // DatePicker exchanges UTC-midnight millis; stored due dates are local
+                    // midnight — convert both directions on this boundary (C1).
                     val datePickerState = rememberDatePickerState(
-                        initialSelectedDateMillis = task.dueDate ?: getUtcMidnightOfLocalToday()
+                        initialSelectedDateMillis = DueDateEncoding.toPickerMillis(
+                            task.dueDate ?: System.currentTimeMillis()
+                        )
                     )
                     DatePickerDialog(
                         onDismissRequest = { showDatePicker = false },
@@ -600,7 +610,7 @@ fun TaskDetailScreen(
                             val pColor = task.priority.priorityColor()
                             val displayColor = if (pColor != Color.Transparent) pColor else MaterialTheme.colorScheme.onSurfaceVariant
                             Text(
-                                text = task.priority.name,
+                                text = stringResource(task.priority.labelRes()),
                                 style = MaterialTheme.typography.bodyLarge,
                                 fontWeight = FontWeight.SemiBold,
                                 color = displayColor
@@ -615,7 +625,7 @@ fun TaskDetailScreen(
                                     DropdownMenuItem(
                                         text = {
                                             Text(
-                                                text = priority.name,
+                                                text = stringResource(priority.labelRes()),
                                                 color = itemColor,
                                                 fontWeight = if (task.priority == priority) FontWeight.Bold else FontWeight.Normal
                                             )
@@ -660,7 +670,7 @@ fun TaskDetailScreen(
                         }
                         Box {
                             Text(
-                                text = task.energyLevel.name,
+                                text = stringResource(task.energyLevel.labelRes()),
                                 style = MaterialTheme.typography.bodyLarge,
                                 fontWeight = FontWeight.SemiBold,
                                 color = MaterialTheme.colorScheme.primary
@@ -680,7 +690,7 @@ fun TaskDetailScreen(
                                                 }
                                                 Text(emoji + " ")
                                                 Text(
-                                                    text = level.name,
+                                                    text = stringResource(level.labelRes()),
                                                     fontWeight = if (task.energyLevel == level) FontWeight.Bold else FontWeight.Normal
                                                 )
                                             }
@@ -700,51 +710,63 @@ fun TaskDetailScreen(
                         color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
                     )
 
-                    // Estimated Pomodoros selector
-                    Row(
-                        modifier = Modifier.fillMaxWidth().height(48.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
+                        // Estimated Pomodoros selector
+                        val cdDecrease = stringResource(R.string.cd_decrease)
+                        val cdIncrease = stringResource(R.string.cd_increase)
                         Row(
-                            modifier = Modifier.weight(1f),
+                            modifier = Modifier.fillMaxWidth().height(48.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Icon(
-                                imageVector = Icons.Rounded.CalendarMonth,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = stringResource(R.string.task_label_estimate),
-                                style = MaterialTheme.typography.bodyLarge,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
-                        Row(
-                            modifier = Modifier.padding(start = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            IconButton(
-                                onClick = { if (task.estimatedPomodoros > 1) viewModel.updateEstimatedPomodoros(task.estimatedPomodoros - 1) },
+                            Row(
+                                modifier = Modifier.weight(1f),
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text("-", style = MaterialTheme.typography.titleLarge)
+                                Icon(
+                                    imageVector = Icons.Rounded.CalendarMonth,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = stringResource(R.string.task_label_estimate),
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
                             }
-                            Text(
-                                text = "${task.estimatedPomodoros} \uD83C\uDF45",
-                                style = MaterialTheme.typography.bodyLarge,
-                                fontWeight = FontWeight.Bold
-                            )
-                            IconButton(
-                                onClick = { if (task.estimatedPomodoros < 8) viewModel.updateEstimatedPomodoros(task.estimatedPomodoros + 1) },
+                            Row(
+                                modifier = Modifier.padding(start = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                Text("+", style = MaterialTheme.typography.titleLarge)
+                                IconButton(
+                                    onClick = { if (task.estimatedPomodoros > 1) viewModel.updateEstimatedPomodoros(task.estimatedPomodoros - 1) },
+                                ) {
+                                    // clearAndSetSemantics so TalkBack announces the action
+                                    // ("Decrease") instead of a bare "-" glyph.
+                                    Text(
+                                        "-",
+                                        style = MaterialTheme.typography.titleLarge,
+                                        modifier = Modifier.clearAndSetSemantics { contentDescription = cdDecrease }
+                                    )
+                                }
+                                Text(
+                                    text = "${task.estimatedPomodoros} \uD83C\uDF45",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                IconButton(
+                                    onClick = { if (task.estimatedPomodoros < 8) viewModel.updateEstimatedPomodoros(task.estimatedPomodoros + 1) },
+                                ) {
+                                    Text(
+                                        "+",
+                                        style = MaterialTheme.typography.titleLarge,
+                                        modifier = Modifier.clearAndSetSemantics { contentDescription = cdIncrease }
+                                    )
+                                }
                             }
                         }
-                    }
 
                     if (task.completedPomodoros > 0) {
                         HorizontalDivider(
@@ -807,7 +829,7 @@ fun TaskDetailScreen(
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = currentRecurrence.label,
+                                text = stringResource(currentRecurrence.labelRes()),
                                 style = MaterialTheme.typography.bodyLarge,
                                 fontWeight = FontWeight.SemiBold,
                                 color = MaterialTheme.colorScheme.primary
@@ -864,7 +886,7 @@ fun TaskDetailScreen(
                             ) {
                                 RecurrenceOption.entries.filter { it != RecurrenceOption.None }.forEach { option ->
                                     DropdownMenuItem(
-                                        text = { Text(option.label) },
+                                        text = { Text(stringResource(option.labelRes())) },
                                         onClick = {
                                             viewModel.updateRecurrence(option)
                                             repeatExpanded = false
@@ -1028,13 +1050,5 @@ fun TaskDetailScreen(
 }
 }
 
-internal fun getUtcMidnightOfLocalToday(): Long {
-    val local = java.util.Calendar.getInstance()
-    val year = local.get(java.util.Calendar.YEAR)
-    val month = local.get(java.util.Calendar.MONTH)
-    val day = local.get(java.util.Calendar.DAY_OF_MONTH)
-    return java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("UTC")).apply {
-        clear()
-        set(year, month, day, 0, 0, 0)
-    }.timeInMillis
-}
+/** Picker-format (UTC-midnight) millis of the local today — kept for picker initialization. */
+internal fun getUtcMidnightOfLocalToday(): Long = DueDateEncoding.toPickerMillis(System.currentTimeMillis())

@@ -48,14 +48,50 @@ class RecurrenceCalculatorTest {
 
     @Test
     fun monthly_advancesByOneMonth() {
-        val base = RecurrenceCalculator.startOfLocalDay()
+        // Fixed non-overflowing date: a "today"-based base would make this test flaky on
+        // month-end days once end-of-month clamping lands (Jan 30 + 1 month -> Feb 28).
+        val base = RecurrenceCalculator.startOfLocalDay(dateOf(2025, Calendar.JUNE, 15))
         val next = RecurrenceCalculator.nextOccurrenceMillis(
             RecurrenceOption.Monthly.rrule!!,
             base.timeInMillis,
         )
-        val expected = (base.clone() as Calendar).apply { add(Calendar.MONTH, 1) }.timeInMillis
-        assertEquals(expected, next)
+        assertEquals(dateOf(2025, Calendar.JULY, 15), next)
     }
+
+    @Test
+    fun monthly_january31_clampsToFebruary28InNonLeapYear() {
+        val next = RecurrenceCalculator.nextOccurrenceMillis(
+            RecurrenceOption.Monthly.rrule!!,
+            dateOf(2023, Calendar.JANUARY, 31),
+        )
+        assertEquals(dateOf(2023, Calendar.FEBRUARY, 28), next)
+    }
+
+    @Test
+    fun monthly_january31_clampsToFebruary29InLeapYear() {
+        val next = RecurrenceCalculator.nextOccurrenceMillis(
+            RecurrenceOption.Monthly.rrule!!,
+            dateOf(2024, Calendar.JANUARY, 31),
+        )
+        assertEquals(dateOf(2024, Calendar.FEBRUARY, 29), next)
+    }
+
+    @Test
+    fun monthly_afterClamp_keepsClampedDayWhenTargetMonthAllowsIt() {
+        // Clamp semantics (not anchor): once Jan 31 clamps to Feb 28, the series follows
+        // the 28th — March has 31 days, so the next occurrence is Mar 28.
+        val next = RecurrenceCalculator.nextOccurrenceMillis(
+            RecurrenceOption.Monthly.rrule!!,
+            dateOf(2023, Calendar.FEBRUARY, 28),
+        )
+        assertEquals(dateOf(2023, Calendar.MARCH, 28), next)
+    }
+
+    private fun dateOf(year: Int, month: Int, day: Int): Long =
+        Calendar.getInstance().apply {
+            set(year, month, day, 0, 0, 0)
+            set(Calendar.MILLISECOND, 0)
+        }.timeInMillis
 
     @Test
     fun isSameLocalDay_matchesNormalizedDay() {

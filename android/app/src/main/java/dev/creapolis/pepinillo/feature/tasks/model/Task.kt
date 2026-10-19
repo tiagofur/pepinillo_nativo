@@ -2,6 +2,12 @@ package dev.creapolis.pepinillo.feature.tasks.model
 
 import java.util.UUID
 
+/** Max task title length (iOS parity) so multi-device sync stays consistent. */
+const val MAX_TASK_TITLE_LENGTH = 200
+
+/** Max task notes length (iOS parity) so multi-device sync stays consistent. */
+const val MAX_TASK_NOTES_LENGTH = 2000
+
 enum class EnergyLevel(val label: String) {
     Deep("Deep Work"),
     Regular("Regular"),

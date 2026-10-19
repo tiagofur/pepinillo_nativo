@@ -9,7 +9,10 @@ import dev.creapolis.pepinillo.core.billing.SubscriptionState
 import dev.creapolis.pepinillo.data.local.preferences.UserPreferences
 import dev.creapolis.pepinillo.data.local.preferences.UserPreferencesRepository
 import dev.creapolis.pepinillo.data.repository.TaskRepository
+import dev.creapolis.pepinillo.domain.tasks.DueDateEncoding
 import dev.creapolis.pepinillo.feature.tasks.model.EnergyLevel
+import dev.creapolis.pepinillo.feature.tasks.model.MAX_TASK_NOTES_LENGTH
+import dev.creapolis.pepinillo.feature.tasks.model.MAX_TASK_TITLE_LENGTH
 import dev.creapolis.pepinillo.feature.tasks.model.RecurrenceOption
 import dev.creapolis.pepinillo.feature.tasks.model.Subtask
 import dev.creapolis.pepinillo.feature.tasks.model.Task
@@ -144,12 +147,19 @@ class TaskDetailViewModel @Inject constructor(
         }
     }
 
-    fun updateTitle(title: String) = updateTask { it.copy(title = title) }
-    fun updateNotes(notes: String) = updateTask { it.copy(notes = notes.ifBlank { null }) }
+    fun updateTitle(title: String) = updateTask { it.copy(title = title.take(MAX_TASK_TITLE_LENGTH)) }
+    fun updateNotes(notes: String) = updateTask { it.copy(notes = notes.take(MAX_TASK_NOTES_LENGTH).ifBlank { null }) }
     fun updatePriority(priority: TaskPriority) = updateTask { it.copy(priority = priority) }
     fun updateEnergyLevel(level: EnergyLevel) = updateTask { it.copy(energyLevel = level) }
     fun updateEstimatedPomodoros(count: Int) = updateTask { it.copy(estimatedPomodoros = count.coerceIn(1, 8)) }
-    fun updateDueDate(millis: Long?) = updateTask { it.copy(dueDate = millis) }
+    /**
+     * Sets the due date from a Material3 DatePicker selection. The picker reports
+     * UTC-midnight millis; storage is canonical local midnight (C1), so convert on this
+     * boundary. `null` clears the due date.
+     */
+    fun updateDueDate(millis: Long?) = updateTask {
+        it.copy(dueDate = millis?.let(DueDateEncoding::fromPickerMillis))
+    }
     fun toggleScheduledForToday() = updateTask { it.copy(scheduledForToday = !it.scheduledForToday) }
     fun updateRecurrence(option: RecurrenceOption) {
         if (option != RecurrenceOption.None && !featureGate.canUseRecurrence()) {

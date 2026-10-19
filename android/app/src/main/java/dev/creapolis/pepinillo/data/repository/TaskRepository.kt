@@ -263,6 +263,10 @@ class TaskRepository @Inject constructor(
     /**
      * Completing a recurring task advances due/nextOccurrence and keeps the row active
      * instead of leaving it in Completed (series must not die on first complete).
+     *
+     * [TaskEntity.lastCompletedAt] stamps THIS occurrence so daily "tasks completed today"
+     * (Wear, widget, FocusTimerService — all via TaskDao.getCompletedTodayCount) counts
+     * it even though the series row stays incomplete (super-review C2).
      */
     private suspend fun advanceRecurringTask(entity: TaskEntity) {
         val rule = entity.recurrenceRule ?: return
@@ -276,6 +280,7 @@ class TaskRepository @Inject constructor(
             entity.copy(
                 isCompleted = false,
                 completedAt = null,
+                lastCompletedAt = now,
                 dueDate = nextDue,
                 nextOccurrence = nextDue,
                 isRecurringTemplate = true,
@@ -388,6 +393,8 @@ private fun Task.mergeInto(existing: TaskEntity, updatedAt: Long = System.curren
         // Completion is owned by toggleCompletion — detail edits must not clobber it.
         isCompleted = existing.isCompleted,
         completedAt = existing.completedAt,
+        // Occurrence stamps for daily completed counts survive detail edits too (C2).
+        lastCompletedAt = existing.lastCompletedAt,
         energyLevel = energyLevel.name,
         priority = priority.name,
         estimatedPomodoros = estimatedPomodoros,

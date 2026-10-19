@@ -841,4 +841,19 @@
     <string name="paywall_risk_reversal">Cancele quando quiser. Mantenha os seus dados.</string>
     <string name="banner_offline">Sem ligação — as alterações sincronizam ao reconectar</string>
 
+
+    <!-- Task enum labels (localized priority/energy/recurrence) -->
+    <string name="priority_none">Nenhuma</string>
+    <string name="priority_low">Baixa</string>
+    <string name="priority_medium">Média</string>
+    <string name="priority_high">Alta</string>
+    <string name="energy_deep">Trabalho profundo</string>
+    <string name="energy_regular">Regular</string>
+    <string name="energy_light">Leve</string>
+    <string name="recurrence_none">Nenhuma</string>
+    <string name="recurrence_daily">Diária</string>
+    <string name="recurrence_weekdays">Dias úteis</string>
+    <string name="recurrence_weekly">Semanal</string>
+    <string name="recurrence_biweekly">Cada 2 semanas</string>
+    <string name="recurrence_monthly">Mensal</string>
 </resources>
