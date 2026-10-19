@@ -38,6 +38,7 @@ import dev.creapolis.pepinillo.feature.focus.FocusMode
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import dev.creapolis.pepinillo.wear.WearDataLayerHelper
+import dev.creapolis.pepinillo.widget.FocusTimerRecovery
 import dev.creapolis.pepinillo.widget.FocusTimerWidget
 import dev.creapolis.pepinillo.widget.TimerWidgetState
 import dev.creapolis.pepinillo.widget.WidgetStateManager
@@ -77,6 +78,10 @@ class FocusTimerService : Service() {
     private var isCollecting = false
     private var sessionsBeforeLongBreak = 4
     private var dayChangeReceiver: BroadcastReceiver? = null
+
+    // D1: while a stop-triggered widget reset is in flight, the ACTION_STOP coroutine
+    // owns service teardown — set until the reset (and the stop) complete.
+    @Volatile private var stopResetInFlight = false
 
     companion object {
         const val CHANNEL_ID = "focus_timer_channel"
@@ -280,14 +285,29 @@ class FocusTimerService : Service() {
                     mode = currentMode.name,
                     displayTime = "", // Empty string signals idle; watch resets display to full duration
                 )
-                // Clear linked task highlight from tasks widget
-                serviceScope.launch { WidgetTaskStateManager.updateLinkedTaskId(this@FocusTimerService, null) }
-                // Refresh tasks+stats on watch after session ends
-                WorkManager.getInstance(this).enqueue(
-                    OneTimeWorkRequestBuilder<WidgetRefreshWorker>().build()
-                )
-                stopForeground(STOP_FOREGROUND_REMOVE)
-                stopSelf()
+                // D1: stopping from the notification races service teardown — onDestroy
+                // cancels serviceScope, which can kill the state collector before it resets
+                // the widget (zombie Running widget) or abort the linked-task clear below.
+                // Reset the widget to idle (keeping the user's mode — mirroring what the
+                // widget's own StopAction reset does) and clear the linked-task highlight
+                // BEFORE stopping the service. The collector stays the normal driver for
+                // every other transition; it defers teardown while stopResetInFlight is set.
+                stopResetInFlight = true
+                serviceScope.launch {
+                    try {
+                        // Clear linked task highlight from tasks widget
+                        WidgetTaskStateManager.updateLinkedTaskId(this@FocusTimerService, null)
+                        FocusTimerRecovery.clearStaleWidgetState(this@FocusTimerService)
+                        // Refresh tasks+stats on watch after session ends
+                        WorkManager.getInstance(this@FocusTimerService).enqueue(
+                            OneTimeWorkRequestBuilder<WidgetRefreshWorker>().build()
+                        )
+                    } finally {
+                        stopResetInFlight = false
+                        stopForeground(STOP_FOREGROUND_REMOVE)
+                        stopSelf()
+                    }
+                }
                 return START_NOT_STICKY
             }
 
@@ -480,8 +500,13 @@ class FocusTimerService : Service() {
                     }
 
                     if (state.status == TimerStatus.Idle) {
-                        stopForeground(STOP_FOREGROUND_REMOVE)
-                        stopSelf()
+                        // D1: when a stop-triggered reset is in flight, the ACTION_STOP
+                        // coroutine owns teardown — stopping here first would cancel that
+                        // reset mid-write through the dying scope.
+                        if (!stopResetInFlight) {
+                            stopForeground(STOP_FOREGROUND_REMOVE)
+                            stopSelf()
+                        }
                     }
                 } catch (e: Exception) {
                     android.util.Log.e("FocusTimerService", "Error in state collector", e)
@@ -497,12 +522,7 @@ class FocusTimerService : Service() {
             ) { stats, allDays ->
                 Pair(stats, allDays)
             }.collect { (stats, allDays) ->
-                val startOfDay = java.util.Calendar.getInstance().apply {
-                    set(java.util.Calendar.HOUR_OF_DAY, 0)
-                    set(java.util.Calendar.MINUTE, 0)
-                    set(java.util.Calendar.SECOND, 0)
-                    set(java.util.Calendar.MILLISECOND, 0)
-                }.timeInMillis
+                val startOfDay = SessionRepository.startOfDay(System.currentTimeMillis())
                 val completedToday = runCatching { taskRepository.getCompletedTodayCount(startOfDay) }.getOrDefault(0)
                 WidgetStateManager.updateDailyStats(
                     context = this@FocusTimerService,
@@ -578,17 +598,25 @@ class FocusTimerService : Service() {
             .setCategory(NotificationCompat.CATEGORY_PROGRESS)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
 
-        // Native countdown chronometer for timed phases (Pomodoro/breaks) while running.
-        // Avoids rewriting the notification text every tick and renders a live countdown on the lock screen.
-        if (state.status == TimerStatus.Running &&
-            state.mode != FocusMode.Flow &&
-            state.mode != FocusMode.Chrono &&
-            state.totalMillis > 0L
-        ) {
-            val remainingMs = (state.totalMillis - state.elapsedMillis).coerceAtLeast(0L)
-            builder.setUsesChronometer(true)
-            builder.setChronometerCountDown(true)
-            builder.setWhen(System.currentTimeMillis() + remainingMs)
+        // Native chronometer so the notification ticks live without rewriting its text
+        // every tick: countdown for timed phases (Pomodoro/breaks/Blocks), count-up for
+        // Flow/Chrono (P2a: anchored at build time to "now - elapsed" so the chronometer
+        // starts from the current elapsed and ticks forward instead of staying frozen
+        // on the last rebuild's snapshot). Renders a live timer on the lock screen.
+        if (state.status == TimerStatus.Running) {
+            if (state.mode != FocusMode.Flow &&
+                state.mode != FocusMode.Chrono &&
+                state.totalMillis > 0L
+            ) {
+                val remainingMs = (state.totalMillis - state.elapsedMillis).coerceAtLeast(0L)
+                builder.setUsesChronometer(true)
+                builder.setChronometerCountDown(true)
+                builder.setWhen(System.currentTimeMillis() + remainingMs)
+            } else {
+                builder.setUsesChronometer(true)
+                builder.setChronometerCountDown(false)
+                builder.setWhen(System.currentTimeMillis() - state.elapsedMillis)
+            }
         }
 
         when (state.status) {

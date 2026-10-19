@@ -6,6 +6,7 @@ import androidx.hilt.work.HiltWorker
 import androidx.work.Constraints
 import androidx.work.CoroutineWorker
 import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
@@ -24,11 +25,11 @@ import dev.creapolis.pepinillo.widget.WidgetStateManager
 import dev.creapolis.pepinillo.widget.WidgetTask
 import dev.creapolis.pepinillo.widget.WidgetTaskStateManager
 import kotlinx.coroutines.flow.first
-import java.util.Calendar
 import java.util.concurrent.TimeUnit
 
 private const val TAG = "WidgetRefreshWorker"
 private const val WORK_NAME = "widget_refresh_periodic"
+private const val ONE_TIME_WORK_NAME = "widget_refresh_one_time"
 
 @HiltWorker
 class WidgetRefreshWorker @AssistedInject constructor(
@@ -65,7 +66,7 @@ class WidgetRefreshWorker @AssistedInject constructor(
             // ── 2. Tasks ────────────────────────────────────────────────────
             val activeTasks = taskRepository.getActiveTasks().first()
             Log.d(TAG, "Active tasks from DB: ${activeTasks.size} (${activeTasks.map { it.title }})")
-            val startOfDay = startOfDay()
+            val startOfDay = SessionRepository.startOfDay(System.currentTimeMillis())
             val completedToday = taskRepository.getCompletedTodayCount(startOfDay)
 
             val widgetTasks = activeTasks.take(5).map { task ->
@@ -138,20 +139,16 @@ class WidgetRefreshWorker @AssistedInject constructor(
                 request,
             )
 
-            // Also run once immediately so widgets show real data right away
-            WorkManager.getInstance(context).enqueue(
+            // Also run once immediately so widgets show real data right away.
+            // P2i: unique + REPLACE so repeated schedule() calls (app start, boot,
+            // worker reschedules) collapse into one pending one-time refresh instead
+            // of piling up duplicates.
+            WorkManager.getInstance(context).enqueueUniqueWork(
+                ONE_TIME_WORK_NAME,
+                ExistingWorkPolicy.REPLACE,
                 OneTimeWorkRequestBuilder<WidgetRefreshWorker>().build(),
             )
             MidnightWidgetRefreshScheduler.schedule(context)
         }
-    }
-
-    private fun startOfDay(): Long {
-        val cal = Calendar.getInstance()
-        cal.set(Calendar.HOUR_OF_DAY, 0)
-        cal.set(Calendar.MINUTE, 0)
-        cal.set(Calendar.SECOND, 0)
-        cal.set(Calendar.MILLISECOND, 0)
-        return cal.timeInMillis
     }
 }

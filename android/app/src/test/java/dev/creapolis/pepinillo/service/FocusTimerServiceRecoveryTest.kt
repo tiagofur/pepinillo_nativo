@@ -1,14 +1,23 @@
 package dev.creapolis.pepinillo.service
 
 import android.content.Context
+import android.content.Intent
 import android.content.SharedPreferences
 import dev.creapolis.pepinillo.domain.timer.FocusPhase
 import dev.creapolis.pepinillo.domain.timer.FocusTimerState
 import dev.creapolis.pepinillo.domain.timer.PauseMetrics
 import dev.creapolis.pepinillo.domain.timer.TimerStatus
 import dev.creapolis.pepinillo.feature.focus.FocusMode
+import dev.creapolis.pepinillo.widget.FocusTimerRecovery
+import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkObject
+import io.mockk.unmockkAll
+import io.mockk.verify
+import kotlinx.coroutines.test.runTest
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
@@ -25,6 +34,11 @@ class FocusTimerServiceRecoveryTest {
         fakePrefs = FakeSharedPreferences()
         context = mockk(relaxed = true)
         every { context.getSharedPreferences(any(), any()) } returns fakePrefs
+    }
+
+    @After
+    fun tearDown() {
+        unmockkAll()
     }
 
     @Test
@@ -131,6 +145,68 @@ class FocusTimerServiceRecoveryTest {
     @Test
     fun `readRecoveryState returns null when not active`() {
         assertNull(FocusTimerService.readRecoveryState(context))
+    }
+
+    // ── D2: restoreOnLaunch must not crash when the FGS start is not allowed ──
+    // restoreOnLaunch runs from Application.onCreate / BOOT_COMPLETED, which Android
+    // can respawn in the background (e.g. via WorkManager). There, starting a
+    // foreground service throws ForegroundServiceStartNotAllowedException (API 31+);
+    // unguarded, that crash-loops the respawned process.
+
+    @Test
+    fun `restoreOnLaunch clears stale widget state instead of crashing when service start is denied`() = runTest {
+        seedActiveRecoveryState()
+        every { context.startForegroundService(any<Intent>()) } throws
+            IllegalStateException("Not allowed to start foreground service")
+
+        mockkObject(FocusTimerRecovery)
+        coEvery { FocusTimerRecovery.restoreOnLaunch(any()) } answers { callOriginal() }
+        coEvery { FocusTimerRecovery.clearStaleWidgetState(any()) } returns Unit
+
+        FocusTimerRecovery.restoreOnLaunch(context) // must not throw
+
+        coVerify(exactly = 1) { FocusTimerRecovery.clearStaleWidgetState(context) }
+    }
+
+    @Test
+    fun `restoreOnLaunch starts the recovery service when recovery state exists`() = runTest {
+        seedActiveRecoveryState()
+
+        mockkObject(FocusTimerRecovery)
+        coEvery { FocusTimerRecovery.restoreOnLaunch(any()) } answers { callOriginal() }
+        coEvery { FocusTimerRecovery.clearStaleWidgetState(any()) } returns Unit
+
+        FocusTimerRecovery.restoreOnLaunch(context)
+
+        verify(exactly = 1) { context.startForegroundService(any<Intent>()) }
+        coVerify(exactly = 0) { FocusTimerRecovery.clearStaleWidgetState(any()) }
+    }
+
+    @Test
+    fun `restoreOnLaunch clears stale widget state when no recovery state exists`() = runTest {
+        mockkObject(FocusTimerRecovery)
+        coEvery { FocusTimerRecovery.restoreOnLaunch(any()) } answers { callOriginal() }
+        coEvery { FocusTimerRecovery.clearStaleWidgetState(any()) } returns Unit
+
+        FocusTimerRecovery.restoreOnLaunch(context)
+
+        verify(exactly = 0) { context.startForegroundService(any<Intent>()) }
+        coVerify(exactly = 1) { FocusTimerRecovery.clearStaleWidgetState(context) }
+    }
+
+    private fun seedActiveRecoveryState() {
+        FocusTimerService.saveRecoveryState(
+            context,
+            FocusTimerState(
+                mode = FocusMode.Pomodoro,
+                phase = FocusPhase.Work,
+                status = TimerStatus.Running,
+                elapsedMillis = 0L,
+                totalMillis = 25 * 60 * 1000L,
+                sessionStartTime = 1_700_000_000_000L,
+                completedSessions = 0,
+            ),
+        )
     }
 
     // #504: pauseCount/totalPauseMillis were read on restore but never written, so every recovered
