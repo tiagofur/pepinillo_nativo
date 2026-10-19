@@ -150,9 +150,9 @@ struct WatchAppFeature {
                     .send(.timer(.connectivityChanged(connected))),
                     // Request tasks and dashboard on connect
                     connected ? .run { [watchClient] _ in
-                        await watchClient.sendCommand(.requestSession)
-                        await watchClient.sendCommand(.requestTasks)
-                        await watchClient.sendCommand(.requestDashboard)
+                        _ = await watchClient.sendCommand(.requestSession)
+                        _ = await watchClient.sendCommand(.requestTasks)
+                        _ = await watchClient.sendCommand(.requestDashboard)
                     } : .none
                 )
 
@@ -163,14 +163,14 @@ struct WatchAppFeature {
                 state.timer.linkedTaskTitle = title
                 state.selectedTab = .timer
                 return .run { [watchClient] _ in
-                    await watchClient.sendCommand(.linkTask(id: id.uuidString))
+                    _ = await watchClient.sendCommand(.linkTask(id: id.uuidString))
                 }
 
             case .tasks(.taskUnlinked):
                 state.timer.linkedTaskID = nil
                 state.timer.linkedTaskTitle = nil
                 return .run { [watchClient] _ in
-                    await watchClient.sendCommand(.unlinkTask)
+                    _ = await watchClient.sendCommand(.unlinkTask)
                 }
 
             case .tasks(.setCompleted(let id, let isCompleted)):

@@ -212,7 +212,7 @@ private final class AppBootstrap: ObservableObject {
 
         store = Store(initialState: initialState) {
             AppFeature()
-        } withDependencies: {
+        } withDependencies: { [weak self] in
             let actorBox = router.activeActorBox()
             let persistence = PersistenceClient.live(actorProvider: { actorBox.current })
             $0.persistenceClient = persistence

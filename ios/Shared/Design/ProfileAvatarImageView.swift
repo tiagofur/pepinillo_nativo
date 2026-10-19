@@ -55,7 +55,7 @@ struct ProfileAvatarImageView<Placeholder: View>: View {
             }
             // Decode off the main actor, then hop back to set @State.
             let decoded: PlatformImage? = await Task.detached(priority: .userInitiated) {
-                Self.decodeInlineImage(reference: ref)
+                decodeInlineImage(reference: ref)
             }.value
             loadedImage = decoded
         }
@@ -93,67 +93,6 @@ struct ProfileAvatarImageView<Placeholder: View>: View {
         return url
     }
 
-    // MARK: - Off-main decoding
-
-    /// Decodes a local-file or data-URL avatar off the main thread.
-    /// Uses ImageIO for file-based images so large avatars are downsampled
-    /// instead of decoded at full resolution.
-    /// `nonisolated` so it can run from a detached Task (off the main actor).
-    private nonisolated static func decodeInlineImage(reference: String) -> PlatformImage? {
-#if canImport(UIKit) || canImport(AppKit)
-        if reference.hasPrefix("data:image"),
-           let commaIndex = reference.firstIndex(of: ",") {
-            let base64 = String(reference[reference.index(after: commaIndex)...])
-            guard let data = Data(base64Encoded: base64) else { return nil }
-            return PlatformImage(data: data)
-        }
-
-        guard let url = URL(string: reference), url.isFileURL else { return nil }
-        // Downsample to a reasonable avatar size to avoid decoding a huge source
-        // image at full resolution (ImageIO path).
-        if let downsampled = downsampledImage(at: url, maxPixel: 256) {
-            return downsampled
-        }
-        // Fallback: direct file read (still off the main thread here).
-        return PlatformImage(contentsOfFile: url.path)
-#else
-        return nil
-#endif
-    }
-
-#if canImport(UIKit) || canImport(AppKit)
-    /// ImageIO-based downsample for file-based avatars. Returns nil on failure
-    /// so callers can fall back to the synchronous read.
-    private nonisolated static func downsampledImage(at url: URL, maxPixel: CGFloat) -> PlatformImage? {
-#if canImport(UIKit)
-        guard let source = CGImageSourceCreateWithURL(url as CFURL, nil) else { return nil }
-        let options: [CFString: Any] = [
-            kCGImageSourceCreateThumbnailFromImageAlways: true,
-            kCGImageSourceShouldCacheImmediately: true,
-            kCGImageSourceCreateThumbnailWithTransform: true,
-            kCGImageSourceThumbnailMaxPixelSize: maxPixel
-        ]
-        guard let cgImage = CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary) else {
-            return nil
-        }
-        return UIImage(cgImage: cgImage)
-#elseif canImport(AppKit)
-        guard let source = CGImageSourceCreateWithURL(url as CFURL, nil) else { return nil }
-        let options: [CFString: Any] = [
-            kCGImageSourceCreateThumbnailFromImageAlways: true,
-            kCGImageSourceShouldCacheImmediately: true,
-            kCGImageSourceCreateThumbnailWithTransform: true,
-            kCGImageSourceThumbnailMaxPixelSize: maxPixel
-        ]
-        guard let cgImage = CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary) else {
-            return nil
-        }
-        return NSImage(cgImage: cgImage, size: NSSize(width: cgImage.width, height: cgImage.height))
-#else
-        return nil
-#endif
-    }
-#endif
 }
 
 #if canImport(UIKit)
@@ -162,4 +101,67 @@ private typealias PlatformImage = UIImage
 private typealias PlatformImage = NSImage
 #else
 private struct PlatformImage {}
+#endif
+
+
+// MARK: - Off-main decoding
+
+/// Decodes a local-file or data-URL avatar off the main thread.
+/// Uses ImageIO for file-based images so large avatars are downsampled
+/// instead of decoded at full resolution.
+/// File-scope (non-generic) so detached Tasks capture no generic metatype.
+private func decodeInlineImage(reference: String) -> PlatformImage? {
+#if canImport(UIKit) || canImport(AppKit)
+    if reference.hasPrefix("data:image"),
+       let commaIndex = reference.firstIndex(of: ",") {
+        let base64 = String(reference[reference.index(after: commaIndex)...])
+        guard let data = Data(base64Encoded: base64) else { return nil }
+        return PlatformImage(data: data)
+    }
+
+    guard let url = URL(string: reference), url.isFileURL else { return nil }
+    // Downsample to a reasonable avatar size to avoid decoding a huge source
+    // image at full resolution (ImageIO path).
+    if let downsampled = downsampledImage(at: url, maxPixel: 256) {
+        return downsampled
+    }
+    // Fallback: direct file read (still off the main thread here).
+    return PlatformImage(contentsOfFile: url.path)
+#else
+    return nil
+#endif
+}
+
+#if canImport(UIKit) || canImport(AppKit)
+/// ImageIO-based downsample for file-based avatars. Returns nil on failure
+/// so callers can fall back to the synchronous read.
+private func downsampledImage(at url: URL, maxPixel: CGFloat) -> PlatformImage? {
+#if canImport(UIKit)
+    guard let source = CGImageSourceCreateWithURL(url as CFURL, nil) else { return nil }
+    let options: [CFString: Any] = [
+        kCGImageSourceCreateThumbnailFromImageAlways: true,
+        kCGImageSourceShouldCacheImmediately: true,
+        kCGImageSourceCreateThumbnailWithTransform: true,
+        kCGImageSourceThumbnailMaxPixelSize: maxPixel
+    ]
+    guard let cgImage = CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary) else {
+        return nil
+    }
+    return UIImage(cgImage: cgImage)
+#elseif canImport(AppKit)
+    guard let source = CGImageSourceCreateWithURL(url as CFURL, nil) else { return nil }
+    let options: [CFString: Any] = [
+        kCGImageSourceCreateThumbnailFromImageAlways: true,
+        kCGImageSourceShouldCacheImmediately: true,
+        kCGImageSourceCreateThumbnailWithTransform: true,
+        kCGImageSourceThumbnailMaxPixelSize: maxPixel
+    ]
+    guard let cgImage = CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary) else {
+        return nil
+    }
+    return NSImage(cgImage: cgImage, size: NSSize(width: cgImage.width, height: cgImage.height))
+#else
+    return nil
+#endif
+}
 #endif

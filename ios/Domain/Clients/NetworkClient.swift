@@ -17,9 +17,9 @@ struct NetworkClient: Sendable {
 
 extension NetworkClient: DependencyKey {
     static let liveValue: NetworkClient = {
-        // `NWPathMonitor` is not Sendable; wrap in a nonisolated(unsafe) token.
         // Only one monitor is needed for the app lifetime.
-        nonisolated(unsafe) let monitor = NWPathMonitor()
+        // (`NWPathMonitor` is Sendable in current SDKs, so no isolation wrapper.)
+        let monitor = NWPathMonitor()
         let queue = DispatchQueue(label: "com.pepinillo.network-monitor")
 
         return NetworkClient(
