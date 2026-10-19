@@ -21,9 +21,10 @@ import javax.inject.Singleton
 /**
  * Result of running the post-auth data-migration pipeline (initial upload / merge / initial sync).
  *
- * [showMergeDialog] is true when the server already had data and the user must choose whether
- * to merge local+server or use account-only. The caller (AuthViewModel) is responsible for
- * surfacing the dialog.
+ * [showMergeDialog] is true when the server might already have data and the user must choose
+ * whether to merge local+server or use account-only. NO local data has been uploaded when
+ * this is returned — the upload is deferred to [SessionManager.onMergeResolved] so that
+ * "Use account only" can still offer a genuinely clean server state (B1).
  */
 sealed class PostAuthFlowResult {
     data object Completed : PostAuthFlowResult()
@@ -168,8 +169,9 @@ class SessionManager @Inject constructor(
     }
 
     /**
-     * The core data-migration logic: if local data exists, upload it; if the server also
-     * has data, signal a merge conflict. If no local data, pull from server.
+     * The core data-migration logic: if local data exists, check the server BEFORE uploading
+     * anything; if the server has (or might have) data, surface a merge conflict and defer the
+     * upload until the user chooses. If no local data, pull from server.
      *
      * In all non-conflict paths, the WebSocket is connected so realtime sync works
      * immediately without a process restart.
@@ -178,22 +180,41 @@ class SessionManager @Inject constructor(
         val hasLocal = syncEngine.hasLocalData()
 
         if (hasLocal) {
-            Log.d(TAG, "Local data exists, running initial upload")
-            when (val uploadResult = syncEngine.initialUpload()) {
-                is InitialUploadResult.Success -> {
-                    if (uploadResult.hasExistingData) {
-                        // Server already had data — caller must show merge dialog.
-                        // NOTE: WS is NOT connected here; it connects after resolution
-                        // in onMergeResolved/onUseAccountOnly.
-                        return PostAuthFlowResult.MergeConflict(showMergeDialog = true)
+            // B1: the pre-check MUST happen before any upload. Once local rows are pushed,
+            // "Use account only" can no longer offer a clean server state, and an upload
+            // error used to skip the dialog while dirty rows were pushed anyway.
+            when (syncEngine.hasServerData()) {
+                true -> {
+                    // Server already has data — ask BEFORE uploading; the upload runs in
+                    // onMergeResolved() only if the user chooses to merge.
+                    Log.d(TAG, "Server already has data — deferring upload until merge choice")
+                    return PostAuthFlowResult.MergeConflict(showMergeDialog = true)
+                }
+                null -> {
+                    // Pre-check failed — safe default: never silently push local data.
+                    Log.w(TAG, "hasServerData check failed — showing merge dialog (safe default)")
+                    return PostAuthFlowResult.MergeConflict(showMergeDialog = true)
+                }
+                false -> {
+                    Log.d(TAG, "Server has no data, running initial upload")
+                    when (val uploadResult = syncEngine.initialUpload()) {
+                        is InitialUploadResult.Success -> {
+                            if (uploadResult.hasExistingData) {
+                                // Race: data appeared on the server between the pre-check and
+                                // the upload landing — still ask instead of silently merging.
+                                return PostAuthFlowResult.MergeConflict(showMergeDialog = true)
+                            }
+                            // No conflict — fall through to connect + sync.
+                        }
+                        is InitialUploadResult.NotAuthenticated -> {
+                            Log.w(TAG, "Initial upload returned NotAuthenticated, falling through")
+                        }
+                        is InitialUploadResult.Error -> {
+                            // Non-fatal: the server is empty, so retrying later via syncAll
+                            // cannot create a merge conflict.
+                            Log.e(TAG, "Initial upload failed (non-fatal)", uploadResult.exception)
+                        }
                     }
-                    // No conflict — fall through to connect + sync.
-                }
-                is InitialUploadResult.NotAuthenticated -> {
-                    Log.w(TAG, "Initial upload returned NotAuthenticated, falling through")
-                }
-                is InitialUploadResult.Error -> {
-                    Log.e(TAG, "Initial upload failed (non-fatal)", uploadResult.exception)
                 }
             }
         } else {
@@ -217,10 +238,13 @@ class SessionManager @Inject constructor(
     }
 
     /**
-     * Merge resolution: user chose to keep both local and server data. Data was already
-     * uploaded during initialUpload — just connect the WebSocket (previously missing, #346).
+     * Merge resolution: user chose to keep both local and server data. Performs the
+     * deferred upload (B1: nothing was uploaded before the choice), then a full sync,
+     * then connects the WebSocket (previously missing, #346).
      */
     suspend fun onMergeResolved() {
+        runCatching { syncEngine.initialUpload() }
+            .onFailure { Log.w(TAG, "initialUpload after merge resolution failed (non-fatal): ${it.message}") }
         runCatching { syncEngine.syncAll() }
             .onFailure { Log.w(TAG, "syncAll after merge failed (non-fatal): ${it.message}") }
         syncWebSocketClient.connect()
@@ -228,7 +252,9 @@ class SessionManager @Inject constructor(
 
     /**
      * Merge resolution: user chose to discard local data and use server data only.
-     * Wipe local, pull fresh from server, then connect WebSocket (previously missing, #346).
+     * Genuinely clean since B1 — nothing was uploaded before the choice, so wiping local
+     * data cannot leak it into the account. Wipe local, pull fresh from server, then
+     * connect WebSocket (previously missing, #346).
      */
     suspend fun onUseAccountOnly() {
         initialSyncManager.wipeAndSync()

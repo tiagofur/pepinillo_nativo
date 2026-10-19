@@ -14,6 +14,7 @@ import dev.creapolis.pepinillo.data.sync.InitialUploadResult
 import dev.creapolis.pepinillo.data.sync.SyncEngine
 import dev.creapolis.pepinillo.data.sync.SyncMetadataStore
 import dev.creapolis.pepinillo.data.sync.SyncWebSocketClient
+import dev.creapolis.pepinillo.data.sync.TransientSyncException
 import io.mockk.Runs
 import io.mockk.coEvery
 import io.mockk.coJustRun
@@ -192,6 +193,7 @@ class SessionManagerTest {
     fun `completeAuthSuccess verified with local data and no server conflict uploads and connects WS`() = runTest {
         val response = authResponse(emailVerified = true)
         coEvery { syncEngine.hasLocalData() } returns true
+        coEvery { syncEngine.hasServerData() } returns false
         coEvery { syncEngine.initialUpload() } returns InitialUploadResult.Success(hasExistingData = false)
         coJustRun { syncEngine.syncAll() }
         coJustRun { syncWebSocketClient.connect() }
@@ -208,15 +210,48 @@ class SessionManagerTest {
     // -----------------------------------------------------------------------
 
     @Test
-    fun `completeAuthSuccess verified with server conflict returns MergeConflict without connecting WS`() = runTest {
+    fun `completeAuthSuccess verified with server conflict returns MergeConflict without uploading or connecting WS`() = runTest {
         val response = authResponse(emailVerified = true)
         coEvery { syncEngine.hasLocalData() } returns true
+        coEvery { syncEngine.hasServerData() } returns true
+
+        val result = sessionManager.completeAuthSuccess(response)
+
+        assertTrue(result is PostAuthFlowResult.MergeConflict)
+        // B1: nothing may be uploaded before the user picks a merge option — otherwise
+        // "Use account only" can no longer offer a clean server state.
+        coVerify(exactly = 0) { syncEngine.initialUpload() }
+        // WS must NOT connect until the user resolves the merge dialog (#346)
+        coVerify(exactly = 0) { syncWebSocketClient.connect() }
+    }
+
+    @Test
+    fun `completeAuthSuccess when server data check fails shows merge dialog without uploading`() = runTest {
+        // B1 safe default: hasServerData() == null (check failed) must never silently
+        // push local data — show the dialog and let the user decide.
+        val response = authResponse(emailVerified = true)
+        coEvery { syncEngine.hasLocalData() } returns true
+        coEvery { syncEngine.hasServerData() } returns null
+
+        val result = sessionManager.completeAuthSuccess(response)
+
+        assertTrue(result is PostAuthFlowResult.MergeConflict)
+        coVerify(exactly = 0) { syncEngine.initialUpload() }
+        coVerify(exactly = 0) { syncWebSocketClient.connect() }
+    }
+
+    @Test
+    fun `completeAuthSuccess when data appears on server during upload shows merge dialog`() = runTest {
+        // Race guard: the server was empty at the pre-check but the upload landed on data
+        // that appeared in between — still ask instead of silently merging.
+        val response = authResponse(emailVerified = true)
+        coEvery { syncEngine.hasLocalData() } returns true
+        coEvery { syncEngine.hasServerData() } returns false
         coEvery { syncEngine.initialUpload() } returns InitialUploadResult.Success(hasExistingData = true)
 
         val result = sessionManager.completeAuthSuccess(response)
 
         assertTrue(result is PostAuthFlowResult.MergeConflict)
-        // WS must NOT connect until the user resolves the merge dialog (#346)
         coVerify(exactly = 0) { syncWebSocketClient.connect() }
     }
 
@@ -243,15 +278,17 @@ class SessionManagerTest {
     }
 
     @Test
-    fun `completeAuthSuccessFromVerify with server conflict shows merge dialog`() = runTest {
+    fun `completeAuthSuccessFromVerify with server conflict shows merge dialog without uploading`() = runTest {
         val user = userDto(emailVerified = true)
         val tokens = TokensDto("access", "refresh")
         coEvery { syncEngine.hasLocalData() } returns true
-        coEvery { syncEngine.initialUpload() } returns InitialUploadResult.Success(hasExistingData = true)
+        coEvery { syncEngine.hasServerData() } returns true
 
         val result = sessionManager.completeAuthSuccessFromVerify(user, tokens)
 
         assertTrue(result is PostAuthFlowResult.MergeConflict)
+        // B1: verify follows the same ask-before-upload rule as login.
+        coVerify(exactly = 0) { syncEngine.initialUpload() }
     }
 
     // -----------------------------------------------------------------------
@@ -259,12 +296,32 @@ class SessionManagerTest {
     // -----------------------------------------------------------------------
 
     @Test
-    fun `onMergeResolved connects WebSocket after sync`() = runTest {
+    fun `onMergeResolved performs deferred upload then sync then connects WS`() = runTest {
+        // B1: the actual upload is deferred to merge resolution — it runs here, after
+        // the user explicitly chose to merge, and is best-effort.
+        coEvery { syncEngine.initialUpload() } returns InitialUploadResult.Success(hasExistingData = true)
         coJustRun { syncEngine.syncAll() }
         coJustRun { syncWebSocketClient.connect() }
 
         sessionManager.onMergeResolved()
 
+        coVerifyOrder {
+            syncEngine.initialUpload()
+            syncEngine.syncAll()
+            syncWebSocketClient.connect()
+        }
+    }
+
+    @Test
+    fun `onMergeResolved still connects WS when the deferred upload fails`() = runTest {
+        // Best-effort: a failed upload must not block the sync + connect steps.
+        coEvery { syncEngine.initialUpload() } throws TransientSyncException("upload failed")
+        coJustRun { syncEngine.syncAll() }
+        coJustRun { syncWebSocketClient.connect() }
+
+        sessionManager.onMergeResolved()
+
+        coVerify { syncEngine.syncAll() }
         coVerify { syncWebSocketClient.connect() }
     }
 
@@ -276,6 +333,10 @@ class SessionManagerTest {
 
         sessionManager.onUseAccountOnly()
 
+        // B1: account-only must be genuinely clean — local data is discarded,
+        // never uploaded.
+        coVerify(exactly = 0) { syncEngine.initialUpload() }
+        coVerify { initialSyncManager.wipeAndSync() }
         coVerify { syncWebSocketClient.connect() }
     }
 

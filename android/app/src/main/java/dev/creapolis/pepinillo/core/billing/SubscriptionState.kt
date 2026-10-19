@@ -32,6 +32,35 @@ data class SubscriptionState(
     val isPro: Boolean get() = hasLocalPremium
 }
 
+/**
+ * Merges a server-reported subscription into the current (RevenueCat-backed) state (B4).
+ *
+ * The server profile can be stale — e.g. `/users/me` fetched right after a purchase whose
+ * receipt verification failed — so it must never clobber an RC-confirmed entitlement:
+ *
+ *  - A `free` server response is ignored while an RC entitlement is active
+ *    ([SubscriptionState.hasLocalPremium]); it only applies when RC has no active
+ *    entitlement.
+ *  - A paid server tier replaces the current tier, and the expiration only ever EXTENDS
+ *    (the later of current/server; a null expiry means "no known expiry" and is kept).
+ */
+fun mergeServerSubscription(
+    current: SubscriptionState,
+    serverTier: SubscriptionTier,
+    serverExpiresAt: Long?,
+): SubscriptionState {
+    if (serverTier == SubscriptionTier.FREE && current.hasLocalPremium) {
+        // RC just confirmed (or still holds) an active entitlement — a stale "free"
+        // profile must not downgrade it.
+        return current
+    }
+    val mergedExpiry = listOfNotNull(current.expirationDate, serverExpiresAt).maxOrNull()
+    return SubscriptionState(
+        tier = serverTier,
+        expirationDate = mergedExpiry,
+    )
+}
+
 object PepinilloProducts {
     const val PEPINILLO_PLUS = "com.pepinillo.app.pro.lifetime"
     const val EVERYWHERE_MONTHLY = "com.pepinillo.app.pro.monthly"

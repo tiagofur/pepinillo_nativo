@@ -286,9 +286,14 @@ class SubscriptionManager @Inject constructor(
                 SubscriptionTier.FREE
             }
         }
-        _subscriptionState.value = SubscriptionState(
-            tier = subscriptionTier,
-            expirationDate = expiresAt,
+        // B4: the server profile can be stale (e.g. /users/me cached before a purchase's
+        // receipt was verified). It must never downgrade an RC-confirmed entitlement —
+        // a `free` response only applies when RC has no active entitlement, and the
+        // expiry can only be extended. See mergeServerSubscription for the exact rules.
+        _subscriptionState.value = mergeServerSubscription(
+            current = _subscriptionState.value,
+            serverTier = subscriptionTier,
+            serverExpiresAt = expiresAt,
         )
     }
 
