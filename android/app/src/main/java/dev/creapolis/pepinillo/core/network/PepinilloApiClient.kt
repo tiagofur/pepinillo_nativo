@@ -178,6 +178,14 @@ class PepinilloApiClient @Inject constructor(
     suspend fun initialUpload(request: InitialUploadRequest): NetworkResult<InitialUploadResponse> =
         safeCall { httpClient.post("sync/initial-upload") { jsonBody(request); withDeviceId() }.body() }
 
+    /**
+     * Merge-decision pre-check (GET /sync/has-data): reports whether the account
+     * already holds tasks or sessions WITHOUT uploading anything. Used by the
+     * post-auth pipeline so the merge dialog precedes any upload (B1).
+     */
+    suspend fun hasServerData(): NetworkResult<Boolean> =
+        safeCall { httpClient.get("sync/has-data") { withDeviceId() }.body<HasDataResponse>().hasData }
+
     // ── Full Sync (cursor-paginated pull) ──
 
     suspend fun getFullSync(

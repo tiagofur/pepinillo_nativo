@@ -165,6 +165,29 @@ class SyncEngine @Inject constructor(
 
     // ── Initial Upload ──
 
+    /**
+     * Merge-decision pre-check (GET /sync/has-data): reports whether the account
+     * already holds tasks or sessions WITHOUT uploading anything. Returns null
+     * when the check itself fails — callers must treat null as "unknown" and show
+     * the merge dialog rather than silently pushing (SessionManager B1 contract).
+     */
+    suspend fun hasServerData(): Boolean? = try {
+        when (val result = apiClient.hasServerData()) {
+            is NetworkResult.Success -> result.data
+            is NetworkResult.Error -> {
+                println("[$TAG]hasServerData ERROR: ${result.code} ${result.message}")
+                null
+            }
+            is NetworkResult.NetworkError -> {
+                println("[$TAG]hasServerData NETWORK ERROR: ${result.exception.message}")
+                null
+            }
+        }
+    } catch (e: Exception) {
+        println("[$TAG]hasServerData FAILED: ${e::class.simpleName}: ${e.message}")
+        null
+    }
+
     suspend fun initialUpload(): InitialUploadResult = syncLock.withLock { initialUploadImpl() }
 
     private suspend fun initialUploadImpl(): InitialUploadResult {
@@ -240,6 +263,19 @@ class SyncEngine @Inject constructor(
                     }
                     if (taskUpdates.isNotEmpty()) {
                         taskDao.markSyncedBatch(taskUpdates, now)
+                    }
+
+                    // Converge immediately to the merged server state: rows the server
+                    // rejected (LWW) keep their stale local copy marked as synced above,
+                    // so apply the authoritative server versions right away instead of
+                    // waiting for the next incremental pull. Rows dirtied while the
+                    // upload was in flight are skipped — their newer edit wins.
+                    val currentlyDirty = taskDao.getDirtyTasks().map { it.id }.toSet()
+                    val mergedTaskEntities = response.tasks
+                        .filter { it.syncId.isNotEmpty() && it.syncId !in currentlyDirty }
+                        .map { it.toEntity() }
+                    if (mergedTaskEntities.isNotEmpty()) {
+                        taskDao.upsertAll(mergedTaskEntities)
                     }
 
                     val sessionEntities = response.sessions
@@ -355,9 +391,31 @@ class SyncEngine @Inject constructor(
                 val now = System.currentTimeMillis()
                 println("[$TAG]syncTasks: server returned ${response.tasks.size} tasks")
 
+                val appliedIds = response.appliedSyncIds.toSet()
+                val rejectedIds = response.rejectedSyncIds.toSet()
+                // Legacy servers predate per-item acks (both lists empty): fall back
+                // to the old mark-everything behavior.
+                val legacyServer = appliedIds.isEmpty() && rejectedIds.isEmpty()
+
+                // Rows the server rejected lost LWW: release their dirty claim now so
+                // mergeServerTasks below applies the authoritative server copy (which
+                // is always present — the client pushes with lastSyncAt=null, so the
+                // server returns its full state).
+                for (task in dirtyTasks) {
+                    if (!task.isDeleted && task.id in rejectedIds) {
+                        taskDao.updateTask(task.copy(isDirty = false))
+                    }
+                }
+
                 // Build a syncId→serverId map ONCE for O(1) lookup instead of O(N×M) .find{} per task.
                 val serverIdBySyncId = response.tasks.associate { it.syncId to it.id }
-                val updates = dirtyTasks.map { task ->
+                // Mark only what the server accepted. Rejected rows were already
+                // synced by the merge above; unlisted rows stay dirty and retry.
+                val updates = dirtyTasks
+                    .filter { task ->
+                        task.isDeleted || legacyServer || task.id in appliedIds
+                    }
+                    .map { task ->
                     val serverId = if (task.isDeleted) {
                         task.serverId ?: 0
                     } else {
@@ -432,13 +490,16 @@ class SyncEngine @Inject constructor(
                 inserted++
             } else if (!local.isDirty && serverUpdatedAt >= local.updatedAt) {
                 val serverEntity = serverTask.toEntity()
+                // Full-row merge (A2): the backend push path is a full-row Save, so a
+                // server null means "cleared on another device" — never "no-touch".
+                // Dirty local rows are protected by the isDirty guard above.
                 val merged = serverEntity.copy(
                     id = local.id,
-                    dueDate = serverEntity.dueDate ?: local.dueDate,
+                    dueDate = serverEntity.dueDate,
                     scheduledForToday = if (serverTask.dueDate != null || serverTask.scheduledForToday) serverEntity.scheduledForToday else local.scheduledForToday,
-                    sortOrder = if (serverEntity.sortOrder != 0) serverEntity.sortOrder else local.sortOrder,
-                    recurrenceRule = serverEntity.recurrenceRule ?: local.recurrenceRule,
-                    recurringTemplateID = serverEntity.recurringTemplateID ?: local.recurringTemplateID,
+                    sortOrder = serverEntity.sortOrder,
+                    recurrenceRule = serverEntity.recurrenceRule,
+                    recurringTemplateID = serverEntity.recurringTemplateID,
                     isDirty = false,
                     syncedAt = now,
                     serverId = serverTask.id,

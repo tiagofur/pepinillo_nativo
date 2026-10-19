@@ -137,7 +137,17 @@ data class TaskSyncRequest(
 data class TaskSyncResponse(
     val tasks: List<TaskDto>,
     val deletedSyncIds: List<String> = emptyList(),
+    // Per-item push outcome (A3): rows the server accepted vs rows skipped by
+    // LWW because a newer server version existed. Clients must not mark
+    // rejected rows as synced until they have applied the server copy.
+    val appliedSyncIds: List<String> = emptyList(),
+    val rejectedSyncIds: List<String> = emptyList(),
     val syncTimestamp: Long = 0,
+)
+
+@Serializable
+data class HasDataResponse(
+    val hasData: Boolean = false,
 )
 
 // ── Pomodoro Session ──

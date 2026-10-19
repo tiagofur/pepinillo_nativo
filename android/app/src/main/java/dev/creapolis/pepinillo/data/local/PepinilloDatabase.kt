@@ -30,7 +30,7 @@ import dev.creapolis.pepinillo.data.local.entity.UserEntity
         UserEntity::class,
         PreferenceSyncEntity::class,
     ],
-    version = 13,
+    version = 14,
     exportSchema = true,
 )
 
@@ -88,6 +88,15 @@ abstract class PepinilloDatabase : RoomDatabase() {
         if (sessions.isNotEmpty()) {
             focusSessionDao().upsertSessions(sessions)
         }
+
+        // A1: the wipe above deleted every daily_stats row. Rebuild them from the
+        // snapshot so free-tier users (whose stats pull is entitlement-gated) keep
+        // streaks/history, and tasksCompleted/longestSessionMinutes survive (the
+        // server stats DTO does not carry them). Server-derived rows are clean.
+        val recomputed = recomputeDailyStats(sessions, tasks, System.currentTimeMillis())
+        for (row in recomputed) {
+            dailyStatsDao().upsert(row)
+        }
     }
 
     /**
@@ -128,6 +137,35 @@ abstract class PepinilloDatabase : RoomDatabase() {
          * completion toggles must be tracked as dirty so the next sync push can
          * propagate them, instead of being silently lost.
          */
+        /**
+         * v13 → v14: add `last_completed_at` to `tasks` (C2: recurring occurrences
+         * count toward daily completions) and normalize legacy `due_date` values
+         * written as UTC-midnight-of-local-date (C1) to canonical local midnight.
+         */
+        val MIGRATION_13_14 = object : Migration(13, 14) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "ALTER TABLE tasks ADD COLUMN last_completed_at INTEGER DEFAULT NULL",
+                )
+                val zone = java.util.TimeZone.getDefault()
+                val cursor = db.query(
+                    "SELECT id, due_date FROM tasks WHERE due_date IS NOT NULL AND due_date % 86400000 = 0",
+                )
+                while (cursor.moveToNext()) {
+                    val id = cursor.getString(0)
+                    val raw = cursor.getLong(1)
+                    val fixed = normalizeLegacyDueDate(raw, zone)
+                    if (fixed != raw) {
+                        db.execSQL(
+                            "UPDATE tasks SET due_date = ? WHERE id = ?",
+                            arrayOf<Any>(fixed, id),
+                        )
+                    }
+                }
+                cursor.close()
+            }
+        }
+
         /**
          * v12 → v13: add `server_id` column to `subtasks`.
          */
@@ -306,4 +344,94 @@ abstract class PepinilloDatabase : RoomDatabase() {
             }
         }
     }
+}
+
+internal const val MILLIS_PER_DAY = 86_400_000L
+
+/**
+ * Rebuilds per-day [DailyStatsEntity] rows from a full snapshot of sessions + tasks.
+ *
+ * Used by [PepinilloDatabase.replaceSyncSnapshot] after a wipe: the wipe deletes every
+ * daily_stats row and the server stats DTO does not carry tasksCompleted or
+ * longestSessionMinutes, so without this free-tier users would permanently lose
+ * streaks/history and entitled users would lose those two counters on every wipe.
+ *
+ * Semantics deliberately mirror [SessionRepository.recordSession]: sessions are bucketed
+ * by local start-of-day, minutes are rounded (not truncated), break phases are skipped,
+ * only completed work sessions count toward sessionsCompleted, and mode minutes go to
+ * the matching bucket. Task occurrences count once per row per day.
+ *
+ * Produced rows are server-derived: clean (isDirty=false) with syncedAt=now.
+ */
+internal fun recomputeDailyStats(
+    sessions: List<FocusSessionEntity>,
+    tasks: List<TaskEntity>,
+    now: Long,
+): List<DailyStatsEntity> {
+    val byDay = LinkedHashMap<Long, DailyStatsEntity>()
+    for (s in sessions.sortedBy { it.startTime }) {
+        if (s.phase == "ShortBreak" || s.phase == "LongBreak") continue
+        if (s.durationMillis <= 0L || s.startTime <= 0L) continue
+        val day = dbStartOfDay(s.startTime)
+        val minutes = ((s.durationMillis + 30_000L) / 60_000L).toInt()
+        val e = byDay[day] ?: DailyStatsEntity(date = day)
+        byDay[day] = e.copy(
+            totalMinutes = e.totalMinutes + minutes,
+            sessionsCompleted = e.sessionsCompleted + if (s.wasCompleted) 1 else 0,
+            longestSessionMinutes = maxOf(e.longestSessionMinutes, minutes),
+            pomodoroMinutes = e.pomodoroMinutes + if (s.mode == "Pomodoro") minutes else 0,
+            flowMinutes = e.flowMinutes + if (s.mode == "Flow") minutes else 0,
+            blocksMinutes = e.blocksMinutes + if (s.mode == "Blocks") minutes else 0,
+            stopwatchMinutes = e.stopwatchMinutes + if (s.mode == "Chrono") minutes else 0,
+            isDirty = false,
+            syncedAt = now,
+        )
+    }
+    for (t in tasks) {
+        val doneAt = t.completedAt ?: t.lastCompletedAt ?: continue
+        if (!t.isCompleted && t.lastCompletedAt == null) continue
+        val day = dbStartOfDay(doneAt)
+        val e = byDay[day] ?: DailyStatsEntity(date = day)
+        byDay[day] = e.copy(
+            tasksCompleted = e.tasksCompleted + 1,
+            isDirty = false,
+            syncedAt = now,
+        )
+    }
+    return byDay.values.toList()
+}
+
+/**
+ * Converts a legacy `due_date` stored as UTC-midnight-of-local-date (C1) to the
+ * canonical local-midnight encoding. Values that are not exact UTC midnights are
+ * already canonical and pass through untouched.
+ */
+internal fun normalizeLegacyDueDate(utcMidnightMillis: Long, zone: java.util.TimeZone): Long {
+    if (utcMidnightMillis % MILLIS_PER_DAY != 0L) return utcMidnightMillis
+    val utc = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("UTC"))
+    utc.timeInMillis = utcMidnightMillis
+    val local = java.util.Calendar.getInstance(zone)
+    local.clear()
+    local.set(
+        utc.get(java.util.Calendar.YEAR),
+        utc.get(java.util.Calendar.MONTH),
+        utc.get(java.util.Calendar.DAY_OF_MONTH),
+        0, 0, 0,
+    )
+    return local.timeInMillis
+}
+
+/**
+ * Local start-of-day truncation. Intentional 3-line mirror of
+ * SessionRepository.startOfDay (the canonical helper): this file must not depend
+ * on the repository layer, so the truncation lives here too with identical semantics.
+ */
+private fun dbStartOfDay(millis: Long): Long {
+    val cal = java.util.Calendar.getInstance(java.util.TimeZone.getDefault())
+    cal.timeInMillis = millis
+    cal.set(java.util.Calendar.HOUR_OF_DAY, 0)
+    cal.set(java.util.Calendar.MINUTE, 0)
+    cal.set(java.util.Calendar.SECOND, 0)
+    cal.set(java.util.Calendar.MILLISECOND, 0)
+    return cal.timeInMillis
 }
