@@ -55,7 +55,16 @@ struct AppView: View {
         .environment(\.appTheme, activeTheme)
         .preferredColorScheme(preferredColorScheme)
         .onAppear {
-            store.send(.appLaunched)
+            // Never boot the live launch cascade (network/profile effects)
+            // inside a unit-test host: the app process runs with test
+            // dependencies and live launch effects trap on unimplemented
+            // test clients, producing unattributed suite failures. Tests
+            // drive `.appLaunched` explicitly via TestStore, so they are
+            // unaffected. (Also true in SwiftUI Previews, where a live
+            // launch is equally unwanted.)
+            if !isRunningUnitTests {
+                store.send(.appLaunched)
+            }
         }
         .onOpenURL { url in
             store.send(.appURLReceived(url))
@@ -440,4 +449,10 @@ struct CompactTopTabBar: View {
         .padding(.bottom, 6)
         .frame(maxWidth: .infinity, alignment: .center)
     }
+}
+
+/// True when this process hosts unit tests (or SwiftUI Previews, which also
+/// links XCTest). Used to keep live launch side effects out of test runs.
+private var isRunningUnitTests: Bool {
+    NSClassFromString("XCTestCase") != nil
 }
