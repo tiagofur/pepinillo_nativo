@@ -165,11 +165,13 @@ func (r *TaskRepository) Delete(ctx context.Context, userID string, taskID int) 
 		Updates(map[string]any{"is_deleted": true, "updated_at": time.Now().UTC()}).Error
 }
 
-func (r *TaskRepository) Sync(ctx context.Context, userID string, tasks []domain.Task, deletedSyncIDs []string, since *time.Time) ([]domain.Task, []string, time.Time, error) {
+func (r *TaskRepository) Sync(ctx context.Context, userID string, tasks []domain.Task, deletedSyncIDs []string, since *time.Time) (*ports.TaskSyncResult, error) {
 	now := time.Now().UTC()
 
 	var serverTasks []domain.Task
 	var tombstones []domain.Task
+	applied := make([]string, 0, len(tasks))
+	rejected := make([]string, 0, len(tasks))
 
 	err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		for i := range tasks {
@@ -199,6 +201,7 @@ func (r *TaskRepository) Sync(ctx context.Context, userID string, tasks []domain
 
 			if err == nil {
 				if !shouldApplyClientUpdate(existing.UpdatedAt, clientUpdatedAt) {
+					rejected = append(rejected, incoming.SyncID)
 					continue
 				}
 				incoming.ID = existing.ID
@@ -211,6 +214,7 @@ func (r *TaskRepository) Sync(ctx context.Context, userID string, tasks []domain
 			if err := tx.Save(&incoming).Error; err != nil {
 				return err
 			}
+			applied = append(applied, incoming.SyncID)
 		}
 		if len(deletedSyncIDs) > 0 {
 			if err := tx.Model(&domain.Task{}).
@@ -238,7 +242,7 @@ func (r *TaskRepository) Sync(ctx context.Context, userID string, tasks []domain
 		return tombstoneQuery.Find(&tombstones).Error
 	})
 	if err != nil {
-		return nil, nil, time.Time{}, err
+		return nil, err
 	}
 
 	deleted := make([]string, 0, len(tombstones))
@@ -248,7 +252,13 @@ func (r *TaskRepository) Sync(ctx context.Context, userID string, tasks []domain
 		}
 	}
 
-	return serverTasks, deleted, now, nil
+	return &ports.TaskSyncResult{
+		ServerTasks:    serverTasks,
+		DeletedSyncIDs: deleted,
+		AppliedSyncIDs: applied,
+		RejectedSyncIDs: rejected,
+		SyncedAt:       now,
+	}, nil
 }
 
 func shouldApplyClientUpdate(existingUpdatedAt, clientUpdatedAt time.Time) bool {

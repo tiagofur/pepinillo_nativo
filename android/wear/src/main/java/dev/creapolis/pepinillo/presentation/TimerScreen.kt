@@ -2,7 +2,9 @@ package dev.creapolis.pepinillo.presentation
 
 import android.app.Activity
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.speech.RecognizerIntent
+import android.speech.SpeechRecognizer
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.Spring
@@ -77,6 +79,10 @@ import dev.creapolis.pepinillo.data.WearTimerDisplay
 import dev.creapolis.pepinillo.data.WearTimerState
 import kotlinx.coroutines.delay
 
+/** P2(a): tick cadence for the timer display — 1s interactive, 60s ambient. */
+private const val ACTIVE_TICK_INTERVAL_MS = 1_000L
+private const val AMBIENT_TICK_INTERVAL_MS = 60_000L
+
 @Composable
 fun TimerScreen(
     state: WearTimerState,
@@ -110,7 +116,9 @@ fun TimerScreen(
                 if (state.status == "Running") {
                     while (true) {
                         ambientDisplayTime = WearTimerDisplay.tick(state).displayTime
-                        delay(100)
+                        // P2(a): ambient refresh is minute-granular — per-second updates
+                        // would waste power and increase burn-in risk while always-on.
+                        delay(AMBIENT_TICK_INTERVAL_MS)
                     }
                 } else {
                     ambientDisplayTime = state.displayTime
@@ -225,7 +233,9 @@ private fun TimerActiveLayout(
                 val ticked = WearTimerDisplay.tick(state)
                 localProgress = ticked.progress
                 localDisplayTime = ticked.displayTime
-                delay(100)
+                // P2(a): 1s is enough for a mm:ss display (the previous 10Hz loop kept
+                // the CPU awake for invisible sub-second ring updates).
+                delay(ACTIVE_TICK_INTERVAL_MS)
             }
         } else {
             localProgress = state.progress
@@ -742,6 +752,20 @@ private fun formatMinutes(totalMinutes: Int): String {
 @Composable
 private fun VoiceStartChip(isPro: Boolean, onStartMode: (String) -> Unit) {
     val context = LocalContext.current
+    // E4: never launch RecognizerIntent blindly — watches without a speech recognizer
+    // crash with ActivityNotFoundException. Both checks are needed because some
+    // recognizer implementations only expose the RecognitionService, and package
+    // visibility can hide one signal while the other resolves.
+    val voiceAvailable = remember(context) {
+        runCatching {
+            val recognizeIntent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
+            val resolvesActivity = context.packageManager
+                .resolveActivity(recognizeIntent, PackageManager.MATCH_DEFAULT_ONLY) != null
+            resolvesActivity || SpeechRecognizer.isRecognitionAvailable(context)
+        }.getOrDefault(false)
+    }
+    if (!voiceAvailable) return
+
     val voiceLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult(),
     ) { result ->
@@ -767,11 +791,16 @@ private fun VoiceStartChip(isPro: Boolean, onStartMode: (String) -> Unit) {
                 putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_WEB_SEARCH)
                 putExtra(RecognizerIntent.EXTRA_PROMPT, context.getString(R.string.voice_prompt_mode))
             }
-            voiceLauncher.launch(intent)
+            // E4: resolveActivity can still miss (package visibility filtering), so the
+            // launch itself is guarded as well — degrade to a toast instead of crashing.
+            runCatching { voiceLauncher.launch(intent) }
+                .onFailure {
+                    Toast.makeText(context, R.string.msg_voice_unavailable, Toast.LENGTH_SHORT).show()
+                }
         },
         modifier = Modifier
             .fillMaxWidth()
-            .height(40.dp),
+            .height(48.dp),
         shape = WearShapeTokens.card,
         colors = ButtonDefaults.buttonColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainer,
@@ -809,7 +838,8 @@ private fun ModeButton(
                 onClick()
             }
         },
-        modifier = modifier.height(40.dp),
+        // P2(d): 48dp minimum touch-target height (was 40dp).
+        modifier = modifier.height(48.dp),
         shape = WearShapeTokens.card,
         colors = ButtonDefaults.buttonColors(
             containerColor = if (isLocked) MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.5f) else color.copy(alpha = 0.15f),

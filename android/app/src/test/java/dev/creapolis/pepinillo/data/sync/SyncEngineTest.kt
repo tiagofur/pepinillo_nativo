@@ -979,5 +979,175 @@ class SyncEngineTest {
         assertEquals(1500, pushedSession.durationSeconds)
         assertEquals(1200, pushedSession.elapsedSeconds)
     }
+
+    // -----------------------------------------------------------------------
+    // hasServerData (merge pre-check, B1 contract)
+    // -----------------------------------------------------------------------
+
+    @Test
+    fun `hasServerData returns true when server has data`() = runTest {
+        coEvery { apiClient.hasServerData() } returns NetworkResult.Success(true)
+
+        assertEquals(true, syncEngine.hasServerData())
+    }
+
+    @Test
+    fun `hasServerData returns false when account is empty`() = runTest {
+        coEvery { apiClient.hasServerData() } returns NetworkResult.Success(false)
+
+        assertEquals(false, syncEngine.hasServerData())
+    }
+
+    @Test
+    fun `hasServerData returns null on transport error`() = runTest {
+        coEvery { apiClient.hasServerData() } returns NetworkResult.Error(500, "boom")
+
+        assertEquals(null, syncEngine.hasServerData())
+    }
+
+    // -----------------------------------------------------------------------
+    // syncTasks per-item acks (A3)
+    // -----------------------------------------------------------------------
+
+    @Test
+    fun `syncTasks marks only server-accepted rows as synced`() = runTest {
+        val accepted = TaskEntity(id = "t-applied", title = "A", updatedAt = 2000L, isDirty = true)
+        val untouched = TaskEntity(id = "t-other", title = "B", updatedAt = 2000L, isDirty = true)
+        coEvery { taskDao.getDirtyTasks() } returns listOf(accepted, untouched)
+        coEvery { subtaskDao.getSubtasksForTaskSync(any()) } returns emptyList()
+        coEvery { sessionDao.getAllSessionsSync() } returns emptyList()
+        coEvery { apiClient.syncTasks(any()) } returns NetworkResult.Success(
+            TaskSyncResponse(
+                tasks = emptyList(),
+                appliedSyncIds = listOf("t-applied"),
+                rejectedSyncIds = emptyList(),
+            ),
+        )
+
+        syncEngine.syncTasks()
+
+        coVerify {
+            taskDao.markSyncedBatch(
+                match { updates -> updates.map { it.taskId } == listOf("t-applied") },
+                any(),
+            )
+        }
+    }
+
+    @Test
+    fun `syncTasks applies server version for LWW-rejected rows`() = runTest {
+        val local = TaskEntity(id = "t-rej", title = "Local stale", updatedAt = 1000L, isDirty = true)
+        val serverDto = TaskDto(
+            id = 7,
+            syncId = "t-rej",
+            title = "Server newer",
+            updatedAt = "2026-01-02T00:00:00Z",
+        )
+        coEvery { taskDao.getDirtyTasks() } returns listOf(local)
+        coEvery { subtaskDao.getSubtasksForTaskSync(any()) } returns emptyList()
+        coEvery { sessionDao.getAllSessionsSync() } returns emptyList()
+        coEvery { apiClient.syncTasks(any()) } returns NetworkResult.Success(
+            TaskSyncResponse(
+                tasks = listOf(serverDto),
+                appliedSyncIds = emptyList(),
+                rejectedSyncIds = listOf("t-rej"),
+            ),
+        )
+        // After the engine releases the dirty claim, the merge reads the clean row.
+        coEvery { taskDao.getTaskById("t-rej") } returns local.copy(isDirty = false)
+
+        syncEngine.syncTasks()
+
+        // 1. Dirty claim released before the merge.
+        coVerify {
+            taskDao.updateTask(match { it.id == "t-rej" && it.title == "Local stale" && !it.isDirty })
+        }
+        // 2. Authoritative server copy applied by the merge.
+        coVerify {
+            taskDao.updateTask(match { it.id == "t-rej" && it.title == "Server newer" && !it.isDirty })
+        }
+        // 3. Rejected row excluded from the batch mark (the merge already synced it).
+        coVerify(exactly = 0) {
+            taskDao.markSyncedBatch(match { updates -> updates.any { it.taskId == "t-rej" } }, any())
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // mergeServerTasks full-row semantics (A2)
+    // -----------------------------------------------------------------------
+
+    @Test
+    fun `mergeServerTasks lets server nulls clear local optional fields`() = runTest {
+        coEvery { taskDao.getDirtyTasks() } returns emptyList()
+        val local = TaskEntity(
+            id = "t-1",
+            title = "T",
+            dueDate = 1700000000000L,
+            recurrenceRule = "FREQ=DAILY",
+            recurringTemplateID = "tpl",
+            sortOrder = 5,
+            updatedAt = 1000L,
+            isDirty = false,
+        )
+        val serverDto = TaskDto(
+            id = 3,
+            syncId = "t-1",
+            title = "T",
+            dueDate = null,
+            recurrenceRule = null,
+            recurringTemplateId = null,
+            sortOrder = 0,
+            updatedAt = "2026-01-02T00:00:00Z",
+        )
+        coEvery { apiClient.getTasks() } returns NetworkResult.Success(listOf(serverDto))
+        coEvery { taskDao.getTaskById("t-1") } returns local
+
+        syncEngine.syncTasks()
+
+        coVerify {
+            taskDao.updateTask(
+                match {
+                    it.dueDate == null &&
+                        it.recurrenceRule == null &&
+                        it.recurringTemplateID == null &&
+                        it.sortOrder == 0
+                },
+            )
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // initialUpload converges to merged server state
+    // -----------------------------------------------------------------------
+
+    @Test
+    fun `initialUpload upserts merged server tasks`() = runTest {
+        every { authStore.getAccessToken() } returns "valid-token"
+        every { authStore.getOrCreateDeviceId() } returns "device-1"
+        every { authStore.getUserId() } returns "user-1"
+        coEvery { taskDao.getAllTasksSync() } returns emptyList()
+        coEvery { sessionDao.getAllSessionsSync() } returns emptyList()
+        coEvery { preferenceSyncDao.getDirtyPreferences() } returns emptyList()
+        val serverDto = TaskDto(
+            id = 9,
+            syncId = "srv-1",
+            title = "Server task",
+            updatedAt = "2026-01-02T00:00:00Z",
+        )
+        coEvery { apiClient.initialUpload(any()) } returns NetworkResult.Success(
+            dev.creapolis.pepinillo.core.network.InitialUploadResponse(
+                tasks = listOf(serverDto),
+                sessions = emptyList(),
+                settings = emptyList(),
+                serverTimestamp = "2026-01-02T00:00:00Z",
+                hasExistingData = true,
+            ),
+        )
+
+        val result = syncEngine.initialUpload()
+
+        assertTrue(result is InitialUploadResult.Success)
+        coVerify { taskDao.upsertAll(match { list -> list.any { it.id == "srv-1" && it.title == "Server task" } }) }
+    }
 }
 

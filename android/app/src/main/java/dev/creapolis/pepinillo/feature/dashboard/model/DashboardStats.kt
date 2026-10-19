@@ -102,6 +102,9 @@ data class DashboardStats(
     val weeklyData: List<DailyFocus> = emptyList(),
     val modeBreakdown: List<ModeUsage> = emptyList(),
     val isLoading: Boolean = true,
+    // True when older history rows exist even if the current stats are empty:
+    // lets the UI show an error + retry instead of the new-user empty state (P2a).
+    val hasHistory: Boolean = false,
     val selectedPeriod: AnalyticsPeriod = AnalyticsPeriod.Week,
     val periodMinutes: Int = 0,
     val periodSessions: Int = 0,

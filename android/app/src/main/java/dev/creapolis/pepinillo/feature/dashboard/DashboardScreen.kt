@@ -27,7 +27,9 @@ import androidx.compose.material.icons.rounded.EmojiEvents
 import androidx.compose.material.icons.rounded.HourglassTop
 import androidx.compose.material.icons.rounded.LocalFireDepartment
 import androidx.compose.material.icons.rounded.Lock
+import androidx.compose.material.icons.rounded.ErrorOutline
 import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material.icons.rounded.Shield
 import androidx.compose.material.icons.rounded.Star
@@ -60,6 +62,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -221,12 +224,24 @@ fun DashboardScreen(
 
         // ── EMPTY STATE ──
         if (stats.isEmpty) {
-            EmptyDashboardState(
-                onStartFocusClick = onStartFocusClick,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
-            )
+            if (stats.hasHistory) {
+                // Loaded, but the current stats came back empty while older history
+                // exists (stale/missing daily_stats rows): say so and offer a retry
+                // instead of telling a returning user to "start focusing".
+                StatsUnavailableState(
+                    onRetryClick = { viewModel.refresh() },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                )
+            } else {
+                EmptyDashboardState(
+                    onStartFocusClick = onStartFocusClick,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                )
+            }
             return@Column
         }
 
@@ -615,7 +630,7 @@ private fun StreakHeroCard(
                 )
                 Column {
                     Text(
-                        text = stringResource(R.string.dashboard_days_count, currentStreak),
+                        text = pluralStringResource(R.plurals.days_count, currentStreak, currentStreak),
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onTertiaryContainer,
@@ -638,7 +653,7 @@ private fun StreakHeroCard(
                         tint = streakColor.copy(alpha = 0.7f),
                     )
                     Text(
-                        text = stringResource(R.string.dashboard_days_count, bestStreak),
+                        text = pluralStringResource(R.plurals.days_count, bestStreak, bestStreak),
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.85f),
@@ -688,7 +703,7 @@ private fun StreakHeroCard(
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
                     text = "${formatMinutes(todayMinutes)} \u00B7 " +
-                        stringResource(R.string.dashboard_today_sessions_compact, todaySessions),
+                        pluralStringResource(R.plurals.sessions_count, todaySessions, todaySessions),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.85f),
                 )
@@ -831,6 +846,57 @@ private fun EmptyDashboardState(
     }
 }
 
+/**
+ * Shown when stats loaded but came back empty while older history exists
+ * (stale/missing daily_stats rows): an honest error + retry instead of the
+ * "start focusing" empty state (P2a).
+ */
+@Composable
+private fun StatsUnavailableState(
+    onRetryClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        Icon(
+            imageVector = Icons.Rounded.ErrorOutline,
+            contentDescription = null,
+            modifier = Modifier.size(64.dp),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = stringResource(R.string.dashboard_stats_unavailable_title),
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = stringResource(R.string.dashboard_stats_unavailable_desc),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+            textAlign = TextAlign.Center,
+        )
+        Spacer(modifier = Modifier.height(20.dp))
+        androidx.compose.material3.OutlinedButton(
+            onClick = onRetryClick,
+            shape = PepinilloShapeTokens.card,
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.Refresh,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp),
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(stringResource(R.string.btn_retry))
+        }
+    }
+}
+
 @Composable
 private fun ReflectionCard(
     title: String,
@@ -901,11 +967,17 @@ private fun ReflectionCard(
 internal fun formatCompletionRate(rate: Double): String =
     if (rate == 0.0) "\u2013" else "${(rate * 100).toInt()}%"
 
+@Composable
 private fun formatMinutes(totalMinutes: Int, hasSessions: Boolean = false): String {
-    if (totalMinutes == 0 && hasSessions) return "< 1m"
+    if (totalMinutes == 0 && hasSessions) return stringResource(R.string.duration_under_minute)
     val hours = totalMinutes / 60
     val minutes = totalMinutes % 60
-    return if (hours > 0) "${hours}h ${minutes}m" else "${minutes}m"
+    return if (hours > 0) {
+        pluralStringResource(R.plurals.duration_hours, hours, hours) + " " +
+            pluralStringResource(R.plurals.duration_minutes, minutes, minutes)
+    } else {
+        pluralStringResource(R.plurals.duration_minutes, minutes, minutes)
+    }
 }
 
 /** Maps a 0–100 focus score to a qualitative resource string, or null when not meaningful. */

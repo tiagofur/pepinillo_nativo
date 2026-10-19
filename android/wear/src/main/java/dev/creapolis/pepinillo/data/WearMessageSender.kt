@@ -91,15 +91,20 @@ class WearMessageSender(private val context: Context) {
         if (pending.isEmpty()) return
         WearDataStore.recordFlushAttempt(pending.size)
 
-        val stillPending = WearPendingCommandQueue.flush(pending, nodeIds) { nodeId, command ->
+        val result = WearPendingCommandQueue.flush(pending, nodeIds) { nodeId, command ->
             Wearable.getMessageClient(context).sendMessage(nodeId, command.path, command.data).await()
         }
 
-        if (stillPending.isNotEmpty()) {
-            WearDataStore.recordFlushFailures(stillPending.size, "Flush parcial: ${stillPending.size} pendientes")
+        if (result.stillPending.isNotEmpty()) {
+            WearDataStore.recordFlushFailures(result.stillPending.size, "Flush parcial: ${result.stillPending.size} pendientes")
+        }
+        if (result.partialDeliveries > 0) {
+            // Some commands reached only a subset of nodes — delivered, but worth surfacing
+            // in diagnostics (mirrors the send_partial_success signal in sendCommand).
+            WearDataStore.recordSyncFailure("flush_partial_success")
         }
 
-        writePendingCommands(stillPending)
+        writePendingCommands(result.stillPending)
     }
 
     private fun enqueuePendingCommand(path: String, data: ByteArray) {

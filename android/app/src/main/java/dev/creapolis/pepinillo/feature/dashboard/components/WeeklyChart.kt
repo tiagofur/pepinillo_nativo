@@ -58,17 +58,13 @@ fun mapToChartEntries(data: List<DailyFocus>): List<ChartEntry> {
     }
 }
 
-/** Formats minutes + sessions into a preview line like "1h 20m in 5 sessions". */
-fun formatPreviewLine(totalMinutes: Int, sessions: Int): String {
-    val hours = totalMinutes / 60
-    val minutes = totalMinutes % 60
-    val sessionLabel = if (sessions == 1) "session" else "sessions"
-    return if (hours > 0) {
-        "${hours}h ${minutes}m in $sessions $sessionLabel"
-    } else {
-        "${minutes}m in $sessions $sessionLabel"
-    }
-}
+/**
+ * Formats a localized chart preview line like "1h 20m in 5 sessions" from pre-localized parts
+ * (super-review P2k): [durationText] and [sessionWord] come from resources/plurals and
+ * [pattern] is a `chart_preview_*` pattern such as "%1$s in %2$d %3$s".
+ */
+fun formatPreviewLine(durationText: String, sessions: Int, sessionWord: String, pattern: String): String =
+    String.format(pattern, durationText, sessions, sessionWord)
 
 // ---------------------------------------------------------------------------
 // FocusChart composable — Vico-based implementation
@@ -112,9 +108,10 @@ fun FocusChart(
         ),
     )
 
-    // Y-axis with minute suffix
-    val yFormatter = remember {
-        CartesianValueFormatter { _, value, _ -> "${value.toInt()}m" }
+    // Y-axis with localized minute suffix (super-review P2k: "45m" was hardcoded English).
+    val minutesPattern = stringResource(R.string.chart_minutes_compact)
+    val yFormatter = remember(minutesPattern) {
+        CartesianValueFormatter { _, value, _ -> String.format(minutesPattern, value.toInt()) }
     }
     val startAxis = VerticalAxis.rememberStart(
         valueFormatter = yFormatter,
@@ -142,11 +139,11 @@ fun FocusChart(
         valueFormatter = DefaultCartesianMarker.ValueFormatter { _, targets ->
             val x = targets.firstOrNull()?.x ?: return@ValueFormatter ""
             val index = x.toInt()
-            if (index in data.indices) "${data[index].minutes}m" else ""
+            if (index in data.indices) String.format(minutesPattern, data[index].minutes) else ""
         },
     )
 
-    // Threshold line at average (dashed)
+    // Threshold line at average (dashed); label is the localized "avg" string (P2k).
     val avgLineShape = dashedShape(
         shape = CorneredShape.rounded(0.dp),
         dashLength = 5.dp,
@@ -155,7 +152,8 @@ fun FocusChart(
     val avgLabelComponent = rememberTextComponent(
         color = accentColor.copy(alpha = 0.7f),
     )
-    val avgLine = remember(avgMinutes) {
+    val avgLabel = stringResource(R.string.chart_avg)
+    val avgLine = remember(avgMinutes, avgLabel) {
         HorizontalLine(
             y = { avgMinutes },
             line = com.patrykandpatrick.vico.core.common.component.LineComponent(
@@ -164,7 +162,7 @@ fun FocusChart(
                 avgLineShape,
             ),
             labelComponent = avgLabelComponent,
-            label = { "avg" },
+            label = { avgLabel },
         )
     }
 

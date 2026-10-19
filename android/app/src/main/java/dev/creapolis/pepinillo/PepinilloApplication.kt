@@ -1,6 +1,7 @@
 package dev.creapolis.pepinillo
 
 import android.app.Application
+import android.util.Log
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.work.Configuration
@@ -16,6 +17,7 @@ import dev.creapolis.pepinillo.service.DailyReminderScheduler
 import dev.creapolis.pepinillo.widget.FocusTimerRecovery
 import dev.creapolis.pepinillo.ui.theme.ThemeController
 import dev.creapolis.pepinillo.ui.theme.ThemeMode
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -30,6 +32,8 @@ class PepinilloApplication : Application(), Configuration.Provider {
     private companion object {
         /** Upper bound on how long the launch splash waits for persisted theme prefs. */
         const val THEME_SEED_TIMEOUT_MS = 1500L
+
+        private const val TAG = "PepinilloApplication"
     }
 
     @Inject
@@ -41,7 +45,14 @@ class PepinilloApplication : Application(), Configuration.Provider {
     @Inject
     lateinit var prefsRepository: UserPreferencesRepository
 
-    private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    // D2: an uncaught error in an appScope coroutine would kill the whole process —
+    // including during a background WorkManager respawn, where a crash loops the
+    // process and keeps every scheduled job from running. Log and keep the scope alive.
+    private val appExceptionHandler = CoroutineExceptionHandler { _, throwable ->
+        Log.e(TAG, "Uncaught error in application-scope coroutine", throwable)
+    }
+
+    private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default + appExceptionHandler)
 
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder()

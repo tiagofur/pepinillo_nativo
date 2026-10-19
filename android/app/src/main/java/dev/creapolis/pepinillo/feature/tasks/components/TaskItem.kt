@@ -4,8 +4,8 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import dev.creapolis.pepinillo.ui.theme.MotionScheme
-import dev.creapolis.pepinillo.ui.theme.isAppInDarkTheme
 import dev.creapolis.pepinillo.ui.theme.PepinilloShapeTokens
+import dev.creapolis.pepinillo.domain.tasks.DueDateEncoding
 import java.util.Calendar
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -62,6 +62,7 @@ import dev.creapolis.pepinillo.feature.tasks.model.EnergyLevel
 import dev.creapolis.pepinillo.feature.tasks.model.RecurrenceOption
 import dev.creapolis.pepinillo.feature.tasks.model.Task
 import dev.creapolis.pepinillo.feature.tasks.model.TaskPriority
+import dev.creapolis.pepinillo.feature.tasks.model.labelRes
 import dev.creapolis.pepinillo.ui.theme.DomainColors
 import dev.creapolis.pepinillo.ui.theme.EnergyColors
 import dev.creapolis.pepinillo.ui.theme.priorityColor
@@ -112,7 +113,10 @@ fun TaskItem(
     val priorityColor = task.priority.priorityColor().takeIf { it != Color.Transparent }
 
     // "Today" recomputed per row when day-of-year changes (e.g. across midnight).
-    val todayNorm = remember(Calendar.getInstance().get(Calendar.DAY_OF_YEAR)) { getNormalizedLocalDate() }
+    // Shared local-zone normalization (C1) — due dates are stored as local midnight.
+    val todayNorm = remember(Calendar.getInstance().get(Calendar.DAY_OF_YEAR)) {
+        DueDateEncoding.normalizedLocalDate(System.currentTimeMillis())
+    }
 
     val cdMarkIncomplete = stringResource(R.string.cd_mark_incomplete, task.title)
     val cdMarkComplete = stringResource(R.string.cd_mark_complete, task.title)
@@ -133,7 +137,7 @@ fun TaskItem(
             task.isCompleted -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.28f)
             isOverdue -> MaterialTheme.colorScheme.error.copy(alpha = 0.06f)
             isDueToday -> DomainColors.DueToday.copy(alpha = 0.06f)
-            isScheduledToday -> brandGreen().copy(alpha = 0.06f)
+            isScheduledToday -> MaterialTheme.colorScheme.primary.copy(alpha = 0.06f)
             else -> Color.Transparent
         },
         animationSpec = tween(MotionScheme.DURATION_COLOR_SLOW),
@@ -145,7 +149,7 @@ fun TaskItem(
             task.isCompleted -> MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f)
             isOverdue -> MaterialTheme.colorScheme.error.copy(alpha = 0.35f)
             isDueToday -> DomainColors.DueToday.copy(alpha = 0.35f)
-            isScheduledToday -> brandGreen().copy(alpha = 0.35f)
+            isScheduledToday -> MaterialTheme.colorScheme.primary.copy(alpha = 0.35f)
             else -> MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
         },
         animationSpec = tween(MotionScheme.DURATION_COLOR_SLOW),
@@ -301,11 +305,11 @@ private fun MetadataRow(
     subtaskProgress: Pair<Int, Int>?,
 ) {
     val dateFormatter = remember {
-        SimpleDateFormat("MMM d", Locale.getDefault()).apply {
-            timeZone = java.util.TimeZone.getTimeZone("UTC")
-        }
+        // due_date is stored as local midnight — format in the local zone so the badge
+        // shows the picked calendar day, not the day shifted by the UTC offset (C1).
+        SimpleDateFormat("MMM d", Locale.getDefault())
     }
-    val todayNorm = remember { getNormalizedLocalDate() }
+    val todayNorm = remember { DueDateEncoding.normalizedLocalDate(System.currentTimeMillis()) }
     val metadataItems = mutableListOf<@Composable () -> Unit>()
 
     // Due date — always shown when present (overdue / today / future date).
@@ -328,7 +332,7 @@ private fun MetadataRow(
     // Today indicator (only if no due date to avoid clutter)
     if (task.scheduledForToday && task.dueDate == null) {
         metadataItems.add {
-            val color = brandGreen()
+            val color = MaterialTheme.colorScheme.primary
             MetadataBadge(color = color) {
                 Icon(Icons.Rounded.Today, contentDescription = stringResource(R.string.cd_scheduled_today), modifier = Modifier.size(14.dp), tint = color)
                 Text(stringResource(R.string.filter_today), style = MaterialTheme.typography.bodySmall, color = color)
@@ -342,7 +346,7 @@ private fun MetadataRow(
             val color = energyColor(task.energyLevel)
             MetadataBadge(color = color) {
                 EnergyIcon(energyLevel = task.energyLevel)
-                Text(task.energyLevel.label, style = MaterialTheme.typography.bodySmall, color = color)
+                Text(stringResource(task.energyLevel.labelRes()), style = MaterialTheme.typography.bodySmall, color = color)
             }
         }
     }
@@ -383,7 +387,7 @@ private fun MetadataRow(
                 val color = MaterialTheme.colorScheme.primary
                 MetadataBadge(color = color) {
                     Icon(Icons.Rounded.Repeat, contentDescription = stringResource(R.string.cd_recurring), modifier = Modifier.size(14.dp), tint = color)
-                    Text(option.label, style = MaterialTheme.typography.bodySmall, color = color)
+                    Text(stringResource(option.labelRes()), style = MaterialTheme.typography.bodySmall, color = color)
                 }
             }
         }
@@ -429,7 +433,7 @@ private fun EnergyIcon(
     }
     Icon(
         imageVector = icon,
-        contentDescription = energyLevel.label,
+        contentDescription = stringResource(energyLevel.labelRes()),
         modifier = modifier.size(14.dp),
         tint = color,
     )
@@ -443,39 +447,8 @@ private fun energyColor(energyLevel: EnergyLevel): Color = when (energyLevel) {
     EnergyLevel.Light -> EnergyColors.light
 }
 
-private fun getNormalizedLocalDate(): java.util.Calendar {
-    val local = java.util.Calendar.getInstance()
-    return java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("UTC")).apply {
-        clear()
-        set(java.util.Calendar.YEAR, local.get(java.util.Calendar.YEAR))
-        set(java.util.Calendar.MONTH, local.get(java.util.Calendar.MONTH))
-        set(java.util.Calendar.DAY_OF_MONTH, local.get(java.util.Calendar.DAY_OF_MONTH))
-    }
-}
+private fun isDueTodayMs(millis: Long, todayNorm: java.util.Calendar): Boolean =
+    DueDateEncoding.isSameLocalDay(millis, todayNorm)
 
-private fun getNormalizedDueDate(millis: Long): java.util.Calendar {
-    val due = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("UTC")).apply { timeInMillis = millis }
-    return java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("UTC")).apply {
-        clear()
-        set(java.util.Calendar.YEAR, due.get(java.util.Calendar.YEAR))
-        set(java.util.Calendar.MONTH, due.get(java.util.Calendar.MONTH))
-        set(java.util.Calendar.DAY_OF_MONTH, due.get(java.util.Calendar.DAY_OF_MONTH))
-    }
-}
-
-private fun isDueTodayMs(millis: Long, todayNorm: java.util.Calendar): Boolean {
-    val dueNorm = getNormalizedDueDate(millis)
-    return dueNorm == todayNorm
-}
-
-private fun isBeforeTodayMs(millis: Long, todayNorm: java.util.Calendar): Boolean {
-    val dueNorm = getNormalizedDueDate(millis)
-    return dueNorm.before(todayNorm)
-}
-
-@Composable
-private fun brandGreen(): Color = if (isAppInDarkTheme()) {
-    Color(0xFF9CD67D)
-} else {
-    Color(0xFF386A20)
-}
+private fun isBeforeTodayMs(millis: Long, todayNorm: java.util.Calendar): Boolean =
+    DueDateEncoding.isBeforeLocalDay(millis, todayNorm)

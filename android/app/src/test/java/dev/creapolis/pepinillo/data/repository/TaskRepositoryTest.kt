@@ -164,6 +164,31 @@ class TaskRepositoryTest {
     }
 
     @Test
+    fun `completing a daily recurring task stamps the occurrence for todays completed count`() = runTest {
+        val today = dev.creapolis.pepinillo.domain.tasks.RecurrenceCalculator.startOfLocalDay()
+        val existing = TaskEntity(
+            id = "task-recur",
+            title = "Daily",
+            recurrenceRule = RecurrenceOption.Daily.rrule,
+            dueDate = today.timeInMillis,
+            isCompleted = false,
+        )
+        val entitySlot = slot<TaskEntity>()
+
+        coEvery { taskDao.getTaskById("task-recur") } returns existing
+        coEvery { taskDao.updateTask(capture(entitySlot)) } returns Unit
+
+        repo.toggleCompletion("task-recur")
+
+        // The occurrence must count toward today's "tasks completed today" (Wear, widget,
+        // FocusTimerService — TaskDao.getCompletedTodayCount counts recurring rows via
+        // last_completed_at) WITHOUT marking the series completed (super-review C2).
+        assertEquals(false, entitySlot.captured.isCompleted)
+        assertEquals(null, entitySlot.captured.completedAt)
+        assertTrue("lastCompletedAt must stamp this occurrence", entitySlot.captured.lastCompletedAt != null)
+    }
+
+    @Test
     fun `restoreTask uses soft-delete restore without insert replace`() = runTest {
         val task = Task(id = "task-undo", title = "Restored")
 

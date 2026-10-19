@@ -100,7 +100,7 @@ interface TaskDao {
     @Query("SELECT COUNT(*) FROM tasks WHERE is_completed = 0 AND is_deleted = 0")
     fun getActiveCount(): Flow<Int>
 
-    @Query("SELECT COUNT(*) FROM tasks WHERE is_completed = 1 AND is_deleted = 0 AND completed_at >= :startOfDay AND completed_at < :endOfDay")
+    @Query("SELECT COUNT(*) FROM tasks WHERE is_deleted = 0 AND ((is_completed = 1 AND completed_at >= :startOfDay AND completed_at < :endOfDay) OR (last_completed_at >= :startOfDay AND last_completed_at < :endOfDay))")
     suspend fun getCompletedTodayCount(startOfDay: Long, endOfDay: Long): Int
 
     @Query("SELECT * FROM tasks WHERE is_deleted = 0 AND ((due_date >= :startOfDay AND due_date < :endOfDay) OR (is_completed = 1 AND completed_at >= :startOfDay AND completed_at < :endOfDay))")

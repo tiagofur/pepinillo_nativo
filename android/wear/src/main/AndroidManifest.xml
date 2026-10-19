@@ -115,4 +115,13 @@
         </service>
     </application>
 
+    <!-- Package visibility (API 30+): the voice-input chip resolves the speech
+         recognizer without launching it; without this <queries> entry the resolver
+         returns null on capable watches and the chip would hide unnecessarily. -->
+    <queries>
+        <intent>
+            <action android:name="android.speech.action.RECOGNIZE_SPEECH" />
+        </intent>
+    </queries>
+
 </manifest>

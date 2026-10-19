@@ -117,6 +117,14 @@ func (r *FocusRepository) UpdateSession(ctx context.Context, session *domain.Foc
 		Updates(session).Error
 }
 
+// CountSessionsByUser is a cheap existence check used by GET /sync/has-data.
+func (r *FocusRepository) CountSessionsByUser(ctx context.Context, userID string) (int64, error) {
+	var count int64
+	err := r.db.WithContext(ctx).Model(&domain.FocusSession{}).
+		Where("user_id = ?", userID).Count(&count).Error
+	return count, err
+}
+
 func (r *FocusRepository) ListAllSessions(ctx context.Context, userID string) ([]domain.FocusSession, error) {
 	var sessions []domain.FocusSession
 	err := r.db.WithContext(ctx).
@@ -281,6 +289,7 @@ func (r *FocusRepository) UpsertSessionBatch(ctx context.Context, sessions []dom
 			Columns: []clause.Column{{Name: "id"}},
 			DoUpdates: clause.AssignmentColumns([]string{
 				"ended_at", "duration_seconds", "elapsed_seconds",
+				"task_id", "mode", "phase",
 				"was_completed", "pause_count", "total_pause_seconds",
 				"interruptions", "pomodoro_number", "satisfaction_rating",
 				"journal_note", "updated_at",

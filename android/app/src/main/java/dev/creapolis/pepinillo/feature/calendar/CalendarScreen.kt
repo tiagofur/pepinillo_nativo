@@ -38,6 +38,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
@@ -47,11 +51,21 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import dev.creapolis.pepinillo.R
 import dev.creapolis.pepinillo.data.repository.SessionRepository
 import dev.creapolis.pepinillo.ui.components.rememberSharedBoundsModifier
+import dev.creapolis.pepinillo.ui.localization.localizedModeName
 import dev.creapolis.pepinillo.ui.theme.MotionScheme
 import dev.creapolis.pepinillo.ui.theme.PepinilloShapeTokens
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
+
+/**
+ * Calendar.DAY_OF_WEEK value (1 = Sunday … 7 = Saturday) for column [index] (0–6) of the
+ * header row, given the locale's [firstDayOfWeek]. The naive `firstDay + index` breaks for
+ * Monday-first locales (values 8–13 are not valid day constants), so the sum wraps modulo 7
+ * (super-review P2h).
+ */
+internal fun weekdayForColumn(firstDayOfWeek: Int, index: Int): Int =
+    ((firstDayOfWeek + index - 1) % 7) + 1
 
 @Composable
 fun CalendarScreen(
@@ -71,7 +85,7 @@ fun CalendarScreen(
         val fmt = SimpleDateFormat("EEE", Locale.getDefault())
         val firstDay = cal.firstDayOfWeek
         (0 until 7).map { i ->
-            cal.set(Calendar.DAY_OF_WEEK, firstDay + i)
+            cal.set(Calendar.DAY_OF_WEEK, weekdayForColumn(firstDay, i))
             fmt.format(cal.time)
         }
     }
@@ -164,6 +178,8 @@ fun CalendarScreen(
                                 val isSelected = selectedDate == dayMillis
                                 val hasActivity = activityDays.contains(dayMillis)
                                 val isFuture = dayData.isFuture
+                                val todayState = stringResource(R.string.cd_calendar_today)
+                                val activityState = stringResource(R.string.cd_calendar_day_has_activity)
 
                                 Box(
                                     modifier = Modifier
@@ -171,6 +187,19 @@ fun CalendarScreen(
                                         .height(48.dp)
                                         .clickable(enabled = !isFuture) {
                                             viewModel.selectDay(dayMillis)
+                                        }
+                                        // Expose selection + day state for TalkBack
+                                        // (super-review P2i): today / has-activity are
+                                        // conveyed by stateDescription, selection by `selected`.
+                                        .semantics {
+                                            selected = isSelected
+                                            val parts = buildList {
+                                                if (isToday) add(todayState)
+                                                if (hasActivity) add(activityState)
+                                            }
+                                            if (parts.isNotEmpty()) {
+                                                stateDescription = parts.joinToString(", ")
+                                            }
                                         },
                                     contentAlignment = Alignment.Center,
                                 ) {
@@ -336,7 +365,10 @@ private fun SummaryItem(value: String, label: String) {
 
 @Composable
 private fun SessionRow(session: SessionSummary) {
-    val timeFormat = remember { SimpleDateFormat("h:mm a", Locale.getDefault()) }
+    val context = LocalContext.current
+    // Respect the system 12/24-hour setting instead of forcing "h:mm a"
+    // (super-review P2j — the Calendar half; the Settings picker belongs to another worker).
+    val timeFormat = remember { android.text.format.DateFormat.getTimeFormat(context) }
 
     Row(
         modifier = Modifier
@@ -350,7 +382,9 @@ private fun SessionRow(session: SessionSummary) {
         )
         Spacer(modifier = Modifier.width(8.dp))
         Column(modifier = Modifier.weight(1f)) {
-            Text(text = session.mode, style = MaterialTheme.typography.bodyMedium)
+            // Localized mode name (super-review F3): session.mode is the raw persisted
+            // enum name, which must not reach es/pt users untranslated.
+            Text(text = localizedModeName(session.mode), style = MaterialTheme.typography.bodyMedium)
             Text(
                 text = timeFormat.format(session.startTime),
                 style = MaterialTheme.typography.bodySmall,

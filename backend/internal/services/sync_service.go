@@ -138,6 +138,26 @@ type InitialUploadResponse struct {
 	HasExistingData bool                    `json:"hasExistingData"`
 }
 
+// HasServerData reports whether the account already holds any tasks or focus
+// sessions, WITHOUT uploading or mutating anything. Clients call this before
+// the merge dialog so the user's "merge vs account-only" choice is real:
+// until now the client uploaded local data first and only then asked, which
+// made "Use Account Only" unable to recover the discarded local data.
+func (s *SyncService) HasServerData(ctx context.Context, userID string) (bool, error) {
+	existingTasks, err := s.taskRepo.ListByUser(ctx, userID)
+	if err != nil {
+		return false, fmt.Errorf("check existing tasks: %w", err)
+	}
+	if len(existingTasks) > 0 {
+		return true, nil
+	}
+	sessionCount, err := s.focusRepo.CountSessionsByUser(ctx, userID)
+	if err != nil {
+		return false, fmt.Errorf("check existing sessions: %w", err)
+	}
+	return sessionCount > 0, nil
+}
+
 // InitialUpload atomically upserts all client data (tasks, sessions, settings)
 // and returns the full merged server state. This is idempotent — sending the
 // same request twice produces the same result (upsert, not insert).
@@ -159,10 +179,11 @@ func (s *SyncService) InitialUpload(ctx context.Context, userID, deviceID string
 			req.Tasks[i].UpdatedAt = now
 		}
 	}
-	mergedTasks, _, _, err := s.taskRepo.Sync(ctx, userID, req.Tasks, nil, nil)
+	mergedResult, err := s.taskRepo.Sync(ctx, userID, req.Tasks, nil, nil)
 	if err != nil {
 		return nil, fmt.Errorf("upsert tasks: %w", err)
 	}
+	mergedTasks := mergedResult.ServerTasks
 
 	// 3. Upsert sessions
 	for i := range req.Sessions {

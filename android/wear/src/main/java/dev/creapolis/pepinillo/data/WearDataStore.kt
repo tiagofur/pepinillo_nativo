@@ -1,11 +1,14 @@
 package dev.creapolis.pepinillo.data
 
+import android.util.Log
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import org.json.JSONArray
 
 object WearDataStore {
+    private const val TAG = "WearDataStore"
+
     private val _timerState = MutableStateFlow(WearTimerState())
     private val _tasks = MutableStateFlow(emptyList<WearTask>())
     private val _stats = MutableStateFlow(WearStatsState())
@@ -17,6 +20,16 @@ object WearDataStore {
     private val _pendingCommandCount = MutableStateFlow(0)
     private val _lastSyncAtMillis = MutableStateFlow<Long?>(null)
     private val _diagnostics = MutableStateFlow(WearDiagnosticsState())
+
+    /**
+     * Monotonic counter bumped ONLY when an authoritative timer state pushed by the
+     * phone is applied (a PATH_TIMER DataItem arriving via WearSyncListenerService or
+     * WearDataFetcher). [dev.creapolis.pepinillo.viewmodel.WearViewModel] optimistic
+     * updates must NOT bump it — WearCommandWatchdog uses it to tell a phone-confirmed
+     * command apart from locally-applied optimistic state (E2).
+     */
+    private val _remoteTimerRevisions = MutableStateFlow(0L)
+    val remoteTimerRevisions: StateFlow<Long> = _remoteTimerRevisions.asStateFlow()
 
     val timerState = _timerState.asStateFlow()
     val tasks = _tasks.asStateFlow()
@@ -71,6 +84,16 @@ object WearDataStore {
         _diagnostics.value = WearDiagnosticsState()
     }
 
+    /** Bumped by remote timer DataItem application sites — see [remoteTimerRevisions]. */
+    fun recordRemoteTimerRevision() {
+        _remoteTimerRevisions.value += 1L
+    }
+
+    /** Test isolation helper, mirrors [resetDiagnostics]. */
+    fun resetRemoteTimerRevisions() {
+        _remoteTimerRevisions.value = 0L
+    }
+
     fun updateTimer(newState: WearTimerState) {
         _timerState.value = newState
     }
@@ -89,10 +112,12 @@ object WearDataStore {
         val parsed = runCatching {
             parseTasksJson(tasksJson)
         }.getOrElse { e ->
-            System.err.println("WearDataStore: failed to parse tasks JSON (len=${tasksJson.length}) - ${e.message}")
+            // P2(g): android.util.Log instead of println/System.err. runCatching because
+            // android.util.Log is stubbed in JVM unit tests (WearDataStoreTest).
+            runCatching { Log.w(TAG, "Failed to parse tasks JSON (len=${tasksJson.length}): ${e.message}") }
             emptyList()
         }
-        println("WearDataStore: parsed ${parsed.size} tasks")
+        runCatching { Log.d(TAG, "Parsed ${parsed.size} tasks") }
         _tasks.value = parsed
     }
 

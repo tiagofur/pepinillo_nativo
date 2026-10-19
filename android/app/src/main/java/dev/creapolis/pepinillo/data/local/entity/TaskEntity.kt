@@ -15,6 +15,11 @@ data class TaskEntity(
     val isCompleted: Boolean = false,
     @ColumnInfo(name = "completed_at")
     val completedAt: Long? = null,
+    // Last completion instant for recurring occurrences. advanceRecurringTask stamps
+    // this while keeping isCompleted=false (the series stays active), so daily
+    // "tasks completed" counts occurrences instead of missing them (C2).
+    @ColumnInfo(name = "last_completed_at")
+    val lastCompletedAt: Long? = null,
     val priority: String = "None",
     @ColumnInfo(name = "energy_level")
     val energyLevel: String = "Regular",

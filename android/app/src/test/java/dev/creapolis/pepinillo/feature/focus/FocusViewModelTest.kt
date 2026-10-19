@@ -12,6 +12,7 @@ import dev.creapolis.pepinillo.data.repository.TaskRepository
 import dev.creapolis.pepinillo.domain.timer.FocusEngine
 import dev.creapolis.pepinillo.domain.timer.FocusPhase
 import dev.creapolis.pepinillo.domain.timer.TimerStatus
+import dev.creapolis.pepinillo.domain.soundscape.Soundscape
 import dev.creapolis.pepinillo.domain.soundscape.SoundscapeManager
 import dev.creapolis.pepinillo.platform.feedback.FeedbackManager
 import dev.creapolis.pepinillo.wear.WearDataLayerHelper
@@ -36,7 +37,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
-import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -147,8 +148,9 @@ class FocusViewModelTest {
             every { packageName } returns "dev.creapolis.pepinillo"
         }
 
-        // Preferences
-        prefsRepo = mockk {
+        // Preferences — relaxed so preference-update calls (soundscape selection/volume)
+        // answer without per-test stubbing; the preferences flow itself is explicit.
+        prefsRepo = mockk(relaxed = true) {
             every { preferences } returns prefsFlow
         }
 
@@ -216,6 +218,20 @@ class FocusViewModelTest {
         backgroundScope.launch { viewModel.uiState.collect {} }
     }
 
+    /**
+     * Advances virtual time past the 1s uiState sample window and drains pending tasks.
+     *
+     * advanceUntilIdle() can never be used with this ViewModel: the sampled combine keeps an
+     * endless timer chain scheduled on the virtual scheduler, so "idle" is never reached and
+     * the test hangs (reproduced on the base commit before the super-review changes). Bounded
+     * advance + runCurrent delivers the same "process everything scheduled now" semantics
+     * these tests rely on, without looping forever.
+     */
+    private fun TestScope.runAfterSampleWindow() {
+        advanceTimeBy(1_100)
+        runCurrent()
+    }
+
     @After
     fun tearDown() {
         viewModel.viewModelScope.cancel()
@@ -249,7 +265,7 @@ class FocusViewModelTest {
         collectUiState()
         subscriptionStateFlow.value = SubscriptionState(tier = SubscriptionTier.FREE)
         viewModel.selectMode(FocusMode.Flow)
-        advanceUntilIdle()
+        runAfterSampleWindow()
         // Engine should NOT have changed mode (still the default Pomodoro)
         assertEquals(FocusMode.Pomodoro, engine.state.value.mode)
         assertTrue(viewModel.uiState.value.showPaywall)
@@ -260,7 +276,7 @@ class FocusViewModelTest {
         collectUiState()
         subscriptionStateFlow.value = SubscriptionState(tier = SubscriptionTier.FREE)
         viewModel.selectMode(FocusMode.Blocks)
-        advanceUntilIdle()
+        runAfterSampleWindow()
         assertEquals(FocusMode.Pomodoro, engine.state.value.mode)
         assertTrue(viewModel.uiState.value.showPaywall)
     }
@@ -270,7 +286,7 @@ class FocusViewModelTest {
         collectUiState()
         subscriptionStateFlow.value = SubscriptionState(tier = SubscriptionTier.EVERYWHERE_MONTHLY)
         viewModel.selectMode(FocusMode.Flow)
-        advanceUntilIdle()
+        runAfterSampleWindow()
         assertEquals(FocusMode.Flow, engine.state.value.mode)
         assertFalse(viewModel.uiState.value.showPaywall)
     }
@@ -280,7 +296,7 @@ class FocusViewModelTest {
         collectUiState()
         subscriptionStateFlow.value = SubscriptionState(tier = SubscriptionTier.EVERYWHERE_ANNUAL)
         viewModel.selectMode(FocusMode.Blocks)
-        advanceUntilIdle()
+        runAfterSampleWindow()
         assertEquals(FocusMode.Blocks, engine.state.value.mode)
         assertFalse(viewModel.uiState.value.showPaywall)
     }
@@ -290,10 +306,10 @@ class FocusViewModelTest {
         collectUiState()
         subscriptionStateFlow.value = SubscriptionState(tier = SubscriptionTier.EVERYWHERE_MONTHLY)
         viewModel.selectMode(FocusMode.Flow)
-        advanceUntilIdle()
+        runAfterSampleWindow()
         assertEquals(FocusMode.Flow, engine.state.value.mode)
         viewModel.selectMode(FocusMode.Blocks)
-        advanceUntilIdle()
+        runAfterSampleWindow()
         assertEquals(FocusMode.Blocks, engine.state.value.mode)
         assertFalse(viewModel.uiState.value.showPaywall)
     }
@@ -334,7 +350,7 @@ class FocusViewModelTest {
         assertFalse(localViewModel.uiState.value.showBatteryWarningDialog)
         
         localViewModel.onStartStopClick()
-        advanceUntilIdle()
+        runAfterSampleWindow()
         
         assertTrue(localViewModel.uiState.value.showBatteryWarningDialog)
         assertEquals(TimerStatus.Idle, engine.state.value.status)
@@ -368,7 +384,7 @@ class FocusViewModelTest {
             sessionStartTime = 0L,
             status = TimerStatus.WaitingForNext,
         )
-        testScope.advanceUntilIdle()
+        testScope.runAfterSampleWindow()
         assertEquals(TimerStatus.WaitingForNext, engine.state.value.status)
         viewModel.onStartStopClick()
         assertEquals(TimerStatus.Running, engine.state.value.status)
@@ -382,7 +398,7 @@ class FocusViewModelTest {
     fun `onStopClick shows confirmation`() = runTest {
         collectUiState()
         viewModel.onStopClick()
-        advanceUntilIdle()
+        runAfterSampleWindow()
         assertTrue(viewModel.uiState.value.showStopConfirmation)
     }
 
@@ -392,7 +408,7 @@ class FocusViewModelTest {
         engine.start()
         assertEquals(TimerStatus.Running, engine.state.value.status)
         viewModel.confirmStop()
-        advanceUntilIdle()
+        runAfterSampleWindow()
         // After stop the engine resets to Idle
         assertEquals(TimerStatus.Idle, engine.state.value.status)
         assertFalse(viewModel.uiState.value.showStopConfirmation)
@@ -403,7 +419,9 @@ class FocusViewModelTest {
         collectUiState()
         engine.start()
         viewModel.onStopClick()
-        runCurrent()
+        // The uiState combine samples the engine at 1Hz, so the flag needs one sample window
+        // to reach uiState.value (advanceUntilIdle can never be used here — see helper).
+        runAfterSampleWindow()
         assertTrue(viewModel.uiState.value.showStopConfirmation)
         viewModel.dismissStopConfirmation()
         runCurrent()
@@ -446,10 +464,10 @@ class FocusViewModelTest {
         collectUiState()
         subscriptionStateFlow.value = SubscriptionState(tier = SubscriptionTier.FREE)
         viewModel.selectMode(FocusMode.Flow) // triggers paywall
-        advanceUntilIdle()
+        runAfterSampleWindow()
         assertTrue(viewModel.uiState.value.showPaywall)
         viewModel.dismissPaywall()
-        advanceUntilIdle()
+        runAfterSampleWindow()
         assertFalse(viewModel.uiState.value.showPaywall)
     }
 
@@ -458,7 +476,7 @@ class FocusViewModelTest {
         collectUiState()
         assertFalse(viewModel.uiState.value.showPaywall)
         viewModel.dismissPaywall() // should not throw
-        advanceUntilIdle()
+        runAfterSampleWindow()
         assertFalse(viewModel.uiState.value.showPaywall)
     }
 
@@ -473,19 +491,19 @@ class FocusViewModelTest {
 
         assertFalse(viewModel.uiState.value.showPaywall)
         viewModel.selectMode(FocusMode.Flow)
-        advanceUntilIdle()
+        runAfterSampleWindow()
         assertTrue(viewModel.uiState.value.showPaywall)
 
         viewModel.dismissPaywall()
-        advanceUntilIdle()
+        runAfterSampleWindow()
         assertFalse(viewModel.uiState.value.showPaywall)
 
         // Re-arming must work — the LaunchedEffect in FocusScreen re-fires on the next rising edge.
         viewModel.selectMode(FocusMode.Blocks)
-        advanceUntilIdle()
+        runAfterSampleWindow()
         assertTrue(viewModel.uiState.value.showPaywall)
         viewModel.dismissPaywall()
-        advanceUntilIdle()
+        runAfterSampleWindow()
         assertFalse(viewModel.uiState.value.showPaywall)
     }
 
@@ -513,7 +531,7 @@ class FocusViewModelTest {
     @Test
     fun `initial uiState has sensible defaults`() = runTest {
         collectUiState()
-        advanceUntilIdle()
+        runAfterSampleWindow()
         val state = viewModel.uiState.value
         assertEquals(FocusMode.Pomodoro, state.selectedMode)
         assertFalse(state.isRunning)
@@ -620,5 +638,84 @@ class FocusViewModelTest {
         runCurrent()
 
         verify(exactly = 0) { soundscapeManager.fadeOut() }
+    }
+
+    // ───────────── Super-review micro-fixes: immediate status + pending soundscape ─────────────
+
+    /**
+     * The uiState combine samples the engine at 1Hz, but play/pause buttons read
+     * isRunning/isPaused from uiState. Status flips must therefore bypass the sample window —
+     * otherwise taps feel laggy by up to ~1s. The engine state flow is updated synchronously,
+     * so after engine.start() the uiState must already report Running without any virtual time
+     * passing (the old code needed the 1s sample tick to fire first).
+     */
+    @Test
+    fun `uiState reflects Running and Paused immediately without waiting for the 1s sample window`() = runTest {
+        collectUiState()
+        advanceTimeBy(1_500) // let the initial sampled combine emit its Idle value
+        assertFalse(viewModel.uiState.value.isRunning)
+
+        engine.start()
+        runCurrent()
+        assertTrue(viewModel.uiState.value.isRunning)
+        assertFalse(viewModel.uiState.value.isPaused)
+
+        engine.pause()
+        runCurrent()
+        assertTrue(viewModel.uiState.value.isPaused)
+        assertFalse(viewModel.uiState.value.isRunning)
+    }
+
+    /**
+     * Switching soundscape while WaitingForNext must apply when the next phase starts, even if
+     * the previous soundscape is still loaded in the manager (fade-out in flight). The lifecycle
+     * collector must compare against the *selected* soundscape, not just check for null.
+     */
+    @Test
+    fun `soundscape picked while WaitingForNext starts on the next phase even if an old one is still loaded`() = runTest {
+        // Old soundscape still registered in the manager (fade-out was still running when the
+        // user opened the picker during WaitingForNext).
+        every { soundscapeManager.currentSoundscape } returns Soundscape.RAIN
+
+        engine.setStatusForTesting(TimerStatus.WaitingForNext)
+        runCurrent()
+
+        viewModel.selectSoundscape(Soundscape.OCEAN)
+        // WaitingForNext defers playback — nothing may start yet.
+        verify(exactly = 0) { soundscapeManager.play(any(), any()) }
+
+        engine.setStatusForTesting(TimerStatus.Running)
+        runCurrent()
+
+        verify(exactly = 1) { soundscapeManager.play(Soundscape.OCEAN, any()) }
+    }
+
+    // ───────────── Super-review F1: a11y timer minute granularity ─────────────
+
+    @Test
+    fun `a11yMinutes rounds countdown modes up so the value ticks once per minute`() {
+        val total = 25 * 60_000L
+        // 25:00 remaining → "25 min"
+        assertEquals(25, a11yMinutes(FocusMode.Pomodoro, elapsedMillis = 0L, totalMillis = total))
+        // 24:59 remaining → still "25 min" (no churn at second granularity)
+        assertEquals(25, a11yMinutes(FocusMode.Pomodoro, elapsedMillis = 1_000L, totalMillis = total))
+        // 24:00 remaining → "24 min" (changes exactly when the visible minute ticks over)
+        assertEquals(24, a11yMinutes(FocusMode.Pomodoro, elapsedMillis = 60_000L, totalMillis = total))
+        // 23:59 remaining → "24 min"
+        assertEquals(24, a11yMinutes(FocusMode.Pomodoro, elapsedMillis = 61_000L, totalMillis = total))
+        // Blocks is also a countdown mode
+        assertEquals(59, a11yMinutes(FocusMode.Blocks, elapsedMillis = 60_000L, totalMillis = 60 * 60_000L))
+    }
+
+    @Test
+    fun `a11yMinutes floors count-up modes`() {
+        assertEquals(0, a11yMinutes(FocusMode.Chrono, elapsedMillis = 59_000L, totalMillis = 0L))
+        assertEquals(1, a11yMinutes(FocusMode.Chrono, elapsedMillis = 60_000L, totalMillis = 0L))
+        assertEquals(1, a11yMinutes(FocusMode.Flow, elapsedMillis = 90_000L, totalMillis = 0L))
+    }
+
+    @Test
+    fun `a11yMinutes never goes negative for over-elapsed countdowns`() {
+        assertEquals(0, a11yMinutes(FocusMode.Pomodoro, elapsedMillis = 26 * 60_000L, totalMillis = 25 * 60_000L))
     }
 }

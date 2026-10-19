@@ -192,7 +192,7 @@ class DashboardViewModel @Inject constructor(
         // Productivity patterns from raw sessions (breaks excluded)
         val peakHours = sessionRepository.computePeakHours(workSessions)
         val bestDay = sessionRepository.computeBestDayOfWeek(periodStats)
-        val focusScore = computeFocusScore(periodStats)
+        val focusScore = computeFocusScore(periodStats, period)
 
         // Completion rate from work sessions (rounded to 2 decimal places per spec)
         val completedCount = workSessions.count { it.wasCompleted }
@@ -214,6 +214,7 @@ class DashboardViewModel @Inject constructor(
             weeklyData = if (period == AnalyticsPeriod.Week) chartData else emptyList(),
             modeBreakdown = modeBreakdown,
             isLoading = false,
+            hasHistory = allDays.isNotEmpty(),
             selectedPeriod = period,
             periodMinutes = periodMinutes,
             periodSessions = periodSessionCount,
@@ -292,10 +293,17 @@ class DashboardViewModel @Inject constructor(
         }
     }
 
-    private fun computeFocusScore(stats: List<DailyStatsEntity>): Int {
+    private fun computeFocusScore(stats: List<DailyStatsEntity>, period: AnalyticsPeriod): Int {
         if (stats.isEmpty()) return 0
+        // Denominator is the calendar length of the selected window, NOT the number of
+        // stats rows — days without a row are rest days, not free consistency points
+        // (super-review C3).
+        val totalDays = when (period) {
+            AnalyticsPeriod.Week -> 7
+            AnalyticsPeriod.Month -> 30
+            AnalyticsPeriod.Year -> 365
+        }
         val daysWithActivity = stats.count { it.sessionsCompleted > 0 }
-        val totalDays = stats.size.coerceAtLeast(1)
         val consistencyRate = daysWithActivity.toFloat() / totalDays
         val avgMinutes = stats.sumOf { it.totalMinutes }.toFloat() / totalDays
         val minuteScore = (avgMinutes / 60f).coerceAtMost(1f)

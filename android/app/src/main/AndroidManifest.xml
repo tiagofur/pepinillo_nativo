@@ -67,6 +67,7 @@
             android:exported="true">
             <intent-filter>
                 <action android:name="com.google.android.gms.wearable.MESSAGE_RECEIVED" />
+                <action android:name="com.google.android.gms.wearable.CAPABILITY_CHANGED" />
                 <data android:scheme="wear" android:host="*" />
             </intent-filter>
         </service>
@@ -131,5 +132,20 @@
                 android:resource="@xml/file_paths" />
         </provider>
     </application>
+
+    <!-- Package visibility (API 30+): ManufacturerUtils resolves OEM battery/autostart
+         settings activities that live in these packages; without <queries> the resolver
+         always returns null and the feature silently no-ops. -->
+    <queries>
+        <package android:name="com.miui.securitycenter" />
+        <package android:name="com.huawei.systemmanager" />
+        <package android:name="com.samsung.android.lool" />
+        <package android:name="com.coloros.safecenter" />
+        <package android:name="com.oppo.safe" />
+        <package android:name="com.oneplus.security" />
+        <package android:name="com.iqoo.secure" />
+        <package android:name="com.vivo.permissionmanager" />
+        <package android:name="com.asus.mobilemanager" />
+    </queries>
 
 </manifest>

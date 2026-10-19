@@ -5,18 +5,26 @@ import dev.creapolis.pepinillo.R
 import dev.creapolis.pepinillo.core.auth.AuthStore
 import dev.creapolis.pepinillo.core.billing.ProductInfo
 import dev.creapolis.pepinillo.core.billing.PurchaseFlowResult
+import dev.creapolis.pepinillo.core.billing.PurchaseVerificationTarget
 import dev.creapolis.pepinillo.core.billing.RestoreFlowResult
 import dev.creapolis.pepinillo.core.billing.SubscriptionManager
 import dev.creapolis.pepinillo.core.billing.SubscriptionState
+import dev.creapolis.pepinillo.core.billing.SubscriptionTier
+import dev.creapolis.pepinillo.core.billing.mergeServerSubscription
 import dev.creapolis.pepinillo.core.network.PepinilloApiClient
+import dev.creapolis.pepinillo.data.local.entity.UserEntity
 import dev.creapolis.pepinillo.data.repository.UserRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -42,6 +50,7 @@ class PaywallViewModelTest {
     private val subscriptionStateFlow = MutableStateFlow(SubscriptionState())
 
     private lateinit var viewModel: PaywallViewModel
+    private lateinit var uiStateScope: CoroutineScope
 
     @Before
     fun setUp() {
@@ -55,10 +64,16 @@ class PaywallViewModelTest {
             authStore = authStore,
             userRepository = userRepository,
         )
+
+        // uiState is stateIn(WhileSubscribed): without a subscriber it never leaves its
+        // initial value, so tests asserting uiState.value must keep one active.
+        uiStateScope = CoroutineScope(SupervisorJob() + testDispatcher)
+        uiStateScope.launch { viewModel.uiState.collect {} }
     }
 
     @After
     fun tearDown() {
+        uiStateScope.cancel()
         Dispatchers.resetMain()
     }
 
@@ -157,6 +172,10 @@ class PaywallViewModelTest {
                 subscriptionExpiresAt = null,
             ),
         )
+        // verification == null → verifyWithServerIfNeeded falls back to the profile sync;
+        // stub it explicitly (relaxed mocks return a poisoned Result that fails the cast).
+        every { authStore.getAccessToken() } returns "token"
+        coEvery { userRepository.fetchAndCacheProfile() } returns Result.success(userEntity())
 
         val activity = mockk<android.app.Activity>(relaxed = true)
         viewModel.purchase(activity)
@@ -191,6 +210,8 @@ class PaywallViewModelTest {
             state = SubscriptionState(tier = dev.creapolis.pepinillo.core.billing.SubscriptionTier.EVERYWHERE_ANNUAL),
             verification = null,
         )
+        every { authStore.getAccessToken() } returns "token"
+        coEvery { userRepository.fetchAndCacheProfile() } returns Result.success(userEntity())
 
         viewModel.restorePurchases()
         testDispatcher.scheduler.advanceUntilIdle()
@@ -244,5 +265,81 @@ class PaywallViewModelTest {
         testDispatcher.scheduler.advanceUntilIdle()
 
         assertEquals("com.pepinillo.app.pro.annual", viewModel.uiState.value.selectedProductId)
+    }
+
+    // ── B4: stale server profile must not downgrade an RC-confirmed purchase ──
+
+    @Test
+    fun `verify receipt error with stale free profile does not downgrade RC-confirmed entitlement`() = runTest {
+        // B4: RC just confirmed the purchase; receipt verification hits an HTTP error and
+        // the stale /users/me profile says "free". The active entitlement must survive.
+        val futureExpiry = System.currentTimeMillis() + 31L * 24 * 60 * 60 * 1000
+        val rcActive = SubscriptionState(
+            tier = SubscriptionTier.EVERYWHERE_ANNUAL,
+            activeProductId = "com.pepinillo.app.pro.annual",
+            expirationDate = futureExpiry,
+        )
+        subscriptionStateFlow.value = rcActive
+        // Route the mocked manager's updateFromServer through the REAL merge guard so
+        // this pins the rule end-to-end through the ViewModel flow.
+        every { subscriptionManager.updateFromServer(any(), any()) } answers {
+            subscriptionStateFlow.value = mergeServerSubscription(
+                current = subscriptionStateFlow.value,
+                serverTier = tierFromString(firstArg()),
+                serverExpiresAt = secondArg(),
+            )
+        }
+        every { authStore.getAccessToken() } returns "token"
+
+        val product = mockk<ProductInfo>(relaxed = true) {
+            every { productId } returns "com.pepinillo.app.pro.annual"
+        }
+        productsFlow.value = listOf(product)
+        testDispatcher.scheduler.advanceUntilIdle()
+        viewModel.selectProduct("com.pepinillo.app.pro.annual")
+
+        coEvery { subscriptionManager.launchPurchaseFlow(any(), any()) } returns PurchaseFlowResult.Success(
+            state = rcActive,
+            verification = PurchaseVerificationTarget(
+                productId = "com.pepinillo.app.pro.annual",
+                purchaseToken = "purchase-token",
+            ),
+        )
+        coEvery { apiClient.verifyReceipt(any()) } returns
+            dev.creapolis.pepinillo.core.network.NetworkResult.Error(500, "boom")
+        coEvery { userRepository.fetchAndCacheProfile() } returns Result.success(
+            userEntity(subscriptionTier = "free"),
+        )
+
+        val activity = mockk<android.app.Activity>(relaxed = true)
+        viewModel.purchase(activity)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        // The verification error DID fall back to the stale profile…
+        coVerify { apiClient.verifyReceipt(any()) }
+        coVerify { subscriptionManager.updateFromServer("free", null) }
+        // …but the RC-confirmed entitlement survived the downgrade attempt.
+        assertEquals(SubscriptionTier.EVERYWHERE_ANNUAL, subscriptionStateFlow.value.tier)
+        assertTrue(subscriptionStateFlow.value.hasLocalPremium)
+        assertEquals(futureExpiry, subscriptionStateFlow.value.expirationDate)
+        assertTrue(viewModel.uiState.value.canSync)
+    }
+
+    // -----------------------------------------------------------------------
+    // Helpers
+    // -----------------------------------------------------------------------
+
+    private fun userEntity(subscriptionTier: String = "everywhere_annual") = UserEntity(
+        id = "user-1",
+        email = "e@x.com",
+        name = "Name",
+        subscriptionTier = subscriptionTier,
+    )
+
+    private fun tierFromString(raw: String): SubscriptionTier = when (raw) {
+        "pepinillo_plus" -> SubscriptionTier.PEPINILLO_PLUS
+        "everywhere_monthly" -> SubscriptionTier.EVERYWHERE_MONTHLY
+        "everywhere_annual" -> SubscriptionTier.EVERYWHERE_ANNUAL
+        else -> SubscriptionTier.FREE
     }
 }

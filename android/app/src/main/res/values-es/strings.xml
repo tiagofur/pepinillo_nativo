@@ -160,7 +160,6 @@
     <string name="ai_report_insights">Perspectivas</string>
     <string name="ai_report_recommendations">Recomendaciones</string>
     <string name="ai_report_button">Informe IA</string>
-    <string name="ai_credits_left">te quedan %1$d cr\u00e9ditos este mes</string>
 
     <!-- Template Report -->
     <string name="report_title_strong">Una %1$s fuerte de enfoque</string>
@@ -468,7 +467,6 @@
     <string name="dashboard_completion">Finalización</string>
     <string name="dashboard_longest_session">Más larga</string>
     <string name="dashboard_today">Hoy</string>
-    <string name="dashboard_today_sessions_compact">%1$d sesiones hoy</string>
     <string name="streak_protected">Protegida</string>
     <string name="cd_streak_protected">Protección de racha activa</string>
     <string name="dashboard_focus_score_qualitative_low">Calentando</string>
@@ -484,7 +482,6 @@
     <string name="dashboard_no_sessions">Sin sesiones de enfoque a\u00fan</string>
     <string name="dashboard_empty_desc">Inicia tu primera sesi\u00f3n para ver tus anal\u00edticas aqu\u00ed</string>
     <string name="dashboard_btn_start">Iniciar mi primer enfoque</string>
-    <string name="dashboard_days_count">%1$d d\u00edas</string>
     <string name="cd_weekly_review">Resumen Semanal</string>
     <string name="cd_monthly_review">Resumen Mensual</string>
     <string name="cd_calendar">Calendario</string>
@@ -494,7 +491,6 @@
     <string name="tasks_title">Plan</string>
     <string name="select_task_to_view_details">Selecciona una tarea para ver sus detalles</string>
     <string name="select_dashboard_detail">Selecciona un elemento para ver los detalles</string>
-    <string name="tasks_active_count">%1$d activas</string>
     <string name="tasks_active_limit">%1$d/%2$d activas</string>
     <string name="tasks_no_tasks">Sin tareas a\u00fan</string>
     <string name="tasks_empty_desc">Escribe debajo para a\u00f1adir tu primera tarea</string>
@@ -630,9 +626,6 @@
     <string name="btn_ok">Aceptar</string>
     <string name="settings_sync_never">Nunca</string>
     <string name="settings_sync_just_now">Recién</string>
-    <string name="settings_sync_min_ago">Hace %1$d min</string>
-    <string name="settings_sync_hr_ago">Hace %1$d h</string>
-    <string name="settings_sync_days_ago">Hace %1$d días</string>
 
     <!-- App Setup Screen -->
     <string name="setup_title">Permisos y segundo plano</string>
@@ -834,4 +827,28 @@
     <string name="paywall_save_pct">Ahorra %1$d%%</string>
     <string name="paywall_risk_reversal">Cancela cuando quieras. Mantén tus datos.</string>
     <string name="banner_offline">Sin conexión — los cambios se sincronizarán al reconectar</string>
+
+    <!-- Task enum labels (localized priority/energy/recurrence) -->
+    <string name="priority_none">Ninguna</string>
+    <string name="priority_low">Baja</string>
+    <string name="priority_medium">Media</string>
+    <string name="priority_high">Alta</string>
+    <string name="energy_deep">Trabajo profundo</string>
+    <string name="energy_regular">Regular</string>
+    <string name="energy_light">Ligera</string>
+    <string name="recurrence_none">Ninguna</string>
+    <string name="recurrence_daily">Diaria</string>
+    <string name="recurrence_weekdays">Días laborables</string>
+    <string name="recurrence_weekly">Semanal</string>
+    <string name="recurrence_biweekly">Cada 2 semanas</string>
+    <string name="recurrence_monthly">Mensual</string>
+    <!-- Super review (F1/F3/P2g/P2i/P2k): a11y + localization additions -->
+    <string name="cd_focus_timer">%1$s: %2$s, modo %3$s</string>
+    <string name="cd_mode_locked">Bloqueado</string>
+    <string name="cd_calendar_today">Hoy</string>
+    <string name="cd_calendar_day_has_activity">Con actividad</string>
+    <string name="chart_minutes_compact">%1$d min</string>
+    <string name="duration_under_minute">&lt; 1 min</string>
+    <string name="dashboard_stats_unavailable_title">No se pudieron cargar tus estadísticas</string>
+    <string name="dashboard_stats_unavailable_desc">Tu historial está a salvo. Revisá tu conexión e intentá de nuevo.</string>
 </resources>

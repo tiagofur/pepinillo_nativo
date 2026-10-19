@@ -60,6 +60,20 @@ func (h *SyncHandler) FullSync(c *fiber.Ctx) error {
 	return c.JSON(result)
 }
 
+func (h *SyncHandler) HasData(c *fiber.Ctx) error {
+	userID, ok := c.Locals("userID").(string)
+	if !ok || userID == "" {
+		return fiber.NewError(fiber.StatusUnauthorized, "invalid_claims")
+	}
+
+	hasData, err := h.sync.HasServerData(c.Context(), userID)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(fiber.Map{"hasData": hasData})
+}
+
 func (h *SyncHandler) InitialUpload(c *fiber.Ctx) error {
 	userID, ok := c.Locals("userID").(string)
 	if !ok || userID == "" {

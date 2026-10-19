@@ -101,7 +101,7 @@ func (h *TaskHandler) Sync(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "invalid_request_body")
 	}
 
-	serverTasks, deletedIDs, syncTimestamp, err := h.tasks.Sync(
+	result, err := h.tasks.Sync(
 		c.Context(),
 		userID,
 		req.Tasks,
@@ -113,9 +113,11 @@ func (h *TaskHandler) Sync(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(fiber.Map{
-		"tasks":          serverTasks,
-		"deletedSyncIds": deletedIDs,
-		"syncTimestamp":  syncTimestamp,
+		"tasks":           result.ServerTasks,
+		"deletedSyncIds":  result.DeletedSyncIDs,
+		"appliedSyncIds":  result.AppliedSyncIDs,
+		"rejectedSyncIds": result.RejectedSyncIDs,
+		"syncTimestamp":   result.SyncedAt,
 	})
 }
 

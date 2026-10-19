@@ -26,4 +26,20 @@ object FocusTimerWidgetLogic {
     /** Progress ring / widget refresh throttle while the countdown is live. */
     fun widgetUpdateThrottleMs(status: TimerStatus): Long =
         if (status == TimerStatus.Running) 1_000L else 30_000L
+
+    /**
+     * Chronometer base (SystemClock.elapsedRealtime timebase) for count-up modes
+     * (Flow / Chrono) on the widget timer. Extracted from TimerRing so the clock
+     * handling is unit-testable.
+     *
+     * @param elapsedMillis elapsed time persisted with the anchor
+     * @param anchorElapsedRealtime monotonic clock reading persisted together with
+     *   [elapsedMillis]; null for legacy states saved before the anchor existed
+     * @param nowElapsedRealtime monotonic clock reading at render time (fallback only)
+     */
+    fun countUpChronometerBase(
+        elapsedMillis: Long,
+        anchorElapsedRealtime: Long?,
+        nowElapsedRealtime: Long,
+    ): Long = anchorElapsedRealtime?.minus(elapsedMillis) ?: (nowElapsedRealtime - elapsedMillis)
 }

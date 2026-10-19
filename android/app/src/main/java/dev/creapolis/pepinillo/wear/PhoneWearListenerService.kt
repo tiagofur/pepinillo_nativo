@@ -4,6 +4,7 @@ import android.content.Intent
 import android.util.Log
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
+import com.google.android.gms.wearable.CapabilityInfo
 import com.google.android.gms.wearable.MessageEvent
 import com.google.android.gms.wearable.Node
 import com.google.android.gms.wearable.WearableListenerService
@@ -31,6 +32,9 @@ import javax.inject.Inject
 
 private const val TAG = "PhoneWearListener"
 
+/** Capability the watch advertises (wear/src/main/res/xml/wear.xml). */
+private const val CAPABILITY_WATCH = "pepinillo_wear"
+
 @AndroidEntryPoint
 class PhoneWearListenerService : WearableListenerService() {
 
@@ -42,10 +46,37 @@ class PhoneWearListenerService : WearableListenerService() {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
+    /**
+     * E5: modern reconnect signal. Fires when a nearby node advertising CAPABILITY_WATCH
+     * becomes reachable (the manifest CAPABILITY_CHANGED filter is already declared).
+     * When a watch (re)appears we re-push every DataItem surface so it converges without
+     * waiting for its next fetch/request_sync.
+     */
+    override fun onCapabilityChanged(capabilityInfo: CapabilityInfo) {
+        super.onCapabilityChanged(capabilityInfo)
+        if (capabilityInfo.name != CAPABILITY_WATCH) return
+        if (capabilityInfo.nodes.isEmpty()) return // watch went away — nothing to push
+
+        Log.d(
+            TAG,
+            "Watch reachable via capability: ${capabilityInfo.nodes.joinToString { it.displayName }}",
+        )
+        onWatchReachable()
+    }
+
+    /**
+     * Kept as a fallback for GMS versions that do not deliver onCapabilityChanged.
+     * Both paths are idempotent urgent DataItem puts, so an overlap is harmless.
+     */
+    @Suppress("DEPRECATION")
     override fun onPeerConnected(peer: Node) {
         super.onPeerConnected(peer)
-        Log.d(TAG, "Watch connected: ${peer.displayName}")
+        Log.d(TAG, "Watch connected (legacy onPeerConnected): ${peer.displayName}")
+        onWatchReachable()
+    }
 
+    /** Re-pushes every watch-facing DataItem surface (timer, tasks+stats, theme, user). */
+    private fun onWatchReachable() {
         val state = focusEngine.state.value
         scope.launch {
             val linkedTaskName = state.linkedTaskId
@@ -59,6 +90,9 @@ class PhoneWearListenerService : WearableListenerService() {
 
         // Push current theme to watch
         pushThemeDirectly()
+
+        // Push entitlement + pomodoro cycle length (isPro gates the wear UI)
+        pushUserStatusDirectly()
 
         // Also trigger widget refresh
         WorkManager.getInstance(this).enqueue(
@@ -213,6 +247,24 @@ class PhoneWearListenerService : WearableListenerService() {
                 Log.d(TAG, "Theme pushed: $themeId")
             }.onFailure { e ->
                 Log.e(TAG, "Failed to push theme", e)
+            }
+        }
+    }
+
+    /** Mirrors MainActivity's subscription/prefs sync so a reconnecting watch immediately
+     *  learns the current entitlement and sessions-before-long-break. */
+    private fun pushUserStatusDirectly() {
+        scope.launch {
+            runCatching {
+                val prefs = prefsRepo.preferences.first()
+                WearDataLayerHelper.pushUserStatus(
+                    this@PhoneWearListenerService,
+                    featureGate.isPro,
+                    prefs.sessionsBeforeLongBreak,
+                )
+                Log.d(TAG, "User status pushed: isPro=${featureGate.isPro}, sessions=${prefs.sessionsBeforeLongBreak}")
+            }.onFailure { e ->
+                Log.e(TAG, "Failed to push user status", e)
             }
         }
     }

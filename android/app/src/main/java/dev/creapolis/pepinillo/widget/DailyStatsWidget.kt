@@ -50,10 +50,10 @@ import androidx.work.WorkManager
 import dagger.hilt.android.EntryPointAccessors
 import dev.creapolis.pepinillo.MainActivity
 import dev.creapolis.pepinillo.R
+import dev.creapolis.pepinillo.data.repository.SessionRepository
 import dev.creapolis.pepinillo.data.sync.WidgetRefreshWorker
 import dev.creapolis.pepinillo.domain.streak.StreakProtectionService
 import kotlinx.coroutines.flow.first
-import java.util.Calendar
 
 // Glance DataStore preference keys
 val PREF_STATS_MINUTES = intPreferencesKey("stats_minutes")
@@ -84,13 +84,8 @@ class DailyStatsWidget : GlanceAppWidget() {
                     isPro = isPro,
                 ).days
             }.getOrDefault(0)
-            
-            val startOfDay = Calendar.getInstance().apply {
-                set(Calendar.HOUR_OF_DAY, 0)
-                set(Calendar.MINUTE, 0)
-                set(Calendar.SECOND, 0)
-                set(Calendar.MILLISECOND, 0)
-            }.timeInMillis
+
+            val startOfDay = SessionRepository.startOfDay(System.currentTimeMillis())
             val completedToday = runCatching { taskRepo.getCompletedTodayCount(startOfDay) }.getOrDefault(0)
 
             updateAppWidgetState(context, PreferencesGlanceStateDefinition, id) { prefs ->

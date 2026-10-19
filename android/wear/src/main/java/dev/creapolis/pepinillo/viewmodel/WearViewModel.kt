@@ -15,6 +15,7 @@ import kotlinx.coroutines.tasks.await
 
 import dev.creapolis.pepinillo.service.WearFocusService
 import dev.creapolis.pepinillo.R
+import dev.creapolis.pepinillo.data.WearCommandWatchdog
 
 class WearViewModel(application: Application) : AndroidViewModel(application) {
     private val sender = WearMessageSender(application)
@@ -27,11 +28,39 @@ class WearViewModel(application: Application) : AndroidViewModel(application) {
     val lastSyncAtMillis = WearDataStore.lastSyncAtMillis
     val diagnostics = WearDataStore.diagnostics
 
-    private suspend fun sendSafely(tag: String, action: suspend () -> Boolean) {
+    private suspend fun sendSafely(tag: String, action: suspend () -> Boolean): Boolean =
         runCatching { action() }
             .onFailure { error ->
                 WearDataStore.recordSyncFailure("$tag: ${error.javaClass.simpleName}")
             }
+            .getOrDefault(false)
+
+    /**
+     * Sends a timer command under the E2 watchdog: GMS accepting the message does not
+     * mean the phone processed it, so if no confirming timer DataItem
+     * ([WearDataStore.remoteTimerRevisions] bump) arrives in time, the optimistic state
+     * applied by the caller is rolled back to [previousState] and the command is
+     * re-delivered once (or queued offline if undeliverable).
+     */
+    private fun launchTimerCommand(
+        tag: String,
+        optimisticState: WearTimerState,
+        previousState: WearTimerState,
+        action: suspend () -> Boolean,
+    ) {
+        viewModelScope.launch {
+            WearCommandWatchdog.runCommand(
+                remoteRevisions = WearDataStore.remoteTimerRevisions,
+                timeoutMs = WearCommandWatchdog.DEFAULT_CONFIRMATION_TIMEOUT_MS,
+                isStillOptimistic = { timerState.value == optimisticState },
+                onRevert = {
+                    // Restore the pre-command state in memory AND in the persisted
+                    // snapshot so a cold restart doesn't resurrect the phantom session.
+                    applyTimerOptimistically(previousState)
+                },
+                action = { sendSafely(tag) { action() } },
+            )
+        }
     }
 
     init {
@@ -68,100 +97,104 @@ class WearViewModel(application: Application) : AndroidViewModel(application) {
 
     fun startTimer(mode: String) {
         // Optimistic UI: show Running immediately with a usable countdown end.
-        val current = timerState.value
+        val previous = timerState.value
         val now = System.currentTimeMillis()
         val isCountUp = WearTimerDisplay.isCountUpMode(mode)
-        val durationMs = current.totalDurationMs.takeIf { it > 0 }
+        val durationMs = previous.totalDurationMs.takeIf { it > 0 }
             ?: defaultPhaseDurationMs(mode, "Work")
-        applyTimerOptimistically(
-            current.copy(
-                mode = mode,
-                phase = "Work",
-                status = "Running",
-                phaseLabel = getApplication<Application>().getString(R.string.phase_focus),
-                // #502: REMAINING for countdown (full ring at start), elapsed-0 for count-up.
-                progress = if (isCountUp) 0f else 1f,
-                displayTime = if (isCountUp) "00:00" else current.displayTime,
-                totalDurationMs = if (isCountUp) 0L else durationMs,
-                phaseEndEpochMs = if (isCountUp) 0L else now + durationMs,
-                phaseStartEpochMs = if (isCountUp) now else 0L,
-                remainingDurationMs = 0L,
-            ),
+        val optimistic = previous.copy(
+            mode = mode,
+            phase = "Work",
+            status = "Running",
+            phaseLabel = getApplication<Application>().getString(R.string.phase_focus),
+            // #502: REMAINING for countdown (full ring at start), elapsed-0 for count-up.
+            progress = if (isCountUp) 0f else 1f,
+            displayTime = if (isCountUp) "00:00" else previous.displayTime,
+            totalDurationMs = if (isCountUp) 0L else durationMs,
+            phaseEndEpochMs = if (isCountUp) 0L else now + durationMs,
+            phaseStartEpochMs = if (isCountUp) now else 0L,
+            remainingDurationMs = 0L,
         )
+        applyTimerOptimistically(optimistic)
         WearFocusService.start(getApplication())
-        viewModelScope.launch {
-            sendSafely("start_timer") { sender.startTimer(mode) }
-        }
+        launchTimerCommand(
+            tag = "start_timer",
+            optimisticState = optimistic,
+            previousState = previous,
+        ) { sender.startTimer(mode) }
     }
 
     fun pauseTimer() {
         // Optimistic UI: freeze display time and stash remaining/elapsed for resume.
-        val current = timerState.value
+        val previous = timerState.value
         val now = System.currentTimeMillis()
-        val isCountUp = WearTimerDisplay.isCountUpMode(current.mode)
-        val ticked = WearTimerDisplay.tick(current, now)
+        val isCountUp = WearTimerDisplay.isCountUpMode(previous.mode)
+        val ticked = WearTimerDisplay.tick(previous, now)
         val remainingMs = if (isCountUp) {
-            if (current.phaseStartEpochMs > 0L) now - current.phaseStartEpochMs else current.remainingDurationMs
+            if (previous.phaseStartEpochMs > 0L) now - previous.phaseStartEpochMs else previous.remainingDurationMs
         } else {
             when {
-                current.phaseEndEpochMs > 0L -> (current.phaseEndEpochMs - now).coerceAtLeast(0L)
-                current.remainingDurationMs > 0L -> current.remainingDurationMs
-                else -> current.totalDurationMs
+                previous.phaseEndEpochMs > 0L -> (previous.phaseEndEpochMs - now).coerceAtLeast(0L)
+                previous.remainingDurationMs > 0L -> previous.remainingDurationMs
+                else -> previous.totalDurationMs
             }
         }
         val progress = if (isCountUp) {
             ticked.progress
-        } else if (current.totalDurationMs > 0L) {
+        } else if (previous.totalDurationMs > 0L) {
             // #502: REMAINING polarity — pause freezes the remaining fraction directly.
-            (remainingMs.toFloat() / current.totalDurationMs).coerceIn(0f, 1f)
+            (remainingMs.toFloat() / previous.totalDurationMs).coerceIn(0f, 1f)
         } else {
-            current.progress
+            previous.progress
         }
-        applyTimerOptimistically(
-            current.copy(
-                status = "Paused",
-                displayTime = ticked.displayTime,
-                progress = progress,
-                remainingDurationMs = remainingMs,
-                phaseEndEpochMs = 0L,
-                phaseStartEpochMs = 0L,
-            ),
+        val optimistic = previous.copy(
+            status = "Paused",
+            displayTime = ticked.displayTime,
+            progress = progress,
+            remainingDurationMs = remainingMs,
+            phaseEndEpochMs = 0L,
+            phaseStartEpochMs = 0L,
         )
+        applyTimerOptimistically(optimistic)
         WearFocusService.start(getApplication())
-        viewModelScope.launch {
-            sendSafely("pause_timer") { sender.pauseTimer() }
-        }
+        launchTimerCommand(
+            tag = "pause_timer",
+            optimisticState = optimistic,
+            previousState = previous,
+        ) { sender.pauseTimer() }
     }
 
     fun resumeTimer() {
         // Optimistic UI: resume from preserved remaining/elapsed, not the full phase duration.
-        val current = timerState.value
+        val previous = timerState.value
         val now = System.currentTimeMillis()
-        val isCountUp = WearTimerDisplay.isCountUpMode(current.mode)
-        val remainingMs = current.remainingDurationMs.takeIf { it > 0L }
-            ?: current.totalDurationMs.takeIf { it > 0L }
-            ?: defaultPhaseDurationMs(current.mode, current.phase)
-        applyTimerOptimistically(
+        val isCountUp = WearTimerDisplay.isCountUpMode(previous.mode)
+        val remainingMs = previous.remainingDurationMs.takeIf { it > 0L }
+            ?: previous.totalDurationMs.takeIf { it > 0L }
+            ?: defaultPhaseDurationMs(previous.mode, previous.phase)
+        val optimistic =
             if (isCountUp) {
-                current.copy(
+                previous.copy(
                     status = "Running",
                     phaseStartEpochMs = now - remainingMs,
                     phaseEndEpochMs = 0L,
                     remainingDurationMs = 0L,
                 )
             } else {
-                current.copy(
+                previous.copy(
                     status = "Running",
                     phaseEndEpochMs = now + remainingMs,
                     phaseStartEpochMs = 0L,
                     remainingDurationMs = 0L,
                 )
-            },
-        )
+            }
+        applyTimerOptimistically(optimistic)
         WearFocusService.start(getApplication())
-        viewModelScope.launch {
-            sendSafely("resume_timer") { sender.resumeTimer() }
-        }
+        launchTimerCommand(
+            tag = "resume_timer",
+            optimisticState = optimistic,
+            previousState = previous,
+        ) { sender.resumeTimer() }
     }
 
     fun stopTimer() {
@@ -206,23 +239,24 @@ class WearViewModel(application: Application) : AndroidViewModel(application) {
         }
         val durationMs = defaultPhaseDurationMs(current.mode, nextPhase)
         val now = System.currentTimeMillis()
-        applyTimerOptimistically(
-            current.copy(
-                status = "Running",
-                phase = nextPhase,
-                phaseLabel = nextLabel,
-                // #502: REMAINING — full ring at the start of the next countdown phase.
-                progress = 1f,
-                totalDurationMs = durationMs,
-                phaseEndEpochMs = now + durationMs,
-                phaseStartEpochMs = 0L,
-                remainingDurationMs = 0L,
-            ),
+        val optimistic = current.copy(
+            status = "Running",
+            phase = nextPhase,
+            phaseLabel = nextLabel,
+            // #502: REMAINING — full ring at the start of the next countdown phase.
+            progress = 1f,
+            totalDurationMs = durationMs,
+            phaseEndEpochMs = now + durationMs,
+            phaseStartEpochMs = 0L,
+            remainingDurationMs = 0L,
         )
+        applyTimerOptimistically(optimistic)
         WearFocusService.start(getApplication())
-        viewModelScope.launch {
-            sendSafely("skip_phase") { sender.skipPhase() }
-        }
+        launchTimerCommand(
+            tag = "skip_phase",
+            optimisticState = optimistic,
+            previousState = current,
+        ) { sender.skipPhase() }
     }
 
     fun completeTask(taskId: String) {

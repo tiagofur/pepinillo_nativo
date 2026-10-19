@@ -10,6 +10,7 @@ import dev.creapolis.pepinillo.data.repository.SessionRepository
 import dev.creapolis.pepinillo.data.repository.TaskRepository
 import dev.creapolis.pepinillo.feature.dashboard.model.DashboardStats
 import dev.creapolis.pepinillo.feature.dashboard.model.ReflectionPreviews
+import dev.creapolis.pepinillo.feature.dashboard.model.isEmpty
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
@@ -185,6 +186,29 @@ class DashboardViewModelTest {
     }
 
     @Test
+    fun `stats sets hasHistory when older history exists but current period is empty`() = runTest {
+        every { sessionRepository.getAllDaysWithSessions() } returns
+            flowOf(listOf(DailyStatsEntity(date = 1_767_312_000_000L)))
+
+        val vm = createViewModel()
+        collectStats(vm)
+        advanceUntilIdle()
+
+        val stats = vm.stats.value
+        assertEquals(true, stats.hasHistory)
+        assertEquals(true, stats.isEmpty)
+    }
+
+    @Test
+    fun `stats hasHistory is false for a brand-new account`() = runTest {
+        val vm = createViewModel()
+        collectStats(vm)
+        advanceUntilIdle()
+
+        assertEquals(false, vm.stats.value.hasHistory)
+    }
+
+    @Test
     fun `completionRate is 1 when all sessions completed`() = runTest {
         weekSessionsFlow.value = listOf(
             workSession(wasCompleted = true),
@@ -199,6 +223,30 @@ class DashboardViewModelTest {
 
         val stats = vm.stats.value
         assertEquals(1.0, stats.completionRate, 0.001)
+    }
+
+    // -----------------------------------------------------------------------
+    // focusScore denominator (calendar days of the period, not days with rows)
+    // -----------------------------------------------------------------------
+
+    @Test
+    fun `focusScore divides by calendar days of the period so rest days are not free points`() = runTest {
+        // 2 active days of a 7-day week, 210 minutes each:
+        // consistency = 2/7 (not 2/2 = 1.0), avg = 420/7 = 60 -> minuteScore = 1.
+        // score = floor(2f/7 * 60 + 40) = 57. Old denominator (days with rows) gave 100.
+        val today = SessionRepository.startOfDay(System.currentTimeMillis())
+        val yesterday = SessionRepository.addDays(today, -1)
+        val rows = listOf(
+            DailyStatsEntity(date = today, totalMinutes = 210, sessionsCompleted = 3),
+            DailyStatsEntity(date = yesterday, totalMinutes = 210, sessionsCompleted = 3),
+        )
+        every { sessionRepository.getWeekStats() } returns flowOf(rows)
+
+        val vm = createViewModel()
+        collectStats(vm)
+        advanceUntilIdle()
+
+        assertEquals(57, vm.stats.value.focusScore)
     }
 
     // -----------------------------------------------------------------------

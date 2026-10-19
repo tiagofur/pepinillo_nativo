@@ -41,6 +41,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -71,7 +72,7 @@ fun AIReportScreen(
                     )
                     if (state.report != null && !state.isGenerating) {
                         Text(
-                            text = stringResource(R.string.ai_credits_left, state.creditsLeft),
+                            text = pluralStringResource(R.plurals.ai_credits_left, state.creditsLeft, state.creditsLeft),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )

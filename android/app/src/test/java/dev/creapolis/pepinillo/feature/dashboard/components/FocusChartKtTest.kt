@@ -82,31 +82,57 @@ class FocusChartKtTest {
     }
 
     // -----------------------------------------------------------------------
-    // formatPreviewLine
+    // formatPreviewLine — parameterized with localized parts (super-review P2k)
     // -----------------------------------------------------------------------
+
+    private val PATTERN = "%1${'$'}s in %2${'$'}d %3${'$'}s"
 
     @Test
     fun `formatPreviewLine formats hours and minutes with sessions`() {
-        assertEquals("1h 20m in 5 sessions", formatPreviewLine(80, 5))
+        assertEquals(
+            "1h 20m in 5 sessions",
+            formatPreviewLine("1h 20m", 5, "sessions", PATTERN),
+        )
     }
 
     @Test
     fun `formatPreviewLine formats only minutes when less than 60`() {
-        assertEquals("45m in 3 sessions", formatPreviewLine(45, 3))
+        assertEquals(
+            "45m in 3 sessions",
+            formatPreviewLine("45m", 3, "sessions", PATTERN),
+        )
     }
 
     @Test
     fun `formatPreviewLine formats exact hours`() {
-        assertEquals("2h 0m in 10 sessions", formatPreviewLine(120, 10))
+        assertEquals(
+            "2h 0m in 10 sessions",
+            formatPreviewLine("2h 0m", 10, "sessions", PATTERN),
+        )
     }
 
     @Test
     fun `formatPreviewLine handles zero values`() {
-        assertEquals("0m in 0 sessions", formatPreviewLine(0, 0))
+        assertEquals(
+            "0m in 0 sessions",
+            formatPreviewLine("0m", 0, "sessions", PATTERN),
+        )
     }
 
     @Test
     fun `formatPreviewLine handles single session`() {
-        assertEquals("30m in 1 session", formatPreviewLine(30, 1))
+        assertEquals(
+            "30m in 1 session",
+            formatPreviewLine("30m", 1, "session", PATTERN),
+        )
+    }
+
+    @Test
+    fun `formatPreviewLine uses the localized pattern and plural word`() {
+        // es: "%1$s en %2$d %3$s" with the plural word from plurals.xml
+        assertEquals(
+            "1h 20m en 5 sesiones",
+            formatPreviewLine("1h 20m", 5, "sesiones", "%1${'$'}s en %2${'$'}d %3${'$'}s"),
+        )
     }
 }

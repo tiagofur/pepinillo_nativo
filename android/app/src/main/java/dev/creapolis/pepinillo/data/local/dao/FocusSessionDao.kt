@@ -15,19 +15,19 @@ interface FocusSessionDao {
     @Insert
     suspend fun insertSession(session: FocusSessionEntity)
 
-    @Query("SELECT * FROM focus_sessions WHERE created_at >= :startOfDay AND created_at < :endOfDay ORDER BY created_at DESC")
+    @Query("SELECT * FROM focus_sessions WHERE start_time >= :startOfDay AND start_time < :endOfDay ORDER BY start_time DESC")
     fun getSessionsForDay(startOfDay: Long, endOfDay: Long): Flow<List<FocusSessionEntity>>
 
-    @Query("SELECT COUNT(*) FROM focus_sessions WHERE created_at >= :startOfDay AND created_at < :endOfDay AND (phase IS NULL OR phase = 'Work')")
+    @Query("SELECT COUNT(*) FROM focus_sessions WHERE start_time >= :startOfDay AND start_time < :endOfDay AND (phase IS NULL OR phase = 'Work')")
     fun getSessionCountForDay(startOfDay: Long, endOfDay: Long): Flow<Int>
 
-    @Query("SELECT * FROM focus_sessions WHERE created_at >= :startTime AND created_at < :endTime ORDER BY created_at DESC")
+    @Query("SELECT * FROM focus_sessions WHERE start_time >= :startTime AND start_time < :endTime ORDER BY start_time DESC")
     fun getSessionsInRange(startTime: Long, endTime: Long): Flow<List<FocusSessionEntity>>
 
-    @Query("SELECT * FROM focus_sessions WHERE linked_task_id = :taskId ORDER BY created_at DESC")
+    @Query("SELECT * FROM focus_sessions WHERE linked_task_id = :taskId ORDER BY start_time DESC")
     fun getSessionsForTask(taskId: String): Flow<List<FocusSessionEntity>>
 
-    @Query("SELECT COUNT(*) FROM focus_sessions WHERE created_at >= :startOfDay AND created_at < :endOfDay AND mode = 'Pomodoro' AND phase = 'Work'")
+    @Query("SELECT COUNT(*) FROM focus_sessions WHERE start_time >= :startOfDay AND start_time < :endOfDay AND mode = 'Pomodoro' AND phase = 'Work'")
     suspend fun getTodayPomodoroWorkCount(startOfDay: Long, endOfDay: Long): Int
 
     @Query("UPDATE focus_sessions SET journal_note = :journalNote, satisfaction_rating = :satisfactionRating, is_dirty = 1, updated_at = :now WHERE id = :sessionId")
@@ -51,7 +51,7 @@ interface FocusSessionDao {
         }
     }
 
-    @Query("SELECT * FROM focus_sessions WHERE created_at >= :startTime AND created_at < :endTime ORDER BY created_at DESC")
+    @Query("SELECT * FROM focus_sessions WHERE start_time >= :startTime AND start_time < :endTime ORDER BY start_time DESC")
     suspend fun getSessionsInRangeSync(startTime: Long, endTime: Long): List<FocusSessionEntity>
 
     @Query("SELECT * FROM focus_sessions WHERE id = :sessionId")

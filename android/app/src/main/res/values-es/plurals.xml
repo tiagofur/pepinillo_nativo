@@ -8,4 +8,36 @@
         <item quantity="one">%d sesión</item>
         <item quantity="other">%d sesiones</item>
     </plurals>
+
+    <plurals name="tasks_active_count">
+        <item quantity="one">%d activa</item>
+        <item quantity="other">%d activas</item>
+    </plurals>
+
+    <plurals name="ai_credits_left">
+        <item quantity="one">te queda %d cr\u00e9dito este mes</item>
+        <item quantity="other">te quedan %d cr\u00e9ditos este mes</item>
+    </plurals>
+
+    <plurals name="settings_sync_min_ago">
+        <item quantity="one">Hace %d min</item>
+        <item quantity="other">Hace %d min</item>
+    </plurals>
+    <plurals name="settings_sync_hr_ago">
+        <item quantity="one">Hace %d h</item>
+        <item quantity="other">Hace %d h</item>
+    </plurals>
+    <plurals name="settings_sync_days_ago">
+        <item quantity="one">Hace %d d\u00eda</item>
+        <item quantity="other">Hace %d d\u00edas</item>
+    </plurals>
+
+    <plurals name="duration_hours">
+        <item quantity="one">%d h</item>
+        <item quantity="other">%d h</item>
+    </plurals>
+    <plurals name="duration_minutes">
+        <item quantity="one">%d min</item>
+        <item quantity="other">%d min</item>
+    </plurals>
 </resources>

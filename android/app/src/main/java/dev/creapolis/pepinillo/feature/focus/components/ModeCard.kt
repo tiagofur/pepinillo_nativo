@@ -29,6 +29,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -66,12 +69,19 @@ fun ModeChip(
         animationSpec = NavigationTransitions.expressiveSpring(),
         label = "modeChipContent",
     )
+    val lockedStateDescription = stringResource(R.string.cd_mode_locked)
 
     Box(
         modifier = modifier
             .clip(MaterialTheme.shapes.medium)
             .background(containerColor)
             .clickable(role = Role.Tab, onClick = onClick)
+            // Single merged tab node (super-review P2g): exposes selected + locked state and
+            // folds the lock badge in, instead of leaving it separately focusable.
+            .semantics(mergeDescendants = true) {
+                selected = isSelected
+                if (isLocked) stateDescription = lockedStateDescription
+            }
             .heightIn(min = 48.dp)
             .padding(vertical = 8.dp, horizontal = 12.dp),
         contentAlignment = Alignment.Center
@@ -110,7 +120,9 @@ fun ModeChip(
             ) {
                 Icon(
                     imageVector = Icons.Rounded.Lock,
-                    contentDescription = stringResource(R.string.cd_pro_badge),
+                    // Decorative: the merged tab node exposes the locked state via
+                    // stateDescription instead (super-review P2g).
+                    contentDescription = null,
                     modifier = Modifier.size(8.dp),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

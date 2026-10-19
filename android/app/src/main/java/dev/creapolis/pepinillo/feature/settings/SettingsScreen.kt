@@ -62,6 +62,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -643,7 +644,7 @@ fun SettingsScreen(
                     modifier = Modifier.weight(1f),
                 )
                 Text(
-                    text = stringResource(R.string.dashboard_days_count, uiState.currentStreak),
+                    text = pluralStringResource(R.plurals.days_count, uiState.currentStreak, uiState.currentStreak),
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -1165,9 +1166,9 @@ private fun formatLastSyncTime(lastSyncAt: Long?): String {
     val diffDays = diffHours / 24
     return when {
         diffMinutes < 1 -> stringResource(R.string.settings_sync_just_now)
-        diffMinutes < 60 -> stringResource(R.string.settings_sync_min_ago, diffMinutes)
-        diffHours < 24 -> stringResource(R.string.settings_sync_hr_ago, diffHours)
-        else -> stringResource(R.string.settings_sync_days_ago, diffDays)
+        diffMinutes < 60 -> pluralStringResource(R.plurals.settings_sync_min_ago, diffMinutes.toInt(), diffMinutes.toInt())
+        diffHours < 24 -> pluralStringResource(R.plurals.settings_sync_hr_ago, diffHours.toInt(), diffHours.toInt())
+        else -> pluralStringResource(R.plurals.settings_sync_days_ago, diffDays.toInt(), diffDays.toInt())
     }
 }
 private fun openExternalUrl(context: Context, url: String) {

@@ -8,8 +8,10 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dev.creapolis.pepinillo.R
 import dev.creapolis.pepinillo.core.billing.FeatureGate
 import dev.creapolis.pepinillo.data.repository.TaskRepository
+import dev.creapolis.pepinillo.domain.tasks.DueDateEncoding
 import dev.creapolis.pepinillo.domain.timer.FocusEngine
 import dev.creapolis.pepinillo.feature.tasks.model.EnergyLevel
+import dev.creapolis.pepinillo.feature.tasks.model.MAX_TASK_TITLE_LENGTH
 import dev.creapolis.pepinillo.feature.tasks.model.Task
 import dev.creapolis.pepinillo.feature.tasks.model.TaskPriority
 import dev.creapolis.pepinillo.widget.WidgetTaskStateManager
@@ -23,6 +25,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.util.Calendar
@@ -107,30 +110,15 @@ internal fun TasksUiState.computeFilteredTasks(): List<Task> {
         }
     }
 
-private fun getNormalizedLocalDate(): Calendar {
-    // Use the local timezone consistently so this is idempotent and matches
-    // getNormalizedDueDate below. Previously this read local Y/M/D but wrote into a UTC
-    // calendar — in timezones behind UTC the resulting instant shifted to the previous
-    // day, causing tasks to vanish from Plan filters.
-    val local = Calendar.getInstance()
-    return Calendar.getInstance().apply {
-        clear()
-        set(Calendar.YEAR, local.get(Calendar.YEAR))
-        set(Calendar.MONTH, local.get(Calendar.MONTH))
-        set(Calendar.DAY_OF_MONTH, local.get(Calendar.DAY_OF_MONTH))
-    }
-}
+private fun getNormalizedLocalDate(): Calendar =
+    // Shared single source of truth (C1): due dates are stored as local-midnight millis,
+    // so day comparisons must normalize in the local timezone — identical to
+    // [DueDateEncoding], which TaskItem badge decoding also uses.
+    DueDateEncoding.normalizedLocalDate(System.currentTimeMillis())
 
-private fun getNormalizedDueDate(millis: Long): Calendar {
+private fun getNormalizedDueDate(millis: Long): Calendar =
     // Must use the SAME timezone as getNormalizedLocalDate for comparisons to be valid.
-    val due = Calendar.getInstance().apply { timeInMillis = millis }
-    return Calendar.getInstance().apply {
-        clear()
-        set(Calendar.YEAR, due.get(Calendar.YEAR))
-        set(Calendar.MONTH, due.get(Calendar.MONTH))
-        set(Calendar.DAY_OF_MONTH, due.get(Calendar.DAY_OF_MONTH))
-    }
-}
+    DueDateEncoding.normalizedLocalDate(millis)
 
 private fun isDueTodayMs(millis: Long, todayNorm: Calendar): Boolean {
     val dueNorm = getNormalizedDueDate(millis)
@@ -237,12 +225,15 @@ class TasksViewModel @Inject constructor(
 
     fun addQuickTask(title: String) {
         if (title.isBlank()) return
-        val activeCount = uiState.value.tasks.count { !it.isCompleted }
-        if (!featureGate.canAddTask(activeCount)) {
-            _showPaywall.value = true
-            return
-        }
         viewModelScope.launch {
+            // Read the authoritative active count inside the coroutine: the uiState
+            // snapshot can be stale while a previous insert is still in flight
+            // (quick-add limit race).
+            val activeCount = taskRepository.getActiveCount().first()
+            if (!featureGate.canAddTask(activeCount)) {
+                _showPaywall.value = true
+                return@launch
+            }
             val currentFilter = _selectedFilter.value
             val scheduledForToday = currentFilter == TaskFilter.Today
             val dueDate = if (currentFilter == TaskFilter.Upcoming) {
@@ -257,10 +248,12 @@ class TasksViewModel @Inject constructor(
 
             taskRepository.addTask(
                 Task(
-                    title = title.trim(),
+                    title = title.trim().take(MAX_TASK_TITLE_LENGTH),
                     scheduledForToday = scheduledForToday,
                     dueDate = dueDate,
-                    sortOrder = uiState.value.tasks.size,
+                    // max+1 over the repository snapshot: tasks.size collides with an
+                    // existing sort order when the list contains non-contiguous orders.
+                    sortOrder = (taskRepository.getAllTasks().first().maxOfOrNull { it.sortOrder } ?: -1) + 1,
                 ),
             ).onSuccess {
                 if (currentFilter == TaskFilter.Completed) {
@@ -295,7 +288,7 @@ class TasksViewModel @Inject constructor(
                     undoExpiryJob?.cancel()
                     _undoEvent.value = UndoState(task = deletedTask)
                     undoExpiryJob = viewModelScope.launch {
-                        delay(10_000L)
+                        delay(UNDO_SNACKBAR_DURATION_MS)
                         _undoEvent.value = null
                     }
                 }
@@ -333,6 +326,15 @@ class TasksViewModel @Inject constructor(
                 _errorEvent.emit(R.string.msg_task_reorder_failed)
             }
         }
+    }
+
+    companion object {
+        /**
+         * Undo snackbar window — single source of truth shared with the UI. Must match the
+         * snackbar duration (Material 3 SnackbarDuration.Long ≈ 10s) so the Undo action never
+         * disappears before the underlying event expires.
+         */
+        const val UNDO_SNACKBAR_DURATION_MS = 10_000L
     }
 }
 

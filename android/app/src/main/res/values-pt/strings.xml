@@ -316,9 +316,6 @@
     <string name="btn_ok">OK</string>
     <string name="settings_sync_never">Nunca</string>
     <string name="settings_sync_just_now">Agora mesmo</string>
-    <string name="settings_sync_min_ago">Há %1$d min</string>
-    <string name="settings_sync_hr_ago">Há %1$d h</string>
-    <string name="settings_sync_days_ago">Há %1$d dias</string>
 
     <!-- App Setup Screen -->
     <string name="setup_title">Permissões e segundo plano</string>
@@ -679,7 +676,6 @@
     <string name="dashboard_completion">Conclusão</string>
     <string name="dashboard_longest_session">Mais longa</string>
     <string name="dashboard_today">Hoje</string>
-    <string name="dashboard_today_sessions_compact">%1$d sessões hoje</string>
     <string name="streak_protected">Protegida</string>
     <string name="cd_streak_protected">Proteção de sequência ativa</string>
     <string name="dashboard_focus_score_qualitative_low">Aquecendo</string>
@@ -695,7 +691,6 @@
     <string name="dashboard_no_sessions">Sem sessões de foco ainda</string>
     <string name="dashboard_empty_desc">Inicie sua primeira sessão para ver suas análises aqui</string>
     <string name="dashboard_btn_start">Iniciar seu primeiro foco</string>
-    <string name="dashboard_days_count">%1$d dias</string>
     <string name="cd_weekly_review">Resumo Semanal</string>
     <string name="cd_monthly_review">Resumo Mensal</string>
     <string name="cd_calendar">Calendário</string>
@@ -705,7 +700,6 @@
     <string name="tasks_title">Plano</string>
     <string name="select_task_to_view_details">Selecione uma tarefa para ver os detalhes</string>
     <string name="select_dashboard_detail">Selecione um item para ver os detalhes</string>
-    <string name="tasks_active_count">%1$d ativas</string>
     <string name="tasks_active_limit">%1$d/%2$d ativas</string>
     <string name="tasks_no_tasks">Sem tarefas ainda</string>
     <string name="tasks_empty_desc">Digite abaixo para adicionar sua primeira tarefa</string>
@@ -771,7 +765,6 @@
     <string name="review_monthly_headline_steady">Focou %1$s este mês, mantendo-se estável.</string>
 
     <!-- AI Report extras -->
-    <string name="ai_credits_left">%1$d créditos restantes este mês</string>
 
     <!-- Task Detail extras -->
     <string name="task_detail_remove_due_date">Remover Prazo</string>
@@ -841,4 +834,28 @@
     <string name="paywall_risk_reversal">Cancele quando quiser. Mantenha os seus dados.</string>
     <string name="banner_offline">Sem ligação — as alterações sincronizam ao reconectar</string>
 
+
+    <!-- Task enum labels (localized priority/energy/recurrence) -->
+    <string name="priority_none">Nenhuma</string>
+    <string name="priority_low">Baixa</string>
+    <string name="priority_medium">Média</string>
+    <string name="priority_high">Alta</string>
+    <string name="energy_deep">Trabalho profundo</string>
+    <string name="energy_regular">Regular</string>
+    <string name="energy_light">Leve</string>
+    <string name="recurrence_none">Nenhuma</string>
+    <string name="recurrence_daily">Diária</string>
+    <string name="recurrence_weekdays">Dias úteis</string>
+    <string name="recurrence_weekly">Semanal</string>
+    <string name="recurrence_biweekly">Cada 2 semanas</string>
+    <string name="recurrence_monthly">Mensal</string>
+    <!-- Super review (F1/F3/P2g/P2i/P2k): a11y + localization additions -->
+    <string name="cd_focus_timer">%1$s: %2$s, modo %3$s</string>
+    <string name="cd_mode_locked">Bloqueado</string>
+    <string name="cd_calendar_today">Hoje</string>
+    <string name="cd_calendar_day_has_activity">Com atividade</string>
+    <string name="chart_minutes_compact">%1$d min</string>
+    <string name="duration_under_minute">&lt; 1 min</string>
+    <string name="dashboard_stats_unavailable_title">Não foi possível carregar suas estatísticas</string>
+    <string name="dashboard_stats_unavailable_desc">Seu histórico está seguro. Verifique sua conexão e tente novamente.</string>
 </resources>

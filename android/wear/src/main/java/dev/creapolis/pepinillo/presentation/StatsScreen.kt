@@ -76,6 +76,11 @@ fun StatsScreen(
                     )
                 }
             }
+            // P2(e): free tier shows the sync status row too — without it the page
+            // looks up-to-date while the data may be hours old / offline-queued.
+            if (!syncStatusLabel.isNullOrBlank()) {
+                item { SyncStatusRow(syncStatusLabel, isSyncStale) }
+            }
             item {
                 StatRow(
                     emoji = "⏱",
@@ -148,17 +153,7 @@ fun StatsScreen(
         }
 
         if (!syncStatusLabel.isNullOrBlank()) {
-            item {
-                Text(
-                    text = syncStatusLabel,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = if (isSyncStale) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 4.dp),
-                )
-            }
+            item { SyncStatusRow(syncStatusLabel, isSyncStale) }
         }
 
         item {
@@ -190,6 +185,25 @@ fun StatsScreen(
             )
         }
     }
+}
+
+/**
+ * Shared sync-status line rendered under the "Today" header on both tiers.
+ */
+@Composable
+private fun SyncStatusRow(
+    syncStatusLabel: String,
+    isSyncStale: Boolean,
+) {
+    Text(
+        text = syncStatusLabel,
+        style = MaterialTheme.typography.labelSmall,
+        color = if (isSyncStale) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+        textAlign = TextAlign.Center,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 4.dp),
+    )
 }
 
 /**

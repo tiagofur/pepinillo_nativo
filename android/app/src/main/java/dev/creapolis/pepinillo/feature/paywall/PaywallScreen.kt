@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
@@ -41,6 +42,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Text
@@ -159,7 +161,7 @@ fun PaywallScreen(
         Spacer(modifier = Modifier.height(12.dp))
 
         TierCard(
-            tierName = "Everywhere / AI+",
+            tierName = stringResource(R.string.settings_tier_everywhere),
             badge = stringResource(R.string.paywall_subscription),
             badgeGreen = false,
             features = listOf(
@@ -168,7 +170,6 @@ fun PaywallScreen(
                 Triple(Icons.Rounded.Sync, stringResource(R.string.feature_vps_backup), stringResource(R.string.feature_vps_backup_desc)),
                 Triple(Icons.Rounded.Star, stringResource(R.string.feature_pro_included), stringResource(R.string.feature_pro_included_desc)),
             ),
-            comingSoonIndices = emptySet(), // AI Reports is now functional!
         )
 
         Spacer(modifier = Modifier.height(28.dp))
@@ -342,6 +343,8 @@ fun PaywallScreen(
         Spacer(modifier = Modifier.height(12.dp))
 
         // ── LEGAL & SUBSCRIPTION LINKS (#361) ──
+        // Each link gets a 48dp minimum touch target (super-review P2c) via
+        // minimumInteractiveComponentSize + centered content.
         fun openUrl(url: String) {
             try {
                 context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
@@ -357,7 +360,10 @@ fun PaywallScreen(
                 text = stringResource(R.string.support_btn_terms),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.clickable { openUrl("https://creapolis.dev/terms-of-use/") },
+                modifier = Modifier
+                    .minimumInteractiveComponentSize()
+                    .wrapContentSize(Alignment.Center)
+                    .clickable { openUrl("https://creapolis.dev/terms-of-use/") },
             )
             Text(
                 text = "  •  ",
@@ -368,7 +374,10 @@ fun PaywallScreen(
                 text = stringResource(R.string.support_btn_privacy),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.clickable { openUrl("https://creapolis.dev/privacy-policy/") },
+                modifier = Modifier
+                    .minimumInteractiveComponentSize()
+                    .wrapContentSize(Alignment.Center)
+                    .clickable { openUrl("https://creapolis.dev/privacy-policy/") },
             )
             Text(
                 text = "  •  ",
@@ -379,7 +388,10 @@ fun PaywallScreen(
                 text = stringResource(R.string.paywall_manage_subscription),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.clickable { openUrl("https://play.google.com/store/account/subscriptions") },
+                modifier = Modifier
+                    .minimumInteractiveComponentSize()
+                    .wrapContentSize(Alignment.Center)
+                    .clickable { openUrl("https://play.google.com/store/account/subscriptions") },
             )
         }
 
@@ -393,7 +405,6 @@ private fun TierCard(
     badge: String,
     badgeGreen: Boolean,
     features: List<Triple<ImageVector, String, String>>,
-    comingSoonIndices: Set<Int> = emptySet(),
 ) {
     val accentColor = if (badgeGreen) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.primary
     val badgeBg = if (badgeGreen) MaterialTheme.colorScheme.tertiaryContainer else MaterialTheme.colorScheme.primaryContainer
@@ -444,7 +455,6 @@ private fun TierCard(
                     icon = icon,
                     title = title,
                     subtitle = subtitle,
-                    comingSoon = index in comingSoonIndices,
                     accentColor = accentColor,
                 )
                 if (index < features.lastIndex) Spacer(modifier = Modifier.height(8.dp))
@@ -458,7 +468,6 @@ private fun TierFeatureRow(
     icon: ImageVector,
     title: String,
     subtitle: String,
-    comingSoon: Boolean,
     accentColor: androidx.compose.ui.graphics.Color,
 ) {
     Row(
@@ -494,19 +503,6 @@ private fun TierFeatureRow(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 overflow = TextOverflow.Ellipsis,
-            )
-        }
-        if (comingSoon) {
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = "Soon",
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier
-                    .clip(PepinilloShapeTokens.badge)
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
-                    .padding(horizontal = 6.dp, vertical = 2.dp),
             )
         }
     }
@@ -574,14 +570,16 @@ private fun ProductCard(
                                 .padding(horizontal = 8.dp, vertical = 2.dp),
                         )
                     }
-                    if (subtitle != null) {
-                        Text(
-                            text = subtitle,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.padding(top = 2.dp),
-                        )
-                    }
+                }
+                if (subtitle != null) {
+                    // Under the name row (super-review P2b): the per-month equivalent used to
+                    // render inline in the same Row and collide with the price column.
+                    Text(
+                        text = subtitle,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(top = 2.dp),
+                    )
                 }
             }
             Text(

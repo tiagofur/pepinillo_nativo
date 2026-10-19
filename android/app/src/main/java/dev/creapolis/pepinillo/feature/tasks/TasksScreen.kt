@@ -27,7 +27,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -72,6 +71,7 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.material.icons.rounded.ArrowUpward
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -166,7 +166,7 @@ fun TasksScreen(
                         text = if (!uiState.isPro) {
                             stringResource(R.string.tasks_active_limit, uiState.activeCount, FeatureGate.FREE_TASK_LIMIT)
                         } else {
-                            stringResource(R.string.tasks_active_count, uiState.activeCount)
+                            pluralStringResource(R.plurals.tasks_active_count, uiState.activeCount, uiState.activeCount)
                         },
                         style = MaterialTheme.typography.bodyMedium,
                         color = if (!uiState.isPro && uiState.activeCount >= FeatureGate.FREE_TASK_LIMIT) {
@@ -317,7 +317,8 @@ fun TasksScreen(
         }
 
         // ── Undo via the app-wide SnackbarHost ──
-        // The VM already expires undoEvent after 5s; we surface it as a snackbar with an Undo action.
+        // The VM expires undoEvent after 10s (TasksViewModel.UNDO_SNACKBAR_DURATION_MS,
+        // matching SnackbarDuration.Long); we surface it as a snackbar with an Undo action.
         val undoState by viewModel.undoEvent.collectAsState()
         LaunchedEffect(undoState) {
             val undo = undoState ?: return@LaunchedEffect
@@ -555,9 +556,9 @@ private fun FilterPill(
 
     Row(
         modifier = Modifier
-            .clip(RoundedCornerShape(22.dp))
+            .clip(PepinilloShapeTokens.pill)
             .background(bgColor)
-            .border(1.dp, borderColor, RoundedCornerShape(22.dp))
+            .border(1.dp, borderColor, PepinilloShapeTokens.pill)
             .clickable(onClick = onClick)
             .heightIn(min = 48.dp)
             .padding(horizontal = 14.dp, vertical = 10.dp),
