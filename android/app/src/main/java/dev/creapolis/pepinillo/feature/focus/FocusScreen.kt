@@ -52,6 +52,8 @@ import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.SkipNext
 import androidx.compose.material.icons.rounded.Stop
+import androidx.compose.material.icons.rounded.VolumeDown
+import androidx.compose.material.icons.rounded.VolumeUp
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -79,7 +81,10 @@ import kotlinx.coroutines.delay
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -102,6 +107,8 @@ import dev.creapolis.pepinillo.navigation.NavigationTransitions
 import dev.creapolis.pepinillo.ui.components.LocalSnackbarController
 import dev.creapolis.pepinillo.ui.haptics.PepinilloHaptics
 import dev.creapolis.pepinillo.ui.theme.MotionScheme
+import dev.creapolis.pepinillo.ui.theme.HeroTimerTextStyle
+import dev.creapolis.pepinillo.ui.theme.HeroTimerTextStyleActive
 import dev.creapolis.pepinillo.ui.theme.PepinilloTheme
 import dev.creapolis.pepinillo.ui.theme.colorScheme
 
@@ -116,6 +123,8 @@ fun FocusScreen(
     val uiState by viewModel.uiState.collectAsState()
     // #505: hero ring + live time read the high-rate (4Hz) flow; everything else stays on uiState.
     val ringState by viewModel.ringState.collectAsState()
+    // Super-review F1: screen-reader text for the timer, updated at minute/phase cadence only.
+    val a11yState by viewModel.a11yState.collectAsState()
     val activeTasks by viewModel.activeTasks.collectAsState()
     val modeColors = uiState.selectedMode.colorScheme(uiState.currentPhase)
     val haptic = LocalHapticFeedback.current
@@ -329,15 +338,26 @@ fun FocusScreen(
             } else {
                 stringResource(uiState.phaseLabelRes)
             }
-            val modeLabel = stringResource(uiState.selectedMode.labelRes)
+
+            // Single merged, live-region description for the whole timer node (super-review F1):
+            // minute-granular time + phase + mode from the low-frequency a11yState, so TalkBack
+            // announces once per minute and on phase changes instead of every 250ms tick, and the
+            // inner digits/pips are no longer separately focusable (no double announcement).
+            val timerContentDescription = stringResource(
+                R.string.cd_focus_timer,
+                stringResource(a11yState.phaseLabelRes),
+                stringResource(R.string.minutes_format, a11yState.minutes),
+                stringResource(a11yState.mode.labelRes),
+            )
 
             Box(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier
                     .size(timerSize.dp)
                     .scale(ringScale)
-                    .semantics {
-                        contentDescription = "$phaseLabel: ${uiState.displayTime}, $modeLabel mode"
+                    .clearAndSetSemantics {
+                        contentDescription = timerContentDescription
+                        liveRegion = LiveRegionMode.Polite
                     },
             ) {
                 // Ambient Radial Glow
@@ -377,11 +397,9 @@ fun FocusScreen(
                     Text(
                         // #505: read the 4Hz displayTime so the digits stay in lockstep with the ring.
                         text = ringState.displayTime,
-                        style = MaterialTheme.typography.displayLarge.copy(
-                            fontSize = if (sessionActive) 62.sp else 56.sp,
-                            letterSpacing = 1.5.sp,
-                        ),
-                        fontWeight = FontWeight.Normal,
+                        // Hero timer numeral tokens (see Type.kt) — 62sp while a session is
+                        // active, 56sp idle (super-review P2d: no more inline font sizes).
+                        style = if (sessionActive) HeroTimerTextStyleActive else HeroTimerTextStyle,
                         color = MaterialTheme.colorScheme.onSurface,
                     )
                     AnimatedVisibility(visible = uiState.selectedMode == FocusMode.Pomodoro && sessionActive) {
@@ -399,7 +417,9 @@ fun FocusScreen(
                 style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.Bold,
                 letterSpacing = 2.sp,
-                color = animatedContentColor.copy(alpha = 0.72f),
+                // Full-alpha content color: the old 0.72 alpha failed contrast on light accents
+                // (super-review P2e).
+                color = animatedContentColor,
                 modifier = Modifier.padding(top = 14.dp),
             )
 
@@ -520,8 +540,13 @@ fun FocusScreen(
                     AnimatedContent(
                         targetState = primaryTimerActionVisual,
                         transitionSpec = {
-                            fadeIn(tween(NavigationTransitions.DURATION_DETAIL)) togetherWith
-                                fadeOut(tween(NavigationTransitions.DURATION_DETAIL))
+                            // Reduce motion: swap instantly instead of cross-fading (P2m).
+                            if (reduceMotion) {
+                                fadeIn(tween(0)) togetherWith fadeOut(tween(0))
+                            } else {
+                                fadeIn(tween(NavigationTransitions.DURATION_DETAIL)) togetherWith
+                                    fadeOut(tween(NavigationTransitions.DURATION_DETAIL))
+                            }
                         },
                         label = "startStop",
                     ) { visual ->
@@ -620,14 +645,14 @@ fun FocusScreen(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     val volControlCd = stringResource(R.string.cd_volume_control)
-                    val volLowCd = stringResource(R.string.cd_volume_low)
-                    val volHighCd = stringResource(R.string.cd_volume_high)
-                    Text(
-                        text = "\uD83D\uDD08",
-                        style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.semantics {
-                            contentDescription = volLowCd
-                        },
+                    // Material icons instead of emoji Texts (super-review P2f): decorative
+                    // (null contentDescription) so they fold into the row semantics and only the
+                    // slider below is focusable/adjustable.
+                    Icon(
+                        imageVector = Icons.Rounded.VolumeDown,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(20.dp),
                     )
                     Slider(
                         value = uiState.soundscapeVolume,
@@ -643,12 +668,11 @@ fun FocusScreen(
                             activeTrackColor = animatedAccentColor,
                         ),
                     )
-                    Text(
-                        text = "\uD83D\uDD0A",
-                        style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.semantics {
-                            contentDescription = volHighCd
-                        },
+                    Icon(
+                        imageVector = Icons.Rounded.VolumeUp,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(20.dp),
                     )
                 }
             }

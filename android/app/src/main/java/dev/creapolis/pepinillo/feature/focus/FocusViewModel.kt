@@ -93,6 +93,34 @@ data class RingState(
     val isPaused: Boolean = false,
 )
 
+/**
+ * Screen-reader projection of the hero timer (super-review F1). Updated at a TalkBack-friendly
+ * cadence — the announced minute changes at most once per minute, and phase/mode changes are
+ * included so screen-reader users hear transitions without a 4Hz chatter.
+ */
+data class FocusA11yState(
+    val phaseLabelRes: Int = R.string.phase_focus,
+    val mode: FocusMode = FocusMode.Pomodoro,
+    val minutes: Int = 25,
+)
+
+/**
+ * Whole-minute value for the timer's accessibility announcement. Countdown modes round up (a
+ * visible 24:59 still reads "25 min" until it ticks past the minute), so the announced value
+ * changes exactly once per minute; count-up modes round down.
+ */
+internal fun a11yMinutes(mode: FocusMode, elapsedMillis: Long, totalMillis: Long): Int {
+    val millis = when (mode) {
+        FocusMode.Flow, FocusMode.Chrono -> elapsedMillis
+        else -> (totalMillis - elapsedMillis).coerceAtLeast(0L)
+    }
+    return if (mode == FocusMode.Flow || mode == FocusMode.Chrono) {
+        (millis / 60_000L).toInt()
+    } else {
+        ((millis + 59_999L) / 60_000L).toInt()
+    }
+}
+
 @HiltViewModel
 class FocusViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
@@ -191,8 +219,12 @@ class FocusViewModel @Inject constructor(
                 val volume = _soundscapeVolume.value
 
                 when {
-                    // Timer is running → play soundscape if set and not currently playing
-                    state.status == TimerStatus.Running && soundscape != null && soundscapeManager.currentSoundscape == null -> {
+                    // Timer is running → play the selected soundscape. Compared against the
+                    // *selected* soundscape (not just null-checking the manager): a switch made
+                    // while WaitingForNext must apply when the next phase starts, even if the
+                    // previous soundscape is still loaded (fade-out in flight).
+                    state.status == TimerStatus.Running && soundscape != null &&
+                        soundscapeManager.currentSoundscape != soundscape -> {
                         soundscapeManager.play(soundscape, volume)
                     }
                     // Phase completed and waiting for user to start the next one → fade out.
@@ -243,20 +275,40 @@ class FocusViewModel @Inject constructor(
         }
     }
 
+    // ── Soundscape ──
+
+    /** Status transitions bypass the 1Hz sample below so play/pause UI reacts instantly. */
+    private val statusFlow = focusEngine.state
+        .map { it.status }
+        .distinctUntilChanged()
+
     val uiState: StateFlow<FocusUiState> = combine(
         combine(
-            // Sample the ticking engine state at most once per second (4Hz → 1Hz) for the uiState
-            // combine. The heavy combine (settings/soundscape/tasks/session history) only needs
-            // ~1Hz granularity — this cuts body recomposition ~75%. The hero timer ring and the
-            // live display time read the dedicated high-rate `ringState` flow below instead, so
-            // they animate smoothly at the engine's native 4Hz without re-running this combine.
-            focusEngine.state.sample(1.seconds),
+            combine(
+                // Sample the ticking engine state at most once per second (4Hz → 1Hz) for the uiState
+                // combine. The heavy combine (settings/soundscape/tasks/session history) only needs
+                // ~1Hz granularity — this cuts body recomposition ~75%. The hero timer ring and the
+                // live display time read the dedicated high-rate `ringState` flow below instead, so
+                // they animate smoothly at the engine's native 4Hz without re-running this combine.
+                focusEngine.state.sample(1.seconds),
+                // Status is NOT sampled: isRunning/isPaused/isWaitingForNext drive the primary
+                // button, so a status flip must reach the UI immediately instead of lagging up
+                // to ~1s behind the sample window (super-review micro-fix).
+                statusFlow,
+            ) { sampledState, status -> sampledState to status },
             sessionRepository.getTodaySessionCount(),
             sessionRepository.getAllDaysWithSessions(),
             _linkedTaskName,
             _showTaskPicker,
-        ) { timerState, todayCount, allDays, linkedTaskName, showPicker ->
-            TimerCombined(timerState, todayCount, allDays, linkedTaskName, showPicker)
+        ) { timerStateWithStatus, todayCount, allDays, linkedTaskName, showPicker ->
+            TimerCombined(
+                timerState = timerStateWithStatus.first,
+                status = timerStateWithStatus.second,
+                todayCount = todayCount,
+                allDays = allDays,
+                linkedTaskName = linkedTaskName,
+                showPicker = showPicker,
+            )
         },
         combine(
             prefsRepo.preferences,
@@ -282,8 +334,8 @@ class FocusViewModel @Inject constructor(
             progress = combined.timerState.progress,
             phaseLabelRes = combined.timerState.phaseLabelRes,
             currentPhase = combined.timerState.phase,
-            isRunning = combined.timerState.status == TimerStatus.Running,
-            isPaused = combined.timerState.status == TimerStatus.Paused,
+            isRunning = combined.status == TimerStatus.Running,
+            isPaused = combined.status == TimerStatus.Paused,
             linkedTaskName = combined.linkedTaskName,
             sessionsToday = combined.todayCount,
             currentStreak = StreakProtectionService.computeProtectedStreak(
@@ -296,9 +348,9 @@ class FocusViewModel @Inject constructor(
             showStopConfirmation = settings.showStopConfirm,
             keepScreenOn = settings.prefs.keepScreenOn,
             breakSuggested = combined.timerState.breakSuggested,
-            isWaitingForNext = combined.timerState.status == TimerStatus.WaitingForNext,
+            isWaitingForNext = combined.status == TimerStatus.WaitingForNext,
             canSkip = combined.timerState.mode == FocusMode.Pomodoro &&
-                (combined.timerState.status == TimerStatus.Running || combined.timerState.status == TimerStatus.WaitingForNext) &&
+                (combined.status == TimerStatus.Running || combined.status == TimerStatus.WaitingForNext) &&
                 (combined.timerState.phase == FocusPhase.ShortBreak || combined.timerState.phase == FocusPhase.LongBreak),
             isPro = settings.subState.hasLocalPremium,
             showPaywall = settings.showPaywall,
@@ -339,6 +391,23 @@ class FocusViewModel @Inject constructor(
         .distinctUntilChanged()
         .conflate()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), RingState())
+
+    /**
+     * Screen-reader view of the timer for the hero ring's content description (super-review F1):
+     * minute-granular time plus phase/mode, derived from the 1Hz-sampled engine state and
+     * de-duplicated, so the live region announces at most once per minute and on phase changes.
+     */
+    val a11yState: StateFlow<FocusA11yState> = focusEngine.state
+        .sample(1.seconds)
+        .map { state ->
+            FocusA11yState(
+                phaseLabelRes = state.phaseLabelRes,
+                mode = state.mode,
+                minutes = a11yMinutes(state.mode, state.elapsedMillis, state.totalMillis),
+            )
+        }
+        .distinctUntilChanged()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), FocusA11yState())
 
     fun selectMode(mode: FocusMode) {
         if (!featureGate.canUseMode(mode)) {
@@ -506,6 +575,7 @@ class FocusViewModel @Inject constructor(
 
     private data class TimerCombined(
         val timerState: dev.creapolis.pepinillo.domain.timer.FocusTimerState,
+        val status: TimerStatus,
         val todayCount: Int,
         val allDays: List<dev.creapolis.pepinillo.data.local.entity.DailyStatsEntity>,
         val linkedTaskName: String?,

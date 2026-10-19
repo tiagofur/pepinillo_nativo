@@ -847,4 +847,10 @@
     <string name="recurrence_weekly">Weekly</string>
     <string name="recurrence_biweekly">Every 2 weeks</string>
     <string name="recurrence_monthly">Monthly</string>
+    <!-- Super review (F1/F3/P2g/P2i/P2k): a11y + localization additions -->
+    <string name="cd_focus_timer">%1$s: %2$s, %3$s mode</string>
+    <string name="cd_mode_locked">Locked</string>
+    <string name="cd_calendar_today">Today</string>
+    <string name="cd_calendar_day_has_activity">Has activity</string>
+    <string name="chart_minutes_compact">%1$dm</string>
 </resources>
