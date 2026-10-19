@@ -107,7 +107,12 @@ func (s *OAuthService) LoginWithGoogle(ctx context.Context, idToken string) (*do
 	if strings.TrimSpace(tokenInfo.Email) == "" {
 		return nil, nil, ErrOAuthEmailMissing
 	}
+	return s.resolveGoogleLogin(ctx, tokenInfo)
+}
 
+// resolveGoogleLogin contains the post-verification login logic, extracted for
+// testability (verification itself hits Google's servers).
+func (s *OAuthService) resolveGoogleLogin(ctx context.Context, tokenInfo *googleTokenInfo) (*domain.User, *AuthTokens, error) {
 	user, err := s.users.GetByGoogleID(ctx, tokenInfo.Sub)
 	if err != nil {
 		slog.Error("LoginWithGoogle: failed to get user by google id", "googleId", tokenInfo.Sub, "error", err)
@@ -136,6 +141,12 @@ func (s *OAuthService) LoginWithGoogle(ctx context.Context, idToken string) (*do
 	if existing != nil {
 		if existing.GoogleID != nil {
 			return nil, nil, ErrAccountAlreadyLinked
+		}
+		// S2: only link when Google asserts a verified email. An unverified
+		// address proves nothing about mailbox ownership — linking it would
+		// hand the existing account to whoever controls the Google sub.
+		if verified, _ := strconv.ParseBool(tokenInfo.EmailVerified); !verified {
+			return nil, nil, ErrOAuthEmailNotVerified
 		}
 		if err := s.users.LinkGoogleAccount(ctx, existing.ID, tokenInfo.Sub, tokenInfo.Email, tokenInfo.Name, tokenInfo.Picture); err != nil {
 			slog.Error("LoginWithGoogle: failed to link google account", "userId", existing.ID, "error", err)
@@ -222,7 +233,12 @@ func (s *OAuthService) LoginWithApple(ctx context.Context, idToken, nonce, clien
 	if err != nil {
 		return nil, nil, fmt.Errorf("%w: %v", ErrInvalidOAuthToken, err)
 	}
+	return s.resolveAppleLogin(ctx, tokenInfo, clientName, clientEmail)
+}
 
+// resolveAppleLogin contains the post-verification login logic, extracted for
+// testability (verification itself hits Apple's servers).
+func (s *OAuthService) resolveAppleLogin(ctx context.Context, tokenInfo *appleTokenInfo, clientName, clientEmail string) (*domain.User, *AuthTokens, error) {
 	user, err := s.users.GetByAppleID(ctx, tokenInfo.Sub)
 	if err != nil {
 		return nil, nil, err
@@ -257,10 +273,14 @@ func (s *OAuthService) LoginWithApple(ctx context.Context, idToken, nonce, clien
 		return user, tokens, nil
 	}
 
-	// Use email from JWT; fall back to the client-provided email (first auth only).
+	// Email from the verified JWT; the client-provided fallback is UNVERIFIED
+	// user input (Apple omits email on non-first sign-ins). It may seed a new
+	// account but must never resolve to an existing one (S-P0-1).
 	email := strings.TrimSpace(tokenInfo.Email)
+	unverifiedClaim := false
 	if email == "" {
 		email = strings.TrimSpace(clientEmail)
+		unverifiedClaim = true
 	}
 	if email == "" {
 		return nil, nil, ErrOAuthEmailMissing
@@ -272,6 +292,13 @@ func (s *OAuthService) LoginWithApple(ctx context.Context, idToken, nonce, clien
 	}
 
 	if existing != nil {
+		if unverifiedClaim {
+			// The email came from unverified client input: it proves nothing
+			// about mailbox ownership. Never link, never return this
+			// account's tokens — the caller must sign in with the existing
+			// method first.
+			return nil, nil, ErrOAuthEmailTaken
+		}
 		if existing.AppleID != nil {
 			return nil, nil, ErrAccountAlreadyLinked
 		}

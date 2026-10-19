@@ -20,6 +20,8 @@ var (
 	ErrAccountLinkedToOtherUser    = errors.New("account_linked_to_other_user")
 	ErrOAuthProviderAlreadyLinked  = errors.New("oauth_provider_already_linked")
 	ErrOAuthEmailMissing           = errors.New("oauth_email_missing")
+	ErrOAuthEmailNotVerified       = errors.New("oauth_email_not_verified")
+	ErrOAuthEmailTaken             = errors.New("oauth_email_taken")
 	ErrGoogleAudienceNotConfigured = errors.New("google_oauth_audience_not_configured")
 	ErrInvalidOAuthToken           = errors.New("invalid_oauth_token")
 	ErrInvalidPreferenceKey        = errors.New("invalid_preference_key")

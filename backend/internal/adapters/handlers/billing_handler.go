@@ -35,6 +35,9 @@ func (h *BillingHandler) VerifyReceipt(c *fiber.Ctx) error {
 		if errors.Is(err, services.ErrBillingProviderNotConfigured) {
 			return fiber.NewError(fiber.StatusServiceUnavailable, err.Error())
 		}
+		if errors.Is(err, services.ErrPurchaseTokenClaimed) {
+			return fiber.NewError(fiber.StatusConflict, err.Error())
+		}
 		if errors.Is(err, services.ErrUserNotFound) {
 			return fiber.NewError(fiber.StatusNotFound, err.Error())
 		}

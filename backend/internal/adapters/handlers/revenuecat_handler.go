@@ -42,15 +42,18 @@ func (h *RevenueCatHandler) Webhook(c *fiber.Ctx) error {
 
 	// Process webhook event
 	if err := h.revenuecat.ProcessWebhookEvent(c.Context(), &payload); err != nil {
-		// Log the error but still return 200 OK (RevenueCat expects fast responses)
-		// The event is already logged via BehaviorLogger in the service
 		if errors.Is(err, services.ErrUserNotFound) {
-			// User not found is not a failure, just log it
+			// User not found is not a failure, just log it.
 			return c.SendStatus(fiber.StatusOK)
 		}
-		// For other errors, still return 200 OK to prevent RevenueCat retries
-		// but the error is logged in the service
-		return c.SendStatus(fiber.StatusOK)
+		if errors.Is(err, services.ErrInvalidBillingPayload) {
+			// Permanently unprocessable: ack so RevenueCat drops it.
+			return fiber.NewError(fiber.StatusBadRequest, err.Error())
+		}
+		// B2: transient failures (DB errors, downstream timeouts) must
+		// return 5xx so RevenueCat retries. The old code returned 200 for
+		// everything, permanently losing events (e.g. EXPIRATION).
+		return fiber.NewError(fiber.StatusBadGateway, "webhook_processing_failed")
 	}
 
 	return c.SendStatus(fiber.StatusOK)

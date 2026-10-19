@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"time"
 	"pepinillo/backend/internal/domain"
 )
 
@@ -34,6 +35,14 @@ func (r *fakeUserRepository) GetByEmail(_ context.Context, email string) (*domai
 func (r *fakeUserRepository) Update(_ context.Context, user *domain.User) error {
 	r.byID[user.ID] = user
 	r.byEmail[user.Email] = user
+	return nil
+}
+
+func (r *fakeUserRepository) UpdateSubscription(_ context.Context, userID, tier string, expiresAt *time.Time) error {
+	if user, ok := r.byID[userID]; ok {
+		user.SubscriptionTier = tier
+		user.SubscriptionExpiresAt = expiresAt
+	}
 	return nil
 }
 
@@ -139,4 +148,12 @@ func (r *fakeUserRepository) ConsumeAiCredit(_ context.Context, _ string) (bool,
 
 func (r *fakeUserRepository) RefreshAiCredits(_ context.Context, _ string, _ int) error {
 	return nil
+}
+
+func (r *fakeUserRepository) ClaimPurchaseToken(_ context.Context, platform, token, userID string) (string, error) {
+	return userID, nil
+}
+
+func (r *fakeUserRepository) ClaimWebhookEvent(_ context.Context, eventID, source string) (bool, error) {
+	return true, nil
 }

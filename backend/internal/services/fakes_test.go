@@ -2,18 +2,21 @@ package services
 
 import (
 	"context"
+	"time"
 	"pepinillo/backend/internal/domain"
 )
 
 type fakeUserRepo struct {
 	byID    map[string]*domain.User
 	byEmail map[string]*domain.User
+	claims  map[string]string
 }
 
 func newFakeUserRepo() *fakeUserRepo {
 	return &fakeUserRepo{
 		byID:    make(map[string]*domain.User),
 		byEmail: make(map[string]*domain.User),
+		claims:  make(map[string]string),
 	}
 }
 
@@ -34,6 +37,14 @@ func (r *fakeUserRepo) GetByEmail(_ context.Context, email string) (*domain.User
 func (r *fakeUserRepo) Update(_ context.Context, user *domain.User) error {
 	r.byID[user.ID] = user
 	r.byEmail[user.Email] = user
+	return nil
+}
+
+func (r *fakeUserRepo) UpdateSubscription(_ context.Context, userID, tier string, expiresAt *time.Time) error {
+	if user, ok := r.byID[userID]; ok {
+		user.SubscriptionTier = tier
+		user.SubscriptionExpiresAt = expiresAt
+	}
 	return nil
 }
 
@@ -139,4 +150,17 @@ func (r *fakeUserRepo) ConsumeAiCredit(_ context.Context, _ string) (bool, error
 
 func (r *fakeUserRepo) RefreshAiCredits(_ context.Context, _ string, _ int) error {
 	return nil
+}
+
+func (r *fakeUserRepo) ClaimPurchaseToken(_ context.Context, platform, token, userID string) (string, error) {
+	key := platform + "\x00" + token
+	if owner, ok := r.claims[key]; ok {
+		return owner, nil
+	}
+	r.claims[key] = userID
+	return userID, nil
+}
+
+func (r *fakeUserRepo) ClaimWebhookEvent(_ context.Context, eventID, source string) (bool, error) {
+	return true, nil
 }

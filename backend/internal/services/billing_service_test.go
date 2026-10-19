@@ -363,3 +363,123 @@ func buildSignedTransactionInfo(t *testing.T, key *ecdsa.PrivateKey, certB64, pr
 }
 
 
+
+func TestBillingIOSReceiptWithoutSubscriptionRecordsDoesNotGrant(t *testing.T) {
+	repo := newFakeUserRepo()
+	user := &domain.User{ID: "user-1", Email: "billing@test.com", Name: "Billing", PasswordHash: strPtr("x"), SubscriptionTier: "free"}
+	if err := repo.Create(context.Background(), user); err != nil {
+		t.Fatalf("create user: %v", err)
+	}
+
+	// Valid Apple receipt (status 0) that carries NO subscription records —
+	// e.g. a receipt for the free app itself.
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewEncoder(w).Encode(map[string]any{"status": 0})
+	}))
+	defer srv.Close()
+
+	service := NewBillingService(repo, BillingConfig{
+		AppStoreSharedSecret:            "secret",
+		AppStoreVerifyReceiptURL:        srv.URL,
+		AppStoreSandboxVerifyReceiptURL: srv.URL,
+	})
+
+	// B-P0-1: a client-controlled "...lifetime" productId must never grant
+	// premium when Apple verified no subscription.
+	_, err := service.VerifyReceipt(context.Background(), user.ID, VerifyReceiptInput{
+		Platform:    "ios",
+		ProductID:   "com.pepinillo.app.lifetime",
+		ReceiptData: "receipt-blob",
+	})
+	if err == nil {
+		t.Fatalf("expected error for unverifiable product, got success")
+	}
+
+	updated, _ := repo.GetByID(context.Background(), user.ID)
+	if updated.SubscriptionTier != "free" {
+		t.Fatalf("tier must stay free, got %q", updated.SubscriptionTier)
+	}
+}
+
+func TestBillingVerifyReceiptAndroidPendingPaymentRejected(t *testing.T) {
+	repo := newFakeUserRepo()
+	user := &domain.User{ID: "user-1", Email: "billing@test.com", Name: "Billing", PasswordHash: strPtr("x"), SubscriptionTier: "free"}
+	if err := repo.Create(context.Background(), user); err != nil {
+		t.Fatalf("create user: %v", err)
+	}
+
+	expiry := time.Now().UTC().Add(30 * 24 * time.Hour)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"expiryTimeMillis": strconv.FormatInt(expiry.UnixMilli(), 10),
+			"paymentState":     0,
+		})
+	}))
+	defer srv.Close()
+
+	service := NewBillingService(repo, BillingConfig{
+		GooglePlayPackageName: "com.pepinillo.android",
+		GooglePlayAPIToken:    "token-123",
+		GooglePlayAPIBaseURL:  srv.URL,
+	})
+
+	_, err := service.VerifyReceipt(context.Background(), user.ID, VerifyReceiptInput{
+		Platform:      "android",
+		ProductID:     "com.pepinillo.app.pro.monthly",
+		PurchaseToken: "pending-token",
+	})
+	if err == nil {
+		t.Fatalf("expected error for pending payment, got success")
+	}
+
+	updated, _ := repo.GetByID(context.Background(), user.ID)
+	if updated.SubscriptionTier != "free" {
+		t.Fatalf("tier must stay free, got %q", updated.SubscriptionTier)
+	}
+}
+
+func TestBillingVerifyReceiptTokenReplayRejected(t *testing.T) {
+	repo := newFakeUserRepo()
+	ctx := context.Background()
+	for _, id := range []string{"user-1", "user-2"} {
+		if err := repo.Create(ctx, &domain.User{ID: id, Email: id + "@test.com", Name: id, PasswordHash: strPtr("x"), SubscriptionTier: "free"}); err != nil {
+			t.Fatalf("create user: %v", err)
+		}
+	}
+
+	expiry := time.Now().UTC().Add(30 * 24 * time.Hour)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"expiryTimeMillis": strconv.FormatInt(expiry.UnixMilli(), 10),
+			"paymentState":     1,
+		})
+	}))
+	defer srv.Close()
+
+	service := NewBillingService(repo, BillingConfig{
+		GooglePlayPackageName: "com.pepinillo.android",
+		GooglePlayAPIToken:    "token-123",
+		GooglePlayAPIBaseURL:  srv.URL,
+	})
+	input := VerifyReceiptInput{
+		Platform:      "android",
+		ProductID:     "com.pepinillo.app.pro.monthly",
+		PurchaseToken: "shared-token",
+	}
+
+	if _, err := service.VerifyReceipt(ctx, "user-1", input); err != nil {
+		t.Fatalf("first verify failed: %v", err)
+	}
+	// Same user re-verifying the same token is idempotent.
+	if _, err := service.VerifyReceipt(ctx, "user-1", input); err != nil {
+		t.Fatalf("re-verify by owner failed: %v", err)
+	}
+	// B1: a different account replaying the token must be rejected.
+	if _, err := service.VerifyReceipt(ctx, "user-2", input); err != ErrPurchaseTokenClaimed {
+		t.Fatalf("expected ErrPurchaseTokenClaimed, got %v", err)
+	}
+	second, _ := repo.GetByID(ctx, "user-2")
+	if second.SubscriptionTier != "free" {
+		t.Fatalf("replayer must stay free, got %q", second.SubscriptionTier)
+	}
+}

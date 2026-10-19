@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"pepinillo/backend/internal/domain"
 	"pepinillo/backend/internal/ports"
 )
 
@@ -114,6 +115,26 @@ func (s *RevenueCatService) ProcessWebhookEvent(ctx context.Context, payload *Re
 		return ErrInvalidBillingPayload
 	}
 
+	// B3: RevenueCat redelivers events (and may deliver out of order).
+	// Claim the event ID first: redeliveries return early without touching
+	// entitlements. Events without an ID (legacy) always process.
+	if id := strings.TrimSpace(payload.Event.ID); id != "" {
+		claimed, err := s.users.ClaimWebhookEvent(ctx, "revenuecat:"+id, "revenuecat")
+		if err != nil {
+			s.logRevenueCatEvent(ctx, payload.Event.AppUserID, "webhook_dedupe_failed", map[string]any{
+				"reason":   err.Error(),
+				"event_id": id,
+			})
+			return err
+		}
+		if !claimed {
+			s.logRevenueCatEvent(ctx, payload.Event.AppUserID, "webhook_duplicate_skipped", map[string]any{
+				"event_id": id,
+			})
+			return nil
+		}
+	}
+
 	appUserID := payload.Event.AppUserID
 	eventType := strings.ToUpper(strings.TrimSpace(payload.Event.Type))
 
@@ -158,6 +179,39 @@ func (s *RevenueCatService) ProcessWebhookEvent(ctx context.Context, payload *Re
 	}
 }
 
+// incomingEntitlementSupersedes reports whether an incoming webhook grant
+// should replace the stored entitlement (B3). Webhook delivery is
+// at-least-once and unordered: without this, a stale redelivery can downgrade
+// annual→monthly or re-grant after a refund/expiration.
+//
+// Precedence: lifetime grants always apply and stored lifetime is never
+// overwritten by a finite grant; otherwise a strictly newer expiry wins;
+// anything older-or-equal is a stale redelivery and is ignored.
+func incomingEntitlementSupersedes(storedTier string, storedExpiresAt *time.Time, storedLifetime bool, tier string, expiresAt *time.Time, now time.Time) bool {
+	if tier == domain.TierPepinilloPlus {
+		return true
+	}
+	if storedTier == domain.TierPepinilloPlus || storedLifetime {
+		return false
+	}
+	if storedExpiresAt == nil {
+		// No bounded grant on file. A free (or unknown) stored state accepts
+		// any incoming grant; an unbounded premium grant is only refreshed
+		// by another unbounded event, never clobbered by a finite one.
+		switch storedTier {
+		case domain.TierEverywhereMonthly, domain.TierEverywhereAnnual:
+			return expiresAt == nil
+		default:
+			return true
+		}
+	}
+	if !storedExpiresAt.After(now) {
+		// Stored grant already lapsed: any incoming grant applies.
+		return true
+	}
+	return expiresAt != nil && expiresAt.After(*storedExpiresAt)
+}
+
 func (s *RevenueCatService) handlePurchaseEvent(ctx context.Context, userID string, event RevenueCatEvent) error {
 	// Determine tier from product ID and entitlements
 	tier, expiresAt := s.mapRevenueCatProductToTier(event)
@@ -170,10 +224,24 @@ func (s *RevenueCatService) handlePurchaseEvent(ctx context.Context, userID stri
 		})
 		return err
 	}
+	if user == nil {
+		s.logRevenueCatEvent(ctx, userID, "webhook_user_not_found", map[string]any{
+			"event_type": event.Type,
+		})
+		return ErrUserNotFound
+	}
 
-	user.SubscriptionTier = tier
-	user.SubscriptionExpiresAt = expiresAt
-	if err := s.users.Update(ctx, user); err != nil {
+	// B3: ignore stale/out-of-order redeliveries instead of last-write-wins.
+	if !incomingEntitlementSupersedes(user.SubscriptionTier, user.SubscriptionExpiresAt, user.PepinilloPlusEntitlementAt != nil, tier, expiresAt, time.Now().UTC()) {
+		s.logRevenueCatEvent(ctx, userID, "webhook_stale_event_ignored", map[string]any{
+			"event_type": event.Type,
+			"tier":       tier,
+		})
+		return nil
+	}
+
+	// B6: targeted subscription write — never full-row Save on this path.
+	if err := s.users.UpdateSubscription(ctx, userID, tier, expiresAt); err != nil {
 		s.logRevenueCatEvent(ctx, userID, "webhook_update_failed", map[string]any{
 			"reason":     err.Error(),
 			"event_type": event.Type,
@@ -199,28 +267,64 @@ func (s *RevenueCatService) handleCancellationEvent(ctx context.Context, userID 
 		})
 		return err
 	}
+	if user == nil {
+		s.logRevenueCatEvent(ctx, userID, "webhook_user_not_found", map[string]any{
+			"event_type": event.Type,
+		})
+		return ErrUserNotFound
+	}
 
-	// For EXPIRATION, downgrade immediately
-	// For CANCELLATION, we keep the current tier but ensure the expiry date is set.
+	eventType := strings.ToUpper(strings.TrimSpace(event.Type))
+	// For EXPIRATION, downgrade immediately.
+	// For CANCELLATION, keep the current tier but ensure the expiry date is set.
 	// RevenueCat sends EXPIRATION when the period actually ends.
-	if event.Type == "EXPIRATION" {
-		user.SubscriptionTier = "free"
-		user.SubscriptionExpiresAt = nil
-	} else if event.Type == "CANCELLATION" {
+	if eventType == "EXPIRATION" {
+		// B3: an expiration only ends the period it refers to. A stale event
+		// for an older period must not wipe a newer stored grant; stored
+		// lifetime is never expired by webhook.
+		if user.SubscriptionTier == domain.TierPepinilloPlus || user.PepinilloPlusEntitlementAt != nil {
+			s.logRevenueCatEvent(ctx, userID, "webhook_expiration_ignored_lifetime", map[string]any{
+				"event_type": event.Type,
+			})
+			return nil
+		}
+		if event.ExpirationAtMs > 0 && user.SubscriptionExpiresAt != nil {
+			eventExpiry := time.UnixMilli(event.ExpirationAtMs).UTC()
+			if eventExpiry.Before(*user.SubscriptionExpiresAt) {
+				s.logRevenueCatEvent(ctx, userID, "webhook_stale_expiration_ignored", map[string]any{
+					"event_type": event.Type,
+				})
+				return nil
+			}
+		}
+		// B6: targeted subscription write.
+		if err := s.users.UpdateSubscription(ctx, userID, domain.TierFree, nil); err != nil {
+			s.logRevenueCatEvent(ctx, userID, "webhook_update_failed", map[string]any{
+				"reason":     err.Error(),
+				"event_type": event.Type,
+			})
+			return err
+		}
+	} else if eventType == "CANCELLATION" {
 		// Do not downgrade tier immediately; let the expiration event handle it
 		// or let the expiration date gate it in the auth middleware.
 		if event.ExpirationAtMs > 0 {
-			expiresAt := time.UnixMilli(event.ExpirationAtMs).UTC()
-			user.SubscriptionExpiresAt = &expiresAt
+			eventExpiry := time.UnixMilli(event.ExpirationAtMs).UTC()
+			// B3: never move the stored expiry backwards on a stale event.
+			if user.SubscriptionExpiresAt == nil || !eventExpiry.Before(*user.SubscriptionExpiresAt) {
+				if err := s.users.UpdateSubscription(ctx, userID, user.SubscriptionTier, &eventExpiry); err != nil {
+					s.logRevenueCatEvent(ctx, userID, "webhook_update_failed", map[string]any{
+					"reason":     err.Error(),
+					"event_type": event.Type,
+				})
+				return err
+			}
+			} else {
+				s.logRevenueCatEvent(ctx, userID, "webhook_stale_cancellation_ignored", map[string]any{
+					"event_type": event.Type,
+				})
+			}
 		}
-	}
-
-	if err := s.users.Update(ctx, user); err != nil {
-		s.logRevenueCatEvent(ctx, userID, "webhook_update_failed", map[string]any{
-			"reason":     err.Error(),
-			"event_type": event.Type,
-		})
-		return err
 	}
 
 	s.logRevenueCatEvent(ctx, userID, "webhook_cancellation_processed", map[string]any{
@@ -248,13 +352,27 @@ func (s *RevenueCatService) handleNonRenewingPurchaseEvent(ctx context.Context, 
 		})
 		return err
 	}
+	if user == nil {
+		s.logRevenueCatEvent(ctx, userID, "webhook_user_not_found", map[string]any{
+			"event_type": event.Type,
+		})
+		return ErrUserNotFound
+	}
 
 	// Map to tier (typically lifetime)
 	tier, expiresAt := s.mapRevenueCatProductToTier(event)
-	user.SubscriptionTier = tier
-	user.SubscriptionExpiresAt = expiresAt
 
-	if err := s.users.Update(ctx, user); err != nil {
+	// B3: same monotonic gate as renewals (a stale redelivery must not
+	// overwrite a newer grant); B6: targeted subscription write.
+	if !incomingEntitlementSupersedes(user.SubscriptionTier, user.SubscriptionExpiresAt, user.PepinilloPlusEntitlementAt != nil, tier, expiresAt, time.Now().UTC()) {
+		s.logRevenueCatEvent(ctx, userID, "webhook_stale_event_ignored", map[string]any{
+			"event_type": event.Type,
+			"tier":       tier,
+		})
+		return nil
+	}
+
+	if err := s.users.UpdateSubscription(ctx, userID, tier, expiresAt); err != nil {
 		s.logRevenueCatEvent(ctx, userID, "webhook_update_failed", map[string]any{
 			"reason":     err.Error(),
 			"event_type": event.Type,

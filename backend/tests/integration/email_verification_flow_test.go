@@ -4,6 +4,7 @@ import (
 	"context"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -217,6 +218,24 @@ func (r *integrationUserRepo) ConsumeAiCredit(_ context.Context, _ string) (bool
 
 func (r *integrationUserRepo) RefreshAiCredits(_ context.Context, _ string, _ int) error {
 	return nil
+}
+
+func (r *integrationUserRepo) UpdateSubscription(_ context.Context, userID, tier string, expiresAt *time.Time) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if user, ok := r.byID[userID]; ok {
+		user.SubscriptionTier = tier
+		user.SubscriptionExpiresAt = expiresAt
+	}
+	return nil
+}
+
+func (r *integrationUserRepo) ClaimPurchaseToken(_ context.Context, _, token, userID string) (string, error) {
+	return userID, nil
+}
+
+func (r *integrationUserRepo) ClaimWebhookEvent(_ context.Context, _, _ string) (bool, error) {
+	return true, nil
 }
 
 func newTestAuthService(repo *integrationUserRepo, notifier *capturingNotifier) *services.AuthService {

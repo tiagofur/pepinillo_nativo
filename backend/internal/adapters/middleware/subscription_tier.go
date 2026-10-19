@@ -12,12 +12,14 @@ func NewRequireProFeatureMiddleware(feature string) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		userID := c.Locals("userID")
 		if userID == nil {
-			return c.Next()
+			return fiber.NewError(fiber.StatusUnauthorized, "invalid_claims")
 		}
 
 		tier := c.Locals("tier")
 		if tier == nil {
-			return c.Next()
+			// B5: fail closed — a missing tier means the subscription
+			// middleware was skipped or misordered; never default to open.
+			return fiber.NewError(fiber.StatusForbidden, "feature_not_available")
 		}
 
 		if RequireProFeatureAccess(feature, tier.(string)) {

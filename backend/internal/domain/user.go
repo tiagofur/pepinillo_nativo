@@ -2,6 +2,35 @@ package domain
 
 import "time"
 
+// Tier names shared by services and middleware (single source of truth).
+const (
+	TierFree              = "free"
+	TierPepinilloPlus     = "pepinillo_plus"
+	TierEverywhereMonthly = "everywhere_monthly"
+	TierEverywhereAnnual  = "everywhere_annual"
+)
+
+// EffectiveTierAt resolves the tier that actually gates features at time now:
+// an unexpired subscription wins; otherwise a lifetime entitlement (explicit
+// flag or sticky tier) wins; otherwise free. Pure function for testability.
+func (u *User) EffectiveTierAt(now time.Time) string {
+	switch u.SubscriptionTier {
+	case TierEverywhereMonthly, TierEverywhereAnnual:
+		if u.SubscriptionExpiresAt == nil || u.SubscriptionExpiresAt.After(now) {
+			return u.SubscriptionTier
+		}
+		// Subscription expired — fall through to entitlement check.
+	}
+
+	if u.PepinilloPlusEntitlementAt != nil {
+		return TierPepinilloPlus
+	}
+	if u.SubscriptionTier == TierPepinilloPlus {
+		return TierPepinilloPlus
+	}
+	return TierFree
+}
+
 type User struct {
 	ID                    string     `json:"id" gorm:"type:uuid;primaryKey"`
 	Email                 string     `json:"email" gorm:"uniqueIndex;not null"`
