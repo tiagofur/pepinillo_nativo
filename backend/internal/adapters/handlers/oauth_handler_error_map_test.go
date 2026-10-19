@@ -26,6 +26,16 @@ func TestMapOAuthError(t *testing.T) {
 			statusCode: fiber.StatusBadRequest,
 		},
 		{
+			name:       "oauth email not verified",
+			err:        services.ErrOAuthEmailNotVerified,
+			statusCode: fiber.StatusForbidden,
+		},
+		{
+			name:       "oauth email taken",
+			err:        services.ErrOAuthEmailTaken,
+			statusCode: fiber.StatusConflict,
+		},
+		{
 			name:       "invalid oauth token",
 			err:        services.ErrInvalidOAuthToken,
 			statusCode: fiber.StatusUnauthorized,

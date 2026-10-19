@@ -5,6 +5,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 
+	"pepinillo/backend/internal/observability"
 	"pepinillo/backend/internal/services"
 )
 
@@ -42,6 +43,7 @@ func (h *PushHandler) RegisterDevice(c *fiber.Ctx) error {
 			errors.Is(err, services.ErrInvalidPushToken):
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 		default:
+			observability.CaptureError(err, map[string]string{"handler": "push_register"})
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to register device"})
 		}
 	}
@@ -53,7 +55,8 @@ func (h *PushHandler) ListDevices(c *fiber.Ctx) error {
 	userID := c.Locals("userID").(string)
 	items, err := h.pushService.ListDevices(c.Context(), userID)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to list devices"})
+		observability.CaptureError(err, map[string]string{"handler": "push_list"})
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to list devices"})
 	}
 	return c.JSON(items)
 }
@@ -65,7 +68,8 @@ func (h *PushHandler) UnregisterDevice(c *fiber.Ctx) error {
 		if errors.Is(err, services.ErrInvalidPushToken) {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 		}
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to unregister device"})
+		observability.CaptureError(err, map[string]string{"handler": "push_unregister"})
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to unregister device"})
 	}
 	return c.JSON(fiber.Map{"message": "device unregistered"})
 }
@@ -82,7 +86,8 @@ func (h *PushHandler) SendTestPush(c *fiber.Ctx) error {
 		if errors.Is(err, services.ErrPushMessageEmpty) {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 		}
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to send push"})
+		observability.CaptureError(err, map[string]string{"handler": "push_send_test"})
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to send push"})
 	}
 
 	return c.JSON(fiber.Map{"message": "push sent"})

@@ -48,6 +48,32 @@ func TestRegisterAndLogin(t *testing.T) {
 	}
 }
 
+func TestRefresh_ReusedRotatedTokenRevokesFamily(t *testing.T) {
+	repo := newFakeUserRepo()
+	service := newAuthServiceForTest(repo)
+	ctx := context.Background()
+
+	_, tokens, err := service.Register(ctx, "reuse@test.com", "Reuse", "Password123")
+	if err != nil {
+		t.Fatalf("register failed: %v", err)
+	}
+
+	newTokens, err := service.Refresh(ctx, tokens.RefreshToken)
+	if err != nil {
+		t.Fatalf("first refresh failed: %v", err)
+	}
+
+	// Replay the rotated-out token: must fail ...
+	if _, err := service.Refresh(ctx, tokens.RefreshToken); err != ErrInvalidRefreshToken {
+		t.Fatalf("expected ErrInvalidRefreshToken on replay, got %v", err)
+	}
+	// ... and the theft signal must have revoked the whole family, so the
+	// token issued by the rotation no longer works either.
+	if _, err := service.Refresh(ctx, newTokens.RefreshToken); err != ErrInvalidRefreshToken {
+		t.Fatalf("expected family revocation after reuse, got %v", err)
+	}
+}
+
 func TestRefreshFlow(t *testing.T) {
 	repo := newFakeUserRepo()
 	service := newAuthServiceForTest(repo)

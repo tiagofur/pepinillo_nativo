@@ -18,6 +18,11 @@ type UserRepository interface {
 	GetByID(ctx context.Context, userID string) (*domain.User, error)
 	GetByEmail(ctx context.Context, email string) (*domain.User, error)
 	Update(ctx context.Context, user *domain.User) error
+	// UpdateSubscription writes ONLY the subscription columns. Billing paths
+	// (webhook, verify) must use this instead of full-row Save: a GetByID →
+	// mutate → Save cycle clobbers concurrently changed columns (ai_credits
+	// balance, pending email, OAuth links) when two writers race (B6).
+	UpdateSubscription(ctx context.Context, userID, tier string, expiresAt *time.Time) error
 	Delete(ctx context.Context, userID string) error
 	MarkEmailVerified(ctx context.Context, userID string) error
 	UpdateEmailPending(ctx context.Context, userID, newEmail string) error
@@ -35,6 +40,18 @@ type UserRepository interface {
 	// AI Credits
 	ConsumeAiCredit(ctx context.Context, userID string) (bool, error)
 	RefreshAiCredits(ctx context.Context, userID string, amount int) error
+	// RefundAiCredit returns one credit (A5: generation failed after
+	// ensureAiAccess consumed one). Increment-only; never fails on balance.
+	RefundAiCredit(ctx context.Context, userID string) error
+
+	// Purchase-token ownership (B1): ClaimPurchaseToken atomically claims
+	// (platform, token) for userID. Returns the owning userID: equal to the
+	// caller on first claim (inserted) or repeat claim by the same user;
+	// a different owner means the token is being replayed.
+	ClaimPurchaseToken(ctx context.Context, platform, token, userID string) (ownerID string, err error)
+	// Webhook dedupe (B3): ClaimWebhookEvent records a processed event ID.
+	// Returns false when the ID was already claimed (redelivery).
+	ClaimWebhookEvent(ctx context.Context, eventID, source string) (claimed bool, err error)
 }
 
 // TaskSyncResult is the outcome of a task sync push. AppliedSyncIDs are the

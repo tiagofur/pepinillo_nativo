@@ -506,11 +506,13 @@ func TestHub_ConcurrentAccess(t *testing.T) {
 
 	done := make(chan bool, 10)
 
+	// One connection per distinct user: exercises concurrent registration
+	// without tripping the per-user connection cap (maxWSConnsPerUser).
 	for i := 0; i < 10; i++ {
 		go func() {
 			client := &Client{
 				ID:     uuid.NewString(),
-				UserID: "user1",
+				UserID: uuid.NewString(),
 				Send:   make(chan []byte, 256),
 			}
 			hub.register <- client
@@ -523,11 +525,18 @@ func TestHub_ConcurrentAccess(t *testing.T) {
 	}
 
 	waitForCondition(t, 500*time.Millisecond, func() bool {
-		return hub.UserCount("user1") == 10
+		hub.mu.RLock()
+		defer hub.mu.RUnlock()
+		return len(hub.clients) == 10
 	})
 
-	count := hub.UserCount("user1")
-	assert.Equal(t, 10, count, "all 10 clients should be registered")
+	hub.mu.RLock()
+	total := 0
+	for _, clients := range hub.clients {
+		total += len(clients)
+	}
+	hub.mu.RUnlock()
+	assert.Equal(t, 10, total, "all 10 clients should be registered")
 }
 
 func TestCreateMessage(t *testing.T) {
@@ -552,4 +561,36 @@ func TestCreatePongMessage(t *testing.T) {
 	assert.Equal(t, MessageTypePong, wsMsg.Type)
 	assert.NotEmpty(t, wsMsg.Timestamp)
 	assert.Nil(t, wsMsg.Data)
+}
+
+func TestHub_RegisterClientEnforcesPerUserCap(t *testing.T) {
+	hub := NewHub()
+
+	const total = maxWSConnsPerUser + 3
+	var first *Client
+	// registerClient is synchronous: no channel race, fully deterministic.
+	for i := 0; i < total; i++ {
+		c := &Client{ID: uuid.NewString(), UserID: "user1", Send: make(chan []byte, 256)}
+		if i == 0 {
+			first = c
+		}
+		hub.registerClient(c)
+	}
+
+	hub.mu.RLock()
+	defer hub.mu.RUnlock()
+	if len(hub.clients["user1"]) != maxWSConnsPerUser {
+		t.Fatalf("expected %d conns, got %d", maxWSConnsPerUser, len(hub.clients["user1"]))
+	}
+	for _, c := range hub.clients["user1"] {
+		if c == first {
+			t.Fatalf("oldest connection must have been evicted")
+		}
+	}
+	select {
+	case <-first.Send:
+		// closed channel delivers zero value immediately: eviction closed it.
+	default:
+		t.Fatalf("evicted connection's Send channel must be closed")
+	}
 }

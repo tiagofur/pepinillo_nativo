@@ -160,6 +160,13 @@ func (s *AuthService) Refresh(ctx context.Context, refreshToken string) (*AuthTo
 		return nil, err
 	}
 	if !valid {
+		// The JWT signature is valid but the store no longer knows this token:
+		// it was rotated out (or revoked). Replaying a rotated token is the
+		// classic session-theft signal, so revoke the whole family — the
+		// legitimate client re-authenticates, the thief loses everything.
+		// (A merely stale client holding a pre-rotation copy pays one extra
+		// login; that is the intended tradeoff.)
+		_ = s.authStore.RevokeAllRefreshTokens(ctx, claims.UserID)
 		return nil, ErrInvalidRefreshToken
 	}
 

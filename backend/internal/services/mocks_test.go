@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"time"
 
 	"github.com/stretchr/testify/mock"
 
@@ -36,6 +37,11 @@ func (m *MockUserRepository) GetByEmail(ctx context.Context, email string) (*dom
 
 func (m *MockUserRepository) Update(ctx context.Context, user *domain.User) error {
 	args := m.Called(ctx, user)
+	return args.Error(0)
+}
+
+func (m *MockUserRepository) UpdateSubscription(ctx context.Context, userID, tier string, expiresAt *time.Time) error {
+	args := m.Called(ctx, userID, tier, expiresAt)
 	return args.Error(0)
 }
 
@@ -108,6 +114,21 @@ func (m *MockUserRepository) ConsumeAiCredit(ctx context.Context, userID string)
 func (m *MockUserRepository) RefreshAiCredits(ctx context.Context, userID string, amount int) error {
 	args := m.Called(ctx, userID, amount)
 	return args.Error(0)
+}
+
+func (m *MockUserRepository) RefundAiCredit(ctx context.Context, userID string) error {
+	args := m.Called(ctx, userID)
+	return args.Error(0)
+}
+
+func (m *MockUserRepository) ClaimPurchaseToken(ctx context.Context, platform, token, userID string) (string, error) {
+	args := m.Called(ctx, platform, token, userID)
+	return args.String(0), args.Error(1)
+}
+
+func (m *MockUserRepository) ClaimWebhookEvent(ctx context.Context, eventID, source string) (bool, error) {
+	args := m.Called(ctx, eventID, source)
+	return args.Bool(0), args.Error(1)
 }
 
 // MockAuthStore is a testify mock for ports.AuthStore.

@@ -15,6 +15,11 @@ type UserHandler struct {
 	storage ports.FileStorage
 }
 
+const (
+	maxProfileNameLength     = 100
+	maxProfileImageURLLength = 2048
+)
+
 type updateProfileRequest struct {
 	Name     string `json:"name"`
 	Email    string `json:"email"`
@@ -58,11 +63,22 @@ func (h *UserHandler) UpdateMe(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "invalid_request_body")
 	}
 
+	// S1: email changes never happen here — they go through the verified
+	// RequestEmailChange/ConfirmEmailChange flow. Accepting an arbitrary address
+	// would let an attacker claim someone else's email and merge their account
+	// on a later OAuth sign-in, and would bypass the verified-email model.
+	if req.Email != "" {
+		return fiber.NewError(fiber.StatusBadRequest, "email_must_use_verification_flow")
+	}
+	if len(req.Name) > maxProfileNameLength {
+		return fiber.NewError(fiber.StatusBadRequest, "name_too_long")
+	}
+	if len(req.ImageURL) > maxProfileImageURLLength {
+		return fiber.NewError(fiber.StatusBadRequest, "image_url_too_long")
+	}
+
 	if req.Name != "" {
 		user.Name = req.Name
-	}
-	if req.Email != "" {
-		user.Email = req.Email
 	}
 	if req.ImageURL != "" {
 		user.ImageURL = &req.ImageURL

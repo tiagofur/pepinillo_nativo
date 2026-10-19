@@ -1,6 +1,8 @@
 package middleware
 
 import (
+	"time"
+
 	"github.com/gofiber/fiber/v2"
 
 	"pepinillo/backend/internal/ports"
@@ -132,15 +134,22 @@ func NewSubscriptionMiddleware(userRepo ports.UserRepository) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		userID := c.Locals("userID")
 		if userID == nil {
-			return c.Next()
+		// B5: fail closed — this middleware only fronts authenticated
+		// routes; a missing identity must not inherit a zero tier.
+			return fiber.NewError(fiber.StatusUnauthorized, "invalid_claims")
 		}
 
 		user, err := userRepo.GetByID(c.Context(), userID.(string))
 		if err != nil || user == nil {
-			return c.Next()
+		// B5: fail closed on store errors — the old code called Next()
+		// and left premium features gated by whatever was in context.
+		return fiber.NewError(fiber.StatusUnauthorized, "invalid_claims")
 		}
 
-		tier := NormalizeTier(user.SubscriptionTier)
+		// B5: resolve the EFFECTIVE tier (expiry-aware), not the raw stored
+		// value — an expired subscription with a stale tier string must not
+		// keep premium features.
+		tier := user.EffectiveTierAt(time.Now().UTC())
 
 		c.Locals("tier", tier)
 		c.Locals("tierLimits", GetTierLimits(tier))

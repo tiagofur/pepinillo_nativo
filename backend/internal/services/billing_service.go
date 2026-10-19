@@ -38,23 +38,7 @@ import (
 //  4. If subscription_tier is explicitly "pepinillo_plus", return "pepinillo_plus".
 //  5. Otherwise return "free".
 func EffectiveTier(u *domain.User) string {
-	now := time.Now().UTC()
-
-	switch u.SubscriptionTier {
-	case "everywhere_monthly", "everywhere_annual":
-		if u.SubscriptionExpiresAt == nil || u.SubscriptionExpiresAt.After(now) {
-			return u.SubscriptionTier
-		}
-		// Subscription expired — fall through to entitlement check.
-	}
-
-	if u.PepinilloPlusEntitlementAt != nil {
-		return "pepinillo_plus"
-	}
-	if u.SubscriptionTier == "pepinillo_plus" {
-		return "pepinillo_plus"
-	}
-	return "free"
+	return u.EffectiveTierAt(time.Now().UTC())
 }
 
 var (
@@ -63,6 +47,7 @@ var (
 	ErrUnsupportedProductID         = errors.New("unsupported_product_id")
 	ErrBillingProviderNotConfigured = errors.New("billing_provider_not_configured")
 	ErrInvalidReceipt               = errors.New("invalid_receipt")
+	ErrPurchaseTokenClaimed         = errors.New("purchase_token_claimed")
 )
 
 type VerifyReceiptInput struct {
@@ -202,9 +187,37 @@ func (s *BillingService) VerifyReceipt(ctx context.Context, userID string, input
 		return nil, ErrUserNotFound
 	}
 
-	user.SubscriptionTier = tier
-	user.SubscriptionExpiresAt = mappedExpiresAt
-	if err := s.users.Update(ctx, user); err != nil {
+	// B1: bind the purchase token to this user. Provider verification only
+	// proves the purchase is real — not that it belongs to this account.
+	// Without binding, one token grants premium to unlimited accounts.
+	tokenKey := strings.TrimSpace(input.PurchaseToken)
+	if tokenKey == "" {
+		tokenKey = strings.TrimSpace(input.TransactionID)
+	}
+	if tokenKey != "" {
+		owner, err := s.users.ClaimPurchaseToken(ctx, platform, tokenKey, userID)
+		if err != nil {
+			s.logBillingEvent(ctx, userID, "billing_verify_failed", map[string]any{
+				"reason":     err.Error(),
+				"platform":   platform,
+				"source":     source,
+				"durationMs": time.Since(startedAt).Milliseconds(),
+			})
+			return nil, err
+		}
+		if owner != userID {
+			s.logBillingEvent(ctx, userID, "billing_verify_failed", map[string]any{
+				"reason":     ErrPurchaseTokenClaimed.Error(),
+				"platform":   platform,
+				"source":     source,
+				"durationMs": time.Since(startedAt).Milliseconds(),
+			})
+			return nil, ErrPurchaseTokenClaimed
+		}
+	}
+
+	// B6: targeted subscription write — never full-row Save on this path.
+	if err := s.users.UpdateSubscription(ctx, userID, tier, mappedExpiresAt); err != nil {
 		s.logBillingEvent(ctx, userID, "billing_verify_failed", map[string]any{
 			"reason":     err.Error(),
 			"platform":   platform,
@@ -256,6 +269,9 @@ func (s *BillingService) verifyIOSReceipt(ctx context.Context, input VerifyRecei
 
 type googleSubscriptionResponse struct {
 	ExpiryTimeMillis string `json:"expiryTimeMillis"`
+	// B4: paymentState 0 = pending (not captured), 1 = received, 2 = free
+	// trial, 3 = pending deferred upgrade/downgrade. Only 1/2 are entitled.
+	PaymentState *int `json:"paymentState"`
 	CancelReason     *int   `json:"cancelReason"`
 }
 
@@ -307,6 +323,12 @@ func (s *BillingService) verifyGooglePlayReceipt(ctx context.Context, input Veri
 		return "", nil, err
 	}
 	if payload.CancelReason != nil {
+		return "", nil, ErrInvalidReceipt
+	}
+	// B4: a pending payment (state 0) has not been captured — granting on it
+	// gives premium away for free. Trials (2) are entitled; deferred upgrades
+	// (3) keep the previous entitlement, not a new grant.
+	if payload.PaymentState != nil && *payload.PaymentState != 1 && *payload.PaymentState != 2 {
 		return "", nil, ErrInvalidReceipt
 	}
 	if payload.ExpiryTimeMillis == "" {
@@ -738,7 +760,11 @@ func (s *BillingService) verifyAppStoreReceipt(ctx context.Context, input Verify
 
 	productID, expiresAt, ok := extractLatestAppStoreSubscription(response)
 	if !ok {
-		return input.ProductID, nil, nil
+		// B-P0-1: Apple verified the receipt but it carries no subscription
+		// records. The client-supplied ProductID is untrusted input — falling
+		// back to it would grant premium (e.g. any "...lifetime" string maps
+		// to never-expiring pepinillo_plus) on a receipt that proves nothing.
+		return "", nil, ErrInvalidReceipt
 	}
 	return productID, expiresAt, nil
 }
@@ -857,8 +883,8 @@ func (s *BillingService) VerifyViaRevenueCat(ctx context.Context, userID string)
 		return nil, err
 	}
 
-	// Update user subscription in database
-	user, err := s.users.GetByID(ctx, userID)
+	// Update user subscription in database (B6: targeted write only).
+	existing, err := s.users.GetByID(ctx, userID)
 	if err != nil {
 		s.logBillingEvent(ctx, userID, "billing_verify_failed", map[string]any{
 			"reason":     err.Error(),
@@ -867,7 +893,7 @@ func (s *BillingService) VerifyViaRevenueCat(ctx context.Context, userID string)
 		})
 		return nil, err
 	}
-	if user == nil {
+	if existing == nil {
 		s.logBillingEvent(ctx, userID, "billing_verify_failed", map[string]any{
 			"reason":     ErrUserNotFound.Error(),
 			"source":     "revenuecat",
@@ -876,9 +902,7 @@ func (s *BillingService) VerifyViaRevenueCat(ctx context.Context, userID string)
 		return nil, ErrUserNotFound
 	}
 
-	user.SubscriptionTier = result.SubscriptionTier
-	user.SubscriptionExpiresAt = result.SubscriptionExpiresAt
-	if err := s.users.Update(ctx, user); err != nil {
+	if err := s.users.UpdateSubscription(ctx, userID, result.SubscriptionTier, result.SubscriptionExpiresAt); err != nil {
 		s.logBillingEvent(ctx, userID, "billing_verify_failed", map[string]any{
 			"reason":     err.Error(),
 			"source":     "revenuecat",

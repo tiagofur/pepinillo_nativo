@@ -3,16 +3,20 @@ package main
 import (
 	"context"
 	cryptorand "crypto/rand"
+	"errors"
 	"log/slog"
 	"net/http"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 	"time"
 
 	sentryfiber "github.com/getsentry/sentry-go/fiber"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/compress"
 	"github.com/gofiber/fiber/v2/middleware/cors"
+	fiberRecover "github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/gofiber/fiber/v2/middleware/helmet"
 	"github.com/gofiber/fiber/v2/middleware/limiter"
 	"github.com/golang-migrate/migrate/v4"
@@ -90,7 +94,16 @@ func main() {
 	app := fiber.New(fiber.Config{
 		AppName:      "Pepinillo API",
 		ErrorHandler: handlers.ErrorHandler,
+		// P2: the 5MB profile-image cap in user_handler was unreachable —
+		// Fiber's 4MB default BodyLimit rejected first. 6MB covers it with
+		// headroom while still bounding bulk sync payloads.
+		BodyLimit: 6 * 1024 * 1024,
 	})
+
+	// A2: recover first (outermost). Handler panics become 500s via
+	// ErrorHandler instead of dropped connections. Sentry sits inside and
+	// still captures (Repanic propagates to this handler).
+	app.Use(fiberRecover.New())
 
 	// Sentry Fiber middleware: captures panics and propagates request
 	// context (URL, method, headers minus cookies) to reported events. It
@@ -162,6 +175,10 @@ func main() {
 		hashKey = append(hashKey, padding...)
 	}
 	var authStore ports.AuthStore
+	// R1: remember whether the Redis-backed store was actually built — the
+	// health check must report Redis down when we fell back to memory,
+	// reusing the boot-built client instead of leaking a new pool per check.
+	redisAvailable := false
 	if cfg.RedisURL != "" {
 		store, err := redisStore.NewAuthStore(cfg.RedisURL, hashKey)
 		if err != nil {
@@ -169,6 +186,7 @@ func main() {
 			authStore = memoryStore.NewAuthStoreWithKey(hashKey)
 		} else {
 			authStore = store
+			redisAvailable = true
 		}
 	} else {
 		authStore = memoryStore.NewAuthStoreWithKey(hashKey)
@@ -324,12 +342,17 @@ func main() {
 	}
 
 	aiService := services.NewAIService(userRepo, aiRepo, taskRepo, pomodoroRepo, llmProvider, cfg.MLServiceURL)
-	startRecurringTaskGenerator(taskService, pushService)
+	// R2: root context cancelled on SIGINT/SIGTERM; crons observe it, and the
+	// shutdown sequence below drains listeners before closing the DB.
+	rootCtx, stopSignals := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stopSignals()
+
+	startRecurringTaskGenerator(rootCtx, taskService, pushService)
 
 	// Issue #550: close focus sessions left open beyond the configured TTL.
 	// focusRepo is already constructed above; the reconciler reuses it.
 	sessionReconciler := services.NewSessionReconciler(focusRepo, time.Duration(cfg.FocusSessionStaleTTLHours)*time.Hour)
-	startSessionReconciler(sessionReconciler)
+	startSessionReconciler(rootCtx, sessionReconciler)
 
 	preferenceRepo := postgres.NewPreferenceRepository(db)
 	preferenceService := services.NewPreferenceService(preferenceRepo, wsManager)
@@ -369,25 +392,22 @@ func main() {
 				if cfg.RedisURL == "" {
 					return nil
 				}
-				store, err := redisStore.NewAuthStore(cfg.RedisURL, hashKey)
-				if err != nil {
-					return err
+				// R1: ping the boot-built store — never construct a client
+				// per check (each one leaked a pool + reader goroutine).
+				if !redisAvailable {
+					return errors.New("redis unavailable (memory fallback active)")
 				}
-				return store.Ping(ctx)
+				if pinger, ok := authStore.(interface{ Ping(context.Context) error }); ok {
+					return pinger.Ping(ctx)
+				}
+				return nil
 			},
 			func(ctx context.Context) error {
 				if cfg.MinIOEndpoint == "" {
 					return nil
 				}
-				_, err := minioStorage.NewStorage(
-					cfg.MinIOEndpoint,
-					cfg.MinIOAccessKey,
-					cfg.MinIOSecretKey,
-					cfg.MinIOBucket,
-					cfg.MinIOPublicBaseURL,
-					cfg.MinIOUseSSL,
-				)
-				return err
+				// R1: reuse the boot-built fileStorage client.
+				return fileStorage.Ping(ctx)
 			},
 			func(ctx context.Context) error {
 				if cfg.MLServiceURL == "" {
@@ -414,14 +434,30 @@ func main() {
 	handlers.RegisterAPIRoutes(api, routeDeps)
 
 	slog.Info("Pepinillo API listening", "port", cfg.Port)
-	if err := app.Listen(":" + cfg.Port); err != nil {
-		slog.Error("failed to start server", "error", err)
-		observability.CaptureError(err, map[string]string{"stage": "fiber_listen"})
-		os.Exit(1)
+	go func() {
+		if err := app.Listen(":" + cfg.Port); err != nil {
+			slog.Error("failed to start server", "error", err)
+			observability.CaptureError(err, map[string]string{"stage": "fiber_listen"})
+			os.Exit(1)
+		}
+	}()
+
+	// R2: graceful shutdown. Stop accepting, drain in-flight requests (fiber
+	// closes idle keep-alives; WS write pumps send close frames via Hub.Stop),
+	// cancel crons, then close the pool.
+	<-rootCtx.Done()
+	slog.Info("shutdown signal received, draining")
+	wsHub.Stop()
+	if err := app.ShutdownWithTimeout(10 * time.Second); err != nil {
+		slog.Error("graceful shutdown failed", "error", err)
 	}
+	if sqlDB, err := db.DB(); err == nil {
+		_ = sqlDB.Close()
+	}
+	slog.Info("shutdown complete")
 }
 
-func startRecurringTaskGenerator(taskService *services.TaskService, pushService *services.PushService) {
+func startRecurringTaskGenerator(ctx context.Context, taskService *services.TaskService, pushService *services.PushService) {
 	go func() {
 		run := func() {
 			now := time.Now().UTC()
@@ -454,8 +490,13 @@ func startRecurringTaskGenerator(taskService *services.TaskService, pushService 
 		ticker := time.NewTicker(24 * time.Hour)
 		defer ticker.Stop()
 
-		for range ticker.C {
-			run()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				run()
+			}
 		}
 	}()
 }
@@ -464,10 +505,10 @@ func startRecurringTaskGenerator(taskService *services.TaskService, pushService 
 // background: immediately on startup (to repair sessions orphaned before the
 // job existed) and then every 24h. Follows the same shape as
 // startRecurringTaskGenerator.
-func startSessionReconciler(reconciler *services.SessionReconciler) {
+func startSessionReconciler(ctx context.Context, reconciler *services.SessionReconciler) {
 	go func() {
 		run := func() {
-			summary, err := reconciler.Run(context.Background())
+			summary, err := reconciler.Run(ctx)
 			if err != nil {
 				// Run already logged; nothing else to do here.
 				return
@@ -484,8 +525,13 @@ func startSessionReconciler(reconciler *services.SessionReconciler) {
 		ticker := time.NewTicker(24 * time.Hour)
 		defer ticker.Stop()
 
-		for range ticker.C {
-			run()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				run()
+			}
 		}
 	}()
 }

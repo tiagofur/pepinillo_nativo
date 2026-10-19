@@ -66,8 +66,8 @@ func (r *SessionReconciler) Run(ctx context.Context) (ReconcileSummary, error) {
 	}
 
 	// Group closed sessions by (userID, calendar day of started_at) — the day
-	// that RecomputeStatsForDates re-derives (DATE(started_at)) — and recompute
-	// each affected date once.
+	// that RecomputeStatsForDates re-derives ((started_at AT TIME ZONE 'UTC')::date)
+	// — and recompute each affected date once.
 	type userDay struct {
 		userID string
 		day    string

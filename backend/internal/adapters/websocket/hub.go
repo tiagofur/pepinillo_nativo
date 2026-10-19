@@ -13,6 +13,8 @@ type Hub struct {
 	register     chan *Client
 	unregister   chan *Client
 	userIDs      map[string]bool // Set of unique user IDs
+	done         chan struct{}
+	stopOnce     sync.Once
 }
 
 func NewHub() *Hub {
@@ -22,12 +24,17 @@ func NewHub() *Hub {
 		register:   make(chan *Client, 64),
 		unregister: make(chan *Client, 64),
 		userIDs:    make(map[string]bool),
+		done:       make(chan struct{}),
 	}
 }
 
 func (h *Hub) Run() {
 	for {
 		select {
+		case <-h.done:
+			h.closeAllClients()
+			return
+
 		case client := <-h.register:
 			h.registerClient(client)
 
@@ -37,6 +44,30 @@ func (h *Hub) Run() {
 		case message := <-h.broadcast:
 			h.broadcastMessage(message)
 		}
+	}
+}
+
+// maxWSConnsPerUser bounds concurrent sockets per user (R3). Without a cap,
+// one authenticated user can hold thousands of connections (each with a
+// 256-slot chan + 2 goroutines); reconnect churn only grows it.
+const maxWSConnsPerUser = 8
+
+// Stop terminates the Run loop and releases every connection (R2: graceful
+// shutdown lets the exiting write pumps send close frames instead of dropping
+// sockets mid-write).
+func (h *Hub) Stop() {
+	h.stopOnce.Do(func() { close(h.done) })
+}
+
+func (h *Hub) closeAllClients() {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	for userID, clients := range h.clients {
+		for _, c := range clients {
+			c.closeOnce.Do(func() { close(c.Send) })
+		}
+		delete(h.clients, userID)
+		delete(h.userIDs, userID)
 	}
 }
 
@@ -53,6 +84,15 @@ func (h *Hub) registerClient(client *Client) {
 
 	h.clients[userID] = append(h.clients[userID], client)
 	client.Hub = h
+
+	// R3: evict the oldest connection past the cap (stale mobile sockets).
+	// Eviction reuses the unregister cleanup so the Send channel is closed
+	// exactly once and writers observe the close.
+	for len(h.clients[userID]) > maxWSConnsPerUser {
+		oldest := h.clients[userID][0]
+		h.clients[userID] = h.clients[userID][1:]
+		oldest.closeOnce.Do(func() { close(oldest.Send) })
+	}
 }
 
 func (h *Hub) unregisterClient(client *Client) {

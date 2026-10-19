@@ -234,6 +234,9 @@ func (h *TaskHandler) UpdateTrackingMode(c *fiber.Ctx) error {
 	}
 
 	if err := h.tasks.UpdateTaskTrackingMode(c.Context(), userID, taskID, req.Mode); err != nil {
+		if errors.Is(err, services.ErrInvalidTrackingMode) {
+			return fiber.NewError(fiber.StatusBadRequest, err.Error())
+		}
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return fiber.NewError(fiber.StatusNotFound, "task_not_found")
 		}
@@ -262,6 +265,9 @@ func (h *TaskHandler) IncrementCompletion(c *fiber.Ctx) error {
 	}
 
 	if err := h.tasks.IncrementTaskCompletion(c.Context(), userID, taskID, req.Mode); err != nil {
+		if errors.Is(err, services.ErrInvalidTrackingMode) {
+			return fiber.NewError(fiber.StatusBadRequest, err.Error())
+		}
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return fiber.NewError(fiber.StatusNotFound, "task_not_found")
 		}
@@ -286,11 +292,14 @@ func (h *TaskHandler) IncrementFocusTime(c *fiber.Ctx) error {
 	if err := c.BodyParser(&req); err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, "invalid_request_body")
 	}
-	if req.Mode == "" || req.Seconds <= 0 {
+	if req.Mode == "" || req.Seconds <= 0 || req.Seconds > 86400 {
 		return fiber.NewError(fiber.StatusBadRequest, "invalid_request_body")
 	}
 
 	if err := h.tasks.IncrementTaskFocusTime(c.Context(), userID, taskID, req.Mode, req.Seconds); err != nil {
+		if errors.Is(err, services.ErrInvalidTrackingMode) {
+			return fiber.NewError(fiber.StatusBadRequest, err.Error())
+		}
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return fiber.NewError(fiber.StatusNotFound, "task_not_found")
 		}

@@ -276,8 +276,8 @@ func (s *AIService) GenerateDailyTip(ctx context.Context, userID string) (*domai
 
 	userPrompt := fmt.Sprintf("Datos del usuario (últimos %d días):\n%s\n\nGenera el tip de hoy.", summary.StatsWindow, summaryToPromptContext(summary))
 
-	content, err := s.llm.Generate(ctx, systemDailyTip, userPrompt)
-	if err != nil || content == "" {
+	content, err := s.generateWithRefund(ctx, userID, systemDailyTip, userPrompt)
+	if err != nil {
 		// Fallback to contextual stub
 		content = s.buildFallbackTip(summary)
 	}
@@ -342,6 +342,22 @@ func (s *AIService) ensureAiAccess(ctx context.Context, userID string) error {
 	return nil
 }
 
+// generateWithRefund runs the LLM and refunds the credit spent by
+// ensureAiAccess when generation itself produced nothing (A5). Callers then
+// build their (free) fallbacks as before. A successful generation — even a
+// thin one — keeps the charge.
+func (s *AIService) generateWithRefund(ctx context.Context, userID, system, user string) (string, error) {
+	content, err := s.llm.Generate(ctx, system, user)
+	if err != nil || strings.TrimSpace(content) == "" {
+		_ = s.users.RefundAiCredit(ctx, userID)
+		if err == nil {
+			err = ErrAIGenerationFailed
+		}
+		return "", err
+	}
+	return content, nil
+}
+
 func (s *AIService) buildFallbackTip(summary *userDataSummary) string {
 	if summary.OverdueTasks > 0 {
 		return fmt.Sprintf("Tienes %d tarea(s) atrasada(s). Prioriza las más importantes y dedica el primer pomodoro del día a avanzar en ellas.", summary.OverdueTasks)
@@ -368,8 +384,8 @@ func (s *AIService) GenerateWeeklyReport(ctx context.Context, userID string) (*d
 
 	userPrompt := fmt.Sprintf("Datos de la semana:\n%s\n\nGenera el reporte semanal.", summaryToPromptContext(summary))
 
-	content, err := s.llm.Generate(ctx, systemWeeklyReport, userPrompt)
-	if err != nil || content == "" {
+	content, err := s.generateWithRefund(ctx, userID, systemWeeklyReport, userPrompt)
+	if err != nil {
 		content = fmt.Sprintf("Esta semana completaste %d pomodoros con %d minutos de enfoque. %d de %d tareas fueron completadas. Mantén la constancia.",
 			summary.TotalPomodoros, summary.TotalFocusMin, summary.CompletedTasks, summary.TotalTasks)
 	}
@@ -405,6 +421,14 @@ func (s *AIService) Analyze(ctx context.Context, userID string, input AnalyzeInp
 	if input.Days <= 0 {
 		input.Days = 30
 	}
+	// A7: cap the analysis window — buildDataSummary fans out per day.
+	if input.Days > 365 {
+		input.Days = 365
+	}
+	// A7: cap + delimit free-form user context. Unbounded Context becomes
+	// LLM prompt tokens under flat 1-credit pricing, and raw interpolation
+	// mixes untrusted content into the instruction stream.
+	input.Context = truncateRunes(strings.TrimSpace(input.Context), maxAnalyzeContextRunes)
 
 	summary, err := s.buildDataSummary(ctx, userID, input.Days)
 	if err != nil {
@@ -413,12 +437,12 @@ func (s *AIService) Analyze(ctx context.Context, userID string, input AnalyzeInp
 
 	userPrompt := fmt.Sprintf("Datos del usuario (últimos %d días):\n%s", input.Days, summaryToPromptContext(summary))
 	if input.Context != "" {
-		userPrompt += fmt.Sprintf("\n\nContexto adicional del usuario: %s", input.Context)
+		userPrompt += fmt.Sprintf("\n\n<user_context>\n%s\n</user_context>", input.Context)
 	}
 	userPrompt += "\n\nRealiza el análisis."
 
-	content, err := s.llm.Generate(ctx, systemAnalyze, userPrompt)
-	if err != nil || content == "" {
+	content, err := s.generateWithRefund(ctx, userID, systemAnalyze, userPrompt)
+	if err != nil {
 		content = fmt.Sprintf("En los últimos %d días: %d pomodoros, %d min de enfoque, %d tareas completadas de %d. Promedio: %.1f pomodoros/día activo.",
 			input.Days, summary.TotalPomodoros, summary.TotalFocusMin, summary.CompletedTasks, summary.TotalTasks, summary.AvgPomPerDay)
 	}
@@ -446,6 +470,26 @@ func (s *AIService) Analyze(ctx context.Context, userID string, input AnalyzeInp
 	return insight, nil
 }
 
+// A7 cost/injection caps for AI prompt construction.
+const (
+	// maxAnalyzeContextRunes bounds free-form user context (~0.5k tokens).
+	maxAnalyzeContextRunes = 2000
+	// maxReportPayloadRunes bounds the client-built report JSON (~3k tokens).
+	maxReportPayloadRunes = 12000
+)
+
+// truncateRunes cuts s to at most max runes (rune-aware: never splits UTF-8).
+func truncateRunes(s string, max int) string {
+	if max <= 0 {
+		return ""
+	}
+	runes := []rune(s)
+	if len(runes) <= max {
+		return s
+	}
+	return string(runes[:max]) + "\n[truncated]"
+}
+
 // Report generates a structured AIReportResponse for the POST /ai/report route.
 // It reuses the same credit gating (ensureAiAccess) and LLM provider as the
 // other AI endpoints, but operates on the client-supplied ReportPayload rather
@@ -457,16 +501,21 @@ func (s *AIService) Report(ctx context.Context, userID string, payload ReportPay
 	}
 
 	payloadJSON, _ := json.MarshalIndent(payload, "", "  ")
-	userPrompt := fmt.Sprintf("Datos del reporte (periodo: %s, %s a %s):\n%s\n\nGenera el reporte estructurado.",
-		payload.Period, payload.PeriodStart, payload.PeriodEnd, string(payloadJSON))
+	// A7: the client builds this payload on-device (arrays unbounded). Cap
+	// what enters the prompt — and the flat 1-credit price — with truncation.
+	payloadText := truncateRunes(string(payloadJSON), maxReportPayloadRunes)
+	userPrompt := fmt.Sprintf("Datos del reporte (periodo: %s, %s a %s):\n<report_data>\n%s\n</report_data>\n\nGenera el reporte estructurado.",
+		payload.Period, payload.PeriodStart, payload.PeriodEnd, payloadText)
 
-	content, err := s.llm.Generate(ctx, systemReport, userPrompt)
-	if err != nil || content == "" {
+	content, err := s.generateWithRefund(ctx, userID, systemReport, userPrompt)
+	if err != nil {
 		return s.fallbackReport(payload), nil
 	}
 
 	var result AIReportResponse
 	if err := json.Unmarshal([]byte(extractJSON(content)), &result); err != nil {
+		// Malformed model output delivers no AI value: refund like a failure.
+		_ = s.users.RefundAiCredit(ctx, userID)
 		return s.fallbackReport(payload), nil
 	}
 	if result.Title == "" {
@@ -545,13 +594,14 @@ func (s *AIService) ProductivityPrediction(ctx context.Context, userID string) (
 	userPrompt := fmt.Sprintf("Datos recientes (14 días):\n%s\n\nHoy es %s. Predice la productividad.",
 		summaryToPromptContext(summary), time.Now().Format("Monday"))
 
-	content, err := s.llm.Generate(ctx, systemPrediction, userPrompt)
-	if err != nil || content == "" {
+	content, err := s.generateWithRefund(ctx, userID, systemPrediction, userPrompt)
+	if err != nil {
 		return s.fallbackPrediction(), nil
 	}
 
 	var result map[string]any
 	if err := json.Unmarshal([]byte(extractJSON(content)), &result); err != nil {
+		_ = s.users.RefundAiCredit(ctx, userID)
 		return s.fallbackPrediction(), nil
 	}
 	result["source"] = "gemini"
@@ -602,13 +652,14 @@ func (s *AIService) BurnoutRisk(ctx context.Context, userID string) (map[string]
 
 	userPrompt := fmt.Sprintf("Datos del último mes:\n%s\n\nEvalúa el riesgo de burnout.", summaryToPromptContext(summary))
 
-	content, err := s.llm.Generate(ctx, systemBurnout, userPrompt)
-	if err != nil || content == "" {
+	content, err := s.generateWithRefund(ctx, userID, systemBurnout, userPrompt)
+	if err != nil {
 		return s.fallbackBurnout(), nil
 	}
 
 	var result map[string]any
 	if err := json.Unmarshal([]byte(extractJSON(content)), &result); err != nil {
+		_ = s.users.RefundAiCredit(ctx, userID)
 		return s.fallbackBurnout(), nil
 	}
 	result["source"] = "gemini"
@@ -628,13 +679,14 @@ func (s *AIService) OptimalHours(ctx context.Context, userID string) (map[string
 	userPrompt := fmt.Sprintf("Datos del último mes (distribución de sesiones por hora):\n%s\n\nIdentifica las horas más productivas.",
 		summaryToPromptContext(summary))
 
-	content, err := s.llm.Generate(ctx, systemOptimalHours, userPrompt)
-	if err != nil || content == "" {
+	content, err := s.generateWithRefund(ctx, userID, systemOptimalHours, userPrompt)
+	if err != nil {
 		return s.fallbackOptimalHours(), nil
 	}
 
 	var result map[string]any
 	if err := json.Unmarshal([]byte(extractJSON(content)), &result); err != nil {
+		_ = s.users.RefundAiCredit(ctx, userID)
 		return s.fallbackOptimalHours(), nil
 	}
 	result["source"] = "gemini"

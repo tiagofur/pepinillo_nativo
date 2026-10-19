@@ -50,6 +50,10 @@ func mapOAuthError(err error) error {
 		return fiber.NewError(fiber.StatusUnauthorized, err.Error())
 	case errors.Is(err, services.ErrOAuthEmailMissing):
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+	case errors.Is(err, services.ErrOAuthEmailNotVerified):
+		return fiber.NewError(fiber.StatusForbidden, err.Error())
+	case errors.Is(err, services.ErrOAuthEmailTaken):
+		return fiber.NewError(fiber.StatusConflict, err.Error())
 	case errors.Is(err, services.ErrUserNotFound):
 		return fiber.NewError(fiber.StatusNotFound, err.Error())
 	case errors.Is(err, services.ErrAccountAlreadyLinked):

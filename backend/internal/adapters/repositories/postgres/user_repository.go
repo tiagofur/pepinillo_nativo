@@ -50,6 +50,15 @@ func (r *UserRepository) Update(ctx context.Context, user *domain.User) error {
 	return r.db.WithContext(ctx).Save(user).Error
 }
 
+// UpdateSubscription writes ONLY the subscription columns (see port contract).
+func (r *UserRepository) UpdateSubscription(ctx context.Context, userID, tier string, expiresAt *time.Time) error {
+	return r.db.WithContext(ctx).Model(&domain.User{}).Where("id = ?", userID).
+		Updates(map[string]any{
+			"subscription_tier":       tier,
+			"subscription_expires_at": expiresAt,
+		}).Error
+}
+
 func (r *UserRepository) Delete(ctx context.Context, userID string) error {
 	return r.db.WithContext(ctx).Where("id = ?", userID).Delete(&domain.User{}).Error
 }
@@ -176,6 +185,38 @@ func (r *UserRepository) ConsumeAiCredit(ctx context.Context, userID string) (bo
 		return false, result.Error
 	}
 	return result.RowsAffected > 0, nil
+}
+
+// ClaimPurchaseToken atomically claims (platform, token) for userID (B1).
+// The PRIMARY KEY makes the claim atomic under concurrency: exactly one
+// claimant wins, and every later caller reads the same owner.
+func (r *UserRepository) ClaimPurchaseToken(ctx context.Context, platform, token, userID string) (string, error) {
+	var owner string
+	err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := tx.Exec(`INSERT INTO purchase_claims (platform, purchase_token, user_id) VALUES (?, ?, ?)
+			ON CONFLICT (platform, purchase_token) DO NOTHING`, platform, token, userID).Error; err != nil {
+			return err
+		}
+		return tx.Raw(`SELECT user_id FROM purchase_claims WHERE platform = ? AND purchase_token = ?`, platform, token).Scan(&owner).Error
+	})
+	return owner, err
+}
+
+// ClaimWebhookEvent records a processed webhook event ID (B3). Redeliveries
+// of an already-claimed ID report claimed=false so the caller can skip them.
+func (r *UserRepository) ClaimWebhookEvent(ctx context.Context, eventID, source string) (bool, error) {
+	res := r.db.WithContext(ctx).Exec(`INSERT INTO webhook_events (event_id, source) VALUES (?, ?)
+		ON CONFLICT (event_id) DO NOTHING`, eventID, source)
+	if res.Error != nil {
+		return false, res.Error
+	}
+	return res.RowsAffected == 1, nil
+}
+
+// RefundAiCredit returns one credit after a failed generation (A5).
+func (r *UserRepository) RefundAiCredit(ctx context.Context, userID string) error {
+	return r.db.WithContext(ctx).Model(&domain.User{}).Where("id = ?", userID).
+		UpdateColumn("ai_credits_balance", gorm.Expr("ai_credits_balance + 1")).Error
 }
 
 func (r *UserRepository) RefreshAiCredits(ctx context.Context, userID string, amount int) error {

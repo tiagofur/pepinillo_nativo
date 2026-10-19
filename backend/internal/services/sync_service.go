@@ -3,7 +3,9 @@ package services
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -67,10 +69,12 @@ type SessionSyncResponse struct {
 func (s *SyncService) SyncSessions(ctx context.Context, userID, deviceID string, sessions []domain.FocusSession, lastSyncAt *time.Time) (*SessionSyncResponse, error) {
 	now := time.Now().UTC()
 
-	// Stamp all incoming sessions with the user ID and current time
+	// Stamp all incoming sessions with the user ID. UpdatedAt preserves the
+	// client timestamp (clamped): stamping receipt time here would destroy
+	// ordering info and let stale re-pushes always win the LWW check (D3).
 	for i := range sessions {
 		sessions[i].UserID = userID
-		sessions[i].UpdatedAt = now
+		sessions[i].UpdatedAt = domain.ResolveSyncTimestamp(sessions[i].UpdatedAt, now)
 	}
 
 	// 1. Upsert incoming sessions (INSERT ON CONFLICT DO UPDATE)
@@ -106,9 +110,17 @@ func (s *SyncService) SyncSessions(ctx context.Context, userID, deviceID string,
 func collectAffectedDates(sessions []domain.FocusSession) []time.Time {
 	seen := make(map[string]time.Time)
 	for _, s := range sessions {
-		dateKey := s.StartedAt.Format("2006-01-02")
+		// D5: canonical UTC day bucketing. The client serializes StartedAt
+		// with its local offset preserved, so Format() here used to depend
+		// on the sender's zone while the recompute SQL buckets in DB time —
+		// the same session could recompute the wrong day on both sides.
+		// (A per-user timezone would be ideal; UTC is the deterministic
+		// contract until then. Clients keep attributing by local midnight
+		// for display; sub-day skew near UTC midnight is a known limit.)
+		utc := s.StartedAt.UTC()
+		dateKey := utc.Format("2006-01-02")
 		if _, ok := seen[dateKey]; !ok {
-			seen[dateKey] = time.Date(s.StartedAt.Year(), s.StartedAt.Month(), s.StartedAt.Day(), 0, 0, 0, 0, time.UTC)
+			seen[dateKey] = time.Date(utc.Year(), utc.Month(), utc.Day(), 0, 0, 0, 0, time.UTC)
 		}
 	}
 	dates := make([]time.Time, 0, len(seen))
@@ -185,10 +197,11 @@ func (s *SyncService) InitialUpload(ctx context.Context, userID, deviceID string
 	}
 	mergedTasks := mergedResult.ServerTasks
 
-	// 3. Upsert sessions
+	// 3. Upsert sessions (D3: preserve client timestamps, clamped — the LWW
+	// check in UpsertSessionBatch needs real ordering info).
 	for i := range req.Sessions {
 		req.Sessions[i].UserID = userID
-		req.Sessions[i].UpdatedAt = now
+		req.Sessions[i].UpdatedAt = domain.ResolveSyncTimestamp(req.Sessions[i].UpdatedAt, now)
 	}
 	if err := s.focusRepo.UpsertSessionBatch(ctx, req.Sessions); err != nil {
 		return nil, fmt.Errorf("upsert sessions: %w", err)
@@ -270,6 +283,12 @@ func (s *SyncService) FullSync(ctx context.Context, userID string, req FullSyncR
 		if err != nil {
 			return nil, fmt.Errorf("invalid taskCursor: %w", err)
 		}
+		// D1: task cursor IDs are decimal integers (see encodeCursor call
+		// below). Reject garbage here with a 400 instead of letting it
+		// reach SQL, where CAST would raise a 500.
+		if _, err := strconv.Atoi(c.ID); err != nil {
+			return nil, fmt.Errorf("%w: invalid taskCursor: %v", ErrInvalidCursor, err)
+		}
 		taskCursor = c
 	}
 
@@ -324,15 +343,19 @@ func encodeCursor(updatedAt time.Time, id string) string {
 }
 
 // decodeCursor decodes a cursor string into a PaginationCursor.
+// ErrInvalidCursor marks client-supplied pagination cursors that cannot be
+// parsed (A6). Handlers map it to 400 instead of 500 + Sentry noise.
+var ErrInvalidCursor = errors.New("invalid_cursor")
+
 func decodeCursor(cursor string) (*ports.PaginationCursor, error) {
 	parts := strings.SplitN(cursor, "|", 2)
 	if len(parts) != 2 {
-		return nil, fmt.Errorf("cursor must be in format 'updatedAt|id'")
+		return nil, fmt.Errorf("%w: cursor must be in format 'updatedAt|id'", ErrInvalidCursor)
 	}
 
 	t, err := time.Parse(time.RFC3339Nano, parts[0])
 	if err != nil {
-		return nil, fmt.Errorf("invalid cursor timestamp: %w", err)
+		return nil, fmt.Errorf("%w: invalid cursor timestamp: %v", ErrInvalidCursor, err)
 	}
 
 	return &ports.PaginationCursor{

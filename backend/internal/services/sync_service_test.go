@@ -610,3 +610,29 @@ func TestFullSync_NilSettingsReturnsEmptySlice(t *testing.T) {
 	require.NotNil(t, resp.Settings)
 	require.Len(t, resp.Settings, 0)
 }
+
+func TestFullSync_RejectsNonNumericTaskCursor(t *testing.T) {
+	svc := NewSyncService(&fakeFocusRepository{}, &fakeSyncTaskRepository{}, &fakePreferenceRepository{}, &fakeWSManager{})
+
+	_, err := svc.FullSync(context.Background(), "user-1", FullSyncRequest{
+		TaskCursor: "2026-01-01T00:00:00Z|not-a-number",
+		Limit:      10,
+	})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid taskCursor")
+}
+
+func TestCollectAffectedDates_BucketsByUTCDay(t *testing.T) {
+	// Mar 6 00:30 at UTC+3 == Mar 5 21:30 UTC. Naive local bucketing would
+	// produce two days {Mar 5, Mar 6}; canonical UTC bucketing yields one
+	// (Mar 5). This is the D5 regression pin.
+	plus3 := time.FixedZone("UTC+3", 3*3600)
+	sessions := []domain.FocusSession{
+		{StartedAt: time.Date(2026, 3, 5, 23, 30, 0, 0, plus3)},
+		{StartedAt: time.Date(2026, 3, 6, 0, 30, 0, 0, plus3)},
+	}
+
+	dates := collectAffectedDates(sessions)
+	require.Len(t, dates, 1)
+	assert.Equal(t, "2026-03-05", dates[0].Format("2006-01-02"))
+}

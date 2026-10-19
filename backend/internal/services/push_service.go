@@ -106,6 +106,7 @@ func (s *PushService) sendPushToUser(ctx context.Context, userID, title, body st
 		return err
 	}
 	sent := 0
+	var firstErr error
 	pushType := data["type"]
 	for _, d := range items {
 		if err := s.provider.Send(ctx, d.Platform, d.Token, title, body, data); err != nil {
@@ -114,7 +115,21 @@ func (s *PushService) sendPushToUser(ctx context.Context, userID, title, body st
 				"platform": d.Platform,
 				"reason":   err.Error(),
 			})
-			return fmt.Errorf("send push failed for token %s: %w", d.Token, err)
+			// A3: a dead token must not suppress the user's other devices.
+			// Deactivate it (soft: re-install revives via Upsert) and keep
+			// going; report failure only if NOTHING was delivered.
+			if errors.Is(err, ports.ErrPushTokenUnregistered) {
+				if derr := s.repo.DeleteByToken(ctx, userID, d.Token); derr != nil {
+					s.logPushEvent(ctx, userID, "push_token_prune_failed", map[string]any{
+						"type":   pushType,
+						"reason": derr.Error(),
+					})
+				}
+			}
+			if firstErr == nil {
+				firstErr = fmt.Errorf("send push failed for token %s: %w", d.Token, err)
+			}
+			continue
 		}
 		sent++
 	}
@@ -122,6 +137,9 @@ func (s *PushService) sendPushToUser(ctx context.Context, userID, title, body st
 		"type":  pushType,
 		"count": sent,
 	})
+	if sent == 0 && len(items) > 0 {
+		return firstErr
+	}
 	return nil
 }
 

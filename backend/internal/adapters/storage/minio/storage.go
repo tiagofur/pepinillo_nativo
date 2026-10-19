@@ -40,6 +40,13 @@ func NewStorage(endpoint, accessKey, secretKey, bucket, publicBaseURL string, us
 	return &Storage{client: client, bucket: bucket, publicBaseURL: strings.TrimSuffix(publicBaseURL, "/")}, nil
 }
 
+// Ping verifies object-storage reachability (R1: health checks reuse the
+// boot-built client instead of constructing a throwaway one per check).
+func (s *Storage) Ping(ctx context.Context) error {
+	_, err := s.client.BucketExists(ctx, s.bucket)
+	return err
+}
+
 func (s *Storage) UploadProfileImage(ctx context.Context, userID, fileName, contentType string, data []byte) (string, error) {
 	ext := path.Ext(fileName)
 	if ext == "" {
