@@ -61,9 +61,11 @@ type geminiResponse struct {
 }
 
 func (p *Provider) Generate(ctx context.Context, systemPrompt, userPrompt string) (string, error) {
+	// P2: API key travels in the x-goog-api-key header, never in the URL
+	// query string (URLs land in proxy/access logs and traces).
 	url := fmt.Sprintf(
-		"https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s",
-		p.model, p.apiKey,
+		"https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent",
+		p.model,
 	)
 
 	reqBody := geminiRequest{
@@ -92,6 +94,7 @@ func (p *Provider) Generate(ctx context.Context, systemPrompt, userPrompt string
 		return "", fmt.Errorf("gemini: create request: %w", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("x-goog-api-key", p.apiKey)
 
 	resp, err := p.httpClient.Do(req)
 	if err != nil {

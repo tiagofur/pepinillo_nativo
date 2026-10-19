@@ -54,6 +54,11 @@ func (h *SyncHandler) FullSync(c *fiber.Ctx) error {
 
 	result, err := h.sync.FullSync(c.Context(), userID, req)
 	if err != nil {
+		// A6: malformed client cursors are 400s, not 500s (and not Sentry
+		// alerting noise).
+		if errors.Is(err, services.ErrInvalidCursor) {
+			return fiber.NewError(fiber.StatusBadRequest, err.Error())
+		}
 		return err
 	}
 

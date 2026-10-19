@@ -40,6 +40,9 @@ type UserRepository interface {
 	// AI Credits
 	ConsumeAiCredit(ctx context.Context, userID string) (bool, error)
 	RefreshAiCredits(ctx context.Context, userID string, amount int) error
+	// RefundAiCredit returns one credit (A5: generation failed after
+	// ensureAiAccess consumed one). Increment-only; never fails on balance.
+	RefundAiCredit(ctx context.Context, userID string) error
 
 	// Purchase-token ownership (B1): ClaimPurchaseToken atomically claims
 	// (platform, token) for userID. Returns the owning userID: equal to the

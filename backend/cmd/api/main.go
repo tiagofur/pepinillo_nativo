@@ -94,6 +94,10 @@ func main() {
 	app := fiber.New(fiber.Config{
 		AppName:      "Pepinillo API",
 		ErrorHandler: handlers.ErrorHandler,
+		// P2: the 5MB profile-image cap in user_handler was unreachable —
+		// Fiber's 4MB default BodyLimit rejected first. 6MB covers it with
+		// headroom while still bounding bulk sync payloads.
+		BodyLimit: 6 * 1024 * 1024,
 	})
 
 	// A2: recover first (outermost). Handler panics become 500s via

@@ -152,6 +152,10 @@ func (r *fakeUserRepo) RefreshAiCredits(_ context.Context, _ string, _ int) erro
 	return nil
 }
 
+func (r *fakeUserRepo) RefundAiCredit(_ context.Context, _ string) error {
+	return nil
+}
+
 func (r *fakeUserRepo) ClaimPurchaseToken(_ context.Context, platform, token, userID string) (string, error) {
 	key := platform + "\x00" + token
 	if owner, ok := r.claims[key]; ok {

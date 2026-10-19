@@ -220,6 +220,10 @@ func (r *integrationUserRepo) RefreshAiCredits(_ context.Context, _ string, _ in
 	return nil
 }
 
+func (r *integrationUserRepo) RefundAiCredit(_ context.Context, _ string) error {
+	return nil
+}
+
 func (r *integrationUserRepo) UpdateSubscription(_ context.Context, userID, tier string, expiresAt *time.Time) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()

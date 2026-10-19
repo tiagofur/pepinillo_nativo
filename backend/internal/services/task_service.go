@@ -478,7 +478,21 @@ func ptrTimeTask(v time.Time) *time.Time {
 }
 
 // Mode-specific tracking methods
+// validTrackingMode is the allow-list for mode-bucketed counters (P2).
+// The repository layer silently no-op'd unknown modes (204 for garbage),
+// so validation lives here at the single choke point.
+func validTrackingMode(mode string) bool {
+	switch mode {
+	case "pomodoro", "flowtime", "timeblock", "stopwatch":
+		return true
+	}
+	return false
+}
+
 func (s *TaskService) UpdateTaskTrackingMode(ctx context.Context, userID string, taskID int, mode string) error {
+	if !validTrackingMode(mode) {
+		return ErrInvalidTrackingMode
+	}
 	if err := s.repo.UpdateTrackingMode(ctx, userID, taskID, mode); err != nil {
 		return err
 	}
@@ -487,6 +501,9 @@ func (s *TaskService) UpdateTaskTrackingMode(ctx context.Context, userID string,
 }
 
 func (s *TaskService) IncrementTaskCompletion(ctx context.Context, userID string, taskID int, mode string) error {
+	if !validTrackingMode(mode) {
+		return ErrInvalidTrackingMode
+	}
 	if err := s.repo.IncrementCompletionCount(ctx, userID, taskID, mode); err != nil {
 		return err
 	}
@@ -495,6 +512,9 @@ func (s *TaskService) IncrementTaskCompletion(ctx context.Context, userID string
 }
 
 func (s *TaskService) IncrementTaskFocusTime(ctx context.Context, userID string, taskID int, mode string, seconds int) error {
+	if !validTrackingMode(mode) {
+		return ErrInvalidTrackingMode
+	}
 	if err := s.repo.IncrementFocusTime(ctx, userID, taskID, mode, seconds); err != nil {
 		return err
 	}

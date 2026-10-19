@@ -213,6 +213,12 @@ func (r *UserRepository) ClaimWebhookEvent(ctx context.Context, eventID, source 
 	return res.RowsAffected == 1, nil
 }
 
+// RefundAiCredit returns one credit after a failed generation (A5).
+func (r *UserRepository) RefundAiCredit(ctx context.Context, userID string) error {
+	return r.db.WithContext(ctx).Model(&domain.User{}).Where("id = ?", userID).
+		UpdateColumn("ai_credits_balance", gorm.Expr("ai_credits_balance + 1")).Error
+}
+
 func (r *UserRepository) RefreshAiCredits(ctx context.Context, userID string, amount int) error {
 	now := time.Now().UTC()
 	return r.db.WithContext(ctx).Model(&domain.User{}).Where("id = ?", userID).

@@ -27,4 +27,6 @@ var (
 	ErrInvalidPreferenceKey        = errors.New("invalid_preference_key")
 	ErrTierInsufficientForCloudAI  = errors.New("tier_insufficient_for_cloud_ai")
 	ErrInsufficientAICredits       = errors.New("insufficient_ai_credits")
+	ErrAIGenerationFailed          = errors.New("ai_generation_failed")
+	ErrInvalidTrackingMode         = errors.New("invalid_tracking_mode")
 )

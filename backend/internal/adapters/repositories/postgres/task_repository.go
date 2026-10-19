@@ -138,6 +138,18 @@ func (r *TaskRepository) Upsert(ctx context.Context, task *domain.Task) error {
 			if existing.UserID != task.UserID {
 				return gorm.ErrRecordNotFound
 			}
+		} else if task.SyncID != "" {
+			// A4: idempotent retry — a create retried with the same client
+			// SyncID resolves to the existing row instead of inserting a
+			// duplicate. (sync_id is globally UNIQUE per migration 000001.)
+			var existing domain.Task
+			err := tx.Where("user_id = ? AND sync_id = ?", task.UserID, task.SyncID).First(&existing).Error
+			if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+				return err
+			}
+			if err == nil {
+				task.ID = existing.ID
+			}
 		}
 		if err := tx.Save(task).Error; err != nil {
 			return err

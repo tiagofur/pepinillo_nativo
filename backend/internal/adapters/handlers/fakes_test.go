@@ -150,6 +150,10 @@ func (r *fakeUserRepository) RefreshAiCredits(_ context.Context, _ string, _ int
 	return nil
 }
 
+func (r *fakeUserRepository) RefundAiCredit(_ context.Context, _ string) error {
+	return nil
+}
+
 func (r *fakeUserRepository) ClaimPurchaseToken(_ context.Context, platform, token, userID string) (string, error) {
 	return userID, nil
 }

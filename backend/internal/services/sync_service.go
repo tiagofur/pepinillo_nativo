@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -286,7 +287,7 @@ func (s *SyncService) FullSync(ctx context.Context, userID string, req FullSyncR
 		// below). Reject garbage here with a 400 instead of letting it
 		// reach SQL, where CAST would raise a 500.
 		if _, err := strconv.Atoi(c.ID); err != nil {
-			return nil, fmt.Errorf("invalid taskCursor: %w", err)
+			return nil, fmt.Errorf("%w: invalid taskCursor: %v", ErrInvalidCursor, err)
 		}
 		taskCursor = c
 	}
@@ -342,15 +343,19 @@ func encodeCursor(updatedAt time.Time, id string) string {
 }
 
 // decodeCursor decodes a cursor string into a PaginationCursor.
+// ErrInvalidCursor marks client-supplied pagination cursors that cannot be
+// parsed (A6). Handlers map it to 400 instead of 500 + Sentry noise.
+var ErrInvalidCursor = errors.New("invalid_cursor")
+
 func decodeCursor(cursor string) (*ports.PaginationCursor, error) {
 	parts := strings.SplitN(cursor, "|", 2)
 	if len(parts) != 2 {
-		return nil, fmt.Errorf("cursor must be in format 'updatedAt|id'")
+		return nil, fmt.Errorf("%w: cursor must be in format 'updatedAt|id'", ErrInvalidCursor)
 	}
 
 	t, err := time.Parse(time.RFC3339Nano, parts[0])
 	if err != nil {
-		return nil, fmt.Errorf("invalid cursor timestamp: %w", err)
+		return nil, fmt.Errorf("%w: invalid cursor timestamp: %v", ErrInvalidCursor, err)
 	}
 
 	return &ports.PaginationCursor{

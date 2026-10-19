@@ -116,6 +116,11 @@ func (m *MockUserRepository) RefreshAiCredits(ctx context.Context, userID string
 	return args.Error(0)
 }
 
+func (m *MockUserRepository) RefundAiCredit(ctx context.Context, userID string) error {
+	args := m.Called(ctx, userID)
+	return args.Error(0)
+}
+
 func (m *MockUserRepository) ClaimPurchaseToken(ctx context.Context, platform, token, userID string) (string, error) {
 	args := m.Called(ctx, platform, token, userID)
 	return args.String(0), args.Error(1)
