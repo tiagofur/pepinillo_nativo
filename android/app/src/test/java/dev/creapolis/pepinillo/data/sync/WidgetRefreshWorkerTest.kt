@@ -1,7 +1,12 @@
 package dev.creapolis.pepinillo.data.sync
 
 import android.content.Context
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.ExistingWorkPolicy
 import androidx.work.ListenableWorker.Result
+import androidx.work.OneTimeWorkRequest
+import androidx.work.PeriodicWorkRequest
+import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import dev.creapolis.pepinillo.core.billing.FeatureGate
 import dev.creapolis.pepinillo.data.local.entity.DailyStatsEntity
@@ -121,5 +126,33 @@ class WidgetRefreshWorkerTest {
 
         assertEquals(Result.success(), result)
         verify(exactly = 1) { focusEngine.onDayChanged() }
+    }
+
+    // P2(i): schedule() runs from app start, boot and worker reschedules — a plain
+    // enqueue lets those calls pile up duplicate one-time refreshes. The immediate
+    // refresh must be unique with REPLACE so later calls collapse earlier pending ones.
+    @Test
+    fun `schedule enqueues one-time refresh as unique REPLACE work`() {
+        mockkObject(WorkManager.Companion)
+        val workManager = mockk<WorkManager>(relaxed = true)
+        every { WorkManager.getInstance(any()) } returns workManager
+
+        WidgetRefreshWorker.schedule(context)
+
+        verify(exactly = 1) {
+            workManager.enqueueUniqueWork(
+                any<String>(),
+                eq(ExistingWorkPolicy.REPLACE),
+                any<OneTimeWorkRequest>(),
+            )
+        }
+        // PRESERVE: the periodic schedule itself stays unique-KEEP.
+        verify(exactly = 1) {
+            workManager.enqueueUniquePeriodicWork(
+                any<String>(),
+                eq(ExistingPeriodicWorkPolicy.KEEP),
+                any<PeriodicWorkRequest>(),
+            )
+        }
     }
 }

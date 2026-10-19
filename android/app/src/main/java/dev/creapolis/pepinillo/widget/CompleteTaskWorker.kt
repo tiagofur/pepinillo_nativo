@@ -16,7 +16,6 @@ import dev.creapolis.pepinillo.data.sync.WidgetRefreshWorker
 import dev.creapolis.pepinillo.domain.streak.StreakProtectionService
 import dev.creapolis.pepinillo.core.billing.FeatureGate
 import kotlinx.coroutines.flow.first
-import java.util.Calendar
 
 private const val TAG = "CompleteTaskWorker"
 
@@ -65,12 +64,7 @@ class CompleteTaskWorker @AssistedInject constructor(
                 history = allDays,
                 isPro = featureGate.isPro,
             ).days
-            val startOfDay = Calendar.getInstance().apply {
-                set(Calendar.HOUR_OF_DAY, 0)
-                set(Calendar.MINUTE, 0)
-                set(Calendar.SECOND, 0)
-                set(Calendar.MILLISECOND, 0)
-            }.timeInMillis
+            val startOfDay = SessionRepository.startOfDay(System.currentTimeMillis())
             val completedToday = taskRepository.getCompletedTodayCount(startOfDay)
 
             WidgetStateManager.updateDailyStats(

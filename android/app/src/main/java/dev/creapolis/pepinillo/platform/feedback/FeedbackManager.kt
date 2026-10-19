@@ -139,8 +139,10 @@ class FeedbackManager @Inject constructor(
             NotificationManager.IMPORTANCE_HIGH,
         ).apply {
             description = context.getString(R.string.notification_completion_channel_desc)
-            enableVibration(true)
-            vibrationPattern = longArrayOf(0, 200, 100, 200)
+            // P2f: haptics are driven manually by vibrate(), which is gated by the
+            // user's vibrationEnabled preference — enabling channel vibration here as
+            // well makes enabled users feel the completion pattern twice.
+            enableVibration(false)
         }
         notificationManager?.createNotificationChannel(channel)
     }

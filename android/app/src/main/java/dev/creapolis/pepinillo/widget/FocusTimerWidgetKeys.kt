@@ -16,6 +16,7 @@ internal object FocusTimerWidgetKeys {
     val LINKED_TASK = stringPreferencesKey("linked_task")
     val FOCUS_IS_PRO = booleanPreferencesKey("is_pro")
     val ELAPSED = stringPreferencesKey("elapsed_millis")
+    val ELAPSED_REALTIME_ANCHOR = stringPreferencesKey("elapsed_realtime_anchor")
     val STREAK = intPreferencesKey("streak")
     val SESSIONS = intPreferencesKey("sessions")
     val LINKED_TASK_TITLE = stringPreferencesKey("linked_task_title")
