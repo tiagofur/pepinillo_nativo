@@ -57,8 +57,8 @@ func (f *fakeTaskRepository) Upsert(_ context.Context, task *domain.Task) error 
 	return nil
 }
 func (f *fakeTaskRepository) Delete(_ context.Context, _ string, _ int) error { return nil }
-func (f *fakeTaskRepository) Sync(_ context.Context, _ string, _ []domain.Task, _ []string, _ *time.Time) ([]domain.Task, []string, time.Time, error) {
-	return nil, nil, time.Time{}, nil
+func (f *fakeTaskRepository) Sync(_ context.Context, _ string, _ []domain.Task, _ []string, _ *time.Time) (*ports.TaskSyncResult, error) {
+	return nil, nil
 }
 func (f *fakeTaskRepository) UpdateTrackingMode(_ context.Context, _ string, _ int, _ string) error {
 	return nil

@@ -37,6 +37,19 @@ type UserRepository interface {
 	RefreshAiCredits(ctx context.Context, userID string, amount int) error
 }
 
+// TaskSyncResult is the outcome of a task sync push. AppliedSyncIDs are the
+// client rows the server accepted (or inserted); RejectedSyncIDs are the rows
+// skipped because a newer server version existed (LWW). Clients must not
+// mark rejected rows as synced until they have applied the server version
+// returned in ServerTasks.
+type TaskSyncResult struct {
+	ServerTasks    []domain.Task
+	DeletedSyncIDs []string
+	AppliedSyncIDs []string
+	RejectedSyncIDs []string
+	SyncedAt       time.Time
+}
+
 type TaskRepository interface {
 	GetByID(ctx context.Context, taskID int) (*domain.Task, error)
 	ListByUser(ctx context.Context, userID string) ([]domain.Task, error)
@@ -46,7 +59,7 @@ type TaskRepository interface {
 	ListByFinishDate(ctx context.Context, userID string, date time.Time) ([]domain.Task, error)
 	Upsert(ctx context.Context, task *domain.Task) error
 	Delete(ctx context.Context, userID string, taskID int) error
-	Sync(ctx context.Context, userID string, tasks []domain.Task, deletedSyncIDs []string, since *time.Time) ([]domain.Task, []string, time.Time, error)
+	Sync(ctx context.Context, userID string, tasks []domain.Task, deletedSyncIDs []string, since *time.Time) (*TaskSyncResult, error)
 
 	// Paginated listing for full sync
 	ListByUserPaginated(ctx context.Context, userID string, cursor *PaginationCursor, limit int) ([]domain.Task, error)
@@ -105,6 +118,9 @@ type FocusRepository interface {
 
 	// Paginated listing for full sync
 	ListSessionsByUserPaginated(ctx context.Context, userID string, cursor *PaginationCursor, limit int) ([]domain.FocusSession, error)
+
+	// Cheap existence check for the merge-decision flow (GET /sync/has-data).
+	CountSessionsByUser(ctx context.Context, userID string) (int64, error)
 
 	// Sync methods
 	UpsertSessionBatch(ctx context.Context, sessions []domain.FocusSession) error

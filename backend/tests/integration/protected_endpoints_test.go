@@ -49,12 +49,14 @@ func (r *integrationTaskRepo) Upsert(_ context.Context, task *domain.Task) error
 	return nil
 }
 func (r *integrationTaskRepo) Delete(_ context.Context, _ string, _ int) error { return nil }
-func (r *integrationTaskRepo) Sync(_ context.Context, userID string, tasks []domain.Task, _ []string, _ *time.Time) ([]domain.Task, []string, time.Time, error) {
+func (r *integrationTaskRepo) Sync(_ context.Context, userID string, tasks []domain.Task, _ []string, _ *time.Time) (*ports.TaskSyncResult, error) {
+	applied := make([]string, 0, len(tasks))
 	for i := range tasks {
 		tasks[i].UserID = userID
+		applied = append(applied, tasks[i].SyncID)
 	}
 	r.items = append(r.items, tasks...)
-	return tasks, nil, time.Now().UTC(), nil
+	return &ports.TaskSyncResult{ServerTasks: tasks, AppliedSyncIDs: applied, SyncedAt: time.Now().UTC()}, nil
 }
 func (r *integrationTaskRepo) UpdateTrackingMode(_ context.Context, _ string, _ int, _ string) error {
 	return nil

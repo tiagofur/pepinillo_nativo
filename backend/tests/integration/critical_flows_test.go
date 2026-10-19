@@ -97,23 +97,27 @@ func (r *lwwIntegrationTaskRepo) ListByUser(_ context.Context, _ string) ([]doma
 	}
 	return out, nil
 }
-func (r *lwwIntegrationTaskRepo) Sync(_ context.Context, userID string, tasks []domain.Task, _ []string, _ *time.Time) ([]domain.Task, []string, time.Time, error) {
+func (r *lwwIntegrationTaskRepo) Sync(_ context.Context, userID string, tasks []domain.Task, _ []string, _ *time.Time) (*ports.TaskSyncResult, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	now := time.Now().UTC()
+	applied := make([]string, 0, len(tasks))
+	rejected := make([]string, 0)
 	for _, incoming := range tasks {
 		existing, ok := r.items[incoming.SyncID]
 		if ok && existing.UpdatedAt.After(incoming.UpdatedAt) {
+			rejected = append(rejected, incoming.SyncID)
 			continue
 		}
 		incoming.UserID = userID
 		r.items[incoming.SyncID] = incoming
+		applied = append(applied, incoming.SyncID)
 	}
 	out := make([]domain.Task, 0, len(r.items))
 	for _, item := range r.items {
 		out = append(out, item)
 	}
-	return out, nil, now, nil
+	return &ports.TaskSyncResult{ServerTasks: out, AppliedSyncIDs: applied, RejectedSyncIDs: rejected, SyncedAt: now}, nil
 }
 func (r *lwwIntegrationTaskRepo) UpdateTrackingMode(_ context.Context, _ string, _ int, _ string) error {
 	return nil
@@ -176,8 +180,8 @@ func (r *recurrenceIntegrationTaskRepo) Upsert(_ context.Context, task *domain.T
 	return nil
 }
 func (r *recurrenceIntegrationTaskRepo) Delete(_ context.Context, _ string, _ int) error { return nil }
-func (r *recurrenceIntegrationTaskRepo) Sync(_ context.Context, _ string, _ []domain.Task, _ []string, _ *time.Time) ([]domain.Task, []string, time.Time, error) {
-	return nil, nil, time.Now().UTC(), nil
+func (r *recurrenceIntegrationTaskRepo) Sync(_ context.Context, _ string, _ []domain.Task, _ []string, _ *time.Time) (*ports.TaskSyncResult, error) {
+	return &ports.TaskSyncResult{SyncedAt: time.Now().UTC()}, nil
 }
 func (r *recurrenceIntegrationTaskRepo) UpdateTrackingMode(_ context.Context, _ string, _ int, _ string) error {
 	return nil
@@ -207,15 +211,19 @@ func TestCritical_TaskSyncLWW_Integration(t *testing.T) {
 	oldTitle := "old"
 	now := time.Now().UTC()
 
-	_, _, _, err := svc.Sync(ctx, "u1", []domain.Task{
+	first, err := svc.Sync(ctx, "u1", []domain.Task{
 		{SyncID: "sync-1", Title: &newTitle, UpdatedAt: now},
 	}, nil, nil)
 	require.NoError(t, err)
+	assert.Equal(t, []string{"sync-1"}, first.AppliedSyncIDs)
+	assert.Empty(t, first.RejectedSyncIDs)
 
-	_, _, _, err = svc.Sync(ctx, "u1", []domain.Task{
+	second, err := svc.Sync(ctx, "u1", []domain.Task{
 		{SyncID: "sync-1", Title: &oldTitle, UpdatedAt: now.Add(-time.Hour)},
 	}, nil, nil)
 	require.NoError(t, err)
+	assert.Empty(t, second.AppliedSyncIDs)
+	assert.Equal(t, []string{"sync-1"}, second.RejectedSyncIDs)
 
 	items, err := repo.ListByUser(ctx, "u1")
 	require.NoError(t, err)

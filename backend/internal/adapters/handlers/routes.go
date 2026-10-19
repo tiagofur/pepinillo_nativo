@@ -208,6 +208,7 @@ func RegisterAPIRoutes(api fiber.Router, deps RouteHandlers) {
 	syncGate := middleware.NewRequireBackendSync()
 	sync := verified.Group("/sync")
 	sync.Get("/full", subMw, syncGate, deps.Sync.FullSync)
+	sync.Get("/has-data", subMw, syncGate, deps.Sync.HasData)
 	sync.Post("/sessions", subMw, syncGate, deps.Sync.SyncSessions)
 	sync.Post("/initial-upload", subMw, syncGate, deps.Sync.InitialUpload)
 

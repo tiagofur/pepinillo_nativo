@@ -221,13 +221,13 @@ func (s *TaskService) Delete(ctx context.Context, userID string, taskID int) err
 	return nil
 }
 
-func (s *TaskService) Sync(ctx context.Context, userID string, tasks []domain.Task, deletedSyncIDs []string, since *time.Time) ([]domain.Task, []string, time.Time, error) {
-	serverTasks, deleted, syncAt, err := s.repo.Sync(ctx, userID, tasks, deletedSyncIDs, since)
+func (s *TaskService) Sync(ctx context.Context, userID string, tasks []domain.Task, deletedSyncIDs []string, since *time.Time) (*ports.TaskSyncResult, error) {
+	result, err := s.repo.Sync(ctx, userID, tasks, deletedSyncIDs, since)
 	if err != nil {
-		return nil, nil, time.Time{}, err
+		return nil, err
 	}
-	_ = s.behaviorLogger.LogEvent(ctx, userID, "tasks_synced", map[string]any{"uploaded": len(tasks), "deleted": len(deletedSyncIDs), "downloaded": len(serverTasks)})
-	return serverTasks, deleted, syncAt, nil
+	_ = s.behaviorLogger.LogEvent(ctx, userID, "tasks_synced", map[string]any{"uploaded": len(tasks), "deleted": len(deletedSyncIDs), "downloaded": len(result.ServerTasks), "rejected": len(result.RejectedSyncIDs)})
+	return result, nil
 }
 
 func (s *TaskService) sendTaskUpdateNotification(userID string, task *domain.Task, messageType string) {

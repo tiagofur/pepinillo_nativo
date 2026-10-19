@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"pepinillo/backend/internal/domain"
@@ -52,6 +53,10 @@ func (f *fakeFocusRepository) InsertSession(_ context.Context, _ *domain.FocusSe
 func (f *fakeFocusRepository) UpdateSession(_ context.Context, _ *domain.FocusSession) error {
 	return nil
 }
+func (f *fakeFocusRepository) CountSessionsByUser(_ context.Context, _ string) (int64, error) {
+	return int64(len(f.sessions)), nil
+}
+
 func (f *fakeFocusRepository) ListAllSessions(_ context.Context, _ string) ([]domain.FocusSession, error) {
 	if f.listAllErr != nil {
 		return nil, f.listAllErr
@@ -143,14 +148,18 @@ func (f *fakeSyncTaskRepository) Upsert(_ context.Context, task *domain.Task) er
 	return nil
 }
 func (f *fakeSyncTaskRepository) Delete(_ context.Context, _ string, _ int) error { return nil }
-func (f *fakeSyncTaskRepository) Sync(_ context.Context, _ string, tasks []domain.Task, _ []string, _ *time.Time) ([]domain.Task, []string, time.Time, error) {
+func (f *fakeSyncTaskRepository) Sync(_ context.Context, _ string, tasks []domain.Task, _ []string, _ *time.Time) (*ports.TaskSyncResult, error) {
 	f.syncCalled++
 	if f.syncErr != nil {
-		return nil, nil, time.Time{}, f.syncErr
+		return nil, f.syncErr
 	}
 	// Simulate merge: return the input tasks as merged
 	f.tasks = append(f.tasks, tasks...)
-	return f.tasks, nil, time.Now().UTC(), nil
+	applied := make([]string, 0, len(tasks))
+	for _, t := range tasks {
+		applied = append(applied, t.SyncID)
+	}
+	return &ports.TaskSyncResult{ServerTasks: f.tasks, AppliedSyncIDs: applied, SyncedAt: time.Now().UTC()}, nil
 }
 func (f *fakeSyncTaskRepository) UpdateTrackingMode(_ context.Context, _ string, _ int, _ string) error {
 	return nil
@@ -339,6 +348,47 @@ func TestSyncSessions_NilWSManager(t *testing.T) {
 // ---------------------------------------------------------------------------
 // InitialUpload tests
 // ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// HasServerData tests (merge-decision pre-check, GET /sync/has-data)
+// ---------------------------------------------------------------------------
+
+func TestHasServerData_EmptyAccount(t *testing.T) {
+	svc := NewSyncService(&fakeFocusRepository{}, &fakeSyncTaskRepository{}, &fakePreferenceRepository{}, &fakeWSManager{})
+
+	hasData, err := svc.HasServerData(context.Background(), "user-1")
+	require.NoError(t, err)
+	assert.False(t, hasData)
+}
+
+func TestHasServerData_TasksExist(t *testing.T) {
+	title := "server task"
+	taskRepo := &fakeSyncTaskRepository{
+		tasks: []domain.Task{{SyncID: "t1", Title: &title}},
+	}
+	svc := NewSyncService(&fakeFocusRepository{}, taskRepo, &fakePreferenceRepository{}, &fakeWSManager{})
+
+	hasData, err := svc.HasServerData(context.Background(), "user-1")
+	require.NoError(t, err)
+	assert.True(t, hasData)
+}
+
+func TestHasServerData_SessionsOnly(t *testing.T) {
+	// Sessions in the fake are populated by UpsertSessionBatch; seed one
+	// through the same path the real server writes.
+	focusRepo := &fakeFocusRepository{}
+	taskRepo := &fakeSyncTaskRepository{}
+	svc := NewSyncService(focusRepo, taskRepo, &fakePreferenceRepository{}, &fakeWSManager{})
+
+	_, err := svc.SyncSessions(context.Background(), "user-1", "device-1", []domain.FocusSession{
+		{ID: "s1", StartedAt: time.Now().UTC(), Mode: "focus", Phase: "work", DurationSeconds: 1500},
+	}, nil)
+	require.NoError(t, err)
+
+	hasData, err := svc.HasServerData(context.Background(), "user-1")
+	require.NoError(t, err)
+	assert.True(t, hasData)
+}
 
 func TestInitialUpload_NewUser(t *testing.T) {
 	taskRepo := &fakeSyncTaskRepository{} // empty — no existing data
