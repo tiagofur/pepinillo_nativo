@@ -153,6 +153,17 @@ class FocusViewModel @Inject constructor(
     val activeTasks: StateFlow<List<Task>> = taskRepository.getActiveTasks()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    /**
+     * Live engine snapshot at ViewModel creation. When this screen's
+     * destination is destroyed by a tab switch (Compose Navigation disposes
+     * it; only rememberSaveable survives) and recreated mid-session, the
+     * flows below must already reflect the running session on their very
+     * first emission — otherwise the screen morphs Idle→Running and replays
+     * the start animation (iOS keeps this state, so must we).
+     */
+    private val entryEngineSnapshot = focusEngine.state.value
+    private val entryStatus: TimerStatus = entryEngineSnapshot.status
+
     init {
         // Load default mode from preferences on first launch
         viewModelScope.launch {
@@ -366,6 +377,21 @@ class FocusViewModel @Inject constructor(
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), FocusUiState(
         greetingRes = computeGreetingRes(),
         currentDate = computeDate(),
+        // Tab-return seed (see entryEngineSnapshot): a ViewModel created
+        // mid-session must render Running on its first emission, or the
+        // screen replays the start animation.
+        selectedMode = entryEngineSnapshot.mode,
+        displayTime = entryEngineSnapshot.displayTime,
+        progress = entryEngineSnapshot.progress,
+        phaseLabelRes = entryEngineSnapshot.phaseLabelRes,
+        currentPhase = entryEngineSnapshot.phase,
+        isRunning = entryStatus == TimerStatus.Running,
+        isPaused = entryStatus == TimerStatus.Paused,
+        isWaitingForNext = entryStatus == TimerStatus.WaitingForNext,
+        breakSuggested = entryEngineSnapshot.breakSuggested,
+        canSkip = entryEngineSnapshot.mode == FocusMode.Pomodoro &&
+            (entryStatus == TimerStatus.Running || entryStatus == TimerStatus.WaitingForNext) &&
+            (entryEngineSnapshot.phase == FocusPhase.ShortBreak || entryEngineSnapshot.phase == FocusPhase.LongBreak),
     ))
 
     /**
@@ -390,7 +416,12 @@ class FocusViewModel @Inject constructor(
         }
         .distinctUntilChanged()
         .conflate()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), RingState())
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), RingState(
+            progress = entryEngineSnapshot.progress,
+            displayTime = entryEngineSnapshot.displayTime,
+            isRunning = entryStatus == TimerStatus.Running,
+            isPaused = entryStatus == TimerStatus.Paused,
+        ))
 
     /**
      * Screen-reader view of the timer for the hero ring's content description (super-review F1):
@@ -407,7 +438,11 @@ class FocusViewModel @Inject constructor(
             )
         }
         .distinctUntilChanged()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), FocusA11yState())
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), FocusA11yState(
+            phaseLabelRes = entryEngineSnapshot.phaseLabelRes,
+            mode = entryEngineSnapshot.mode,
+            minutes = a11yMinutes(entryEngineSnapshot.mode, entryEngineSnapshot.elapsedMillis, entryEngineSnapshot.totalMillis),
+        ))
 
     fun selectMode(mode: FocusMode) {
         if (!featureGate.canUseMode(mode)) {
