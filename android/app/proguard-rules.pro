@@ -97,3 +97,8 @@
 
 # ── RevenueCat ──
 -keep class com.revenuecat.purchases.** { *; }
+
+# ── Play measurement references AdvertisingIdClient optionally; the app does
+# not use Advertising ID. Silence R8 (generated missing_rules.txt guidance).
+-dontwarn com.google.android.gms.ads.identifier.AdvertisingIdClient$Info
+-dontwarn com.google.android.gms.ads.identifier.AdvertisingIdClient
