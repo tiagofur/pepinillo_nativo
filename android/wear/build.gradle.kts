@@ -28,8 +28,8 @@ extensions.configure<ApplicationExtension> {
         applicationId = "dev.creapolis.pepinillo"
         minSdk = 26
         targetSdk = 35
-        versionCode = 10027
-        versionName = "3.0.6"
+        versionCode = 10028
+        versionName = "3.1.0"
     }
 
     if (hasReleaseSigning) {
