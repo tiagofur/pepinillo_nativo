@@ -718,4 +718,35 @@ class FocusViewModelTest {
     fun `a11yMinutes never goes negative for over-elapsed countdowns`() {
         assertEquals(0, a11yMinutes(FocusMode.Pomodoro, elapsedMillis = 26 * 60_000L, totalMillis = 25 * 60_000L))
     }
+
+    // -----------------------------------------------------------------------
+    // Tab return: a recreated ViewModel must render the running session
+    // immediately instead of replaying the start animation (iOS parity).
+    // -----------------------------------------------------------------------
+
+    @Test
+    fun `recreated ViewModel seeds Running UI when engine is already Running`() = runTest {
+        engine.start()
+        assertEquals(TimerStatus.Running, engine.state.value.status)
+
+        // Simulate a tab return: the destination (and its ViewModel) was
+        // destroyed; a fresh ViewModel is created mid-session.
+        viewModel.viewModelScope.cancel()
+        viewModel = FocusViewModel(
+            context = context,
+            focusEngine = engine,
+            sessionRepository = sessionRepository,
+            taskRepository = taskRepository,
+            prefsRepo = prefsRepo,
+            featureGate = featureGate,
+            soundscapeManager = soundscapeManager,
+        )
+
+        // No collection yet: the very first values must already reflect the
+        // running session, otherwise the screen morphs Idle->Running and
+        // replays the start animation.
+        assertTrue(viewModel.uiState.value.isRunning)
+        assertTrue(viewModel.ringState.value.isRunning)
+        assertEquals(engine.state.value.mode, viewModel.uiState.value.selectedMode)
+    }
 }
