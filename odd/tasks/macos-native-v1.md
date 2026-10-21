@@ -4,7 +4,7 @@ Native macOS app (`PepinilloMac`) with a macOS-first shell: menu bar presence, F
 
 - Branch: `feat/macos-native-v1` (worktree: `pepinillo_nativo-worktrees/macos-native-v1`, based on `main` @ `52a8069b`)
 - Delivery: `ask-on-risk` (forecast is well over 400 authored lines; decide chain strategy before F2)
-- Test runner: `xcodebuild -scheme "PepinilloMac Dev" build`; test action to verify/add
+- Test runner: `xcodebuild -scheme "PepinilloMac Dev" -destination 'platform=macOS' build`; `xcodebuild -scheme "Pepinillo Dev" -destination 'generic/platform=iOS Simulator' build`; UI tests pending
 
 ## Specs
 
@@ -24,10 +24,10 @@ Native macOS app (`PepinilloMac`) with a macOS-first shell: menu bar presence, F
 
 | ID | Spec | Task | Route | Commit |
 | ---- | ---- | ---- | ---- | ------ |
-| T1 | S1, S10 | F0: design contract + `.impeccable.md` + PRD updates | inline | — |
-| T2 | S4 | F1: app lifecycle — `Window`, `Settings`, launch at login, Dock policy | inline | — |
-| T3 | S4 | F1: `MenuBarExtra` countdown + quick controls + today stats | inline | — |
-| T4 | S4 | F1: global shortcut + commands + notification actions | inline | — |
+| T1 | S1, S10 | F0: design contract + `.impeccable.md` + PRD updates | inline | 6cc09447 |
+| T2 | S4 | F1: app lifecycle — `Window`, `Settings`, launch at login, Dock policy | inline | 0977c09a |
+| T3 | S4 | F1: `MenuBarExtra` countdown + quick controls + today stats | inline | 0977c09a |
+| T4 | S4 | F1: global shortcut + commands + notification actions (commands partially done; shortcut/actions pending) | inline | — |
 | T5 | S6, S7 | F2: main window shell — sidebar, toolbar, state restoration | inline | — |
 | T6 | S2, S6 | F2: Focus stage + session journal + celebration | inline | — |
 | T7 | S2 | F2: Today dashboard (subset of `AnalyticsFeature`) | inline | — |
@@ -43,7 +43,10 @@ Native macOS app (`PepinilloMac`) with a macOS-first shell: menu bar presence, F
 - L3: "arrancamos" — F0 authorized.
 - L4: Evidence for the plan. `PepinilloMac` is already a native macOS target (macOS 15, `project.yml`, bundle `com.pepinillo.app`) sharing `AppFeature`/`Features`/`Domain`/`Shared`. `ios/Mac/MacAppView.swift` is iPad-adapted: `NavigationSplitView` 180 pt sidebar, 720×560 detail, 768 width breakpoint, sheets for every secondary flow. No `MenuBarExtra`, `LSUIElement`, or `SMAppService`. `ios/App/MacCommands.swift` uses bare `Space` as a menu key equivalent (risky while typing). PRD/05 says Catalyst and PRD/01 says Planned while the target is native — docs drift.
 - L5: Competitive evidence. Kofe Flow installed bundle: universal arm64/x86_64, SwiftUI + AppKit, 7.4 MB, `LSMinimumSystemVersion` 14.0, `LSUIElement = true`; menu bar timer, global shortcuts, launch at login, hide Dock, local analytics, one-time Pro (kofeflow.com). Their wedge is presence, not features; we keep depth and adopt the presence.
-- L6 (2026-10-21): F0 artifacts written and read back. Local `main` fast-forwarded to `origin/main` (`52a8069b`, 0/0) and worktree `pepinillo_nativo-worktrees/macos-native-v1` created on `feat/macos-native-v1`. F0 committed as T1.
+- L6 (2026-10-21): F0 artifacts written and read back. Local `main` fast-forwarded to `origin/main` (`52a8069b`, 0/0) and worktree `pepinillo_nativo-worktrees/macos-native-v1` created on `feat/macos-native-v1`. F0 committed as `6cc09447` (T1).
+- L7 (2026-10-21): F1 T2/T3 implemented and committed as `0977c09a`. Replaced `WindowGroup` with `Window("Pepinillo", id: "main")`; added `Settings` scene and `MenuBarExtra` with `.menuBarExtraStyle(.window)`. Moved `.appLaunched` into `MacAppBootstrap.apply` so the launch contract runs even when the main window never appears. Added `MacPreferences` (`SMAppService.mainApp` launch-at-login, Dock policy via `setActivationPolicy`) and a General/Appearance settings window. Menu bar shows live countdown, Start/Pause/Resume/Skip/Stop, today stats, Open Pepinillo, Settings, Quit. Replaced the bare `Space` command key with `⌘↩`; Account menu renamed from Settings.
+- L8 (2026-10-21): Verification. `xcodebuild -scheme "PepinilloMac Dev" -destination 'platform=macOS' -derivedDataPath build/macos-f1 CODE_SIGNING_ALLOWED=NO build` → BUILD SUCCEEDED. `xcodebuild -scheme "Pepinillo Dev" -destination 'generic/platform=iOS Simulator' -derivedDataPath build/ios-f1 CODE_SIGNING_ALLOWED=NO build` → BUILD SUCCEEDED. The built Mac app launched and stayed running; menu bar contents could not be inspected through System Events because `osascript` lacks Accessibility permission, so UI interaction remains manual.
+- L9 (2026-10-21): Platform gates required to make the shared Mac target compile: iOS-26 scroll/tab APIs in `GlassModifier`, `ControlCenter` in `WidgetSurfaceReload`, `UNAuthorizationStatus.ephemeral`, `Color(uiColor:)` in `TaskRow`, and the UIKit export files. Export (`ExportView`/`ExportService`/`ExportReportView`) is excluded from the Mac target and its Account entry is iOS-only until a native macOS export task exists. T4 remains pending: global shortcut (KeyboardShortcuts vs Carbon) and notification action routing. Next: F2 shell (T5).
 
 ## Close-out
 
