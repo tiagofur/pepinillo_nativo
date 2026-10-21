@@ -14937,6 +14937,94 @@
         }
       }
     },
+    "Keep your Premium" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keep your Premium"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Conserva tu Premium"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mantenha seu Premium"
+          }
+        }
+      }
+    },
+    "You purchased as a guest. Create a free account now so your subscription follows you to every device." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You purchased as a guest. Create a free account now so your subscription follows you to every device."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Compraste como invitado. Crea tu cuenta gratis ahora para que tu suscripción te acompañe en todos tus dispositivos."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Você comprou como visitante. Crie sua conta grátis agora para que sua assinatura acompanhe você em todos os dispositivos."
+          }
+        }
+      }
+    },
+    "Create free account" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Create free account"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Crear cuenta gratis"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Criar conta grátis"
+          }
+        }
+      }
+    },
+    "Maybe later" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Maybe later"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ahora no"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Agora não"
+          }
+        }
+      }
+    },
     "Resume a paused focus session in Pepinillo." : {
       "localizations" : {
         "es" : {

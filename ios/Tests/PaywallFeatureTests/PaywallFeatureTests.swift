@@ -167,6 +167,7 @@ struct PaywallFeatureTests {
             let products = self.mockProducts
             $0.subscriptionClient.fetchProducts = { products }
             $0.subscriptionClient.checkEntitlement = { .free }
+            $0.keychainClient.hasTokens = { true }
         }
 
         await store.send(.appeared) {
@@ -186,6 +187,8 @@ struct PaywallFeatureTests {
         }
 
         await store.receive(.subscriptionStateLoaded(.free))
+
+        await store.receive(.guestStatusLoaded(false))
     }
 
     @Test("Appearing preserves existing premium when entitlement check throws")
@@ -201,6 +204,7 @@ struct PaywallFeatureTests {
             let products = self.mockProducts
             $0.subscriptionClient.fetchProducts = { products }
             $0.subscriptionClient.checkEntitlement = { throw NetworkBoom() }
+            $0.keychainClient.hasTokens = { true }
         }
 
         store.exhaustivity = .off
@@ -432,6 +436,7 @@ struct PaywallFeatureTests {
         } withDependencies: {
             $0.subscriptionClient.fetchProducts = { [] }
             $0.subscriptionClient.checkEntitlement = { .free }
+            $0.keychainClient.hasTokens = { true }
         }
 
         store.exhaustivity = .off
@@ -444,6 +449,8 @@ struct PaywallFeatureTests {
             $0.isLoading = false
             $0.products = []
         }
+
+        await store.receive(.guestStatusLoaded(false))
 
         #expect(store.state.products.isEmpty)
         #expect(!store.state.isPurchaseEnabled)
@@ -489,6 +496,104 @@ struct PaywallFeatureTests {
         await store.send(.closeTapped)
 
         await store.receive(.delegate(.closeRequested))
+    }
+
+    // MARK: - Guest create-account nudge
+
+    @Test("Guest purchase shows create-account nudge instead of welcome alert")
+    func testGuestPurchaseShowsNudge() async {
+        var state = PaywallFeature.State()
+        state.products = mockProducts
+        state.selectedProductID = "annual"
+        state.isGuest = true
+
+        let store = TestStore(initialState: state) {
+            PaywallFeature()
+        } withDependencies: {
+            $0.subscriptionClient.purchase = { _ in .success(productID: "annual") }
+            $0.subscriptionClient.checkEntitlement = { .everywherePlus }
+        }
+
+        store.exhaustivity = .off
+
+        await store.send(.purchaseTapped) {
+            $0.isLoading = true
+        }
+
+        await store.receive(.purchaseFinished(.success(productID: "annual"))) {
+            $0.isLoading = false
+            $0.subscriptionState = .everywherePlus
+            $0.showCreateAccountNudge = true
+        }
+
+        #expect(store.state.purchaseResult == nil)
+
+        await store.receive(.subscriptionStateLoaded(.everywherePlus))
+        await store.receive(.delegate(.proUnlocked(.everywherePlus)))
+    }
+
+    @Test("Authed purchase shows welcome alert, not the guest nudge")
+    func testAuthedPurchaseShowsWelcomeNotNudge() async {
+        var state = PaywallFeature.State()
+        state.products = mockProducts
+        state.selectedProductID = "annual"
+        state.isGuest = false
+
+        let store = TestStore(initialState: state) {
+            PaywallFeature()
+        } withDependencies: {
+            $0.subscriptionClient.purchase = { _ in .success(productID: "annual") }
+            $0.subscriptionClient.checkEntitlement = { .everywherePlus }
+        }
+
+        store.exhaustivity = .off
+
+        await store.send(.purchaseTapped) {
+            $0.isLoading = true
+        }
+
+        await store.receive(.purchaseFinished(.success(productID: "annual"))) {
+            $0.isLoading = false
+            $0.subscriptionState = .everywherePlus
+            $0.showCreateAccountNudge = false
+            $0.purchaseResult = PaywallFeature.State.PurchaseResultAlert(
+                message: String(localized: "Welcome to Everywhere/AI+! \u{1F389}"),
+                isSuccess: true
+            )
+        }
+
+        await store.receive(.subscriptionStateLoaded(.everywherePlus))
+        await store.receive(.delegate(.proUnlocked(.everywherePlus)))
+    }
+
+    @Test("Create-account tap dismisses nudge and delegates sign-in")
+    func testCreateAccountTappedDelegatesSignIn() async {
+        var state = PaywallFeature.State()
+        state.showCreateAccountNudge = true
+
+        let store = TestStore(initialState: state) {
+            PaywallFeature()
+        }
+
+        await store.send(.createAccountTapped) {
+            $0.showCreateAccountNudge = false
+        }
+
+        await store.receive(.delegate(.signInRequested))
+    }
+
+    @Test("Dismissing create-account nudge only hides it")
+    func testCreateAccountDismissedHidesNudge() async {
+        var state = PaywallFeature.State()
+        state.showCreateAccountNudge = true
+
+        let store = TestStore(initialState: state) {
+            PaywallFeature()
+        }
+
+        await store.send(.createAccountDismissed) {
+            $0.showCreateAccountNudge = false
+        }
     }
 }
 
