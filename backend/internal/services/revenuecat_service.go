@@ -166,11 +166,10 @@ func (s *RevenueCatService) ProcessWebhookEvent(ctx context.Context, payload *Re
 	case "NON_RENEWING_PURCHASE":
 		return s.handleNonRenewingPurchaseEvent(ctx, user.ID, payload.Event)
 	case "SUBSCRIBER_ALIAS":
-		// Just log it for now
-		s.logRevenueCatEvent(ctx, user.ID, "subscriber_alias_merged", map[string]any{
-			"aliases": payload.Event.Aliases,
-		})
-		return nil
+		// U-C: an alias merge is exactly the guest→identified transfer that
+		// strands entitlements (guest purchase, later login). Resolve the
+		// current RC entitlement onto the identified user.
+		return s.handleSubscriberAliasEvent(ctx, user.ID, payload.Event)
 	default:
 		s.logRevenueCatEvent(ctx, user.ID, "webhook_unknown_event", map[string]any{
 			"event_type": eventType,
@@ -338,6 +337,70 @@ func (s *RevenueCatService) handleBillingIssueEvent(ctx context.Context, userID 
 	s.logRevenueCatEvent(ctx, userID, "webhook_billing_issue", map[string]any{
 		"product_id": event.ProductID,
 		"store":      event.Store,
+	})
+	return nil
+}
+
+// handleSubscriberAliasEvent resolves a RevenueCat alias merge onto the
+// identified user (U-C). Guest purchases live under anonymous RC IDs; when
+// the buyer later logs in, RC transfers the entitlement to the identified
+// ID and fires this event. Without handling, the server tier stays free
+// forever (the client may never call verify again).
+//
+// The handler only ever establishes or upgrades: a free/unknown RC read
+// never downgrades a stored grant (revocations arrive as EXPIRATION events).
+// Out-of-order deliveries respect the same monotonic guard as purchases.
+func (s *RevenueCatService) handleSubscriberAliasEvent(ctx context.Context, userID string, event RevenueCatEvent) error {
+	user, err := s.users.GetByID(ctx, userID)
+	if err != nil {
+		s.logRevenueCatEvent(ctx, userID, "webhook_process_failed", map[string]any{
+			"reason":     err.Error(),
+			"event_type": event.Type,
+		})
+		return err
+	}
+	if user == nil {
+		s.logRevenueCatEvent(ctx, userID, "webhook_alias_unknown_user", map[string]any{
+			"event_type": event.Type,
+			"aliases":    event.Aliases,
+		})
+		// No local user yet (signup comes later): a post-login verify or the
+		// next alias event will converge. Not an error.
+		return nil
+	}
+
+	result, err := s.VerifyViaRevenueCat(ctx, userID)
+	if err != nil {
+		s.logRevenueCatEvent(ctx, userID, "webhook_alias_verify_failed", map[string]any{
+			"reason":     err.Error(),
+			"event_type": event.Type,
+		})
+		return err
+	}
+	if result.SubscriptionTier == domain.TierFree {
+		s.logRevenueCatEvent(ctx, userID, "webhook_alias_no_entitlement", map[string]any{
+			"event_type": event.Type,
+		})
+		return nil
+	}
+	if !incomingEntitlementSupersedes(user.SubscriptionTier, user.SubscriptionExpiresAt, user.PepinilloPlusEntitlementAt != nil, result.SubscriptionTier, result.SubscriptionExpiresAt, time.Now().UTC()) {
+		s.logRevenueCatEvent(ctx, userID, "webhook_stale_alias_ignored", map[string]any{
+			"event_type": event.Type,
+			"tier":       result.SubscriptionTier,
+		})
+		return nil
+	}
+	if err := s.users.UpdateSubscription(ctx, userID, result.SubscriptionTier, result.SubscriptionExpiresAt); err != nil {
+		s.logRevenueCatEvent(ctx, userID, "webhook_update_failed", map[string]any{
+			"reason":     err.Error(),
+			"event_type": event.Type,
+		})
+		return err
+	}
+	s.logRevenueCatEvent(ctx, userID, "webhook_alias_applied", map[string]any{
+		"event_type": event.Type,
+		"tier":       result.SubscriptionTier,
+		"aliases":    event.Aliases,
 	})
 	return nil
 }
