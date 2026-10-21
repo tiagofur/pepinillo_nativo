@@ -27,8 +27,8 @@ extensions.configure<ApplicationExtension> {
     defaultConfig {
         applicationId = "dev.creapolis.pepinillo"
         minSdk = 26
-        targetSdk = 35
-        versionCode = 10028
+        targetSdk = 36
+        versionCode = 10029
         versionName = "3.1.0"
     }
 
