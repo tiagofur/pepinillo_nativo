@@ -186,9 +186,9 @@ struct PaywallFeatureTests {
             $0.selectedProductID = "annual"
         }
 
-        await store.receive(.subscriptionStateLoaded(.free))
-
         await store.receive(.guestStatusLoaded(false))
+
+        await store.receive(.subscriptionStateLoaded(.free))
     }
 
     @Test("Appearing preserves existing premium when entitlement check throws")
@@ -220,6 +220,8 @@ struct PaywallFeatureTests {
         }
 
         // Must NOT coerce to .free on throw — premium state stays.
+
+        await store.receive(.guestStatusLoaded(false))
         #expect(store.state.subscriptionState == .pepinilloPlus)
     }
 
@@ -451,6 +453,8 @@ struct PaywallFeatureTests {
         }
 
         await store.receive(.guestStatusLoaded(false))
+
+        await store.receive(.subscriptionStateLoaded(.free))
 
         #expect(store.state.products.isEmpty)
         #expect(!store.state.isPurchaseEnabled)
