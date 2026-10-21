@@ -1,7 +1,7 @@
 # Technical Architecture: Pepinillo iOS / watchOS
 
 **Date:** 2026-03-24  
-**Platforms:** iOS 17+ / iPadOS 17+ / macOS 14+ (Catalyst) / watchOS 10+  
+**Platforms:** iOS 17+ / iPadOS 17+ / macOS 15+ (native SwiftUI + AppKit) / watchOS 10+  
 **Language:** Swift 6 (strict concurrency)  
 **UI Framework:** SwiftUI  
 **Architecture:** The Composable Architecture (TCA) by Point-Free  
@@ -14,7 +14,7 @@
 | Layer            | Technology                               | Minimum Version     |
 | ---------------- | ---------------------------------------- | ------------------- |
 | Language         | Swift 6 (strict concurrency)             | Xcode 16+           |
-| UI               | SwiftUI                                  | iOS 17 / watchOS 10 |
+| UI               | SwiftUI                                  | iOS 17 / macOS 15 / watchOS 10 |
 | Architecture     | TCA (swift-composable-architecture)      | 1.17+               |
 | Persistence      | SwiftData local App Group store          | iOS 17              |
 | Synchronization  | Backend REST/WebSocket; CloudKit deferred | iOS 17             |
@@ -1301,7 +1301,8 @@ Minimal data collection for the App Store listing.
 
 | Target                     | Platform          | UI Framework       | Notes                                                     |
 | -------------------------- | ----------------- | ------------------ | --------------------------------------------------------- |
-| **Pepinillo** (main)       | iPhone, iPad, Mac | SwiftUI            | Main development target                                   |
+| **Pepinillo** (main)       | iPhone, iPad      | SwiftUI            | Main iOS/iPadOS target                                    |
+| **PepinilloMac**           | macOS 15+         | SwiftUI + AppKit   | Native menu bar + window target; shared TCA/SwiftData core |
 | **PepinilloWatch**         | Apple Watch       | SwiftUI (WatchKit) | Companion app: remote timer, tasks, dashboard             |
 | **PepinilloWidget**        | iPhone, iPad      | WidgetKit          | 3 families: Focus, Tasks, Dashboard (home + lock screen)  |
 | **PepinilloLiveActivity**  | iPhone            | ActivityKit        | Dynamic Island + Live Activity banner                     |
@@ -1314,7 +1315,7 @@ Minimal data collection for the App Store listing.
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **iPhone**         | Main target. All features available.                                                                                                                    |
 | **iPad**           | Responsive parity with iPhone: **landscape** → `NavigationSplitView` (sidebar + detail), **portrait** → top-menu `Picker` + `NavigationStack` content. Portrait/landscape detected via root `GeometryReader` (width vs height) since size classes report `.regular` in both orientations. Adaptive-size sheets (`iPadSheetModifier`). Stage Manager + physical keyboard shortcuts. |
-| **Mac (Catalyst)** | Menu bar commands (`MacCommands.swift`), full window, sandbox entitlement. `#if os(macOS)` for platform-specific code.                                  |
+| **macOS (native)** | Dedicated `PepinilloMac` target (SwiftUI + AppKit, macOS 15+). Menu bar presence (`MenuBarExtra`), sidebar + detail + inspector, keyboard-first commands, shared TCA/SwiftData core. Contract: `ios/docs/macos-design-contract.md`. |
 | **watchOS**        | Simplified feature set: timer, tasks, dashboard, complications. Communication via WCSession. `ExtendedRuntimeSession` for alarm haptics.                |
 
 ### Shared Code
