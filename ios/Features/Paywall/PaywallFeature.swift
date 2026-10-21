@@ -158,35 +158,33 @@ struct PaywallFeature {
             switch action {
             case .appeared:
                 state.isLoading = true
-                return .merge(
-                    .run { send in
-                        guard await subscriptionClient.isPurchasesAvailable() else {
-                            await send(.productsLoaded([]))
-                            await send(.purchaseFinished(.failed(
-                                message: String(localized: "Purchases are unavailable. Please try again later.")
-                            )))
-                            return
-                        }
-                        let products = await subscriptionClient.fetchProducts()
-                        await send(.productsLoaded(products))
-                    },
-                    .run { send in
-                        // Resolve guest status for the post-purchase nudge: no
-                        // backend tokens means the buyer is anonymous, and the
-                        // entitlement would strand on the RC anonymous ID.
-                        let hasTokens = await keychain.hasTokens()
-                        await send(.guestStatusLoaded(!hasTokens))
-                    },
-                    .run { send in
-                        // Do not silently coerce network failures to .free (#214).
-                        do {
-                            let sub = try await subscriptionClient.checkEntitlement()
-                            await send(.subscriptionStateLoaded(sub))
-                        } catch {
-                            // Preserve whatever entitlement is already in state.
-                        }
+                // Single sequential effect (not merged): deterministic action order
+                // (products → guest → entitlement). Three concurrent effects raced
+                // nondeterministically across runs and broke TestStore assertions.
+                // The keychain read is instant; serialization cost is one local read.
+                return .run { send in
+                    guard await subscriptionClient.isPurchasesAvailable() else {
+                        await send(.productsLoaded([]))
+                        await send(.purchaseFinished(.failed(
+                            message: String(localized: "Purchases are unavailable. Please try again later.")
+                        )))
+                        return
                     }
-                )
+                    let products = await subscriptionClient.fetchProducts()
+                    await send(.productsLoaded(products))
+                    // Resolve guest status for the post-purchase nudge: no
+                    // backend tokens means the buyer is anonymous, and the
+                    // entitlement would strand on the RC anonymous ID.
+                    let hasTokens = await keychain.hasTokens()
+                    await send(.guestStatusLoaded(!hasTokens))
+                    // Do not silently coerce network failures to .free (#214).
+                    do {
+                        let sub = try await subscriptionClient.checkEntitlement()
+                        await send(.subscriptionStateLoaded(sub))
+                    } catch {
+                        // Preserve whatever entitlement is already in state.
+                    }
+                }
 
             case .guestStatusLoaded(let isGuest):
             state.isGuest = isGuest

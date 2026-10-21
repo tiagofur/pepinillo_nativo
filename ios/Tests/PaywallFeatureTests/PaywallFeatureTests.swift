@@ -186,9 +186,9 @@ struct PaywallFeatureTests {
             $0.selectedProductID = "annual"
         }
 
-        await store.receive(.subscriptionStateLoaded(.free))
-
         await store.receive(.guestStatusLoaded(false))
+
+        await store.receive(.subscriptionStateLoaded(.free))
 
     }
 
@@ -453,9 +453,9 @@ struct PaywallFeatureTests {
             $0.products = []
         }
 
-        await store.receive(.subscriptionStateLoaded(.free))
-
         await store.receive(.guestStatusLoaded(false))
+
+        await store.receive(.subscriptionStateLoaded(.free))
 
 
         #expect(store.state.products.isEmpty)
