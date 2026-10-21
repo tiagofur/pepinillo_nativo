@@ -26,7 +26,7 @@ struct PepinilloCommands: Commands {
                     store.send(.focus(.pauseTapped))
                 }
             }
-            .keyboardShortcut(.space, modifiers: [])
+            .keyboardShortcut(.return, modifiers: .command)
 
             Button(String(localized: "menu.focus.stopsession", defaultValue: "Stop Session")) {
                 store.send(.focus(.stopTapped))
@@ -83,7 +83,7 @@ struct PepinilloCommands: Commands {
             }
             .keyboardShortcut("a", modifiers: [.command, .shift])
 
-            Button(String(localized: "menu.view.settings", defaultValue: "Settings")) {
+            Button(String(localized: "menu.view.account", defaultValue: "Account")) {
                 store.send(.tabSelected(.account))
             }
         }

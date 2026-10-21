@@ -92,12 +92,17 @@ private final class MacAppBootstrap: ObservableObject {
             forKey: MacAppLaunchDefaults.hasCompletedOnboardingKey
         )
 
-        store = Store(initialState: initialState) {
+        let store = Store(initialState: initialState) {
             AppFeature()
         } withDependencies: {
             $0.persistenceClient = PersistenceClient.live(container: container)
         }
+        self.store = store
         phase = .ready
+
+        // The menu bar can be the only surface at launch, so the launch
+        // contract must not depend on the main window appearing.
+        store.send(.appLaunched)
     }
 }
 
@@ -105,6 +110,7 @@ private final class MacAppBootstrap: ObservableObject {
 struct PepinilloMacApp: App {
     @Environment(\.scenePhase) private var scenePhase
     @StateObject private var bootstrap = MacAppBootstrap()
+    @StateObject private var preferences = MacPreferences()
 
     @MainActor
     init() {
@@ -114,7 +120,7 @@ struct PepinilloMacApp: App {
     }
 
     var body: some Scene {
-        WindowGroup {
+        Window("Pepinillo", id: "main") {
             if let store = bootstrap.store, let container = bootstrap.modelContainer {
                 MacAppView(store: store)
                     .modelContainer(container)
@@ -134,15 +140,34 @@ struct PepinilloMacApp: App {
                 }
             }
         }
-        #if os(macOS) || targetEnvironment(macCatalyst)
         .defaultSize(width: 1_120, height: 760)
         .windowResizability(.contentMinSize)
-        #endif
         .commands {
             if let store = bootstrap.store {
                 PepinilloCommands(store: store)
             } else {
                 EmptyCommands()
+            }
+        }
+
+        MenuBarExtra {
+            if let store = bootstrap.store {
+                MacMenuBarView(store: store)
+            } else {
+                Text("Starting Pepinillo…")
+                    .padding()
+            }
+        } label: {
+            MacMenuBarLabel(store: bootstrap.store)
+        }
+        .menuBarExtraStyle(.window)
+
+        Settings {
+            if let store = bootstrap.store {
+                MacSettingsView(store: store, preferences: preferences)
+            } else {
+                ProgressView()
+                    .frame(width: 320, height: 200)
             }
         }
     }
@@ -180,6 +205,6 @@ private struct MacBootstrapView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(.systemBackground).ignoresSafeArea())
+        .background(Color.pepinilloSystemBackground.ignoresSafeArea())
     }
 }

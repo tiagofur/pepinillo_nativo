@@ -84,5 +84,15 @@ extension Color {
         Color(.tertiaryLabel)
         #endif
     }
+
+    static var pepinilloSeparator: Color {
+        #if os(iOS)
+        Color(uiColor: .separator)
+        #elseif os(macOS)
+        Color(nsColor: .separatorColor)
+        #else
+        Color(.separator)
+        #endif
+    }
 }
 #endif

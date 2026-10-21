@@ -204,6 +204,10 @@ targets:
       - path: App/DemoDataSeeder.swift
       - path: App/MacCommands.swift
       - path: Features
+        excludes:
+          - Account/ExportView.swift
+          - Account/ExportService.swift
+          - Account/ExportReportView.swift
       - path: Domain
       - path: Shared
       - path: PepinilloIntents

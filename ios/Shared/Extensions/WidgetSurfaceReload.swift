@@ -16,9 +16,11 @@ enum WidgetSurfaceReload {
     static func reloadFocusAndControlCenter() {
         WidgetCenter.shared.reloadTimelines(ofKind: focusHomeKind)
         WidgetCenter.shared.reloadTimelines(ofKind: focusLockKind)
+        #if os(iOS)
         if #available(iOS 18.0, *) {
             ControlCenter.shared.reloadControls(ofKind: controlCenterKind)
         }
+        #endif
     }
 
     /// Reload focus widgets, tasks widget, and Control Center toggle.

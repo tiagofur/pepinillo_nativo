@@ -278,7 +278,7 @@ struct TaskRow: View, Equatable {
 
     private var cardBorderColor: Color {
         if task.isCompleted {
-            return Color(uiColor: .separator).opacity(0.15)
+            return Color.pepinilloSeparator.opacity(0.15)
         } else if isOverdue {
             return Color.red.opacity(0.35)
         } else if isDueToday {
@@ -286,7 +286,7 @@ struct TaskRow: View, Equatable {
         } else if task.scheduledForToday {
             return Color.green.opacity(0.35)
         } else {
-            return Color(uiColor: .separator).opacity(0.2)
+            return Color.pepinilloSeparator.opacity(0.2)
         }
     }
 

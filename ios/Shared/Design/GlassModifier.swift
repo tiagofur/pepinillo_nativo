@@ -46,7 +46,7 @@ extension View {
 
 // MARK: - iOS 26 Scroll Edge Effect
 
-#if !os(watchOS)
+#if os(iOS)
 extension View {
     /// Applies a soft scroll-edge effect at the top of a scroll view on iOS 26+.
     /// No-op on earlier OS versions.
@@ -63,7 +63,7 @@ extension View {
 
 // MARK: - iOS 26 Tab Bar Minimize Behavior
 
-#if !os(watchOS)
+#if os(iOS)
 extension View {
     /// Hides/minimizes the tab bar when the user scrolls down (iOS 26+).
     /// No-op on earlier OS versions — no availability guard at call site required.
@@ -75,6 +75,18 @@ extension View {
             self
         }
     }
+}
+#endif
+
+#if !os(iOS) && !os(watchOS)
+extension View {
+    /// iOS-only scroll treatment; no-op on the other Apple platforms.
+    @ViewBuilder
+    func primaryScrollEdgeEffect() -> some View { self }
+
+    /// iOS-only tab-bar treatment; no-op on the other Apple platforms.
+    @ViewBuilder
+    func conditionalTabBarMinimize() -> some View { self }
 }
 #endif
 
