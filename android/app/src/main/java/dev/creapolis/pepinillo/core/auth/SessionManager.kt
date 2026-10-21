@@ -1,6 +1,7 @@
 package dev.creapolis.pepinillo.core.auth
 
 import android.util.Log
+import dev.creapolis.pepinillo.core.billing.RestoreFlowResult
 import dev.creapolis.pepinillo.core.billing.SubscriptionManager
 import dev.creapolis.pepinillo.core.identity.IdentityManager
 import dev.creapolis.pepinillo.core.network.AuthResponse
@@ -8,6 +9,7 @@ import dev.creapolis.pepinillo.core.network.NetworkResult
 import dev.creapolis.pepinillo.core.network.PepinilloApiClient
 import dev.creapolis.pepinillo.core.network.TokensDto
 import dev.creapolis.pepinillo.core.network.UserDto
+import dev.creapolis.pepinillo.core.network.VerifyReceiptRequest
 import dev.creapolis.pepinillo.data.local.PepinilloDatabase
 import dev.creapolis.pepinillo.data.repository.UserRepository
 import dev.creapolis.pepinillo.data.sync.InitialSyncManager
@@ -234,7 +236,44 @@ class SessionManager @Inject constructor(
         runCatching { syncEngine.syncAll() }
             .onFailure { Log.w(TAG, "syncAll failed (non-fatal): ${it.message}") }
         syncWebSocketClient.connect()
+        reconcileServerEntitlement()
         return PostAuthFlowResult.Completed
+    }
+
+    /**
+     * Post-login entitlement reconcile (guest rescue). If RevenueCat reports an
+     * active entitlement — e.g. a guest purchase made before sign-in, now
+     * transferred by the RC alias — but the server was never told (guest
+     * purchases skip verification: no token), run a silent restore+verify so
+     * the server tier converges without any user action. Best-effort: never
+     * fails authentication.
+     */
+    private suspend fun reconcileServerEntitlement() {
+        runCatching {
+            if (!subscriptionManager.subscriptionState.value.hasLocalPremium) return
+            val verification = when (val result = subscriptionManager.restorePurchases()) {
+                is RestoreFlowResult.Success -> result.verification
+                is RestoreFlowResult.Failed -> {
+                    Log.w(TAG, "reconcile: restore failed (non-fatal): ${result.message}")
+                    return
+                }
+            } ?: return
+            when (val result = apiClient.verifyReceipt(
+                VerifyReceiptRequest(
+                    productId = verification.productId,
+                    purchaseToken = verification.purchaseToken,
+                ),
+            )) {
+                is NetworkResult.Success -> {
+                    subscriptionManager.updateFromServer(
+                        result.data.subscriptionTier,
+                        result.data.subscriptionExpiresAt,
+                    )
+                    userRepository.fetchAndCacheProfile()
+                }
+                else -> Log.w(TAG, "reconcile: server verify inconclusive (non-fatal)")
+            }
+        }.onFailure { Log.w(TAG, "reconcileServerEntitlement failed (non-fatal): ${it.message}") }
     }
 
     /**
@@ -248,6 +287,7 @@ class SessionManager @Inject constructor(
         runCatching { syncEngine.syncAll() }
             .onFailure { Log.w(TAG, "syncAll after merge failed (non-fatal): ${it.message}") }
         syncWebSocketClient.connect()
+        reconcileServerEntitlement()
     }
 
     /**
@@ -259,5 +299,6 @@ class SessionManager @Inject constructor(
     suspend fun onUseAccountOnly() {
         initialSyncManager.wipeAndSync()
         syncWebSocketClient.connect()
+        reconcileServerEntitlement()
     }
 }

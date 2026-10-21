@@ -342,4 +342,75 @@ class PaywallViewModelTest {
         "everywhere_annual" -> SubscriptionTier.EVERYWHERE_ANNUAL
         else -> SubscriptionTier.FREE
     }
+
+    @Test
+    fun `guest purchase success shows create-account nudge`() = runTest {
+        val product = mockk<ProductInfo>(relaxed = true) {
+            every { productId } returns "com.pepinillo.app.pro.annual"
+        }
+        productsFlow.value = listOf(product)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.selectProduct("com.pepinillo.app.pro.annual")
+        coEvery { subscriptionManager.launchPurchaseFlow(any(), any()) } returns PurchaseFlowResult.Success(
+            state = SubscriptionState(tier = SubscriptionTier.EVERYWHERE_ANNUAL),
+            verification = null,
+        )
+        every { authStore.getAccessToken() } returns null
+
+        val activity = mockk<android.app.Activity>(relaxed = true)
+        viewModel.purchase(activity)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value.showCreateAccountNudge)
+    }
+
+    @Test
+    fun `authed purchase success does not show create-account nudge`() = runTest {
+        val product = mockk<ProductInfo>(relaxed = true) {
+            every { productId } returns "com.pepinillo.app.pro.annual"
+        }
+        productsFlow.value = listOf(product)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.selectProduct("com.pepinillo.app.pro.annual")
+        coEvery { subscriptionManager.launchPurchaseFlow(any(), any()) } returns PurchaseFlowResult.Success(
+            state = SubscriptionState(tier = SubscriptionTier.EVERYWHERE_ANNUAL),
+            verification = null,
+        )
+        every { authStore.getAccessToken() } returns "token"
+        coEvery { userRepository.fetchAndCacheProfile() } returns Result.success(userEntity())
+
+        val activity = mockk<android.app.Activity>(relaxed = true)
+        viewModel.purchase(activity)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertFalse(viewModel.uiState.value.showCreateAccountNudge)
+    }
+
+    @Test
+    fun `dismissCreateAccountNudge clears the nudge`() = runTest {
+        val product = mockk<ProductInfo>(relaxed = true) {
+            every { productId } returns "com.pepinillo.app.pro.annual"
+        }
+        productsFlow.value = listOf(product)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.selectProduct("com.pepinillo.app.pro.annual")
+        coEvery { subscriptionManager.launchPurchaseFlow(any(), any()) } returns PurchaseFlowResult.Success(
+            state = SubscriptionState(tier = SubscriptionTier.EVERYWHERE_ANNUAL),
+            verification = null,
+        )
+        every { authStore.getAccessToken() } returns null
+
+        val activity = mockk<android.app.Activity>(relaxed = true)
+        viewModel.purchase(activity)
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertTrue(viewModel.uiState.value.showCreateAccountNudge)
+
+        viewModel.dismissCreateAccountNudge()
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertFalse(viewModel.uiState.value.showCreateAccountNudge)
+    }
+
 }

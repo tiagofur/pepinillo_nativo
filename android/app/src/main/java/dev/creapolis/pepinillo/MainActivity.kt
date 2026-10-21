@@ -650,6 +650,9 @@ fun PepinilloApp(
             ) {
                 PaywallScreen(
                     onDismiss = { navController.popBackStack() },
+                    // Guest-rescue: the nudge's CTA routes to sign-in so the RC
+                    // alias transfers the fresh purchase to the new account.
+                    onNavigateToAuth = { navController.navigate("login") },
                 )
             }
 

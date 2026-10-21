@@ -849,4 +849,8 @@
     <string name="duration_under_minute">&lt; 1 min</string>
     <string name="dashboard_stats_unavailable_title">Couldn\'t load your stats</string>
     <string name="dashboard_stats_unavailable_desc">Your history is safe. Check your connection and try again.</string>
+    <string name="paywall_guest_nudge_title">Keep your Premium</string>
+    <string name="paywall_guest_nudge_desc">You purchased as a guest. Create a free account now so your subscription follows you to every device \u2014 and nothing gets lost.</string>
+    <string name="paywall_guest_nudge_cta">Create free account</string>
+    <string name="paywall_guest_nudge_later">Maybe later</string>
 </resources>

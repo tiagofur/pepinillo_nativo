@@ -33,6 +33,7 @@ data class PaywallUiState(
     val canSync: Boolean = false,
     val isPepinilloPlus: Boolean = false,
     val shouldAutoDismiss: Boolean = false,
+    val showCreateAccountNudge: Boolean = false,
     @field:androidx.annotation.StringRes val errorRes: Int? = null,
 )
 
@@ -47,8 +48,17 @@ class PaywallViewModel @Inject constructor(
     private val _selectedProductId = MutableStateFlow<String?>(null)
     private val _isPurchasing = MutableStateFlow(false)
     private val _errorRes = MutableStateFlow<Int?>(null)
+    // Shown after a successful GUEST purchase: without an account the
+    // entitlement lives only in the anonymous RevenueCat ID. Creating an
+    // account transfers it (RC alias) and the post-login reconcile syncs
+    // the server.
+    private val _showCreateAccountNudge = MutableStateFlow(false)
 
-    val uiState: StateFlow<PaywallUiState> = combine(
+    fun dismissCreateAccountNudge() {
+        _showCreateAccountNudge.value = false
+    }
+
+    private val baseUiState: StateFlow<PaywallUiState> = combine(
         subscriptionManager.products,
         _selectedProductId,
         _isPurchasing,
@@ -67,6 +77,10 @@ class PaywallViewModel @Inject constructor(
             shouldAutoDismiss = PaywallPolicy.shouldAutoDismiss(subState, resolvedSelected),
             errorRes = errorRes,
         )
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), PaywallUiState())
+
+    val uiState: StateFlow<PaywallUiState> = combine(baseUiState, _showCreateAccountNudge) { base, nudge ->
+        base.copy(showCreateAccountNudge = nudge)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), PaywallUiState())
 
     init {
@@ -101,6 +115,12 @@ class PaywallViewModel @Inject constructor(
                 when (val result = subscriptionManager.launchPurchaseFlow(activity, product)) {
                     is PurchaseFlowResult.Success -> {
                         verifyWithServerIfNeeded(result.verification)
+                        // Guest checkout: entitlement lives only in the anonymous
+                        // RevenueCat ID until the user gets an account. Nudge now,
+                        // at peak intent, instead of losing them.
+                        if (result.state.hasLocalPremium && authStore.getAccessToken() == null) {
+                            _showCreateAccountNudge.value = true
+                        }
                     }
                     is PurchaseFlowResult.Cancelled -> { /* expected */ }
                     is PurchaseFlowResult.Pending -> {

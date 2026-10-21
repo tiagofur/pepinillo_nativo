@@ -858,4 +858,8 @@
     <string name="duration_under_minute">&lt; 1 min</string>
     <string name="dashboard_stats_unavailable_title">Não foi possível carregar suas estatísticas</string>
     <string name="dashboard_stats_unavailable_desc">Seu histórico está seguro. Verifique sua conexão e tente novamente.</string>
+    <string name="paywall_guest_nudge_title">Mantenha seu Premium</string>
+    <string name="paywall_guest_nudge_desc">Voc\u00ea comprou como visitante. Crie sua conta gr\u00e1tis agora para que sua assinatura acompanhe voc\u00ea em todos os dispositivos, sem perder nada.</string>
+    <string name="paywall_guest_nudge_cta">Criar conta gr\u00e1tis</string>
+    <string name="paywall_guest_nudge_later">Agora n\u00e3o</string>
 </resources>
