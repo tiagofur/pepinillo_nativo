@@ -800,6 +800,13 @@ struct AppFeature {
                 state.focus.showPaywall = false
                 return .none
 
+            case .paywall(.delegate(.signInRequested)):
+                // Guest tapped "Create account" on the post-purchase nudge:
+                // dismiss the paywall and present auth. RevenueCat transfers
+                // the entitlement on sign-in (transfer-on-login).
+                state.focus.showPaywall = false
+                return .send(.showAuth)
+
             // MARK: - Calendar & Weekly Review
 
             case .calendarTapped:

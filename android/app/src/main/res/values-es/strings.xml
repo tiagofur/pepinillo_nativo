@@ -851,4 +851,8 @@
     <string name="duration_under_minute">&lt; 1 min</string>
     <string name="dashboard_stats_unavailable_title">No se pudieron cargar tus estadísticas</string>
     <string name="dashboard_stats_unavailable_desc">Tu historial está a salvo. Revisá tu conexión e intentá de nuevo.</string>
+    <string name="paywall_guest_nudge_title">Conserv\u00e1 tu Premium</string>
+    <string name="paywall_guest_nudge_desc">Compraste como invitado. Cre\u00e1 tu cuenta gratis ahora para que tu suscripci\u00f3n te acompa\u00f1e en todos tus dispositivos, sin perder nada.</string>
+    <string name="paywall_guest_nudge_cta">Crear cuenta gratis</string>
+    <string name="paywall_guest_nudge_later">Ahora no</string>
 </resources>

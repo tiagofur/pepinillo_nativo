@@ -62,6 +62,18 @@ struct PaywallView: View {
             } message: {
                 Text(store.purchaseResult?.message ?? "")
             }
+            .alert(
+                String(localized: "Keep your Premium"),
+                isPresented: Binding(
+                    get: { store.showCreateAccountNudge },
+                    set: { if !$0 { store.send(.createAccountDismissed) } }
+                )
+            ) {
+                Button(String(localized: "Create free account")) { store.send(.createAccountTapped) }
+                Button(String(localized: "Maybe later"), role: .cancel) { store.send(.createAccountDismissed) }
+            } message: {
+                Text(String(localized: "You purchased as a guest. Create a free account now so your subscription follows you to every device."))
+            }
             .onChange(of: store.purchaseResult) { _, result in
                 // Fire success haptic in the view layer — matches CelebrationView.onAppear pattern.
                 if result?.isSuccess == true {

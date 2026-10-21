@@ -150,6 +150,7 @@ jobs:
             -test-timeouts-enabled YES \
             -default-test-execution-time-allowance 120 \
             -only-testing:PepinilloTests/TaskListFeatureTests \
+            -only-testing:PepinilloTests/PaywallFeatureTests \
             -only-testing:PepinilloTests/FocusFeatureTests/FocusFeatureReducerTests \
             -only-testing:PepinilloTests/IntegrationTests/AppFeatureIntegrationTests/subscriptionStateLoadedWritesCapabilitiesToAppGroup \
             -only-testing:PepinilloTests/IntegrationTests/AppFeatureIntegrationTests/subscriptionUpdatedWritesCapabilitiesToAppGroup \

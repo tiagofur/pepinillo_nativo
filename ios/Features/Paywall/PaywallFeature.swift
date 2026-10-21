@@ -85,6 +85,14 @@ struct PaywallFeature {
         var isLoading: Bool = false
         var purchaseResult: PurchaseResultAlert? = nil
         var subscriptionState: SubscriptionState = .free
+        /// Shown after a guest purchase/restore: without an account the
+        /// entitlement lives only in the anonymous RevenueCat ID. Creating one
+        /// transfers it (RC alias) and the post-login reconcile syncs it.
+        var showCreateAccountNudge = false
+        /// Whether the presenting user is a guest (no backend session).
+        /// Resolved on appear via the keychain; guests get the nudge instead
+        /// of the plain welcome alert so the entitlement can follow them.
+        var isGuest = false
 
         /// Whether the primary purchase action should be enabled for the current selection.
         var isPurchaseEnabled: Bool {
@@ -108,6 +116,7 @@ struct PaywallFeature {
 
     enum Action: Equatable {
         case appeared
+        case guestStatusLoaded(Bool)
         case productsLoaded([ProductInfo])
         case productSelected(String)
         case purchaseTapped
@@ -116,6 +125,8 @@ struct PaywallFeature {
         case subscriptionStateLoaded(SubscriptionState)
         case alertDismissed
         case closeTapped
+        case createAccountTapped
+        case createAccountDismissed
         case privacyPolicyTapped
         case termsOfServiceTapped
         case delegate(Delegate)
@@ -127,12 +138,17 @@ struct PaywallFeature {
             /// cannot close it (dismiss only works for `sheet(item:)` or NavigationStack
             /// paths). The parent owns the boolean and must flip it to false.
             case closeRequested
+        /// Guest tapped "Create account" on the post-purchase nudge: the
+        /// parent dismisses the paywall and presents auth. RC transfers the
+        /// entitlement on sign-in; the server side converges on next sync.
+        case signInRequested
         }
     }
 
     // MARK: - Dependencies
 
     @Dependency(\.subscriptionClient) var subscriptionClient
+    @Dependency(\.keychainClient) var keychain
     @Dependency(\.openURL) var openURL
 
     // MARK: - Reducer
@@ -142,30 +158,52 @@ struct PaywallFeature {
             switch action {
             case .appeared:
                 state.isLoading = true
-                return .merge(
-                    .run { send in
-                        guard await subscriptionClient.isPurchasesAvailable() else {
-                            await send(.productsLoaded([]))
-                            await send(.purchaseFinished(.failed(
-                                message: String(localized: "Purchases are unavailable. Please try again later.")
-                            )))
-                            return
-                        }
-                        let products = await subscriptionClient.fetchProducts()
-                        await send(.productsLoaded(products))
-                    },
-                    .run { send in
-                        // Do not silently coerce network failures to .free (#214).
-                        do {
-                            let sub = try await subscriptionClient.checkEntitlement()
-                            await send(.subscriptionStateLoaded(sub))
-                        } catch {
-                            // Preserve whatever entitlement is already in state.
-                        }
+                // Single sequential effect (not merged): deterministic action order
+                // (products → guest → entitlement). Three concurrent effects raced
+                // nondeterministically across runs and broke TestStore assertions.
+                // The keychain read is instant; serialization cost is one local read.
+                return .run { send in
+                    guard await subscriptionClient.isPurchasesAvailable() else {
+                        await send(.productsLoaded([]))
+                        await send(.purchaseFinished(.failed(
+                            message: String(localized: "Purchases are unavailable. Please try again later.")
+                        )))
+                        return
                     }
-                )
+                    let products = await subscriptionClient.fetchProducts()
+                    await send(.productsLoaded(products))
+                    // Resolve guest status for the post-purchase nudge: no
+                    // backend tokens means the buyer is anonymous, and the
+                    // entitlement would strand on the RC anonymous ID.
+                    let hasTokens = await keychain.hasTokens()
+                    await send(.guestStatusLoaded(!hasTokens))
+                    // Do not silently coerce network failures to .free (#214).
+                    do {
+                        let sub = try await subscriptionClient.checkEntitlement()
+                        await send(.subscriptionStateLoaded(sub))
+                    } catch {
+                        // Preserve whatever entitlement is already in state.
+                    }
+                }
 
-            case .productsLoaded(let products):
+            case .guestStatusLoaded(let isGuest):
+            state.isGuest = isGuest
+            if !isGuest {
+                // An authenticated user never needs the nudge (e.g. paywall
+                // reopened after signing in elsewhere).
+                state.showCreateAccountNudge = false
+            }
+            return .none
+
+        case .createAccountTapped:
+            state.showCreateAccountNudge = false
+            return .send(.delegate(.signInRequested))
+
+        case .createAccountDismissed:
+            state.showCreateAccountNudge = false
+            return .none
+
+        case .productsLoaded(let products):
                 state.isLoading = false
                 state.products = products
                 if let featured = products.first(where: { $0.isFeatured }) {
@@ -224,10 +262,17 @@ struct PaywallFeature {
                     let welcomeMessage = mapped.isEverywhere
                         ? String(localized: "Welcome to Everywhere/AI+! 🎉")
                         : String(localized: "Welcome to Pepinillo+! 🎉")
-                    state.purchaseResult = State.PurchaseResultAlert(
-                        message: welcomeMessage,
-                        isSuccess: true
-                    )
+                    if state.isGuest {
+                        // Guest purchase/restore: skip the welcome alert — the
+                        // create-account nudge carries the celebration plus the
+                        // keep-premium CTA. The unlock path below still runs.
+                        state.showCreateAccountNudge = true
+                    } else {
+                        state.purchaseResult = State.PurchaseResultAlert(
+                            message: welcomeMessage,
+                            isSuccess: true
+                        )
+                    }
                     return .run { [mapped, productID] send in
                         // Restore path already has authoritative state; unlock if pro.
                         if productID.isEmpty {

@@ -72,6 +72,7 @@ import dev.creapolis.pepinillo.ui.theme.PepinilloShapeTokens
 @Composable
 fun PaywallScreen(
     onDismiss: () -> Unit,
+    onNavigateToAuth: () -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: PaywallViewModel = hiltViewModel(),
 ) {
@@ -79,10 +80,21 @@ fun PaywallScreen(
     val context = LocalContext.current
     val activity = context as? Activity
 
-    LaunchedEffect(uiState.shouldAutoDismiss) {
-        if (uiState.shouldAutoDismiss) {
+    LaunchedEffect(uiState.shouldAutoDismiss, uiState.showCreateAccountNudge) {
+        // The guest nudge takes over the screen: don't auto-dismiss under it.
+        if (uiState.shouldAutoDismiss && !uiState.showCreateAccountNudge) {
             onDismiss()
         }
+    }
+
+    if (uiState.showCreateAccountNudge) {
+        CreateAccountNudgeDialog(
+            onCreateAccount = {
+                viewModel.dismissCreateAccountNudge()
+                onNavigateToAuth()
+            },
+            onDismiss = { viewModel.dismissCreateAccountNudge() },
+        )
     }
 
     Column(
@@ -590,4 +602,40 @@ private fun ProductCard(
             )
         }
     }
+}
+
+/**
+ * Post-purchase nudge for guest buyers (guest-rescue): without an account the
+ * entitlement lives only in the anonymous RevenueCat ID. Creating one now —
+ * at peak intent — transfers it via the RC alias on sign-in, and the
+ * post-login reconcile syncs the server. Dismissing keeps everything working;
+ * restore remains available in the paywall.
+ */
+@Composable
+private fun CreateAccountNudgeDialog(
+    onCreateAccount: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismiss,
+        icon = {
+            Icon(
+                imageVector = Icons.Rounded.CloudSync,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+            )
+        },
+        title = { Text(stringResource(R.string.paywall_guest_nudge_title)) },
+        text = { Text(stringResource(R.string.paywall_guest_nudge_desc)) },
+        confirmButton = {
+            Button(onClick = onCreateAccount) {
+                Text(stringResource(R.string.paywall_guest_nudge_cta))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.paywall_guest_nudge_later))
+            }
+        },
+    )
 }

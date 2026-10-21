@@ -1,6 +1,11 @@
 package dev.creapolis.pepinillo.core.auth
 
+import dev.creapolis.pepinillo.core.billing.PurchaseVerificationTarget
+import dev.creapolis.pepinillo.core.billing.RestoreFlowResult
 import dev.creapolis.pepinillo.core.billing.SubscriptionManager
+import dev.creapolis.pepinillo.core.billing.SubscriptionState
+import dev.creapolis.pepinillo.core.billing.SubscriptionTier
+import dev.creapolis.pepinillo.core.network.VerifyReceiptResponse
 import dev.creapolis.pepinillo.core.identity.IdentityManager
 import dev.creapolis.pepinillo.core.network.AuthResponse
 import dev.creapolis.pepinillo.core.network.NetworkResult
@@ -13,6 +18,7 @@ import dev.creapolis.pepinillo.data.sync.InitialSyncManager
 import dev.creapolis.pepinillo.data.sync.InitialUploadResult
 import dev.creapolis.pepinillo.data.sync.SyncEngine
 import dev.creapolis.pepinillo.data.sync.SyncMetadataStore
+import dev.creapolis.pepinillo.data.sync.SyncResult
 import dev.creapolis.pepinillo.data.sync.SyncWebSocketClient
 import dev.creapolis.pepinillo.data.sync.TransientSyncException
 import io.mockk.Runs
@@ -24,6 +30,7 @@ import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.verify
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -355,4 +362,58 @@ class SessionManagerTest {
         name = "Test",
         emailVerified = emailVerified,
     )
+
+    // -----------------------------------------------------------------------
+    // reconcileServerEntitlement (guest rescue)
+    // -----------------------------------------------------------------------
+
+    @Test
+    fun `onMergeResolved reconciles server tier when RC reports premium`() = runTest {
+        every { subscriptionManager.subscriptionState } returns MutableStateFlow(
+            SubscriptionState(tier = SubscriptionTier.EVERYWHERE_ANNUAL),
+        )
+        coEvery { syncEngine.initialUpload() } returns InitialUploadResult.Success(hasExistingData = true)
+        coEvery { syncEngine.syncAll() } returns SyncResult.Success
+        coEvery { subscriptionManager.restorePurchases() } returns RestoreFlowResult.Success(
+            state = SubscriptionState(tier = SubscriptionTier.EVERYWHERE_ANNUAL),
+            verification = PurchaseVerificationTarget("prod", "tok"),
+        )
+        coEvery { apiClient.verifyReceipt(any()) } returns NetworkResult.Success(
+            VerifyReceiptResponse(subscriptionTier = "everywhere_annual", subscriptionExpiresAt = null),
+        )
+        coJustRun { userRepository.fetchAndCacheProfile() }
+
+        sessionManager.onMergeResolved()
+
+        coVerify { subscriptionManager.restorePurchases() }
+        coVerify { apiClient.verifyReceipt(any()) }
+        coVerify { subscriptionManager.updateFromServer("everywhere_annual", null) }
+    }
+
+    @Test
+    fun `onMergeResolved skips reconcile when RC has no premium`() = runTest {
+        every { subscriptionManager.subscriptionState } returns MutableStateFlow(SubscriptionState())
+        coEvery { syncEngine.initialUpload() } returns InitialUploadResult.Success(hasExistingData = true)
+        coEvery { syncEngine.syncAll() } returns SyncResult.Success
+
+        sessionManager.onMergeResolved()
+
+        coVerify(exactly = 0) { subscriptionManager.restorePurchases() }
+        coVerify(exactly = 0) { apiClient.verifyReceipt(any()) }
+    }
+
+    @Test
+    fun `reconcile failure never breaks the merge flow`() = runTest {
+        every { subscriptionManager.subscriptionState } returns MutableStateFlow(
+            SubscriptionState(tier = SubscriptionTier.EVERYWHERE_ANNUAL),
+        )
+        coEvery { syncEngine.initialUpload() } returns InitialUploadResult.Success(hasExistingData = true)
+        coEvery { syncEngine.syncAll() } returns SyncResult.Success
+        coEvery { subscriptionManager.restorePurchases() } throws RuntimeException("rc down")
+
+        // Must not throw.
+        sessionManager.onMergeResolved()
+
+        coVerify(exactly = 0) { apiClient.verifyReceipt(any()) }
+    }
 }
