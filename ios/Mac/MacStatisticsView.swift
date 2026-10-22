@@ -35,6 +35,33 @@ struct MacStatisticsView: View {
                 .pickerStyle(.segmented)
                 .help("Statistics period")
             }
+
+            if AppConfig.aiInsightsEnabled {
+                ToolbarItem(placement: .primaryAction) {
+                    Menu {
+                        Button {
+                            store.send(.aiReportTapped(.week))
+                        } label: {
+                            Label(String(localized: "Weekly AI Report"), systemImage: "sparkles")
+                        }
+                        Button {
+                            store.send(.aiReportTapped(.month))
+                        } label: {
+                            Label(String(localized: "Monthly AI Report"), systemImage: "sparkles")
+                        }
+                    } label: {
+                        Label("Reports", systemImage: "sparkles")
+                    }
+                    .help("Generate AI reports")
+                }
+            }
+        }
+        // Same presentation as the iOS Dashboard sheet; the Pro gate lives in
+        // the shared reducer (free users surface the paywall on the main
+        // window via focus.showPaywall).
+        .sheet(item: $store.scope(state: \.aiReport, action: \.aiReport)) { aiStore in
+            AIReportView(store: aiStore)
+                .frame(minWidth: 520, minHeight: 600)
         }
         .onAppear {
             store.send(.onAppear)

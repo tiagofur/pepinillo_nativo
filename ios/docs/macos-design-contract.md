@@ -52,6 +52,7 @@ Coherence means the same palette, ring geometry, glass language, motion feel, an
 - Menu bar presence is an **AppKit `NSStatusItem` + `NSPopover`** (`MacStatusBarController`), not `MenuBarExtra`: the SwiftUI MenuBarExtra label renders once and never re-renders, while the menu contract requires a live countdown. The popover hosts the same `MacMenuBarView`.
 - `Settings` scene, opened with `⌘,`.
 - `Window("Statistics", id: "statistics")` — opened with `⌘4` or Visualización > Estadísticas; period-switchable (7D/30D/Year) over the shared `AnalyticsFeature`. The Year period aggregates into weekly buckets client-side. Because the analytics period is shared state, the Today weekly card always filters to the trailing 7 days.
+- AI reports: a Reports (sparkles) menu in the Statistics toolbar offers Weekly/Monthly AI Report (gated by `AppConfig.aiInsightsEnabled` and the shared Pro gate). The report presents as a sheet in the Statistics window; for free users the paywall surfaces on the main window via the shared `focus.showPaywall` path.
 - Closing the main window must not stop the timer. Set `applicationShouldTerminateAfterLastWindowClosed = false`. Clicking the Dock icon (or a Dock-menu section) restores the window.
 - Restore the selected sidebar section, window frame, and inspector visibility.
 - The timer lives in the app-level `StoreOf<AppFeature>`, not in a view's lifecycle.
