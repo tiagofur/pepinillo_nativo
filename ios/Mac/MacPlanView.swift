@@ -58,8 +58,12 @@ struct MacPlanView: View {
     @State private var filter: MacPlanFilter = .all
     @State private var searchText = ""
     @State private var selection = Set<UUID>()
+    @State private var isInspectorPresented = false
+    @State private var editingTaskID: UUID?
+    @State private var editingTitle = ""
     @FocusState private var isComposerFocused: Bool
     @FocusState private var isSearchFocused: Bool
+    @FocusState private var isTitleEditorFocused: Bool
 
     var body: some View {
         let tasks = filteredTasks
@@ -81,8 +85,19 @@ struct MacPlanView: View {
         )
         .searchFocused($isSearchFocused)
         .toolbar { toolbarContent }
+        .inspector(isPresented: $isInspectorPresented) {
+            inspectorContent
+                .inspectorColumnWidth(min: 300, ideal: 340, max: 460)
+        }
         .onReceive(NotificationCenter.default.publisher(for: .macPlanSearchRequested)) { _ in
             isSearchFocused = true
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .macPlanRenameRequested)) { _ in
+            guard let id = selection.first, let task = store.tasks[id: id] else { return }
+            beginTitleEdit(task)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .macPlanInspectorToggleRequested)) { _ in
+            toggleInspector()
         }
         .onAppear {
             store.send(.onAppear)
@@ -91,13 +106,22 @@ struct MacPlanView: View {
         .onChange(of: filter) { _, newValue in
             store.send(.planFilterSelected(newValue.sharedFilter))
         }
+        .onChange(of: selection) { _, newValue in
+            guard isInspectorPresented,
+                  let id = newValue.first,
+                  store.detail?.taskID != id else { return }
+            store.send(.taskTapped(id))
+        }
+        .onChange(of: store.detail?.taskID) { _, newValue in
+            if newValue == nil {
+                isInspectorPresented = false
+            }
+        }
         .onChange(of: tasks.map(\.id)) { _, ids in
             selection.formIntersection(Set(ids))
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            if let deletedTask = store.recentlyDeletedTask {
-                undoBanner(task: deletedTask)
-            }
+            undoBannerContent
         }
         .alert(
             String(localized: "Couldn't Load Tasks"),
@@ -146,12 +170,27 @@ struct MacPlanView: View {
             .width(44)
 
             TableColumn(String(localized: "Title")) { task in
-                Text(task.title)
-                    .font(.body)
-                    .strikethrough(task.isCompleted)
-                    .foregroundStyle(task.isCompleted ? Color.secondary : Color.primary)
-                    .lineLimit(1)
-                    .frame(height: 30, alignment: .leading)
+                if editingTaskID == task.id {
+                    TextField(String(localized: "Title"), text: $editingTitle)
+                        .textFieldStyle(.plain)
+                        .font(.body)
+                        .focused($isTitleEditorFocused)
+                        .onSubmit { commitTitleEdit(for: task.id) }
+                        .onExitCommand { cancelTitleEdit() }
+                        .onChange(of: isTitleEditorFocused) { _, isFocused in
+                            if !isFocused, editingTaskID == task.id {
+                                commitTitleEdit(for: task.id)
+                            }
+                        }
+                        .frame(height: 30, alignment: .leading)
+                } else {
+                    Text(task.title)
+                        .font(.body)
+                        .strikethrough(task.isCompleted)
+                        .foregroundStyle(task.isCompleted ? Color.secondary : Color.primary)
+                        .lineLimit(1)
+                        .frame(height: 30, alignment: .leading)
+                }
             }
             .width(min: 180, ideal: 340, max: .infinity)
 
@@ -193,7 +232,9 @@ struct MacPlanView: View {
             taskContextMenu(ids: ids)
         } primaryAction: { ids in
             guard let id = ids.first else { return }
+            selection = [id]
             store.send(.taskTapped(id))
+            isInspectorPresented = true
         }
     }
 
@@ -287,6 +328,13 @@ struct MacPlanView: View {
         let tasks = ids.compactMap { store.tasks[id: $0] }
 
         if !tasks.isEmpty {
+            if tasks.count == 1, let task = tasks.first {
+                Button(String(localized: "Rename Task")) {
+                    beginTitleEdit(task)
+                }
+                Divider()
+            }
+
             let startable = tasks.first { !$0.isCompleted }
             Button(String(localized: "Start Focus")) {
                 if let startable {
@@ -363,6 +411,17 @@ struct MacPlanView: View {
 
     @ToolbarContentBuilder
     private var toolbarContent: some ToolbarContent {
+        ToolbarItem(placement: .primaryAction) {
+            Button {
+                toggleInspector()
+            } label: {
+                Label(String(localized: "Show Inspector"), systemImage: "sidebar.trailing")
+                    .labelStyle(.iconOnly)
+            }
+            .help(String(localized: "Show Inspector (⌘⌥I)"))
+            .accessibilityLabel(String(localized: "Show Inspector"))
+        }
+
         ToolbarItem(placement: .primaryAction) {
             Menu {
                 ForEach(MacPlanFilter.allCases) { item in
@@ -497,24 +556,112 @@ struct MacPlanView: View {
         }
     }
 
+    // MARK: - Inspector
+
+    @ViewBuilder
+    private var inspectorContent: some View {
+        if let presentedStore = store.scope(state: \.detail, action: \.detail) {
+            let childStore = presentedStore.scope(state: \.self, action: \.presented)
+            MacTaskInspectorView(
+                store: childStore,
+                onClose: {
+                    isInspectorPresented = false
+                    store.send(.taskDetailDismissed)
+                },
+                onStartFocus: { id, _ in
+                    isInspectorPresented = false
+                    store.send(.taskDetailDismissed)
+                    store.send(.startFocusOnTask(id))
+                },
+                onToggleCompletion: { id in
+                    store.send(.taskCompleted(id))
+                }
+            )
+            .id(presentedStore.taskID)
+        } else {
+            ContentUnavailableView {
+                Label(String(localized: "No Task Selected"), systemImage: "sidebar.trailing")
+            } description: {
+                Text(String(localized: "Select a task to inspect it."))
+            }
+        }
+    }
+
+    private func toggleInspector() {
+        if isInspectorPresented {
+            isInspectorPresented = false
+            store.send(.taskDetailDismissed)
+            return
+        }
+
+        if let id = selection.first, store.detail?.taskID != id {
+            store.send(.taskTapped(id))
+        }
+        isInspectorPresented = true
+    }
+
+    // MARK: - Inline title edit
+
+    private func beginTitleEdit(_ task: TaskListFeature.TaskItemState) {
+        selection = [task.id]
+        editingTaskID = task.id
+        editingTitle = task.title
+        DispatchQueue.main.async {
+            isTitleEditorFocused = true
+        }
+    }
+
+    private func commitTitleEdit(for id: UUID) {
+        guard editingTaskID == id else { return }
+        let trimmed = editingTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+        editingTaskID = nil
+        isTitleEditorFocused = false
+        guard !trimmed.isEmpty else { return }
+        store.send(.taskRenamed(id, trimmed))
+    }
+
+    private func cancelTitleEdit() {
+        editingTaskID = nil
+        isTitleEditorFocused = false
+    }
+
     // MARK: - Undo
 
-    private func undoBanner(task: TaskListFeature.TaskItemState) -> some View {
+    @ViewBuilder
+    private var undoBannerContent: some View {
+        if let completed = store.recentlyCompletedTask {
+            undoBanner(
+                systemImage: "checkmark.circle",
+                message: String(localized: "Task completed"),
+                action: { store.send(.undoCompleteTask) }
+            )
+        } else if let deleted = store.recentlyDeletedTask {
+            undoBanner(
+                systemImage: "trash",
+                message: String(format: String(localized: "\"%@\" deleted"), deleted.title),
+                action: { store.send(.undoDeleteTask) }
+            )
+        }
+    }
+
+    private func undoBanner(
+        systemImage: String,
+        message: String,
+        action: @escaping () -> Void
+    ) -> some View {
         HStack(spacing: 12) {
-            Image(systemName: "trash")
+            Image(systemName: systemImage)
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
 
-            Text(String(format: String(localized: "\"%@\" deleted"), task.title))
+            Text(message)
                 .font(.subheadline)
                 .lineLimit(1)
 
             Spacer()
 
-            Button(String(localized: "Undo")) {
-                store.send(.undoDeleteTask)
-            }
-            .font(.subheadline.weight(.semibold))
+            Button(String(localized: "Undo"), action: action)
+                .font(.subheadline.weight(.semibold))
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)

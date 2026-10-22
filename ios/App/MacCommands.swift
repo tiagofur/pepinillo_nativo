@@ -53,6 +53,10 @@ enum FocusToggleCommand {
 extension Notification.Name {
     /// Posted by the Edit > Search Tasks command and observed by `MacPlanView`.
     static let macPlanSearchRequested = Notification.Name("pepinillo.mac.plan.search")
+    /// Posted by Plan > Rename Task and observed by `MacPlanView`.
+    static let macPlanRenameRequested = Notification.Name("pepinillo.mac.plan.rename")
+    /// Posted by Plan > Show Inspector and observed by `MacPlanView`.
+    static let macPlanInspectorToggleRequested = Notification.Name("pepinillo.mac.plan.inspector")
 }
 
 struct PepinilloCommands: Commands {
@@ -118,6 +122,20 @@ struct PepinilloCommands: Commands {
                 store.send(.tasks(.newTaskRequested))
             }
             .keyboardShortcut("n", modifiers: .command)
+
+            Divider()
+
+            Button(String(localized: "Rename Task")) {
+                NotificationCenter.default.post(name: .macPlanRenameRequested, object: nil)
+            }
+            .keyboardShortcut("r", modifiers: .command)
+            .disabled(store.selectedTab != .plan)
+
+            Button(String(localized: "Show Inspector")) {
+                NotificationCenter.default.post(name: .macPlanInspectorToggleRequested, object: nil)
+            }
+            .keyboardShortcut("i", modifiers: [.command, .option])
+            .disabled(store.selectedTab != .plan)
         }
 
         // MARK: View Menu Additions

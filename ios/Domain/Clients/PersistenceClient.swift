@@ -121,13 +121,14 @@ public struct TaskItemDTO: Sendable, Equatable, Identifiable {
     /// Returns a copy with selective field overrides. Use after `fetchTask` to
     /// avoid partial DTO rebuilds that wipe recurrence/sync metadata (issue #178).
     public func updating(
+        title: String? = nil,
         isCompleted: Bool? = nil,
         energyLevel: EnergyLevel? = nil,
         priority: TaskPriority? = nil
     ) -> TaskItemDTO {
         TaskItemDTO(
             id: id,
-            title: title,
+            title: title ?? self.title,
             notes: notes,
             isCompleted: isCompleted ?? self.isCompleted,
             priority: priority ?? self.priority,
@@ -149,6 +150,36 @@ public struct TaskItemDTO: Sendable, Equatable, Identifiable {
             isDeleted: isDeleted,
             syncedAt: syncedAt,
             updatedAt: updatedAt
+        )
+    }
+
+    /// Returns a copy with `isCompleted` and `completedAt` kept consistent.
+    /// Completing stores the supplied date; reopening clears the timestamp.
+    public func updatingCompletion(_ isCompleted: Bool, at completedAt: Date?) -> TaskItemDTO {
+        TaskItemDTO(
+            id: id,
+            title: title,
+            notes: notes,
+            isCompleted: isCompleted,
+            priority: priority,
+            energyLevel: energyLevel,
+            estimatedPomodoros: estimatedPomodoros,
+            completedPomodoros: completedPomodoros,
+            sortOrder: sortOrder,
+            subtasksCompleted: subtasksCompleted,
+            subtasksTotal: subtasksTotal,
+            recurrenceRule: recurrenceRule,
+            isRecurringTemplate: isRecurringTemplate,
+            dueDate: dueDate,
+            scheduledForToday: scheduledForToday,
+            completedAt: isCompleted ? (completedAt ?? self.completedAt) : nil,
+            createdAt: createdAt,
+            syncId: syncId,
+            serverId: serverId,
+            isDirty: isDirty,
+            isDeleted: isDeleted,
+            syncedAt: syncedAt,
+            updatedAt: .now
         )
     }
 }

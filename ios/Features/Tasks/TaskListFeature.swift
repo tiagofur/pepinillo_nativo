@@ -39,6 +39,8 @@ struct TaskListFeature {
         var selectedTaskID: UUID?
         var selectedPlanFilter: PlanFilter = .today
         var recentlyDeletedTask: TaskItemState?
+        /// Most recent task completed from this window. Powers the macOS undo banner.
+        var recentlyCompletedTask: TaskItemState?
         var isProUser: Bool = false
         /// When true the task list renders sections by energy level.
         var isGroupedByEnergy: Bool = false
@@ -190,9 +192,13 @@ struct TaskListFeature {
         case newTaskComposerDismissed
         case addTaskTapped
         case taskTapped(UUID)
+        case taskDetailDismissed
+        case taskRenamed(UUID, String)
         case taskCompleted(UUID)
         /// Idempotent completion setter (watch bridge #243).
         case setTaskCompleted(UUID, Bool)
+        case undoCompleteTask
+        case completionUndoTimerExpired(UUID)
         case taskDeleted(UUID)
         case undoDeleteTask
         case undoTimerExpired(UUID)
@@ -242,7 +248,10 @@ struct TaskListFeature {
         case update(task: TaskItemState, message: String)
     }
 
-    private enum _UndoTimerID: Hashable { case undoTimer(UUID) }
+    private enum _UndoTimerID: Hashable {
+        case undoTimer(UUID)
+        case completionUndoTimer(UUID)
+    }
     private enum _SpotlightIndexID: Hashable { case indexTasks }
 
     @Dependency(\.persistenceClient) var persistence
@@ -412,36 +421,73 @@ struct TaskListFeature {
                 }
 
             case .taskTapped(let id):
-                // Sync current detail back to the list before swapping
+                state.selectedTaskID = id
+                // Double-clicking the row that is already open must not recreate
+                // the detail state and discard its loaded subtasks/sessions.
+                guard state.detail?.taskID != id else { return .none }
+
+                // Sync current detail back to the list before swapping.
                 if let currentDetail = state.detail {
                     state.tasks[id: currentDetail.taskID] = TaskItemState.from(currentDetail.toDTO())
                 }
-                
+
                 guard let task = state.tasks[id: id] else { return .none }
-                state.selectedTaskID = id
                 var detailState = TaskDetailFeature.State(from: task)
                 detailState.isProUser = state.isProUser
                 state.detail = detailState
                 return .none
+
+            case .taskDetailDismissed:
+                state.detail = nil
+                return .none
+
+            case .taskRenamed(let id, let title):
+                let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard let snapshot = state.tasks[id: id],
+                      !trimmed.isEmpty,
+                      snapshot.title != trimmed else { return .none }
+
+                state.tasks[id: id]?.title = trimmed
+                if state.detail?.taskID == id {
+                    state.detail?.title = trimmed
+                }
+                return .run { send in
+                    do {
+                        if let item = try await persistence.fetchTask(id) {
+                            try await persistence.saveTask(item.updating(title: trimmed))
+                            WidgetCenter.shared.reloadTimelines(ofKind: "TasksHomeScreenWidget")
+                        }
+                    } catch {
+                        await send(.mutationFailed(.update(
+                            task: snapshot,
+                            message: error.localizedDescription
+                        )))
+                    }
+                }
 
             case .taskCompleted(let id):
                 let isNowCompleted = !(state.tasks[id: id]?.isCompleted ?? false)
                 return .send(.setTaskCompleted(id, isNowCompleted))
 
             case .setTaskCompleted(let id, let isCompleted):
+                // `nil` means the task is not loaded in this window (widget/Siri
+                // completion); the persistence effect below still applies it.
                 guard state.tasks[id: id]?.isCompleted != isCompleted else { return .none }
                 let wasCompleted = state.tasks[id: id]?.isCompleted ?? false
+                let completedAt = isCompleted ? date.now : nil
                 state.tasks[id: id]?.isCompleted = isCompleted
-                state.tasks[id: id]?.completedAt = isCompleted ? date.now : nil
+                state.tasks[id: id]?.completedAt = completedAt
                 // Sync the detail column if it's currently showing this task
                 if state.detail?.taskID == id {
                     state.detail?.isCompleted = isCompleted
+                    state.detail?.completedAt = completedAt
                 }
-                return .run { send in
+
+                let persist = Effect<Action>.run { send in
                     do {
                         // Single-row fetch instead of a full-table scan (issue #74).
                         if let item = try await persistence.fetchTask(id) {
-                            let updated = item.updating(isCompleted: isCompleted)
+                            let updated = item.updatingCompletion(isCompleted, at: completedAt)
                             try await persistence.saveTask(updated)
                             WidgetCenter.shared.reloadTimelines(ofKind: "TasksHomeScreenWidget")
                         }
@@ -454,10 +500,67 @@ struct TaskListFeature {
                     }
                 }
 
+                guard isCompleted else {
+                    if state.recentlyCompletedTask?.id == id {
+                        state.recentlyCompletedTask = nil
+                    }
+                    return persist
+                }
+
+                guard let completedTask = state.tasks[id: id] else {
+                    // External completion for a task not loaded here: persist only.
+                    return persist
+                }
+                state.recentlyCompletedTask = completedTask
+                let dismissUndo = Effect<Action>.run { send in
+                    try await Task.sleep(for: .seconds(5))
+                    await send(.completionUndoTimerExpired(id))
+                }
+                .cancellable(id: _UndoTimerID.completionUndoTimer(id), cancelInFlight: false)
+
+                return .merge(persist, dismissUndo)
+
+            case .undoCompleteTask:
+                guard let task = state.recentlyCompletedTask else { return .none }
+                state.recentlyCompletedTask = nil
+                state.tasks[id: task.id]?.isCompleted = false
+                state.tasks[id: task.id]?.completedAt = nil
+                if state.detail?.taskID == task.id {
+                    state.detail?.isCompleted = false
+                    state.detail?.completedAt = nil
+                }
+
+                return .merge(
+                    .cancel(id: _UndoTimerID.completionUndoTimer(task.id)),
+                    .run { send in
+                        do {
+                            if let item = try await persistence.fetchTask(task.id) {
+                                try await persistence.saveTask(item.updatingCompletion(false, at: nil))
+                                WidgetCenter.shared.reloadTimelines(ofKind: "TasksHomeScreenWidget")
+                            }
+                        } catch {
+                            await send(.mutationFailed(.complete(
+                                id: task.id,
+                                wasCompleted: true,
+                                message: error.localizedDescription
+                            )))
+                        }
+                    }
+                )
+
+            case .completionUndoTimerExpired(let id):
+                if state.recentlyCompletedTask?.id == id {
+                    state.recentlyCompletedTask = nil
+                }
+                return .none
+
             case .taskDeleted(let id):
                 guard let task = state.tasks[id: id] else { return .none }
                 state.recentlyDeletedTask = task
                 state.tasks.remove(id: id)
+                if state.recentlyCompletedTask?.id == id {
+                    state.recentlyCompletedTask = nil
+                }
                 if state.detail?.taskID == id {
                     state.detail = nil
                     state.selectedTaskID = nil
@@ -825,8 +928,12 @@ struct TaskListFeature {
                 case .complete(let id, let wasCompleted, let message):
                     state.tasks[id: id]?.isCompleted = wasCompleted
                     state.tasks[id: id]?.completedAt = wasCompleted ? date.now : nil
+                    if state.recentlyCompletedTask?.id == id {
+                        state.recentlyCompletedTask = nil
+                    }
                     if state.detail?.taskID == id {
                         state.detail?.isCompleted = wasCompleted
+                        state.detail?.completedAt = wasCompleted ? date.now : nil
                     }
                     state.mutationError = message
 
@@ -849,6 +956,7 @@ struct TaskListFeature {
                 case .update(let task, let message):
                     state.tasks[id: task.id] = task
                     if state.detail?.taskID == task.id {
+                        state.detail?.title = task.title
                         state.detail?.energyLevel = task.energyLevel
                         state.detail?.priority = task.priority
                         state.detail?.recurrenceRule = task.recurrenceRule

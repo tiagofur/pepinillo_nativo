@@ -653,6 +653,7 @@ struct AppFeatureIntegrationTests {
         let store = TestStore(initialState: AppFeature.State()) {
             AppFeature()
         } withDependencies: {
+            $0.date = .constant(Date(timeIntervalSince1970: 1_000))
             $0.persistenceClient.fetchTask = { _ in
                 TaskItemDTO(id: taskID, title: "Widget task")
             }

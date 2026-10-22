@@ -38,6 +38,7 @@ struct TaskDetailFeatureTests {
         } withDependencies: {
             $0.persistenceClient.fetchSubtasks = { _ in throw TestError() }
             $0.persistenceClient.fetchTaskTotalFocusSeconds = { _ in 0 }
+            $0.persistenceClient.fetchSessionsForTask = { _ in [] }
         }
 
         await store.send(.onAppear) {
@@ -133,6 +134,7 @@ struct TaskDetailFeatureTests {
         } withDependencies: {
             $0.persistenceClient.fetchSubtasks = { _ in [] }
             $0.persistenceClient.fetchTaskTotalFocusSeconds = { _ in 0 }
+            $0.persistenceClient.fetchSessionsForTask = { _ in [] }
         }
 
         store.exhaustivity = .off
@@ -140,6 +142,43 @@ struct TaskDetailFeatureTests {
             $0.loadError = nil
         }
         await store.receive(\.dataLoaded)
+    }
+
+    @Test("onAppear loads linked focus sessions")
+    func onAppearLoadsLinkedSessions() async {
+        let taskID = UUID(0)
+        let startedAt = Date(timeIntervalSince1970: 1_000_000)
+        let session = SessionRecordDTO(
+            id: UUID(1),
+            startedAt: startedAt,
+            endedAt: startedAt.addingTimeInterval(1_500),
+            mode: "pomodoro",
+            phase: "work",
+            targetDuration: 1_500,
+            actualDuration: 1_500,
+            wasCompleted: true,
+            interruptions: 0,
+            taskID: taskID
+        )
+
+        let store = TestStore(initialState: detailState(taskID: taskID)) {
+            TaskDetailFeature()
+        } withDependencies: {
+            $0.persistenceClient.fetchSubtasks = { _ in [] }
+            $0.persistenceClient.fetchTaskTotalFocusSeconds = { _ in 1_500 }
+            $0.persistenceClient.fetchSessionsForTask = { _ in [session] }
+        }
+
+        await store.send(.onAppear) {
+            $0.isLoading = true
+            $0.loadError = nil
+        }
+
+        await store.receive(\.dataLoaded) {
+            $0.isLoading = false
+            $0.totalFocusSeconds = 1_500
+            $0.sessions = [session]
+        }
     }
 
     @Test("add subtask failure restores title and surfaces error")

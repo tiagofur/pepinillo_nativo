@@ -18,6 +18,7 @@ struct TaskDetailFeature {
         var title: String
         var notes: String
         var isCompleted: Bool
+        var completedAt: Date?
         var priority: TaskPriority
         var energyLevel: EnergyLevel
         var estimatedPomodoros: Int
@@ -25,7 +26,9 @@ struct TaskDetailFeature {
         var dueDate: Date?
         var scheduledForToday: Bool
         var recurrenceRule: String?
+        var createdAt: Date
         var subtasks: IdentifiedArrayOf<SubtaskState> = []
+        var sessions: IdentifiedArrayOf<SessionRecordDTO> = []
         var newSubtaskTitle: String = ""
         var totalFocusSeconds: TimeInterval = 0
         var isLoading: Bool = false
@@ -50,6 +53,7 @@ struct TaskDetailFeature {
             self.title = task.title
             self.notes = task.notes ?? ""
             self.isCompleted = task.isCompleted
+            self.completedAt = task.completedAt
             self.priority = task.priority
             self.energyLevel = task.energyLevel
             self.estimatedPomodoros = task.estimatedPomodoros
@@ -57,6 +61,7 @@ struct TaskDetailFeature {
             self.dueDate = task.dueDate
             self.scheduledForToday = task.scheduledForToday
             self.recurrenceRule = task.recurrenceRule
+            self.createdAt = task.createdAt
         }
 
         func toDTO() -> TaskItemDTO {
@@ -75,14 +80,16 @@ struct TaskDetailFeature {
                 recurrenceRule: recurrenceRule,
                 isRecurringTemplate: recurrenceRule != nil,
                 dueDate: dueDate,
-                scheduledForToday: scheduledForToday
+                scheduledForToday: scheduledForToday,
+                completedAt: completedAt,
+                createdAt: createdAt
             )
         }
     }
 
     enum Action: Equatable {
         case onAppear
-        case dataLoaded([SubTaskDTO], TimeInterval)
+        case dataLoaded([SubTaskDTO], TimeInterval, [SessionRecordDTO])
         case loadFailed(String)
         case retryLoadTapped
         case saveFailed(TaskItemDTO, String)
@@ -137,6 +144,7 @@ struct TaskDetailFeature {
 
     @Dependency(\.persistenceClient) var persistence
     @Dependency(\.dismiss) var dismiss
+    @Dependency(\.date) var date
 
     private enum CancelID { case load, widgetReload }
 
@@ -153,19 +161,23 @@ struct TaskDetailFeature {
                     do {
                         async let subtaskDTOs = persistence.fetchSubtasks(id)
                         async let focusSeconds = persistence.fetchTaskTotalFocusSeconds(id)
-                        let (subtasks, seconds) = try await (subtaskDTOs, focusSeconds)
-                        await send(.dataLoaded(subtasks, seconds))
+                        async let sessions = persistence.fetchSessionsForTask(id)
+                        let (subtasks, seconds, taskSessions) = try await (subtaskDTOs, focusSeconds, sessions)
+                        await send(.dataLoaded(subtasks, seconds, taskSessions))
                     } catch {
                         await send(.loadFailed(error.localizedDescription))
                     }
                 }
                 .cancellable(id: CancelID.load)
 
-            case .dataLoaded(let subtaskDTOs, let focusSeconds):
+            case .dataLoaded(let subtaskDTOs, let focusSeconds, let sessionRecords):
                 state.subtasks = IdentifiedArrayOf(uniqueElements: subtaskDTOs.map {
                     State.SubtaskState(id: $0.id, title: $0.title, isCompleted: $0.isCompleted, sortOrder: $0.sortOrder)
                 })
                 state.totalFocusSeconds = focusSeconds
+                state.sessions = IdentifiedArrayOf(uniqueElements: sessionRecords.sorted {
+                    $0.startedAt > $1.startedAt
+                })
                 state.isLoading = false
                 state.loadError = nil
                 return .none
@@ -243,6 +255,7 @@ struct TaskDetailFeature {
             case .completionToggled:
                 let rollback = state.toDTO()
                 state.isCompleted.toggle()
+                state.completedAt = state.isCompleted ? date.now : nil
                 let id = state.taskID
                 let isCompleted = state.isCompleted
                 return .merge(
@@ -309,6 +322,7 @@ struct TaskDetailFeature {
                 let rollback = state.toDTO()
                 state.showAllSubtasksCompletedPrompt = false
                 state.isCompleted = true
+                state.completedAt = date.now
                 let allSubtasksID = state.taskID
                 return .merge(
                     save(state, rollback: rollback),
@@ -409,6 +423,7 @@ struct TaskDetailFeature {
         state.title = dto.title
         state.notes = dto.notes ?? ""
         state.isCompleted = dto.isCompleted
+        state.completedAt = dto.completedAt
         state.priority = dto.priority
         state.energyLevel = dto.energyLevel
         state.estimatedPomodoros = dto.estimatedPomodoros
@@ -416,5 +431,6 @@ struct TaskDetailFeature {
         state.dueDate = dto.dueDate
         state.scheduledForToday = dto.scheduledForToday
         state.recurrenceRule = dto.recurrenceRule
+        state.createdAt = dto.createdAt
     }
 }

@@ -19874,6 +19874,210 @@
           }
         }
       }
+    },
+    "Task completed" : {
+      "comment" : "Mac Plan — completion undo banner message",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tarea completada"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tarefa concluída"
+          }
+        }
+      }
+    },
+    "Rename Task" : {
+      "comment" : "Mac Plan — inline rename action",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Renombrar tarea"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Renomear tarefa"
+          }
+        }
+      }
+    },
+    "Show Inspector" : {
+      "comment" : "Mac Plan — inspector toggle help and accessibility label",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mostrar inspector"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mostrar inspetor"
+          }
+        }
+      }
+    },
+    "Show Inspector (⌘⌥I)" : {
+      "comment" : "Mac Plan — inspector toggle tooltip with shortcut",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mostrar inspector (⌘⌥I)"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mostrar inspetor (⌘⌥I)"
+          }
+        }
+      }
+    },
+    "Close Inspector" : {
+      "comment" : "Mac task inspector — close button help",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cerrar inspector"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fechar inspetor"
+          }
+        }
+      }
+    },
+    "Select a task to inspect it." : {
+      "comment" : "Mac task inspector — empty state description",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Selecciona una tarea para inspeccionarla."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Selecione uma tarefa para inspecioná-la."
+          }
+        }
+      }
+    },
+    "No focus sessions yet." : {
+      "comment" : "Mac task inspector — empty focus history",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aún no hay sesiones de enfoque."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ainda não há sessões de foco."
+          }
+        }
+      }
+    },
+    "Estimate" : {
+      "comment" : "Mac task inspector — estimated pomodoros label",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Estimación"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Estimativa"
+          }
+        }
+      }
+    },
+    "Scheduled for Today" : {
+      "comment" : "Mac task inspector — scheduled for today toggle",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Programada para hoy"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Agendada para hoje"
+          }
+        }
+      }
+    },
+    "Planning" : {
+      "comment" : "Mac task inspector — planning section header",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Planificación"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Planejamento"
+          }
+        }
+      }
+    },
+    "Couldn't Load Tasks" : {
+      "comment" : "Mac Plan — load error alert title",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se pudieron cargar las tareas"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Não foi possível carregar as tarefas"
+          }
+        }
+      }
+    },
+    "Couldn't Save Changes" : {
+      "comment" : "Mac Plan — save error alert title",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se pudieron guardar los cambios"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Não foi possível salvar as alterações"
+          }
+        }
+      }
     }
   },
   "version" : "1.1"
