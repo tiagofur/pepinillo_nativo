@@ -45,6 +45,27 @@
 	<key>NSCalendarsUsageDescription</key>
 	<string>Pepinillo reads your Calendar events so you can plan focus sessions around your existing schedule.
 </string>
+	<key>NSServices</key>
+	<array>
+		<dict>
+			<key>NSMenuItem</key>
+			<dict>
+				<key>default</key>
+				<string>Add Task to Pepinillo</string>
+			</dict>
+			<key>NSMessage</key>
+			<string>addTask</string>
+			<key>NSRequiredContext</key>
+			<dict>
+				<key>NSTextContent</key>
+				<string>text</string>
+			</dict>
+			<key>NSSendTypes</key>
+			<array>
+				<string>NSStringPboardType</string>
+			</array>
+		</dict>
+	</array>
 	<key>NSUserActivityTypes</key>
 	<array>
 		<string>com.pepinillo.app.focusSession</string>

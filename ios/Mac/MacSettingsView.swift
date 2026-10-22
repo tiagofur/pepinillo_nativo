@@ -113,10 +113,16 @@ struct MacSettingsView: View {
             general
                 .tabItem { Label("General", systemImage: "gearshape") }
 
+            focus
+                .tabItem { Label("Focus", systemImage: "timer") }
+
+            notifications
+                .tabItem { Label("Notifications", systemImage: "bell") }
+
             appearance
                 .tabItem { Label("Appearance", systemImage: "paintpalette") }
         }
-        .frame(width: 480, height: 380)
+        .frame(width: 520, height: 460)
         .environment(\.appTheme, activeTheme)
         .preferredColorScheme(preferredColorScheme)
         .onAppear {
@@ -173,6 +179,170 @@ struct MacSettingsView: View {
         }
         .formStyle(.grouped)
         .padding()
+    }
+
+    // MARK: Focus
+
+    /// Duration, auto-start, and default-mode preferences. Mirrors the iPhone
+    /// settings using the same shared `SettingsFeature` actions and the same
+    /// localized stepper labels, so en/es/pt come for free.
+    private var focus: some View {
+        Form {
+            Section {
+                Picker("Default mode", selection: defaultModeBinding) {
+                    ForEach(FocusMode.allCases, id: \.self) { mode in
+                        defaultModeLabel(mode).tag(mode)
+                    }
+                }
+            } footer: {
+                Text("The mode Pepinillo opens with. Advanced modes need Pepinillo+.")
+                    .foregroundStyle(.secondary)
+            }
+
+            Section("Pomodoro") {
+                Stepper(
+                    String(localized: "\(store.settings.pomodoroDurationMinutes) min focus"),
+                    value: binding(\.pomodoroDurationMinutes) { .pomodoroDurationChanged($0) },
+                    in: 1...120, step: 5
+                )
+                Stepper(
+                    String(localized: "\(store.settings.shortBreakMinutes) min short break"),
+                    value: binding(\.shortBreakMinutes) { .shortBreakChanged($0) },
+                    in: 1...30, step: 1
+                )
+                Stepper(
+                    String(localized: "\(store.settings.longBreakMinutes) min long break"),
+                    value: binding(\.longBreakMinutes) { .longBreakChanged($0) },
+                    in: 5...60, step: 5
+                )
+                Stepper(
+                    String(localized: "\(store.settings.pomodorosPerCycle) before long break"),
+                    value: binding(\.pomodorosPerCycle) { .pomodorosPerCycleChanged($0) },
+                    in: 1...12, step: 1
+                )
+                Toggle(
+                    "Auto-start breaks",
+                    isOn: eventBinding(store.settings.autoStartBreaks) { .autoStartBreaksToggled }
+                )
+                Toggle(
+                    "Auto-start work sessions",
+                    isOn: eventBinding(store.settings.autoStartWork) { .autoStartWorkToggled }
+                )
+            }
+
+            Section {
+                Stepper(
+                    String(localized: "\(store.settings.flowtimeMinMinutes) min minimum session"),
+                    value: binding(\.flowtimeMinMinutes) { .flowtimeMinMinutesChanged($0) },
+                    in: 1...30, step: 1
+                )
+            } header: {
+                Text("Flowtime")
+            } footer: {
+                Text("Minimum focus time before a break is suggested.")
+                    .foregroundStyle(.secondary)
+            }
+
+            Section("Time Block") {
+                Stepper(
+                    String(localized: "\(store.settings.blockDurationMinutes) min block"),
+                    value: binding(\.blockDurationMinutes) { .blockDurationChanged($0) },
+                    in: 5...480, step: 15
+                )
+            }
+        }
+        .formStyle(.grouped)
+        .padding()
+    }
+
+    private var defaultModeBinding: Binding<FocusMode> {
+        Binding(
+            get: { store.settings.defaultMode },
+            set: { store.send(.settings(.defaultModeChanged($0))) }
+        )
+    }
+
+    private func defaultModeLabel(_ mode: FocusMode) -> Text {
+        guard !store.settings.isProUser, !mode.isFreeTier else {
+            return Text(mode.displayName)
+        }
+        return Text("\(mode.displayName) (Pro)")
+    }
+
+    private func binding(
+        _ keyPath: KeyPath<SettingsFeature.State, Int>,
+        action: @escaping (Int) -> SettingsFeature.Action
+    ) -> Binding<Int> {
+        Binding(
+            get: { store.settings[keyPath: keyPath] },
+            set: { store.send(.settings(action($0))) }
+        )
+    }
+
+    private func eventBinding(
+        _ value: Bool,
+        action: @escaping () -> SettingsFeature.Action
+    ) -> Binding<Bool> {
+        Binding(
+            get: { value },
+            set: { _ in store.send(.settings(action())) }
+        )
+    }
+
+    // MARK: Notifications
+
+    private var notifications: some View {
+        Form {
+            Section {
+                Toggle(
+                    "Sound effects",
+                    isOn: eventBinding(store.settings.soundEnabled) { .soundToggled }
+                )
+                Toggle(
+                    "Post-session reflection",
+                    isOn: eventBinding(store.settings.showJournalAfterSession) { .showJournalAfterSessionToggled }
+                )
+            } header: {
+                Text("Sessions")
+            }
+
+            Section {
+                Toggle(
+                    "Daily reminder",
+                    isOn: eventBinding(store.settings.dailyReminderEnabled) { .dailyReminderToggled }
+                )
+                if store.settings.dailyReminderEnabled {
+                    DatePicker(
+                        "Reminder time",
+                        selection: reminderTimeBinding,
+                        displayedComponents: .hourAndMinute
+                    )
+                }
+            } footer: {
+                Text("A nudge to start your first focus of the day.")
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .formStyle(.grouped)
+        .padding()
+    }
+
+    private var reminderTimeBinding: Binding<Date> {
+        Binding(
+            get: {
+                var comps = Calendar.current.dateComponents([.year, .month, .day], from: Date.now)
+                comps.hour = store.settings.dailyReminderHour
+                comps.minute = store.settings.dailyReminderMinute
+                return Calendar.current.date(from: comps) ?? Date.now
+            },
+            set: { date in
+                let comps = Calendar.current.dateComponents([.hour, .minute], from: date)
+                store.send(.settings(.dailyReminderTimeChanged(
+                    hour: comps.hour ?? 9,
+                    minute: comps.minute ?? 0
+                )))
+            }
+        )
     }
 
     private var appearance: some View {

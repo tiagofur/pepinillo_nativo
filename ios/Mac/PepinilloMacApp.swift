@@ -32,6 +32,10 @@ private final class MacAppBootstrap: ObservableObject {
     @Published var phase: Phase = .loading
     @Published var modelContainer: ModelContainer?
     @Published var store: StoreOf<AppFeature>?
+    /// Drives the status item, the Dock chrome, and popover content, none of
+    /// which observe the store directly.
+    @Published var presence = MacPresencePulse()
+    private lazy var statusBar = MacStatusBarController(presence: presence)
 
     init() {
         Task {
@@ -110,9 +114,19 @@ private final class MacAppBootstrap: ObservableObject {
         self.store = store
         phase = .ready
 
+        // AppKit surfaces (Dock menu, Services) need the live store, and the
+        // services provider is unretained by NSApplication, so it is kept here.
+        MacAppDelegate.current?.store = store
+        let servicesProvider = MacServicesProvider(store: store)
+        MacAppDelegate.current?.servicesProvider = servicesProvider
+        NSApp.servicesProvider = servicesProvider
+
         // The menu bar can be the only surface at launch, so the launch
         // contract must not depend on the main window appearing.
         store.send(.appLaunched)
+
+        presence.startObserving(store: store)
+        statusBar.install(store: store)
 
         MacGlobalHotKey.shared.configure {
             FocusToggleCommand.toggle(store: store)
@@ -165,18 +179,9 @@ struct PepinilloMacApp: App {
             }
         }
 
-        MenuBarExtra {
-            if let store = bootstrap.store {
-                MacMenuBarView(store: store)
-            } else {
-                Text("Starting Pepinillo…")
-                    .padding()
-            }
-        } label: {
-            MacMenuBarLabel(store: bootstrap.store)
-        }
-        .menuBarExtraStyle(.window)
-
+        // The menu bar presence is an AppKit `NSStatusItem`
+        // (`MacStatusBarController`): the SwiftUI MenuBarExtra label never
+        // re-renders, so the live countdown is drawn into the status button.
         Settings {
             if let store = bootstrap.store {
                 MacSettingsView(store: store, preferences: preferences)
@@ -225,9 +230,31 @@ private struct MacBootstrapView: View {
 }
 
 /// Closing the main window must not stop the timer or quit the menu bar app.
+/// The delegate also owns Dock-icon behavior: reopen, badge, and context menu.
 @MainActor
 final class MacAppDelegate: NSObject, NSApplicationDelegate {
+    static private(set) weak var current: MacAppDelegate?
+
+    /// Set by `MacAppBootstrap` once the shared store exists.
+    var store: StoreOf<AppFeature>?
+    /// NSApplication does not retain `servicesProvider`, so the delegate keeps
+    /// it alive.
+    var servicesProvider: MacServicesProvider?
+
+    func applicationWillFinishLaunching(_ notification: Notification) {
+        Self.current = self
+    }
+
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
         false
+    }
+
+    /// Clicking the Dock icon with no visible window must bring Pepinillo
+    /// back, like any pre-installed app.
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        if !flag {
+            MacStatusBarController.shared?.openMainWindow()
+        }
+        return true
     }
 }

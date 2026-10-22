@@ -194,6 +194,14 @@ targets:
           - com.pepinillo.app.focusSession
           - com.pepinillo.app.viewAnalytics
           - com.pepinillo.app.viewTask
+        NSServices:
+          - NSMessage: addTask
+            NSMenuItem:
+              default: Add Task to Pepinillo
+            NSSendTypes:
+              - NSStringPboardType
+            NSRequiredContext:
+              NSTextContent: text
         CFBundleURLTypes:
           - CFBundleURLName: com.pepinillo.app
             CFBundleURLSchemes:

@@ -49,12 +49,13 @@ Coherence means the same palette, ring geometry, glass language, motion feel, an
 ## 4. Scenes and window
 
 - `Window("Pepinillo", id: "main")` — single main window, default 1120×760, minimum 960×640.
-- `MenuBarExtra("Pepinillo", systemImage: "timer")` with `.menuBarExtraStyle(.window)`.
+- Menu bar presence is an **AppKit `NSStatusItem` + `NSPopover`** (`MacStatusBarController`), not `MenuBarExtra`: the SwiftUI MenuBarExtra label renders once and never re-renders, while the menu contract requires a live countdown. The popover hosts the same `MacMenuBarView`.
 - `Settings` scene, opened with `⌘,`.
 - `Window("Statistics", id: "statistics")` — F4, not v1.
-- Closing the main window must not stop the timer. Set `applicationShouldTerminateAfterLastWindowClosed = false`.
+- Closing the main window must not stop the timer. Set `applicationShouldTerminateAfterLastWindowClosed = false`. Clicking the Dock icon (or a Dock-menu section) restores the window.
 - Restore the selected sidebar section, window frame, and inspector visibility.
 - The timer lives in the app-level `StoreOf<AppFeature>`, not in a view's lifecycle.
+- The status item, Dock chrome, and popover read the session through `MacPresencePulse`, which samples the store once per second; SwiftUI observation does not propagate to AppKit-owned surfaces.
 
 ---
 
@@ -81,6 +82,19 @@ Bottom of the sidebar: Pepinillo+ entitlement status or app version. No account 
 - Global shortcut: `⌃⌥Space` toggles start/pause. Never bare `Space`; never `⌘Space`.
 - Update the label once per second only while a session is running. Idle label is static.
 - Menu bar actions send the same `FocusFeature` actions as the window. No parallel timer logic.
+
+### 6.1 Dock presence
+
+The Dock icon is a first-class control surface, not a launcher:
+
+- Context menu (`applicationDockMenu`): Start/Pause/Resume/Next phase (live title), Skip Phase, Stop Session, New Task, and Focus / Plan / Today. Items drive the same `FocusFeature`/`TaskListFeature` actions as the menus.
+- Badge: remaining phase minutes while a session runs (`NSApp.dockTile.badgeLabel`); cleared when paused, stopped, or in Stopwatch (counts up).
+- App Nap: a `ProcessInfo.beginActivity(.userInitiated)` token is held while a session runs so tick delivery stays prompt when the main window is closed. Deliberately NOT `.idleSystemSleepDisabled` — the engine is wall-clock anchored, so letting the Mac sleep is safe.
+
+### 6.2 Capture from anywhere
+
+- Services: "Add Task to Pepinillo" (`NSServices` in `Mac/Info.plist` + `MacServicesProvider`) turns selected text in any app into a task.
+- Drag & drop: dropping plain text on the Plan surface creates a task; row-level drops stay reorder-only (their payloads are UUID strings).
 
 ---
 
@@ -124,9 +138,9 @@ Bottom of the sidebar: Pepinillo+ entitlement status or app version. No account 
 
 | Tab | Contents |
 | --- | --- |
-| General | Launch at login, Show in Dock, default section |
-| Focus | Durations, default mode, linked-task behavior |
-| Notifications | Session end, break end, sound |
+| General | Launch at login, Show in Dock, default section, global shortcut |
+| Focus | Default mode, durations, auto-start behavior (shared `SettingsFeature`) |
+| Notifications | Sound effects, post-session reflection, daily reminder + time |
 | Appearance | Theme (Classic/Forest/Ocean/Sunset), light/dark/system |
 
 No account, auth, or sync UI in v1.

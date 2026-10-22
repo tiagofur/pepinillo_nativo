@@ -78,6 +78,9 @@ struct MacPlanView: View {
             content(tasks: tasks)
         }
         .background(Color.pepinilloSystemBackground)
+        .dropDestination(for: String.self) { items, _ in
+            createTaskFromDroppedText(items)
+        }
         .navigationTitle(String(localized: "Plan"))
         .searchable(
             text: $searchText,
@@ -720,6 +723,18 @@ struct MacPlanView: View {
     }
 
     // MARK: - Drag reorder
+
+    /// Dropping plain text from any app (Notes, Safari, Mail…) creates a task —
+    /// a Mac gesture with no iOS equivalent. Row-level drops stay reorder-only:
+    /// their payloads are UUID strings, which are filtered out here.
+    private func createTaskFromDroppedText(_ items: [String]) -> Bool {
+        let title = items.first?
+            .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        guard !title.isEmpty, UUID(uuidString: title) == nil else { return false }
+        store.send(.newTaskTitleChanged(String(title.prefix(200))))
+        store.send(.addTaskTapped)
+        return true
+    }
 
     private func reorder(
         _ items: [String],

@@ -10,25 +10,63 @@ import SwiftUI
 
 // MARK: - Label
 
-struct MacMenuBarLabel: View {
-    let store: StoreOf<AppFeature>?
+/// Timer-relevant facts mirrored out of the focus store. `Equatable` so the
+/// status label can skip no-op re-renders.
+struct MacSessionPulse: Equatable {
+    var isRunning = false
+    var isPaused = false
+    var isWaitingForNextPhase = false
+    var remainingSeconds: TimeInterval?
+    var displayTime = ""
+    var modeIcon = "timer"
 
-    var body: some View {
-        Group {
-            if let store {
-                let focus = store.focus
-                if focus.isRunning {
-                    Label(focus.displayTime, systemImage: focus.modeIcon)
-                        .monospacedDigit()
-                } else {
-                    Image(systemName: "timer")
-                }
-            } else {
-                Image(systemName: "timer")
-            }
+    init(focus: FocusFeature.State?) {
+        guard let focus else { return }
+        isRunning = focus.isRunning
+        isPaused = focus.isPaused
+        isWaitingForNextPhase = focus.isWaitingForNextPhase
+        remainingSeconds = focus.remainingSeconds
+        displayTime = focus.displayTime
+        modeIcon = focus.modeIcon
+    }
+}
+
+/// The menu bar status item does not reliably re-render from TCA's
+/// `@Observable` store (the main window ticks while the label stays stale),
+/// and observation tracking outside a view does not fire for substate writes.
+/// The status item, the Dock chrome, and the menu bar popover therefore read
+/// the session through this mirror, which samples the store once per second —
+/// the same cadence as the engine tick — and republishes only real changes.
+@MainActor
+final class MacPresencePulse: ObservableObject {
+    @Published private(set) var pulse = MacSessionPulse(focus: nil)
+
+    /// Called on the main actor whenever the sampled session changes.
+    var onPulseChanged: ((MacSessionPulse, FocusFeature.State) -> Void)?
+
+    private var store: StoreOf<AppFeature>?
+    private var sampler: Timer?
+
+    func startObserving(store: StoreOf<AppFeature>) {
+        self.store = store
+        refresh()
+
+        let sampler = Timer(timeInterval: 1, repeats: true) { [weak self] _ in
+            Task { @MainActor in self?.refresh() }
         }
-        .accessibilityLabel(Text("Pepinillo"))
-        .accessibilityValue(Text(store?.focus.isRunning == true ? store?.focus.displayTime ?? "" : String(localized: "Ready")))
+        sampler.tolerance = 0.25
+        RunLoop.main.add(sampler, forMode: .common)
+        self.sampler = sampler
+    }
+
+    private func refresh() {
+        guard let store else { return }
+        let (newPulse, focus) = store.withState { state in
+            (MacSessionPulse(focus: state.focus), state.focus)
+        }
+        guard newPulse != pulse else { return }
+        pulse = newPulse
+        onPulseChanged?(newPulse, focus)
     }
 }
 
