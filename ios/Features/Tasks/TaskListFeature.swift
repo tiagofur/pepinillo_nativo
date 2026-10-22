@@ -23,6 +23,9 @@ struct TaskListFeature {
         var energyFilter: EnergyFilter = .all
         var sortOrder: SortOrder = .custom
         var newTaskTitle: String = ""
+        /// Native macOS inline composer. The menu command and the Plan toolbar
+        /// open it without presenting a sheet (S6).
+        var isNewTaskComposerPresented: Bool = false
         var importError: String?
         /// Success summary after Reminders import (#187).
         var importSummary: String?
@@ -183,6 +186,8 @@ struct TaskListFeature {
         case energyFilterChanged(EnergyFilter)
         case sortOrderChanged(SortOrder)
         case newTaskTitleChanged(String)
+        case newTaskRequested
+        case newTaskComposerDismissed
         case addTaskTapped
         case taskTapped(UUID)
         case taskCompleted(UUID)
@@ -192,7 +197,11 @@ struct TaskListFeature {
         case undoDeleteTask
         case undoTimerExpired(UUID)
         case taskMoved(IndexSet, Int)
+        /// Reorder the visible native Plan table by the given task IDs. Unlike
+        /// `taskMoved`, this does not depend on the shared sidebar filter.
+        case planTasksReordered([UUID])
         case energyLevelChanged(UUID, EnergyLevel)
+        case priorityChanged(UUID, TaskPriority)
         case recurrenceChanged(UUID, String?)
         case taskScheduledForToday(UUID, Bool)
         case startFocusOnTask(UUID)
@@ -330,6 +339,15 @@ struct TaskListFeature {
                 state.newTaskTitle = title
                 return .none
 
+            case .newTaskRequested:
+                state.isNewTaskComposerPresented = true
+                return .none
+
+            case .newTaskComposerDismissed:
+                state.isNewTaskComposerPresented = false
+                state.newTaskTitle = ""
+                return .none
+
             case .addTaskTapped:
                 let title = state.newTaskTitle.trimmingCharacters(in: .whitespacesAndNewlines)
                 guard !title.isEmpty else { return .none }
@@ -370,6 +388,7 @@ struct TaskListFeature {
                 )
                 state.tasks.append(newTask)
                 state.newTaskTitle = ""
+                state.isNewTaskComposerPresented = false
 
                 return .run { send in
                     let dto = TaskItemDTO(
@@ -527,6 +546,32 @@ struct TaskListFeature {
                     }
                 }
 
+            case .planTasksReordered(let orderedIDs):
+                guard !orderedIDs.isEmpty else { return .none }
+                let orderedSet = Set(orderedIDs)
+                let currentTasks = state.tasks.filter { orderedSet.contains($0.id) }
+                guard currentTasks.count == orderedIDs.count else { return .none }
+
+                let previousTasks = state.tasks
+                let sortOrders = currentTasks.map(\.sortOrder).sorted()
+                for (index, id) in orderedIDs.enumerated() {
+                    state.tasks[id: id]?.sortOrder = sortOrders[index]
+                }
+                state.tasks.sort { $0.sortOrder < $1.sortOrder }
+
+                let order = state.tasks.map { (id: $0.id, sortOrder: $0.sortOrder) }
+                return .run { send in
+                    do {
+                        try await persistence.saveTaskOrder(order)
+                        WidgetCenter.shared.reloadTimelines(ofKind: "TasksHomeScreenWidget")
+                    } catch {
+                        await send(.mutationFailed(.reorder(
+                            tasks: previousTasks,
+                            message: error.localizedDescription
+                        )))
+                    }
+                }
+
             case .energyLevelChanged(let id, let level):
                 guard let snapshot = state.tasks[id: id] else { return .none }
                 state.tasks[id: id]?.energyLevel = level
@@ -534,6 +579,24 @@ struct TaskListFeature {
                     do {
                         if let item = try await persistence.fetchTask(id) {
                             let updated = item.updating(energyLevel: level)
+                            try await persistence.saveTask(updated)
+                            WidgetCenter.shared.reloadTimelines(ofKind: "TasksHomeScreenWidget")
+                        }
+                    } catch {
+                        await send(.mutationFailed(.update(
+                            task: snapshot,
+                            message: error.localizedDescription
+                        )))
+                    }
+                }
+
+            case .priorityChanged(let id, let priority):
+                guard let snapshot = state.tasks[id: id], snapshot.priority != priority else { return .none }
+                state.tasks[id: id]?.priority = priority
+                return .run { send in
+                    do {
+                        if let item = try await persistence.fetchTask(id) {
+                            let updated = item.updating(priority: priority)
                             try await persistence.saveTask(updated)
                             WidgetCenter.shared.reloadTimelines(ofKind: "TasksHomeScreenWidget")
                         }
@@ -756,6 +819,7 @@ struct TaskListFeature {
                 case .addTask(let id, let title, let message):
                     state.tasks.remove(id: id)
                     state.newTaskTitle = title
+                    state.isNewTaskComposerPresented = true
                     state.mutationError = message
 
                 case .complete(let id, let wasCompleted, let message):
@@ -786,6 +850,7 @@ struct TaskListFeature {
                     state.tasks[id: task.id] = task
                     if state.detail?.taskID == task.id {
                         state.detail?.energyLevel = task.energyLevel
+                        state.detail?.priority = task.priority
                         state.detail?.recurrenceRule = task.recurrenceRule
                         state.detail?.scheduledForToday = task.scheduledForToday
                     }

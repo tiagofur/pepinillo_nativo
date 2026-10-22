@@ -79,9 +79,6 @@ struct MacAppView: View {
             selectedContent
                 .frame(minWidth: 760, minHeight: 640)
                 .navigationTitle(effectiveTab.macTitle)
-                .toolbar {
-                    shellToolbar
-                }
         }
         .frame(minWidth: 960, minHeight: 640)
         .tint(activeTheme.color(for: .pomodoro))
@@ -150,8 +147,8 @@ struct MacAppView: View {
     }
 
     private var planContent: some View {
-        PlanSplitView(store: store.scope(state: \.tasks, action: \.tasks))
-            .systemContentBackground(grouped: true)
+        MacPlanView(store: store.scope(state: \.tasks, action: \.tasks))
+            .systemContentBackground(grouped: false)
     }
 
     private var todayContent: some View {
@@ -175,23 +172,6 @@ struct MacAppView: View {
         )
         .onAppear {
             store.send(.analytics(.onAppear))
-        }
-    }
-
-    @ToolbarContentBuilder
-    private var shellToolbar: some ToolbarContent {
-        if effectiveTab == .plan {
-            ToolbarItem(placement: .primaryAction) {
-                Button {
-                    store.send(.tasks(.addTaskTapped))
-                } label: {
-                    Label(
-                        String(localized: "menu.plan.newtask", defaultValue: "New Task"),
-                        systemImage: "plus"
-                    )
-                }
-                .help("New Task (⌘N)")
-            }
         }
     }
 

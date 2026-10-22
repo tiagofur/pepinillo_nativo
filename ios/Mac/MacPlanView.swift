@@ -1,0 +1,582 @@
+// MacPlanView.swift
+// Pepinillo — native macOS Plan table
+//
+// The shared TaskListFeature owns tasks and persistence. This view owns only
+// native macOS presentation: the table, smart-list filter, search, selection,
+// context menu, drag reorder, and the inline new-task composer.
+
+import SwiftUI
+import ComposableArchitecture
+import Combine
+
+// MARK: - Filter
+
+/// The macOS design contract uses All / Today / Upcoming / Completed. The
+/// shared iPhone/iPad Plan keeps its Inbox smart list, so this stays local and
+/// maps to the shared reducer filter for new-task defaults.
+enum MacPlanFilter: String, CaseIterable, Identifiable {
+    case all
+    case today
+    case upcoming
+    case completed
+
+    var id: Self { self }
+
+    var title: String {
+        switch self {
+        case .all:       return String(localized: "All")
+        case .today:     return String(localized: "Today")
+        case .upcoming:  return String(localized: "Upcoming")
+        case .completed: return String(localized: "Completed")
+        }
+    }
+
+    var systemImage: String {
+        switch self {
+        case .all:       return "tray.full"
+        case .today:     return "flame.fill"
+        case .upcoming:  return "calendar"
+        case .completed: return "checkmark.circle"
+        }
+    }
+
+    var sharedFilter: PlanFilter {
+        switch self {
+        case .all:       return .inbox
+        case .today:     return .today
+        case .upcoming:  return .upcoming
+        case .completed: return .completed
+        }
+    }
+}
+
+// MARK: - View
+
+struct MacPlanView: View {
+    @Bindable var store: StoreOf<TaskListFeature>
+
+    @State private var filter: MacPlanFilter = .all
+    @State private var searchText = ""
+    @State private var selection = Set<UUID>()
+    @FocusState private var isComposerFocused: Bool
+    @FocusState private var isSearchFocused: Bool
+
+    var body: some View {
+        let tasks = filteredTasks
+
+        VStack(spacing: 0) {
+            if store.isNewTaskComposerPresented {
+                newTaskComposer
+                Divider()
+            }
+
+            content(tasks: tasks)
+        }
+        .background(Color.pepinilloSystemBackground)
+        .navigationTitle(String(localized: "Plan"))
+        .searchable(
+            text: $searchText,
+            placement: .toolbar,
+            prompt: Text("Search tasks")
+        )
+        .searchFocused($isSearchFocused)
+        .toolbar { toolbarContent }
+        .onReceive(NotificationCenter.default.publisher(for: .macPlanSearchRequested)) { _ in
+            isSearchFocused = true
+        }
+        .onAppear {
+            store.send(.onAppear)
+            store.send(.planFilterSelected(filter.sharedFilter))
+        }
+        .onChange(of: filter) { _, newValue in
+            store.send(.planFilterSelected(newValue.sharedFilter))
+        }
+        .onChange(of: tasks.map(\.id)) { _, ids in
+            selection.formIntersection(Set(ids))
+        }
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            if let deletedTask = store.recentlyDeletedTask {
+                undoBanner(task: deletedTask)
+            }
+        }
+        .alert(
+            String(localized: "Couldn't Load Tasks"),
+            isPresented: Binding(
+                get: { store.loadError != nil },
+                set: { if !$0 { store.send(.loadErrorDismissed) } }
+            )
+        ) {
+            Button(String(localized: "OK")) { store.send(.loadErrorDismissed) }
+        } message: {
+            Text(store.loadError ?? "")
+        }
+        .alert(
+            String(localized: "Couldn't Save Changes"),
+            isPresented: Binding(
+                get: { store.mutationError != nil },
+                set: { if !$0 { store.send(.mutationErrorDismissed) } }
+            )
+        ) {
+            Button(String(localized: "OK")) { store.send(.mutationErrorDismissed) }
+        } message: {
+            Text(store.mutationError ?? "")
+        }
+    }
+
+    // MARK: - Content
+
+    @ViewBuilder
+    private func content(tasks: IdentifiedArrayOf<TaskListFeature.TaskItemState>) -> some View {
+        if store.isLoading && !store.hasLoadedData {
+            ProgressView()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else if tasks.isEmpty {
+            emptyState
+        } else {
+            taskTable(tasks: tasks)
+        }
+    }
+
+    private func taskTable(tasks: IdentifiedArrayOf<TaskListFeature.TaskItemState>) -> some View {
+        Table(of: TaskListFeature.TaskItemState.self, selection: $selection) {
+            TableColumn(String(localized: "Done")) { task in
+                doneCell(task)
+                    .frame(width: 28, height: 30)
+            }
+            .width(44)
+
+            TableColumn(String(localized: "Title")) { task in
+                Text(task.title)
+                    .font(.body)
+                    .strikethrough(task.isCompleted)
+                    .foregroundStyle(task.isCompleted ? Color.secondary : Color.primary)
+                    .lineLimit(1)
+                    .frame(height: 30, alignment: .leading)
+            }
+            .width(min: 180, ideal: 340, max: .infinity)
+
+            TableColumn(String(localized: "Priority")) { task in
+                priorityCell(task)
+                    .frame(height: 30, alignment: .leading)
+            }
+            .width(min: 80, ideal: 100)
+
+            TableColumn(String(localized: "Energy")) { task in
+                energyCell(task)
+                    .frame(height: 30, alignment: .leading)
+            }
+            .width(min: 120, ideal: 140)
+
+            TableColumn(String(localized: "Pomodoros")) { task in
+                pomodorosCell(task)
+                    .frame(height: 30, alignment: .leading)
+            }
+            .width(min: 80, ideal: 96)
+
+            TableColumn(String(localized: "Due")) { task in
+                dueCell(task)
+                    .frame(height: 30, alignment: .leading)
+            }
+            .width(min: 80, ideal: 110)
+        } rows: {
+            ForEach(tasks) { task in
+                TableRow(task)
+                    .draggable(task.id.uuidString)
+                    .dropDestination(for: String.self) { items in
+                        guard let targetIndex = tasks.firstIndex(where: { $0.id == task.id }) else { return }
+                        reorder(items, at: targetIndex, tasks: tasks)
+                    }
+            }
+        }
+        .tableStyle(.inset(alternatesRowBackgrounds: false))
+        .contextMenu(forSelectionType: UUID.self) { ids in
+            taskContextMenu(ids: ids)
+        } primaryAction: { ids in
+            guard let id = ids.first else { return }
+            store.send(.taskTapped(id))
+        }
+    }
+
+    // MARK: - Cells
+
+    private func doneCell(_ task: TaskListFeature.TaskItemState) -> some View {
+        Button {
+            store.send(.taskCompleted(task.id))
+        } label: {
+            Image(systemName: task.isCompleted ? "checkmark.circle.fill" : "circle")
+                .font(.system(size: 14, weight: .regular))
+                .foregroundStyle(task.isCompleted ? Color.green : Color.secondary)
+                .contentTransition(.symbolEffect(.replace))
+                .frame(width: 28, height: 28)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(
+            task.isCompleted
+                ? String(localized: "Mark as incomplete")
+                : String(localized: "Mark as complete")
+        )
+    }
+
+    private func priorityCell(_ task: TaskListFeature.TaskItemState) -> some View {
+        HStack(spacing: 4) {
+            if task.priority != .none {
+                Image(systemName: task.priority.icon)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+            Text(task.priority == .none ? "—" : task.priority.displayName)
+                .foregroundStyle(task.priority == .none ? Color.secondary : Color.primary)
+                .lineLimit(1)
+        }
+        .font(.callout)
+    }
+
+    private func energyCell(_ task: TaskListFeature.TaskItemState) -> some View {
+        Label(task.energyLevel.displayName, systemImage: task.energyLevel.icon)
+            .font(.callout)
+            .foregroundStyle(task.energyLevel.color)
+            .lineLimit(1)
+    }
+
+    private func pomodorosCell(_ task: TaskListFeature.TaskItemState) -> some View {
+        HStack(spacing: 4) {
+            Image(systemName: "timer")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+            Text("\(task.completedPomodoros)/\(task.estimatedPomodoros)")
+                .font(.callout)
+                .monospacedDigit()
+        }
+    }
+
+    private func dueCell(_ task: TaskListFeature.TaskItemState) -> some View {
+        Text(dueText(for: task))
+            .font(.callout)
+            .foregroundStyle(isOverdue(task) ? Color.red : Color.secondary)
+            .lineLimit(1)
+    }
+
+    private func dueText(for task: TaskListFeature.TaskItemState) -> String {
+        guard let dueDate = task.dueDate else {
+            return task.scheduledForToday ? String(localized: "Today") : "—"
+        }
+
+        let calendar = Calendar.current
+        if calendar.isDateInToday(dueDate) {
+            return String(localized: "Today")
+        }
+        if calendar.isDateInTomorrow(dueDate) {
+            return String(localized: "Tomorrow")
+        }
+        if dueDate < calendar.startOfDay(for: .now) && !task.isCompleted {
+            return String(localized: "Overdue")
+        }
+        return dueDate.formatted(date: .abbreviated, time: .omitted)
+    }
+
+    private func isOverdue(_ task: TaskListFeature.TaskItemState) -> Bool {
+        guard let dueDate = task.dueDate, !task.isCompleted else { return false }
+        return dueDate < Calendar.current.startOfDay(for: .now)
+    }
+
+    // MARK: - Context menu
+
+    @ViewBuilder
+    private func taskContextMenu(ids: Set<UUID>) -> some View {
+        let tasks = ids.compactMap { store.tasks[id: $0] }
+
+        if !tasks.isEmpty {
+            let startable = tasks.first { !$0.isCompleted }
+            Button(String(localized: "Start Focus")) {
+                if let startable {
+                    store.send(.startFocusOnTask(startable.id))
+                }
+            }
+            .disabled(startable == nil)
+
+            let allCompleted = tasks.allSatisfy(\.isCompleted)
+            Button(
+                allCompleted
+                    ? String(localized: "Mark Incomplete")
+                    : String(localized: "Complete")
+            ) {
+                for id in ids {
+                    store.send(.setTaskCompleted(id, !allCompleted))
+                }
+            }
+
+            Divider()
+
+            Menu(String(localized: "Priority")) {
+                ForEach(TaskPriority.allCases.sorted(by: >), id: \.self) { priority in
+                    Button {
+                        for id in ids {
+                            store.send(.priorityChanged(id, priority))
+                        }
+                    } label: {
+                        if tasks.allSatisfy({ $0.priority == priority }) {
+                            Label(priority.displayName, systemImage: "checkmark")
+                        } else {
+                            Text(priority.displayName)
+                        }
+                    }
+                }
+            }
+
+            Menu(String(localized: "Energy")) {
+                ForEach(EnergyLevel.allCases, id: \.self) { level in
+                    Button {
+                        for id in ids {
+                            store.send(.energyLevelChanged(id, level))
+                        }
+                    } label: {
+                        if tasks.allSatisfy({ $0.energyLevel == level }) {
+                            Label(level.displayName, systemImage: "checkmark")
+                        } else {
+                            Text(level.displayName)
+                        }
+                    }
+                }
+            }
+
+            Button(String(localized: "Move to Today")) {
+                for id in ids {
+                    store.send(.taskScheduledForToday(id, true))
+                }
+            }
+            .disabled(tasks.allSatisfy(\.scheduledForToday))
+
+            Divider()
+
+            Button(role: .destructive) {
+                for id in ids {
+                    store.send(.taskDeleted(id))
+                }
+            } label: {
+                Label(String(localized: "Delete"), systemImage: "trash")
+            }
+        }
+    }
+
+    // MARK: - Toolbar
+
+    @ToolbarContentBuilder
+    private var toolbarContent: some ToolbarContent {
+        ToolbarItem(placement: .primaryAction) {
+            Menu {
+                ForEach(MacPlanFilter.allCases) { item in
+                    Button {
+                        filter = item
+                    } label: {
+                        if filter == item {
+                            Label(item.title, systemImage: "checkmark")
+                        } else {
+                            Label(item.title, systemImage: item.systemImage)
+                        }
+                    }
+                }
+            } label: {
+                Label(filter.title, systemImage: filter.systemImage)
+                    .labelStyle(.titleAndIcon)
+            }
+            .menuStyle(.borderlessButton)
+            .fixedSize()
+            .help(String(localized: "Filter tasks"))
+        }
+
+        ToolbarItem(placement: .primaryAction) {
+            Button {
+                store.send(.newTaskRequested)
+            } label: {
+                Label(
+                    String(localized: "menu.plan.newtask", defaultValue: "New Task"),
+                    systemImage: "plus"
+                )
+            }
+            .help(String(localized: "New Task (⌘N)"))
+        }
+    }
+
+    // MARK: - New task composer
+
+    private var newTaskComposer: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "plus.circle.fill")
+                .foregroundStyle(.tint)
+
+            TextField(
+                String(localized: "New task"),
+                text: Binding(
+                    get: { store.newTaskTitle },
+                    set: { store.send(.newTaskTitleChanged($0)) }
+                )
+            )
+            .textFieldStyle(.roundedBorder)
+            .focused($isComposerFocused)
+            .onSubmit(submitNewTask)
+
+            Button(String(localized: "Add")) {
+                submitNewTask()
+            }
+            .disabled(trimmedNewTaskTitle.isEmpty)
+            .keyboardShortcut(.defaultAction)
+
+            Button(String(localized: "Cancel")) {
+                store.send(.newTaskComposerDismissed)
+            }
+            .keyboardShortcut(.cancelAction)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(.bar)
+        .onAppear {
+            isComposerFocused = true
+        }
+    }
+
+    private var trimmedNewTaskTitle: String {
+        store.newTaskTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private func submitNewTask() {
+        guard !trimmedNewTaskTitle.isEmpty else { return }
+        store.send(.addTaskTapped)
+    }
+
+    // MARK: - Empty state
+
+    private var emptyState: some View {
+        VStack(spacing: 16) {
+            PepinilloEmptyState(
+                title: emptyTitle,
+                description: emptyDescription,
+                systemImage: filter.systemImage,
+                tint: .accentColor,
+                cornerRadius: GlassCornerRadius.card
+            )
+
+            Button {
+                store.send(.newTaskRequested)
+            } label: {
+                Label(String(localized: "New task"), systemImage: "plus")
+            }
+            .buttonStyle(.borderedProminent)
+        }
+        .padding(24)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private var isSearching: Bool {
+        !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    private var emptyTitle: String {
+        if isSearching { return String(localized: "No Results") }
+        switch filter {
+        case .all:       return String(localized: "No Tasks")
+        case .today:     return String(localized: "Nothing for Today")
+        case .upcoming:  return String(localized: "Nothing Upcoming")
+        case .completed: return String(localized: "No Completed Tasks")
+        }
+    }
+
+    private var emptyDescription: String {
+        if isSearching {
+            return String(localized: "No tasks match your search.")
+        }
+        switch filter {
+        case .all:
+            return String(localized: "Capture what matters and it will show up here.")
+        case .today:
+            return String(localized: "Add a task for today and start focusing.")
+        case .upcoming:
+            return String(localized: "No deadlines on the horizon.")
+        case .completed:
+            return String(localized: "Complete a task and your wins will show up here.")
+        }
+    }
+
+    // MARK: - Undo
+
+    private func undoBanner(task: TaskListFeature.TaskItemState) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: "trash")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+
+            Text(String(format: String(localized: "\"%@\" deleted"), task.title))
+                .font(.subheadline)
+                .lineLimit(1)
+
+            Spacer()
+
+            Button(String(localized: "Undo")) {
+                store.send(.undoDeleteTask)
+            }
+            .font(.subheadline.weight(.semibold))
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+        .background(.regularMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: GlassCornerRadius.tile, style: .continuous))
+        .shadow(color: .black.opacity(0.12), radius: 8, y: 4)
+        .padding(12)
+    }
+
+    // MARK: - Derived data
+
+    private var filteredTasks: IdentifiedArrayOf<TaskListFeature.TaskItemState> {
+        let base: IdentifiedArrayOf<TaskListFeature.TaskItemState>
+        switch filter {
+        case .all:
+            base = IdentifiedArrayOf(uniqueElements: store.tasks.filter {
+                !$0.isRecurringTemplate && !$0.isCompleted
+            })
+        case .today:
+            base = TaskListFeature.planFilteredTasks(store.tasks, filter: .today)
+        case .upcoming:
+            base = TaskListFeature.planFilteredTasks(store.tasks, filter: .upcoming)
+        case .completed:
+            base = TaskListFeature.planFilteredTasks(store.tasks, filter: .completed)
+        }
+
+        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let matching: IdentifiedArrayOf<TaskListFeature.TaskItemState>
+        if query.isEmpty {
+            matching = base
+        } else {
+            matching = IdentifiedArrayOf(uniqueElements: base.filter { task in
+                task.title.localizedCaseInsensitiveContains(query)
+                    || (task.notes?.localizedCaseInsensitiveContains(query) ?? false)
+            })
+        }
+
+        return TaskListFeature.sortedPlanTasks(matching, sortOrder: store.sortOrder)
+    }
+
+    // MARK: - Drag reorder
+
+    private func reorder(
+        _ items: [String],
+        at insertionIndex: Int,
+        tasks: IdentifiedArrayOf<TaskListFeature.TaskItemState>
+    ) {
+        let movingIDs = items.compactMap(UUID.init(uuidString:))
+        guard !movingIDs.isEmpty else { return }
+
+        let movingSet = Set(movingIDs)
+        let source = tasks.map(\.id)
+        let moving = source.filter { movingSet.contains($0) }
+        guard !moving.isEmpty else { return }
+
+        let boundedIndex = min(max(insertionIndex, 0), tasks.count)
+        let insertionOffset = tasks[..<boundedIndex]
+            .filter { !movingSet.contains($0.id) }
+            .count
+
+        var reordered = source.filter { !movingSet.contains($0) }
+        reordered.insert(contentsOf: moving, at: min(insertionOffset, reordered.count))
+        store.send(.planTasksReordered(reordered))
+    }
+}

@@ -1365,6 +1365,7 @@ struct TaskListFeatureTests {
 
         await store.send(.addTaskTapped) {
             $0.newTaskTitle = ""
+            $0.isNewTaskComposerPresented = false
             $0.tasks.append(TaskListFeature.TaskItemState(
                 id: testID,
                 title: "Buy groceries",
@@ -1385,6 +1386,7 @@ struct TaskListFeatureTests {
         await store.receive(\.mutationFailed) {
             $0.tasks = []
             $0.newTaskTitle = "Buy groceries"
+            $0.isNewTaskComposerPresented = true
             $0.mutationError = TestError().localizedDescription
         }
     }
@@ -1475,6 +1477,96 @@ struct TaskListFeatureTests {
             $0.recentlyDeletedTask = task
             $0.mutationError = TestError().localizedDescription
         }
+    }
+
+    @Test("new task request opens the inline composer without presenting a sheet")
+    func newTaskRequestOpensComposer() async {
+        let store = TestStore(initialState: TaskListFeature.State()) {
+            TaskListFeature()
+        }
+
+        await store.send(.newTaskRequested) {
+            $0.isNewTaskComposerPresented = true
+        }
+
+        await store.send(.newTaskTitleChanged("Native task")) {
+            $0.newTaskTitle = "Native task"
+        }
+
+        await store.send(.newTaskComposerDismissed) {
+            $0.isNewTaskComposerPresented = false
+            $0.newTaskTitle = ""
+        }
+    }
+
+    @Test("priority changed persists the new priority")
+    func priorityChangedPersistsPriority() async {
+        let taskID = UUID(0)
+        var initialState = TaskListFeature.State()
+        initialState.tasks = [
+            makeTask(
+                id: taskID,
+                title: "Plan task",
+                scheduledForToday: false,
+                isCompleted: false,
+                sortOrder: 0
+            ),
+        ]
+
+        let savedPriority = LockIsolated<TaskPriority?>(nil)
+        let store = TestStore(initialState: initialState) {
+            TaskListFeature()
+        } withDependencies: {
+            $0.persistenceClient.fetchTask = { id in
+                TaskItemDTO(id: id, title: "Plan task", priority: .none)
+            }
+            $0.persistenceClient.saveTask = { dto in
+                savedPriority.setValue(dto.priority)
+            }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.priorityChanged(taskID, .high)) {
+            $0.tasks[id: taskID]?.priority = .high
+        }
+
+        #expect(savedPriority.value == .high)
+    }
+
+    @Test("plan table reorder rewrites only the visible task sort orders")
+    func planTableReorderRewritesVisibleSortOrders() async {
+        let first = UUID(0)
+        let second = UUID(1)
+        let third = UUID(2)
+        let untouched = UUID(3)
+
+        var initialState = TaskListFeature.State()
+        initialState.tasks = [
+            makeTask(id: first, title: "First", scheduledForToday: false, isCompleted: false, sortOrder: 0),
+            makeTask(id: second, title: "Second", scheduledForToday: false, isCompleted: false, sortOrder: 1),
+            makeTask(id: third, title: "Third", scheduledForToday: false, isCompleted: false, sortOrder: 2),
+            makeTask(id: untouched, title: "Untouched", scheduledForToday: false, isCompleted: false, sortOrder: 3),
+        ]
+
+        let savedOrder = LockIsolated<[(id: UUID, sortOrder: Int)]>([])
+        let store = TestStore(initialState: initialState) {
+            TaskListFeature()
+        } withDependencies: {
+            $0.persistenceClient.saveTaskOrder = { order in
+                savedOrder.setValue(order)
+            }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.planTasksReordered([third, first, second])) {
+            $0.tasks[id: third]?.sortOrder = 0
+            $0.tasks[id: first]?.sortOrder = 1
+            $0.tasks[id: second]?.sortOrder = 2
+            $0.tasks.sort { $0.sortOrder < $1.sortOrder }
+        }
+
+        #expect(store.state.tasks[id: untouched]?.sortOrder == 3)
+        #expect(savedOrder.value.map(\.id) == [third, first, second, untouched])
     }
 
     private func makeTask(

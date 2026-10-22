@@ -50,10 +50,22 @@ enum FocusToggleCommand {
 
 // MARK: - Pepinillo Commands
 
+extension Notification.Name {
+    /// Posted by the Edit > Search Tasks command and observed by `MacPlanView`.
+    static let macPlanSearchRequested = Notification.Name("pepinillo.mac.plan.search")
+}
+
 struct PepinilloCommands: Commands {
     let store: StoreOf<AppFeature>
 
     var body: some Commands {
+        CommandGroup(after: .textEditing) {
+            Button(String(localized: "Search Tasks")) {
+                NotificationCenter.default.post(name: .macPlanSearchRequested, object: nil)
+            }
+            .keyboardShortcut("f", modifiers: .command)
+        }
+
         // MARK: Focus Menu
         CommandMenu(String(localized: "menu.focus.title", defaultValue: "Focus")) {
             Button(String(localized: "menu.focus.startpause", defaultValue: "Start / Pause")) {
@@ -103,7 +115,7 @@ struct PepinilloCommands: Commands {
         CommandMenu(String(localized: "menu.plan.title", defaultValue: "Plan")) {
             Button(String(localized: "menu.plan.newtask", defaultValue: "New Task")) {
                 store.send(.tabSelected(.plan))
-                store.send(.tasks(.addTaskTapped))
+                store.send(.tasks(.newTaskRequested))
             }
             .keyboardShortcut("n", modifiers: .command)
         }

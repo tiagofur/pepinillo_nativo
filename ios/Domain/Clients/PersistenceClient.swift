@@ -122,14 +122,15 @@ public struct TaskItemDTO: Sendable, Equatable, Identifiable {
     /// avoid partial DTO rebuilds that wipe recurrence/sync metadata (issue #178).
     public func updating(
         isCompleted: Bool? = nil,
-        energyLevel: EnergyLevel? = nil
+        energyLevel: EnergyLevel? = nil,
+        priority: TaskPriority? = nil
     ) -> TaskItemDTO {
         TaskItemDTO(
             id: id,
             title: title,
             notes: notes,
             isCompleted: isCompleted ?? self.isCompleted,
-            priority: priority,
+            priority: priority ?? self.priority,
             energyLevel: energyLevel ?? self.energyLevel,
             estimatedPomodoros: estimatedPomodoros,
             completedPomodoros: completedPomodoros,

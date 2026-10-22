@@ -19602,6 +19602,278 @@
           }
         }
       }
+    },
+    "Title" : {
+      "comment" : "Mac Plan — table column header",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Título"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Título"
+          }
+        }
+      }
+    },
+    "Search tasks" : {
+      "comment" : "Mac Plan — toolbar search field placeholder",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Buscar tareas"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Buscar tarefas"
+          }
+        }
+      }
+    },
+    "Complete" : {
+      "comment" : "Mac Plan — context menu action",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Completar"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Concluir"
+          }
+        }
+      }
+    },
+    "Move to Today" : {
+      "comment" : "Mac Plan — context menu action",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mover a Hoy"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mover para Hoje"
+          }
+        }
+      }
+    },
+    "Mark Incomplete" : {
+      "comment" : "Mac Plan — context menu action",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Marcar como incompleta"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Marcar como incompleta"
+          }
+        }
+      }
+    },
+    "Add" : {
+      "comment" : "Mac Plan — inline composer primary action",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Añadir"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Adicionar"
+          }
+        }
+      }
+    },
+    "Filter tasks" : {
+      "comment" : "Mac Plan — toolbar filter menu help",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Filtrar tareas"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Filtrar tarefas"
+          }
+        }
+      }
+    },
+    "New Task (⌘N)" : {
+      "comment" : "Mac Plan — toolbar new task help",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nueva tarea (⌘N)"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nova tarefa (⌘N)"
+          }
+        }
+      }
+    },
+    "No Tasks" : {
+      "comment" : "Mac Plan — empty state title",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No hay tareas"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nenhuma tarefa"
+          }
+        }
+      }
+    },
+    "No Results" : {
+      "comment" : "Mac Plan — empty search state title",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sin resultados"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sem resultados"
+          }
+        }
+      }
+    },
+    "No tasks match your search." : {
+      "comment" : "Mac Plan — empty search state description",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ninguna tarea coincide con tu búsqueda."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nenhuma tarefa corresponde à sua busca."
+          }
+        }
+      }
+    },
+    "Capture what matters and it will show up here." : {
+      "comment" : "Mac Plan — empty all-tasks description",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Captura lo que importa y aparecerá aquí."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Capture o que importa e aparecerá aqui."
+          }
+        }
+      }
+    },
+    "Add a task for today and start focusing." : {
+      "comment" : "Mac Plan — empty today description",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Añade una tarea para hoy y empieza a enfocarte."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Adicione uma tarefa para hoje e comece a focar."
+          }
+        }
+      }
+    },
+    "No deadlines on the horizon." : {
+      "comment" : "Mac Plan — empty upcoming description",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No hay fechas límite a la vista."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nenhum prazo no horizonte."
+          }
+        }
+      }
+    },
+    "Complete a task and your wins will show up here." : {
+      "comment" : "Mac Plan — empty completed description",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Completa una tarea y tus logros aparecerán aquí."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Conclua uma tarefa e suas conquistas aparecerão aqui."
+          }
+        }
+      }
+    },
+    "Search Tasks" : {
+      "comment" : "Mac Plan — Edit menu search command",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Buscar tareas"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Buscar tarefas"
+          }
+        }
+      }
     }
   },
   "version" : "1.1"
