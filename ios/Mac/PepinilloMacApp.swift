@@ -105,8 +105,7 @@ private final class MacAppBootstrap: ObservableObject {
         let restoredSection = defaults.string(forKey: MacAppStorageKeys.selectedSection)
             ?? defaults.string(forKey: MacAppStorageKeys.defaultSection)
         if let raw = restoredSection,
-           let tab = AppFeature.Tab(rawValue: raw),
-           tab != .account {
+           let tab = AppFeature.Tab(rawValue: raw) {
             initialState.selectedTab = tab
         }
 

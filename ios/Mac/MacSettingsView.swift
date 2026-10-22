@@ -187,9 +187,77 @@ struct MacSettingsView: View {
                 Text("Starts or pauses the focus timer from anywhere; ⌃⌥T captures a task from any app.")
                     .foregroundStyle(.secondary)
             }
+
+            iCloudSyncSection
+
+            aboutSection
         }
         .formStyle(.grouped)
         .padding()
+    }
+
+    /// Mirrors the iPhone iCloud Sync section over the shared SettingsFeature
+    /// state (status lives in the app group container).
+    @ViewBuilder
+    private var iCloudSyncSection: some View {
+        Section {
+            HStack {
+                Label(syncStatusTitle, systemImage: "icloud")
+                Spacer()
+                if store.settings.isRetryingAppleCloudSync {
+                    ProgressView()
+                        .controlSize(.small)
+                }
+            }
+            if store.settings.syncStatus == .appleCloudUnavailable {
+                Button {
+                    store.send(.settings(.retryAppleCloudSyncTapped))
+                } label: {
+                    Label(String(localized: "Retry iCloud Sync"), systemImage: "arrow.clockwise")
+                }
+                .disabled(store.settings.isRetryingAppleCloudSync)
+            }
+        } header: {
+            Label(String(localized: "iCloud Sync"), systemImage: "icloud")
+        } footer: {
+            Text("Back up your focus history through iCloud. Sign in from the Account section to sync tasks across devices.")
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    /// Same mapping as the iPhone settings, reusing its localized labels.
+    private var syncStatusTitle: String {
+        switch store.settings.syncStatus {
+        case .idle, .localOnly:
+            return String(localized: "Local only")
+        case .activatingAppleCloud:
+            return String(localized: "Activating iCloud…")
+        case .appleCloudActive:
+            return String(localized: "iCloud active")
+        case .appleCloudUnavailable:
+            return String(localized: "iCloud unavailable")
+        case .backendActive:
+            return String(localized: "Pepinillo cloud active")
+        }
+    }
+
+    private var aboutSection: some View {
+        Section {
+            LabeledContent(String(localized: "Version"), value: appVersion)
+            LabeledContent {
+                EmptyView()
+            } label: {
+                Text("Apple-first focus. Sync when you need it.")
+            }
+        } header: {
+            Label(String(localized: "About"), systemImage: "info.circle")
+        }
+    }
+
+    private var appVersion: String {
+        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
+        let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"
+        return "\(version) (\(build))"
     }
 
     // MARK: Focus

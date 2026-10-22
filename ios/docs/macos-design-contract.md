@@ -70,7 +70,11 @@ Sidebar (`List(selection:)`, `.listStyle(.sidebar)`, width 200–280, ideal 220)
 | Plan | `checklist` | Task table, filters, search, inspector |
 | Today | `chart.bar` | Today KPIs, recent sessions, start next focus |
 
-Bottom of the sidebar: Pepinillo+ entitlement status or app version. No account section in v1.
+Bottom of the sidebar: Pepinillo+ entitlement status or app version.
+
+| Section | Symbol | Content |
+| --- | --- | --- |
+| Account | `person.crop.circle` | Sign-in entry point, or profile + entitlement + sign out when signed in. The auth sheet reuses the shared `AuthView` and the AppFeature presentation (`.showAuth`), so tokens, RevenueCat linking and the post-auth refresh flow identically to iOS. |
 
 ---
 
@@ -160,7 +164,7 @@ The Dock icon is a first-class control surface, not a launcher:
 | Notifications | Sound effects, post-session reflection, daily reminder + time |
 | Appearance | Theme (Classic/Forest/Ocean/Sunset), light/dark/system |
 
-No account, auth, or sync UI in v1.
+About (version) and iCloud Sync status/retry mirror the iPhone settings over the shared `SettingsFeature`. Apple Health is intentionally absent: the domain client is built `#if canImport(HealthKit) && !os(macOS)`. Account credentials and Everywhere sync require the backend to be deployed for end-to-end use.
 
 ---
 

@@ -19,15 +19,9 @@ struct MacAppView: View {
         }
     }
 
-    /// v1 has no account surface on macOS. If shared state still points at it,
-    /// fall back to Focus instead of rendering an iOS account screen.
-    private var effectiveTab: AppFeature.Tab {
-        store.selectedTab == .account ? .focus : store.selectedTab
-    }
-
     private var selectedSectionBinding: Binding<AppFeature.Tab?> {
         Binding(
-            get: { effectiveTab },
+            get: { store.selectedTab },
             set: { tab in
                 if let tab {
                     store.send(.tabSelected(tab))
@@ -51,13 +45,8 @@ struct MacAppView: View {
                 celebrationOverlay
             }
             .conditionalAnimation(.easeInOut(duration: 0.3), value: store.pendingCelebration)
-            .onAppear(perform: normalizeSelection)
             .onChange(of: store.selectedTab) { _, tab in
-                if tab == .account {
-                    store.send(.tabSelected(.focus))
-                } else {
-                    persistSelection(tab)
-                }
+                persistSelection(tab)
             }
     }
 
@@ -78,7 +67,7 @@ struct MacAppView: View {
         } detail: {
             selectedContent
                 .frame(minWidth: 760, minHeight: 640)
-                .navigationTitle(effectiveTab.macTitle)
+                .navigationTitle(store.selectedTab.macTitle)
         }
         .frame(minWidth: 960, minHeight: 640)
         .tint(activeTheme.color(for: .pomodoro))
@@ -124,7 +113,7 @@ struct MacAppView: View {
 
     @ViewBuilder
     private var selectedContent: some View {
-        switch effectiveTab {
+        switch store.selectedTab {
         case .focus:
             focusContent
         case .plan:
@@ -132,7 +121,8 @@ struct MacAppView: View {
         case .dashboard:
             todayContent
         case .account:
-            focusContent
+            MacAccountView(store: store)
+                .systemContentBackground(grouped: true)
         }
     }
 
@@ -177,11 +167,6 @@ struct MacAppView: View {
 
     private func completeOnboarding(_ selectedMode: FocusMode) {
         store.send(.onboardingCompletedWithMode(selectedMode))
-    }
-
-    private func normalizeSelection() {
-        guard store.selectedTab == .account else { return }
-        store.send(.tabSelected(.focus))
     }
 
     private func persistSelection(_ tab: AppFeature.Tab) {
@@ -230,7 +215,7 @@ extension FocusMode {
 }
 
 extension AppFeature.Tab {
-    static let macSidebarSections: [AppFeature.Tab] = [.focus, .plan, .dashboard]
+    static let macSidebarSections: [AppFeature.Tab] = [.focus, .plan, .dashboard, .account]
 
     var macTitle: String {
         switch self {
