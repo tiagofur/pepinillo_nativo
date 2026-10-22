@@ -30,6 +30,11 @@ final class MacDockChrome {
     func sync(focus: FocusFeature.State, keepDisplayAwake: Bool = false) {
         let isActive = focus.isRunning && !focus.isPaused
 
+        installDockTileViewIfNeeded()
+        (NSApp.dockTile.contentView as? MacDockTileView)?.progress = isActive ? focus.progress : nil
+        // The dock tile has no display cycle of its own: per its header, the
+        // redraw of the content view must be requested on the tile itself.
+        NSApp.dockTile.display()
         NSApp.dockTile.badgeLabel = badgeLabel(for: focus)
 
         if isActive, activityToken == nil {
@@ -64,6 +69,70 @@ final class MacDockChrome {
         else { return nil }
         let minutes = Int(ceil(remaining / 60))
         return minutes > 0 ? String(minutes) : nil
+    }
+
+    /// The dock tile draws the icon itself once a content view is set, so the
+    /// progress-arc view must be installed even when nothing is running.
+    private func installDockTileViewIfNeeded() {
+        guard NSApp.dockTile.contentView == nil else { return }
+        let size = NSApp.dockTile.size
+        let view = MacDockTileView(
+            frame: NSRect(x: 0, y: 0, width: size.width, height: size.height)
+        )
+        NSApp.dockTile.contentView = view
+        NSApp.dockTile.display()
+    }
+}
+
+/// Draws the app icon with a session-progress ring around it. The dock tile
+/// stops drawing the default icon once a content view is installed, so the
+/// icon is rendered here; `progress == nil` shows the bare icon.
+final class MacDockTileView: NSView {
+    /// Fraction of the current phase elapsed, or nil when idle.
+    var progress: Double? {
+        didSet { needsDisplay = true }
+    }
+
+    override func draw(_ dirtyRect: NSRect) {
+        NSColor.clear.setFill()
+        bounds.fill()
+
+        if let icon = NSApp.applicationIconImage {
+            let iconSide = min(bounds.width, bounds.height) - 8
+            let iconRect = NSRect(
+                x: (bounds.width - iconSide) / 2,
+                y: (bounds.height - iconSide) / 2,
+                width: iconSide,
+                height: iconSide
+            )
+            icon.draw(in: iconRect, from: .zero, operation: .sourceOver, fraction: 1)
+        }
+
+        guard let progress else { return }
+        let clamped = max(0, min(1, progress))
+        let arcRect = bounds.insetBy(dx: 2, dy: 2)
+        let radius = arcRect.width / 2 - 1.5
+        let center = NSPoint(x: arcRect.midX, y: arcRect.midY)
+
+        let track = NSBezierPath()
+        track.appendArc(withCenter: center, radius: radius, startAngle: 90, endAngle: -270, clockwise: false)
+        track.lineWidth = 3
+        NSColor.quaternaryLabelColor.setStroke()
+        track.stroke()
+
+        guard clamped > 0.005 else { return }
+        let arc = NSBezierPath()
+        arc.appendArc(
+            withCenter: center,
+            radius: radius,
+            startAngle: 90,
+            endAngle: 90 - clamped * 360,
+            clockwise: true
+        )
+        arc.lineWidth = 3
+        arc.lineCapStyle = .round
+        NSColor.controlAccentColor.setStroke()
+        arc.stroke()
     }
 }
 

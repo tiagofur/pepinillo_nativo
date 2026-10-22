@@ -51,7 +51,7 @@ Coherence means the same palette, ring geometry, glass language, motion feel, an
 - `Window("Pepinillo", id: "main")` — single main window, default 1120×760, minimum 960×640.
 - Menu bar presence is an **AppKit `NSStatusItem` + `NSPopover`** (`MacStatusBarController`), not `MenuBarExtra`: the SwiftUI MenuBarExtra label renders once and never re-renders, while the menu contract requires a live countdown. The popover hosts the same `MacMenuBarView`.
 - `Settings` scene, opened with `⌘,`.
-- `Window("Statistics", id: "statistics")` — F4, not v1.
+- `Window("Statistics", id: "statistics")` — opened with `⌘4` or Visualización > Estadísticas; period-switchable (7D/30D/Year) over the shared `AnalyticsFeature`. The Year period aggregates into weekly buckets client-side. Because the analytics period is shared state, the Today weekly card always filters to the trailing 7 days.
 - Closing the main window must not stop the timer. Set `applicationShouldTerminateAfterLastWindowClosed = false`. Clicking the Dock icon (or a Dock-menu section) restores the window.
 - Restore the selected sidebar section, window frame, and inspector visibility.
 - The timer lives in the app-level `StoreOf<AppFeature>`, not in a view's lifecycle.
@@ -89,6 +89,7 @@ The Dock icon is a first-class control surface, not a launcher:
 
 - Context menu (`applicationDockMenu`): Start/Pause/Resume/Next phase (live title), Skip Phase, Stop Session, New Task, and Focus / Plan / Today. Items drive the same `FocusFeature`/`TaskListFeature` actions as the menus.
 - Badge: remaining phase minutes while a session runs (`NSApp.dockTile.badgeLabel`); cleared when paused, stopped, or in Stopwatch (counts up).
+- Progress arc: while a session runs, `MacDockTileView` draws the app icon with a progress ring around it. The tile stops drawing the default icon once a content view is installed, so the icon is rendered by the view itself, and per its header the redraw must be requested with `-[NSDockTile display]` — plain `setNeedsDisplay`/`displayIfNeeded` are no-ops for tile views.
 - App Nap: a `ProcessInfo.beginActivity(.userInitiated)` token is held while a session runs so tick delivery stays prompt when the main window is closed. Deliberately NOT `.idleSystemSleepDisabled` — the engine is wall-clock anchored, so letting the Mac sleep is safe.
 - Display: a separate `.idleDisplaySleepDisabled` token is held while a session runs **only when** the shared "Keep screen on during sessions" setting is enabled (Settings > General).
 
@@ -138,6 +139,12 @@ The Dock icon is a first-class control surface, not a launcher:
 - Return creates the task and hides the panel; Escape or clicking anywhere else dismisses it.
 - The panel never steals focus from the frontmost app: it is a key window of a non-activating panel, so capturing happens in place.
 - The Plan-menu item routes through a notification because `MacCommands.swift` also compiles for the iOS (Catalyst) target, where the Mac controller class does not exist.
+
+## 9.3 Spotlight
+
+- `MacSpotlightIndexer` indexes open tasks into macOS Spotlight (domain `tasks`), fingerprinting the task list every 10 s and reindexing only real changes; completed and recurring-template tasks are excluded.
+- Selecting a Spotlight result continues a `CSSearchableItemActionType` activity in `MacAppDelegate`, which reuses the `pepinillo://task/` deep-link pipeline (`appURLReceived`) and opens the main window on Plan.
+- Custom items live in Spotlight's user-data index: they are not visible to `mdfind`, only to the Spotlight search UI.
 
 ---
 

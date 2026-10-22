@@ -3,6 +3,7 @@
 
 import AppKit
 import Carbon
+import CoreSpotlight
 import SwiftData
 import SwiftUI
 import ComposableArchitecture
@@ -38,6 +39,7 @@ private final class MacAppBootstrap: ObservableObject {
     @Published var presence = MacPresencePulse()
     private lazy var statusBar = MacStatusBarController(presence: presence)
     private lazy var quickCapture = MacQuickCaptureController()
+    private lazy var spotlight = MacSpotlightIndexer()
 
     init() {
         Task {
@@ -129,6 +131,7 @@ private final class MacAppBootstrap: ObservableObject {
 
         presence.startObserving(store: store)
         statusBar.install(store: store)
+        spotlight.install(store: store)
 
         // Global shortcuts share one Carbon handler and dispatch by id.
         MacGlobalHotKey.shared.register(
@@ -197,6 +200,18 @@ struct PepinilloMacApp: App {
         // The menu bar presence is an AppKit `NSStatusItem`
         // (`MacStatusBarController`): the SwiftUI MenuBarExtra label never
         // re-renders, so the live countdown is drawn into the status button.
+
+        Window("Statistics", id: "statistics") {
+            if let store = bootstrap.store {
+                MacStatisticsView(store: store.scope(state: \.analytics, action: \.analytics))
+            } else {
+                ProgressView()
+                    .frame(width: 420, height: 320)
+            }
+        }
+        .defaultSize(width: 780, height: 560)
+        .windowResizability(.contentMinSize)
+
         Settings {
             if let store = bootstrap.store {
                 MacSettingsView(store: store, preferences: preferences)
@@ -270,6 +285,24 @@ final class MacAppDelegate: NSObject, NSApplicationDelegate {
         if !flag {
             MacStatusBarController.shared?.openMainWindow()
         }
+        return true
+    }
+
+    /// Selecting a Pepinillo task in macOS Spotlight continues a
+    /// `CSSearchableItemActionType` activity; reuse the existing
+    /// `pepinillo://task/` deep-link pipeline to surface the task.
+    func application(
+        _ application: NSApplication,
+        continue userActivity: NSUserActivity,
+        restorationHandler: @escaping ([any NSUserActivityRestoring]) -> Void
+    ) -> Bool {
+        guard userActivity.activityType == CSSearchableItemActionType,
+              let identifier = userActivity.userInfo?[CSSearchableItemActivityIdentifier] as? String,
+              let url = URL(string: "pepinillo://task/\(identifier)")
+        else { return false }
+
+        store?.send(.appURLReceived(url))
+        MacStatusBarController.shared?.openMainWindow(selecting: .plan)
         return true
     }
 }

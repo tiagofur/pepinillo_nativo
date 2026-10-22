@@ -147,16 +147,24 @@ struct MacTodayView: View {
 
     // MARK: - Weekly Chart
 
+    /// The analytics period is shared with the Statistics window, which can
+    /// switch to 30D/Year; the weekly card always renders the trailing 7 days.
+    private var weeklyPoints: [AnalyticsFeature.State.DayPoint] {
+        let calendar = Calendar.current
+        let cutoff = calendar.date(byAdding: .day, value: -6, to: calendar.startOfDay(for: .now)) ?? .now
+        return analytics.chartData.filter { $0.date >= cutoff }
+    }
+
     private var weekMinutes: Int {
-        analytics.chartData.reduce(0) { $0 + $1.totalMinutes }
+        weeklyPoints.reduce(0) { $0 + $1.totalMinutes }
     }
 
     private var weekSessions: Int {
-        analytics.chartData.reduce(0) { $0 + $1.sessionsCompleted }
+        weeklyPoints.reduce(0) { $0 + $1.sessionsCompleted }
     }
 
     private var bestDay: AnalyticsFeature.State.DayPoint? {
-        analytics.chartData
+        weeklyPoints
             .filter { $0.totalMinutes > 0 }
             .max { $0.totalMinutes < $1.totalMinutes }
     }
@@ -174,7 +182,7 @@ struct MacTodayView: View {
                 }
             }
 
-            if analytics.chartData.isEmpty {
+            if weeklyPoints.isEmpty {
                 Text("No sessions this week")
                     .font(.callout)
                     .foregroundStyle(.secondary)
@@ -192,7 +200,7 @@ struct MacTodayView: View {
     /// Focus minutes per day. Today's bar is highlighted; past days render at
     /// reduced emphasis so the current day reads as "where you are".
     private var weeklyChart: some View {
-        Chart(analytics.chartData) { point in
+        Chart(weeklyPoints) { point in
             BarMark(
                 x: .value("Day", point.date, unit: .day),
                 y: .value("Minutes", point.totalMinutes)
@@ -205,7 +213,7 @@ struct MacTodayView: View {
             .cornerRadius(4)
         }
         .chartXAxis {
-            AxisMarks(values: analytics.chartData.map(\.date)) { _ in
+            AxisMarks(values: weeklyPoints.map(\.date)) { _ in
                 AxisValueLabel(format: .dateTime.weekday(.narrow))
                     .font(.caption)
             }

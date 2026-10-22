@@ -68,6 +68,8 @@ extension Notification.Name {
 struct PepinilloCommands: Commands {
     let store: StoreOf<AppFeature>
 
+    @Environment(\.openWindow) private var openWindow
+
     var body: some Commands {
         CommandGroup(after: .textEditing) {
             Button(String(localized: "Search Tasks")) {
@@ -129,6 +131,7 @@ struct PepinilloCommands: Commands {
             }
             .keyboardShortcut("n", modifiers: .command)
 
+            #if os(macOS)
             Button(String(localized: "Quick Capture")) {
                 NotificationCenter.default.post(name: .macQuickCaptureToggleRequested, object: nil)
             }
@@ -136,6 +139,10 @@ struct PepinilloCommands: Commands {
             // (MacGlobalHotKey); giving the menu item the same shortcut fires
             // both paths at once when the app is frontmost and toggles the
             // panel twice.
+
+            // The Mac capture panel lives in the macOS target only; Catalyst
+            // keeps the Plan menu without it.
+            #endif
 
             Divider()
 
@@ -168,6 +175,15 @@ struct PepinilloCommands: Commands {
                 store.send(.tabSelected(.dashboard))
             }
             .keyboardShortcut("3", modifiers: .command)
+
+            #if os(macOS)
+            Divider()
+
+            Button(String(localized: "Statistics")) {
+                openWindow(id: "statistics")
+            }
+            .keyboardShortcut("4", modifiers: .command)
+            #endif
         }
     }
 }
