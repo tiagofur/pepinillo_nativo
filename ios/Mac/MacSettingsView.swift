@@ -6,6 +6,12 @@ import ComposableArchitecture
 import ServiceManagement
 import SwiftUI
 
+/// UserDefaults keys shared by the macOS shell and settings window.
+enum MacAppStorageKeys {
+    static let selectedSection = "mac.selectedSection"
+    static let defaultSection = "mac.defaultSection"
+}
+
 // MARK: - App-level preferences
 
 /// Preferences that belong to the macOS shell rather than the shared product
@@ -14,6 +20,7 @@ import SwiftUI
 final class MacPreferences: ObservableObject {
     @Published private(set) var launchAtLogin: Bool
     @Published private(set) var showInDock: Bool
+    @Published private(set) var defaultSection: AppFeature.Tab
     @Published private(set) var errorMessage: String?
 
     private var isApplying = false
@@ -31,6 +38,11 @@ final class MacPreferences: ObservableObject {
 
         launchAtLogin = SMAppService.mainApp.status == .enabled
         showInDock = defaults.bool(forKey: Keys.showInDock)
+
+        let defaultRaw = defaults.string(forKey: MacAppStorageKeys.defaultSection)
+        let defaultTab = defaultRaw.flatMap { AppFeature.Tab(rawValue: $0) } ?? .focus
+        defaultSection = defaultTab == .account ? .focus : defaultTab
+
         applyDockPolicy()
     }
 
@@ -46,6 +58,12 @@ final class MacPreferences: ObservableObject {
         showInDock = value
         UserDefaults.standard.set(value, forKey: Keys.showInDock)
         applyDockPolicy()
+    }
+
+    func setDefaultSection(_ tab: AppFeature.Tab) {
+        guard tab != .account, tab != defaultSection else { return }
+        defaultSection = tab
+        UserDefaults.standard.set(tab.rawValue, forKey: MacAppStorageKeys.defaultSection)
     }
 
     func applyDockPolicy() {
@@ -98,7 +116,7 @@ struct MacSettingsView: View {
             appearance
                 .tabItem { Label("Appearance", systemImage: "paintpalette") }
         }
-        .frame(width: 480, height: 300)
+        .frame(width: 480, height: 380)
         .environment(\.appTheme, activeTheme)
         .preferredColorScheme(preferredColorScheme)
         .onAppear {
@@ -124,6 +142,18 @@ struct MacSettingsView: View {
                         set: { preferences.setShowInDock($0) }
                     )
                 )
+
+                Picker(
+                    "Default section",
+                    selection: Binding(
+                        get: { preferences.defaultSection },
+                        set: { preferences.setDefaultSection($0) }
+                    )
+                ) {
+                    ForEach(AppFeature.Tab.macSidebarSections, id: \.self) { tab in
+                        Text(tab.macTitle).tag(tab)
+                    }
+                }
             } footer: {
                 if let error = preferences.errorMessage {
                     Text(error)

@@ -19,6 +19,23 @@ struct MacAppView: View {
         }
     }
 
+    /// v1 has no account surface on macOS. If shared state still points at it,
+    /// fall back to Focus instead of rendering an iOS account screen.
+    private var effectiveTab: AppFeature.Tab {
+        store.selectedTab == .account ? .focus : store.selectedTab
+    }
+
+    private var selectedSectionBinding: Binding<AppFeature.Tab?> {
+        Binding(
+            get: { effectiveTab },
+            set: { tab in
+                if let tab {
+                    store.send(.tabSelected(tab))
+                }
+            }
+        )
+    }
+
     var body: some View {
         rootContent
             .environment(\.appTheme, activeTheme)
@@ -27,11 +44,21 @@ struct MacAppView: View {
                 store.send(.appURLReceived(url))
             }
             .focusedValue(\.appStore, store)
-            .modifier(MacAppSheetPresenter(store: store))
+            .sheet(isPresented: paywallPresentation) {
+                paywallSheet
+            }
             .overlay {
                 celebrationOverlay
             }
             .conditionalAnimation(.easeInOut(duration: 0.3), value: store.pendingCelebration)
+            .onAppear(perform: normalizeSelection)
+            .onChange(of: store.selectedTab) { _, tab in
+                if tab == .account {
+                    store.send(.tabSelected(.focus))
+                } else {
+                    persistSelection(tab)
+                }
+            }
     }
 
     @ViewBuilder
@@ -47,51 +74,130 @@ struct MacAppView: View {
 
     private var mainAppContent: some View {
         NavigationSplitView {
-            List(selection: selectedTabBinding) {
-                ForEach(AppFeature.Tab.allCases, id: \.self) { tab in
-                    Label(tab.title, systemImage: tab.systemImage)
-                        .tag(tab)
-                }
-            }
-            .navigationTitle("Pepinillo")
-            .frame(minWidth: 180)
+            sidebar
         } detail: {
             selectedContent
-                .frame(minWidth: 720, minHeight: 560)
+                .frame(minWidth: 760, minHeight: 640)
+                .navigationTitle(effectiveTab.macTitle)
+                .toolbar {
+                    shellToolbar
+                }
         }
+        .frame(minWidth: 960, minHeight: 640)
         .tint(activeTheme.color(for: .pomodoro))
     }
 
-    private var selectedTabBinding: Binding<AppFeature.Tab?> {
-        Binding(
-            get: { store.selectedTab },
-            set: { tab in
-                if let tab {
-                    store.send(.tabSelected(tab))
+    private var sidebar: some View {
+        List(selection: selectedSectionBinding) {
+            ForEach(AppFeature.Tab.macSidebarSections, id: \.self) { tab in
+                Label {
+                    Text(tab.macTitle)
+                } icon: {
+                    Image(systemName: tab.macSystemImage)
                 }
+                .tag(tab)
             }
-        )
+        }
+        .listStyle(.sidebar)
+        .navigationSplitViewColumnWidth(min: 200, ideal: 220, max: 280)
+        .navigationTitle("Pepinillo")
+        .safeAreaInset(edge: .bottom) {
+            sidebarFooter
+        }
+    }
+
+    private var sidebarFooter: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            if store.subscriptionState.isPro {
+                Label("Pepinillo+", systemImage: "sparkles")
+            } else {
+                Text("Pepinillo \(appVersion)")
+            }
+        }
+        .font(.caption)
+        .foregroundStyle(.secondary)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+    }
+
+    private var appVersion: String {
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
+    }
+
+    @ViewBuilder
+    private var selectedContent: some View {
+        switch effectiveTab {
+        case .focus:
+            focusContent
+        case .plan:
+            planContent
+        case .dashboard:
+            todayContent
+        case .account:
+            focusContent
+        }
+    }
+
+    private var focusContent: some View {
+        NavigationStack {
+            FocusView(
+                store: store.scope(state: \.focus, action: \.focus),
+                streakDays: store.analytics.currentStreakDays,
+                sessionsToday: store.analytics.sessionsCompleted,
+                totalFocusMinutesToday: store.analytics.totalFocusMinutes
+            )
+            .withAmbientBackground()
+        }
+    }
+
+    private var planContent: some View {
+        PlanSplitView(store: store.scope(state: \.tasks, action: \.tasks))
+            .systemContentBackground(grouped: true)
+    }
+
+    private var todayContent: some View {
+        ContentUnavailableView {
+            Label("Today", systemImage: "chart.bar")
+        } description: {
+            Text("Your daily focus summary will appear here.")
+        } actions: {
+            Button("Open Focus") {
+                store.send(.tabSelected(.focus))
+            }
+            .buttonStyle(.borderedProminent)
+        }
+    }
+
+    @ToolbarContentBuilder
+    private var shellToolbar: some ToolbarContent {
+        if effectiveTab == .plan {
+            ToolbarItem(placement: .primaryAction) {
+                Button {
+                    store.send(.tasks(.addTaskTapped))
+                } label: {
+                    Label(
+                        String(localized: "menu.plan.newtask", defaultValue: "New Task"),
+                        systemImage: "plus"
+                    )
+                }
+                .help("New Task (⌘N)")
+            }
+        }
     }
 
     private func completeOnboarding(_ selectedMode: FocusMode) {
         store.send(.onboardingCompletedWithMode(selectedMode))
     }
 
-    @ViewBuilder
-    private func calendarSheet(_ calendarStore: StoreOf<CalendarFeature>) -> some View {
-        NavigationStack {
-            CalendarView(store: calendarStore)
-                .toolbar {
-                    ToolbarItem(placement: .confirmationAction) {
-                        Button(String(localized: "Done"), action: dismissCalendarSheet)
-                    }
-                }
-        }
-        .frame(minWidth: 640, minHeight: 560)
+    private func normalizeSelection() {
+        guard store.selectedTab == .account else { return }
+        store.send(.tabSelected(.focus))
     }
 
-    private func dismissCalendarSheet() {
-        store.send(.calendarSheetDismissed)
+    private func persistSelection(_ tab: AppFeature.Tab) {
+        guard tab != .account else { return }
+        UserDefaults.standard.set(tab.rawValue, forKey: MacAppStorageKeys.selectedSection)
     }
 
     @ViewBuilder
@@ -124,215 +230,26 @@ struct MacAppView: View {
         )
         .frame(minWidth: 520, minHeight: 640)
     }
-
-    private func weeklyReviewSheet(_ weeklyStore: StoreOf<WeeklyReviewFeature>) -> some View {
-        WeeklyReviewView(
-            store: weeklyStore,
-            isProUser: store.subscriptionState.isPro,
-            analyticsStore: store.scope(state: \.analytics, action: \.analytics)
-        )
-        .frame(minWidth: 720, minHeight: 620)
-    }
-
-    private func monthlyReviewSheet(_ monthlyStore: StoreOf<MonthlyReviewFeature>) -> some View {
-        MonthlyReviewView(
-            store: monthlyStore,
-            isProUser: store.subscriptionState.isPro,
-            analyticsStore: store.scope(state: \.analytics, action: \.analytics)
-        )
-        .frame(minWidth: 720, minHeight: 620)
-    }
-
-    private func aiReportSheet(_ aiStore: StoreOf<AIReportFeature>) -> some View {
-        AIReportView(store: aiStore)
-            .frame(minWidth: 700, minHeight: 620)
-    }
-
-    private func authSheet(_ authStore: StoreOf<AuthFeature>) -> some View {
-        NavigationStack {
-            AuthView(
-                store: authStore,
-                onAppleSignIn: { info in
-                    store.send(.signInWithAppleSucceeded(info))
-                },
-                onAppleSignInFailed: { cancelled in
-                    store.send(.signInWithAppleFailed(wasUserCancelled: cancelled))
-                }
-            )
-        }
-        .frame(minWidth: 520, minHeight: 640)
-        .interactiveDismissDisabled(
-            authStore.isLoading || authStore.isSyncing || authStore.showMergeDialog
-        )
-    }
-
-    private func profileSheet(_ profileStore: StoreOf<ProfileFeature>) -> some View {
-        NavigationStack {
-            ProfileView(store: profileStore)
-        }
-        .frame(minWidth: 560, minHeight: 640)
-    }
-
-    private func emailVerificationSheet(_ verificationStore: StoreOf<EmailVerificationFeature>) -> some View {
-        NavigationStack {
-            EmailVerificationView(store: verificationStore)
-                .navigationTitle(String(localized: "Verify Email"))
-        }
-        .frame(minWidth: 520, minHeight: 520)
-        .interactiveDismissDisabled()
-    }
-
-    @ViewBuilder
-    private var selectedContent: some View {
-        switch store.selectedTab {
-        case .focus:
-            NavigationStack {
-                FocusView(
-                    store: store.scope(state: \.focus, action: \.focus),
-                    streakDays: store.analytics.currentStreakDays,
-                    sessionsToday: store.analytics.sessionsCompleted,
-                    totalFocusMinutesToday: store.analytics.totalFocusMinutes
-                )
-                .withAmbientBackground()
-            }
-
-        case .plan:
-            PlanSplitView(store: store.scope(state: \.tasks, action: \.tasks))
-                .systemContentBackground(grouped: true)
-
-        case .dashboard:
-            NavigationStack {
-                DashboardView(store: store.scope(state: \.analytics, action: \.analytics))
-            }
-            .systemContentBackground(grouped: true)
-
-        case .account:
-            AccountView(store: store)
-                .systemContentBackground(grouped: true)
-        }
-    }
 }
 
-private struct MacAppSheetPresenter: ViewModifier {
-    @Bindable var store: StoreOf<AppFeature>
+extension AppFeature.Tab {
+    static let macSidebarSections: [AppFeature.Tab] = [.focus, .plan, .dashboard]
 
-    func body(content: Content) -> some View {
-        content
-            .sheet(isPresented: paywallPresentation) {
-                paywallSheet
-            }
-            .sheet(item: $store.scope(state: \.calendar, action: \.calendar)) { calendarStore in
-                calendarSheet(calendarStore)
-            }
-            .sheet(item: $store.scope(state: \.analytics.weeklyReview, action: \.analytics.weeklyReview)) { weeklyStore in
-                weeklyReviewSheet(weeklyStore)
-            }
-            .sheet(item: $store.scope(state: \.analytics.monthlyReview, action: \.analytics.monthlyReview)) { monthlyStore in
-                monthlyReviewSheet(monthlyStore)
-            }
-            .sheet(item: $store.scope(state: \.analytics.aiReport, action: \.analytics.aiReport)) { aiStore in
-                aiReportSheet(aiStore)
-            }
-            .sheet(item: $store.scope(state: \.auth, action: \.auth)) { authStore in
-                authSheet(authStore)
-            }
-            .sheet(item: $store.scope(state: \.profile, action: \.profile)) { profileStore in
-                profileSheet(profileStore)
-            }
-            .sheet(item: $store.scope(state: \.emailVerification, action: \.emailVerification)) { verificationStore in
-                emailVerificationSheet(verificationStore)
-            }
-    }
-
-    private var paywallPresentation: Binding<Bool> {
-        Binding(
-            get: { store.focus.showPaywall },
-            set: { isPresented in
-                if !isPresented {
-                    store.send(.focus(.paywallDismissed))
-                }
-            }
-        )
-    }
-
-    private var paywallSheet: some View {
-        PaywallView(
-            store: store.scope(state: \.paywall, action: \.paywall)
-        )
-        .frame(minWidth: 520, minHeight: 640)
-    }
-
-    @ViewBuilder
-    private func calendarSheet(_ calendarStore: StoreOf<CalendarFeature>) -> some View {
-        NavigationStack {
-            CalendarView(store: calendarStore)
-                .toolbar {
-                    ToolbarItem(placement: .confirmationAction) {
-                        Button(String(localized: "Done"), action: dismissCalendarSheet)
-                    }
-                }
+    var macTitle: String {
+        switch self {
+        case .focus: return String(localized: "Focus")
+        case .plan: return String(localized: "Plan")
+        case .dashboard: return String(localized: "Today")
+        case .account: return String(localized: "Account")
         }
-        .frame(minWidth: 640, minHeight: 560)
     }
 
-    private func dismissCalendarSheet() {
-        store.send(.calendarSheetDismissed)
-    }
-
-    private func weeklyReviewSheet(_ weeklyStore: StoreOf<WeeklyReviewFeature>) -> some View {
-        WeeklyReviewView(
-            store: weeklyStore,
-            isProUser: store.subscriptionState.isPro,
-            analyticsStore: store.scope(state: \.analytics, action: \.analytics)
-        )
-        .frame(minWidth: 720, minHeight: 620)
-    }
-
-    private func monthlyReviewSheet(_ monthlyStore: StoreOf<MonthlyReviewFeature>) -> some View {
-        MonthlyReviewView(
-            store: monthlyStore,
-            isProUser: store.subscriptionState.isPro,
-            analyticsStore: store.scope(state: \.analytics, action: \.analytics)
-        )
-        .frame(minWidth: 720, minHeight: 620)
-    }
-
-    private func aiReportSheet(_ aiStore: StoreOf<AIReportFeature>) -> some View {
-        AIReportView(store: aiStore)
-            .frame(minWidth: 700, minHeight: 620)
-    }
-
-    private func authSheet(_ authStore: StoreOf<AuthFeature>) -> some View {
-        NavigationStack {
-            AuthView(
-                store: authStore,
-                onAppleSignIn: { info in
-                    store.send(.signInWithAppleSucceeded(info))
-                },
-                onAppleSignInFailed: { cancelled in
-                    store.send(.signInWithAppleFailed(wasUserCancelled: cancelled))
-                }
-            )
+    var macSystemImage: String {
+        switch self {
+        case .focus: return "timer"
+        case .plan: return "checklist"
+        case .dashboard: return "chart.bar"
+        case .account: return "person.crop.circle"
         }
-        .frame(minWidth: 520, minHeight: 640)
-        .interactiveDismissDisabled(
-            authStore.isLoading || authStore.isSyncing || authStore.showMergeDialog
-        )
-    }
-
-    private func profileSheet(_ profileStore: StoreOf<ProfileFeature>) -> some View {
-        NavigationStack {
-            ProfileView(store: profileStore)
-        }
-        .frame(minWidth: 560, minHeight: 640)
-    }
-
-    private func emailVerificationSheet(_ verificationStore: StoreOf<EmailVerificationFeature>) -> some View {
-        NavigationStack {
-            EmailVerificationView(store: verificationStore)
-                .navigationTitle(String(localized: "Verify Email"))
-        }
-        .frame(minWidth: 520, minHeight: 520)
-        .interactiveDismissDisabled()
     }
 }

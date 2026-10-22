@@ -67,22 +67,22 @@ struct PepinilloCommands: Commands {
             Button(String(localized: "menu.focus.pomodoro", defaultValue: "Pomodoro")) {
                 store.send(.focus(.modeSelected(.pomodoro)))
             }
-            .keyboardShortcut("1", modifiers: .command)
+            .keyboardShortcut("1", modifiers: [.command, .option])
 
             Button(String(localized: "menu.focus.flowtime", defaultValue: "Flowtime")) {
                 store.send(.focus(.modeSelected(.flowtime)))
             }
-            .keyboardShortcut("2", modifiers: .command)
+            .keyboardShortcut("2", modifiers: [.command, .option])
 
             Button(String(localized: "menu.focus.timeblock", defaultValue: "Time Block")) {
                 store.send(.focus(.modeSelected(.timeBlock)))
             }
-            .keyboardShortcut("3", modifiers: .command)
+            .keyboardShortcut("3", modifiers: [.command, .option])
 
             Button(String(localized: "menu.focus.stopwatch", defaultValue: "Stopwatch")) {
                 store.send(.focus(.modeSelected(.stopwatch)))
             }
-            .keyboardShortcut("4", modifiers: .command)
+            .keyboardShortcut("4", modifiers: [.command, .option])
         }
 
         // MARK: Plan Menu
@@ -92,28 +92,24 @@ struct PepinilloCommands: Commands {
                 store.send(.tasks(.addTaskTapped))
             }
             .keyboardShortcut("n", modifiers: .command)
-
-            Button(String(localized: "menu.plan.gotoplan", defaultValue: "Go to Plan")) {
-                store.send(.tabSelected(.plan))
-            }
-            .keyboardShortcut("t", modifiers: [.command, .shift])
         }
 
         // MARK: View Menu Additions
         CommandGroup(after: .toolbar) {
-            Button(String(localized: "menu.view.gotofocus", defaultValue: "Go to Focus")) {
+            Button(String(localized: "menu.view.focus", defaultValue: "Focus")) {
                 store.send(.tabSelected(.focus))
             }
-            .keyboardShortcut("f", modifiers: [.command, .shift])
+            .keyboardShortcut("1", modifiers: .command)
 
-            Button(String(localized: "menu.view.gotodashboard", defaultValue: "Go to Dashboard")) {
+            Button(String(localized: "menu.view.plan", defaultValue: "Plan")) {
+                store.send(.tabSelected(.plan))
+            }
+            .keyboardShortcut("2", modifiers: .command)
+
+            Button(String(localized: "menu.view.today", defaultValue: "Today")) {
                 store.send(.tabSelected(.dashboard))
             }
-            .keyboardShortcut("a", modifiers: [.command, .shift])
-
-            Button(String(localized: "menu.view.account", defaultValue: "Account")) {
-                store.send(.tabSelected(.account))
-            }
+            .keyboardShortcut("3", modifiers: .command)
         }
     }
 }

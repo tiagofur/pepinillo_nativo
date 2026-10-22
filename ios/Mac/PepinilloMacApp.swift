@@ -1,6 +1,7 @@
 // PepinilloMacApp.swift
 // Pepinillo — native macOS shell
 
+import AppKit
 import SwiftData
 import SwiftUI
 import ComposableArchitecture
@@ -92,6 +93,15 @@ private final class MacAppBootstrap: ObservableObject {
             forKey: MacAppLaunchDefaults.hasCompletedOnboardingKey
         )
 
+        let defaults = UserDefaults.standard
+        let restoredSection = defaults.string(forKey: MacAppStorageKeys.selectedSection)
+            ?? defaults.string(forKey: MacAppStorageKeys.defaultSection)
+        if let raw = restoredSection,
+           let tab = AppFeature.Tab(rawValue: raw),
+           tab != .account {
+            initialState.selectedTab = tab
+        }
+
         let store = Store(initialState: initialState) {
             AppFeature()
         } withDependencies: {
@@ -113,6 +123,7 @@ private final class MacAppBootstrap: ObservableObject {
 @main
 struct PepinilloMacApp: App {
     @Environment(\.scenePhase) private var scenePhase
+    @NSApplicationDelegateAdaptor(MacAppDelegate.self) private var appDelegate
     @StateObject private var bootstrap = MacAppBootstrap()
     @StateObject private var preferences = MacPreferences()
 
@@ -210,5 +221,13 @@ private struct MacBootstrapView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.pepinilloSystemBackground.ignoresSafeArea())
+    }
+}
+
+/// Closing the main window must not stop the timer or quit the menu bar app.
+@MainActor
+final class MacAppDelegate: NSObject, NSApplicationDelegate {
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
+        false
     }
 }
