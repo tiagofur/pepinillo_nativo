@@ -3,7 +3,7 @@
 Native macOS app (`PepinilloMac`) with a macOS-first shell: menu bar presence, Focus timer, Plan table, Today. Shared TCA/SwiftData core; new Mac presentation layer. No auth, AI, or paywall redesign in v1.
 
 - Branch: `feat/macos-native-v1` (worktree: `pepinillo_nativo-worktrees/macos-native-v1`, based on `main` @ `52a8069b`)
-- Delivery: `ask-on-risk` (forecast is well over 400 authored lines; decide chain strategy before F2)
+- Delivery: `stacked-to-main` (chosen 2026-10-21; forecast is well over 400 authored lines)
 - Test runner: `xcodebuild -scheme "PepinilloMac Dev" -destination 'platform=macOS' build`; `xcodebuild -scheme "Pepinillo Dev" -destination 'generic/platform=iOS Simulator' build`; UI tests pending
 
 ## Specs
@@ -27,7 +27,7 @@ Native macOS app (`PepinilloMac`) with a macOS-first shell: menu bar presence, F
 | T1 | S1, S10 | F0: design contract + `.impeccable.md` + PRD updates | inline | 6cc09447 |
 | T2 | S4 | F1: app lifecycle — `Window`, `Settings`, launch at login, Dock policy | inline | 0977c09a |
 | T3 | S4 | F1: `MenuBarExtra` countdown + quick controls + today stats | inline | 0977c09a |
-| T4 | S4 | F1: global shortcut + commands + notification actions (commands partially done; shortcut/actions pending) | inline | — |
+| T4 | S4 | F1: global shortcut (`⌃⌥Space`) + commands + notification actions | inline | — |
 | T5 | S6, S7 | F2: main window shell — sidebar, toolbar, state restoration | inline | — |
 | T6 | S2, S6 | F2: Focus stage + session journal + celebration | inline | — |
 | T7 | S2 | F2: Today dashboard (subset of `AnalyticsFeature`) | inline | — |
@@ -47,6 +47,7 @@ Native macOS app (`PepinilloMac`) with a macOS-first shell: menu bar presence, F
 - L7 (2026-10-21): F1 T2/T3 implemented and committed as `0977c09a`. Replaced `WindowGroup` with `Window("Pepinillo", id: "main")`; added `Settings` scene and `MenuBarExtra` with `.menuBarExtraStyle(.window)`. Moved `.appLaunched` into `MacAppBootstrap.apply` so the launch contract runs even when the main window never appears. Added `MacPreferences` (`SMAppService.mainApp` launch-at-login, Dock policy via `setActivationPolicy`) and a General/Appearance settings window. Menu bar shows live countdown, Start/Pause/Resume/Skip/Stop, today stats, Open Pepinillo, Settings, Quit. Replaced the bare `Space` command key with `⌘↩`; Account menu renamed from Settings.
 - L8 (2026-10-21): Verification. `xcodebuild -scheme "PepinilloMac Dev" -destination 'platform=macOS' -derivedDataPath build/macos-f1 CODE_SIGNING_ALLOWED=NO build` → BUILD SUCCEEDED. `xcodebuild -scheme "Pepinillo Dev" -destination 'generic/platform=iOS Simulator' -derivedDataPath build/ios-f1 CODE_SIGNING_ALLOWED=NO build` → BUILD SUCCEEDED. The built Mac app launched and stayed running; menu bar contents could not be inspected through System Events because `osascript` lacks Accessibility permission, so UI interaction remains manual.
 - L9 (2026-10-21): Platform gates required to make the shared Mac target compile: iOS-26 scroll/tab APIs in `GlassModifier`, `ControlCenter` in `WidgetSurfaceReload`, `UNAuthorizationStatus.ephemeral`, `Color(uiColor:)` in `TaskRow`, and the UIKit export files. Export (`ExportView`/`ExportService`/`ExportReportView`) is excluded from the Mac target and its Account entry is iOS-only until a native macOS export task exists. T4 remains pending: global shortcut (KeyboardShortcuts vs Carbon) and notification action routing. Next: F2 shell (T5).
+- L10 (2026-10-21): Delivery decision: `stacked-to-main`. Each work unit lands as a small PR to main in order; after the parent PR merges, rebase/retarget the next PR. F1 is the first slice.
 
 ## Close-out
 

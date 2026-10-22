@@ -78,19 +78,19 @@ struct MacMenuBarView: View {
     private var primaryAction: some View {
         if focus.isWaitingForNextPhase {
             primaryButton("Start next phase", systemImage: "play.fill") {
-                store.send(.focus(.startNextPhaseTapped))
+                FocusToggleCommand.toggle(store: store)
             }
         } else if !focus.isRunning {
             primaryButton("Start", systemImage: "play.fill") {
-                store.send(.focus(.startTapped()))
+                FocusToggleCommand.toggle(store: store)
             }
         } else if focus.isPaused {
             primaryButton("Resume", systemImage: "play.fill") {
-                store.send(.focus(.resumeTapped))
+                FocusToggleCommand.toggle(store: store)
             }
         } else {
             primaryButton("Pause", systemImage: "pause.fill") {
-                store.send(.focus(.pauseTapped))
+                FocusToggleCommand.toggle(store: store)
             }
         }
     }

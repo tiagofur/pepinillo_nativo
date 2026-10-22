@@ -133,6 +133,13 @@ struct MacSettingsView: View {
                         .foregroundStyle(.secondary)
                 }
             }
+
+            Section {
+                LabeledContent("Global shortcut", value: "⌃⌥Space")
+            } footer: {
+                Text("Starts or pauses the focus timer from anywhere.")
+                    .foregroundStyle(.secondary)
+            }
         }
         .formStyle(.grouped)
         .padding()

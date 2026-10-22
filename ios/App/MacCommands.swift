@@ -8,6 +8,41 @@
 import SwiftUI
 import ComposableArchitecture
 
+// MARK: - Focus Toggle Command
+
+/// Single mapping shared by the menu command, the menu bar primary action, and
+/// the global shortcut. Keeping the decision here prevents the three surfaces
+/// from drifting apart.
+enum FocusToggleCommand {
+    enum Decision: Equatable {
+        case start
+        case pause
+        case resume
+        case nextPhase
+    }
+
+    static func decision(for focus: FocusFeature.State) -> Decision {
+        if focus.isWaitingForNextPhase { return .nextPhase }
+        if !focus.isRunning { return .start }
+        if focus.isPaused { return .resume }
+        return .pause
+    }
+
+    @MainActor
+    static func toggle(store: StoreOf<AppFeature>) {
+        switch decision(for: store.focus) {
+        case .start:
+            store.send(.focus(.startTapped()))
+        case .pause:
+            store.send(.focus(.pauseTapped))
+        case .resume:
+            store.send(.focus(.resumeTapped))
+        case .nextPhase:
+            store.send(.focus(.startNextPhaseTapped))
+        }
+    }
+}
+
 // MARK: - Pepinillo Commands
 
 struct PepinilloCommands: Commands {
@@ -17,14 +52,7 @@ struct PepinilloCommands: Commands {
         // MARK: Focus Menu
         CommandMenu(String(localized: "menu.focus.title", defaultValue: "Focus")) {
             Button(String(localized: "menu.focus.startpause", defaultValue: "Start / Pause")) {
-                let focus = store.focus
-                if !focus.isRunning {
-                    store.send(.focus(.startTapped()))
-                } else if focus.isPaused {
-                    store.send(.focus(.resumeTapped))
-                } else {
-                    store.send(.focus(.pauseTapped))
-                }
+                FocusToggleCommand.toggle(store: store)
             }
             .keyboardShortcut(.return, modifiers: .command)
 

@@ -103,6 +103,10 @@ private final class MacAppBootstrap: ObservableObject {
         // The menu bar can be the only surface at launch, so the launch
         // contract must not depend on the main window appearing.
         store.send(.appLaunched)
+
+        MacGlobalHotKey.shared.configure {
+            FocusToggleCommand.toggle(store: store)
+        }
     }
 }
 
