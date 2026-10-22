@@ -143,8 +143,8 @@ struct MacAppView: View {
         MacFocusView(
             store: store.scope(state: \.focus, action: \.focus),
             streakDays: store.analytics.currentStreakDays,
-            sessionsToday: store.analytics.sessionsCompleted,
-            totalFocusMinutesToday: store.analytics.totalFocusMinutes
+            sessionsToday: store.analytics.todaySessions,
+            totalFocusMinutesToday: store.analytics.todayFocusMinutes
         )
         .withAmbientBackground()
     }
@@ -155,15 +155,26 @@ struct MacAppView: View {
     }
 
     private var todayContent: some View {
-        ContentUnavailableView {
-            Label("Today", systemImage: "chart.bar")
-        } description: {
-            Text("Your daily focus summary will appear here.")
-        } actions: {
-            Button("Open Focus") {
+        MacTodayView(
+            analytics: store.analytics,
+            tasks: store.tasks,
+            onStartFocus: { task in
                 store.send(.tabSelected(.focus))
+                guard !store.focus.isRunning else { return }
+                if let task {
+                    store.send(.focus(.linkTask(task.id, task.title, task.energyLevel.icon)))
+                }
+                store.send(.focus(.startTapped()))
+            },
+            onOpenPlan: {
+                store.send(.tabSelected(.plan))
+            },
+            onRefresh: {
+                store.send(.analytics(.refresh))
             }
-            .buttonStyle(.borderedProminent)
+        )
+        .onAppear {
+            store.send(.analytics(.onAppear))
         }
     }
 

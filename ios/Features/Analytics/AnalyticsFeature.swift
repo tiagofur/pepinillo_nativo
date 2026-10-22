@@ -16,6 +16,7 @@ struct AnalyticsFeature {
     struct State: Equatable {
         var period: Period = .week
         var chartData: [DayPoint] = []
+        var recentSessions: [SessionRecordDTO] = []
         var modeBreakdown: [ModeShare] = []
         var totalFocusMinutes: Int = 0
         var sessionsCompleted: Int = 0
@@ -39,6 +40,16 @@ struct AnalyticsFeature {
         var sessionCompletionRate: Double = 0
         var avgInterruptions: Double = 0
         var focusQualityScore: Int = 0
+
+        /// The chart always ends on today; this is the single source for
+        /// "today" stats so the menu bar and Mac surfaces never show the
+        /// selected period total by mistake.
+        var todayPoint: DayPoint? {
+            chartData.last { Calendar.current.isDateInToday($0.date) }
+        }
+
+        var todayFocusMinutes: Int { todayPoint?.totalMinutes ?? 0 }
+        var todaySessions: Int { todayPoint?.sessionsCompleted ?? 0 }
 
         enum Period: String, CaseIterable, Equatable {
             case week  = "7D"
@@ -104,6 +115,7 @@ struct AnalyticsFeature {
             achievements: [UserAchievement],
             weeklyInsights: [FocusInsight]
         )
+        case recentSessionsLoaded([SessionRecordDTO])
         case loadFailed(String)
         case retryTapped
         case weeklyReviewTapped
@@ -241,6 +253,10 @@ struct AnalyticsFeature {
 
                 return .none
 
+            case .recentSessionsLoaded(let sessions):
+                state.recentSessions = sessions
+                return .none
+
             case let .loadFailed(message):
                 state.isLoading = false
                 state.hasLoadedData = false
@@ -304,6 +320,12 @@ struct AnalyticsFeature {
     }
 
     // MARK: - Data Loading
+
+    /// Break records are not focus sessions and must not appear in Today's
+    /// recent-session list.
+    private static let breakPhases: Set<String> = [
+        "shortBreak", "longBreak", "flowBreak", "idle"
+    ]
 
     private func loadData(for period: State.Period, isPro: Bool) -> Effect<Action> {
         .run { [persistence, isPro] send in
@@ -378,6 +400,12 @@ struct AnalyticsFeature {
                     dailyStats: dailyStatsDTOs,
                     periodDays: period.days
                 )
+
+                let recentSessions = periodSessions
+                    .filter { !Self.breakPhases.contains($0.phase) }
+                    .sorted { $0.startedAt > $1.startedAt }
+                    .prefix(5)
+                await send(.recentSessionsLoaded(Array(recentSessions)))
 
                 await send(.allDataLoaded(
                     snapshots: snapshots,

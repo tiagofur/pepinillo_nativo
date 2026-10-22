@@ -113,6 +113,7 @@ struct TaskListFeatureTests {
     }
 
     @Test func completeTaskTogglesCompletion() async {
+        let testDate = Date(timeIntervalSince1970: 1_700_000_000)
         var initialState = TaskListFeature.State()
         let taskID = UUID()
         initialState.tasks = [
@@ -133,6 +134,7 @@ struct TaskListFeatureTests {
         let store = TestStore(initialState: initialState) {
             TaskListFeature()
         } withDependencies: {
+            $0.date = .constant(testDate)
             $0.persistenceClient.fetchTasks = { [] }
             $0.persistenceClient.fetchTask = { _ in basicTaskDTO(id: taskID, title: "Write tests") }
             $0.persistenceClient.saveTask = { _ in }
@@ -142,6 +144,7 @@ struct TaskListFeatureTests {
 
         await store.receive(\.setTaskCompleted) {
             $0.tasks[id: taskID]?.isCompleted = true
+            $0.tasks[id: taskID]?.completedAt = testDate
         }
     }
 
@@ -525,6 +528,7 @@ struct TaskListFeatureTests {
     // MARK: - Recurrence Preservation (issue #178)
 
     @Test func completeTaskPreservesRecurrenceOnSave() async throws {
+        let testDate = Date(timeIntervalSince1970: 1_700_000_000)
         let taskID = UUID()
         let fetchedTask = recurringTaskDTO(id: taskID)
         let savedTask = LockIsolated<TaskItemDTO?>(nil)
@@ -535,6 +539,7 @@ struct TaskListFeatureTests {
         let store = TestStore(initialState: initialState) {
             TaskListFeature()
         } withDependencies: {
+            $0.date = .constant(testDate)
             $0.persistenceClient.fetchTask = { _ in fetchedTask }
             $0.persistenceClient.saveTask = { savedTask.setValue($0) }
         }
@@ -544,6 +549,7 @@ struct TaskListFeatureTests {
         await store.send(.taskCompleted(taskID))
         await store.receive(\.setTaskCompleted) {
             $0.tasks[id: taskID]?.isCompleted = true
+            $0.tasks[id: taskID]?.completedAt = testDate
         }
 
         let saved = try #require(savedTask.value)
@@ -553,6 +559,7 @@ struct TaskListFeatureTests {
     }
 
     @Test func completeTaskPreservesRecurrenceAfterReload() async {
+        let testDate = Date(timeIntervalSince1970: 1_700_000_000)
         let taskID = UUID()
         let persistedTask = LockIsolated(recurringTaskDTO(id: taskID))
 
@@ -562,6 +569,7 @@ struct TaskListFeatureTests {
         let store = TestStore(initialState: initialState) {
             TaskListFeature()
         } withDependencies: {
+            $0.date = .constant(testDate)
             $0.persistenceClient.fetchTask = { _ in persistedTask.value }
             $0.persistenceClient.saveTask = { persistedTask.setValue($0) }
             $0.persistenceClient.fetchTasks = { [persistedTask] in [persistedTask.value] }
@@ -573,6 +581,7 @@ struct TaskListFeatureTests {
         await store.send(.taskCompleted(taskID))
         await store.receive(\.setTaskCompleted) {
             $0.tasks[id: taskID]?.isCompleted = true
+            $0.tasks[id: taskID]?.completedAt = testDate
         }
 
         await store.send(.refresh) {
@@ -1383,6 +1392,7 @@ struct TaskListFeatureTests {
     @Test("completeTask save failure restores completion state (#189)")
     func completeTaskSaveFailureRollsBack() async {
         struct TestError: Error {}
+        let testDate = Date(timeIntervalSince1970: 1_700_000_000)
         let taskID = UUID(1)
         var initialState = TaskListFeature.State()
         initialState.tasks = [
@@ -1406,6 +1416,7 @@ struct TaskListFeatureTests {
         let store = TestStore(initialState: initialState) {
             TaskListFeature()
         } withDependencies: {
+            $0.date = .constant(testDate)
             $0.persistenceClient.fetchTask = { _ in basicTaskDTO(id: taskID) }
             $0.persistenceClient.saveTask = { _ in throw TestError() }
         }
@@ -1414,10 +1425,12 @@ struct TaskListFeatureTests {
 
         await store.receive(\.setTaskCompleted) {
             $0.tasks[id: taskID]?.isCompleted = true
+            $0.tasks[id: taskID]?.completedAt = testDate
         }
 
         await store.receive(\.mutationFailed) {
             $0.tasks[id: taskID]?.isCompleted = false
+            $0.tasks[id: taskID]?.completedAt = nil
             $0.mutationError = TestError().localizedDescription
         }
     }

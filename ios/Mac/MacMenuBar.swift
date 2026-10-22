@@ -122,8 +122,8 @@ struct MacMenuBarView: View {
 
     private var todayStats: some View {
         HStack(spacing: 18) {
-            stat(value: "\(store.analytics.sessionsCompleted)", label: "sessions")
-            stat(value: "\(store.analytics.totalFocusMinutes)", label: "min")
+            stat(value: store.analytics.todaySessions.formatted(), label: "sessions")
+            stat(value: store.analytics.todayFocusMinutes.formatted(), label: "min")
             stat(value: "\(store.analytics.currentStreakDays)", label: "streak")
         }
         .frame(maxWidth: .infinity, alignment: .center)

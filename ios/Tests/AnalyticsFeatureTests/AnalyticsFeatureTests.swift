@@ -24,6 +24,39 @@ struct AnalyticsFeatureTests {
         #expect(state.period == .week)
     }
 
+    @Test func todayStatsIgnoreEarlierChartPoints() {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date.now)
+        let yesterday = calendar.date(byAdding: .day, value: -1, to: today)!
+
+        var state = AnalyticsFeature.State()
+        state.chartData = [
+            .init(
+                id: yesterday,
+                date: yesterday,
+                totalMinutes: 90,
+                pomodoroMinutes: 90,
+                flowtimeMinutes: 0,
+                timeBlockMinutes: 0,
+                stopwatchMinutes: 0,
+                sessionsCompleted: 3
+            ),
+            .init(
+                id: today,
+                date: today,
+                totalMinutes: 25,
+                pomodoroMinutes: 25,
+                flowtimeMinutes: 0,
+                timeBlockMinutes: 0,
+                stopwatchMinutes: 0,
+                sessionsCompleted: 1
+            )
+        ]
+
+        #expect(state.todayFocusMinutes == 25)
+        #expect(state.todaySessions == 1)
+    }
+
     // MARK: - Period Changes
 
     @Test func periodChangeUpdatesState() async {

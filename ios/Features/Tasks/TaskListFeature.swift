@@ -50,6 +50,7 @@ struct TaskListFeature {
         var title: String
         var notes: String?
         var isCompleted: Bool
+        var completedAt: Date? = nil
         var priority: TaskPriority
         var energyLevel: EnergyLevel
         var estimatedPomodoros: Int
@@ -73,6 +74,7 @@ struct TaskListFeature {
                 title: dto.title,
                 notes: dto.notes,
                 isCompleted: dto.isCompleted,
+                completedAt: dto.completedAt,
                 priority: dto.priority,
                 energyLevel: dto.energyLevel,
                 estimatedPomodoros: dto.estimatedPomodoros,
@@ -102,6 +104,7 @@ struct TaskListFeature {
                 isRecurringTemplate: isRecurringTemplate,
                 dueDate: dueDate,
                 scheduledForToday: scheduledForToday,
+                completedAt: completedAt,
                 createdAt: createdAt
             )
         }
@@ -410,6 +413,7 @@ struct TaskListFeature {
                 guard state.tasks[id: id]?.isCompleted != isCompleted else { return .none }
                 let wasCompleted = state.tasks[id: id]?.isCompleted ?? false
                 state.tasks[id: id]?.isCompleted = isCompleted
+                state.tasks[id: id]?.completedAt = isCompleted ? date.now : nil
                 // Sync the detail column if it's currently showing this task
                 if state.detail?.taskID == id {
                     state.detail?.isCompleted = isCompleted
@@ -623,6 +627,7 @@ struct TaskListFeature {
             case .detail(.presented(.delegate(.taskCompletionChanged(let id, let isCompleted)))):
                 // Detail is the source of truth — sync the list row
                 state.tasks[id: id]?.isCompleted = isCompleted
+                state.tasks[id: id]?.completedAt = isCompleted ? date.now : nil
                 return .none
 
             case .detail(.presented(.delegate(.taskUpdated(let dto)))):
@@ -755,6 +760,7 @@ struct TaskListFeature {
 
                 case .complete(let id, let wasCompleted, let message):
                     state.tasks[id: id]?.isCompleted = wasCompleted
+                    state.tasks[id: id]?.completedAt = wasCompleted ? date.now : nil
                     if state.detail?.taskID == id {
                         state.detail?.isCompleted = wasCompleted
                     }
