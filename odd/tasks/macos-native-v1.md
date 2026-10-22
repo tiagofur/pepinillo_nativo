@@ -27,7 +27,7 @@ Native macOS app (`PepinilloMac`) with a macOS-first shell: menu bar presence, F
 | T1 | S1, S10 | F0: design contract + `.impeccable.md` + PRD updates | inline | 6cc09447 |
 | T2 | S4 | F1: app lifecycle — `Window`, `Settings`, launch at login, Dock policy | inline | 0977c09a |
 | T3 | S4 | F1: `MenuBarExtra` countdown + quick controls + today stats | inline | 0977c09a |
-| T4 | S4 | F1: global shortcut (`⌃⌥Space`) + commands + notification actions | inline | — |
+| T4 | S4 | F1: global shortcut (`⌃⌥Space`) + commands + notification actions | inline | 09fff0b4 |
 | T5 | S6, S7 | F2: main window shell — sidebar, toolbar, state restoration | inline | — |
 | T6 | S2, S6 | F2: Focus stage + session journal + celebration | inline | — |
 | T7 | S2 | F2: Today dashboard (subset of `AnalyticsFeature`) | inline | — |
@@ -48,6 +48,7 @@ Native macOS app (`PepinilloMac`) with a macOS-first shell: menu bar presence, F
 - L8 (2026-10-21): Verification. `xcodebuild -scheme "PepinilloMac Dev" -destination 'platform=macOS' -derivedDataPath build/macos-f1 CODE_SIGNING_ALLOWED=NO build` → BUILD SUCCEEDED. `xcodebuild -scheme "Pepinillo Dev" -destination 'generic/platform=iOS Simulator' -derivedDataPath build/ios-f1 CODE_SIGNING_ALLOWED=NO build` → BUILD SUCCEEDED. The built Mac app launched and stayed running; menu bar contents could not be inspected through System Events because `osascript` lacks Accessibility permission, so UI interaction remains manual.
 - L9 (2026-10-21): Platform gates required to make the shared Mac target compile: iOS-26 scroll/tab APIs in `GlassModifier`, `ControlCenter` in `WidgetSurfaceReload`, `UNAuthorizationStatus.ephemeral`, `Color(uiColor:)` in `TaskRow`, and the UIKit export files. Export (`ExportView`/`ExportService`/`ExportReportView`) is excluded from the Mac target and its Account entry is iOS-only until a native macOS export task exists. T4 remains pending: global shortcut (KeyboardShortcuts vs Carbon) and notification action routing. Next: F2 shell (T5).
 - L10 (2026-10-21): Delivery decision: `stacked-to-main`. Each work unit lands as a small PR to main in order; after the parent PR merges, rebase/retarget the next PR. F1 is the first slice.
+- L11 (2026-10-21): F1 T4 implemented and committed as `09fff0b4`. Chose Carbon `RegisterEventHotKey` for `⌃⌥Space` (no new dependency; global key monitors would require Accessibility permission). Added `MacGlobalHotKey`, unified the menu command, menu bar primary action, and global shortcut behind `FocusToggleCommand`, and documented the shortcut in Settings. Notification action routing was already present in `AppFeature`; it now starts from the bootstrap `.appLaunched` effect. Verification: Mac build → BUILD SUCCEEDED; iOS build → BUILD SUCCEEDED; `FocusToggleCommandTests` 4/4 passed on iPhone 17 Pro (iOS 26.5); built Mac app launched and stayed running. The global keypress itself remains manual because `osascript` lacks Accessibility permission.
 
 ## Close-out
 
