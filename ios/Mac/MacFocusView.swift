@@ -44,13 +44,14 @@ struct MacFocusView: View {
 
     var body: some View {
         GeometryReader { geometry in
-            let ringSize = min(420, max(280, geometry.size.height - 230))
+            let ringSize = min(360, max(260, geometry.size.height - 300))
+            let timerFont: CGFloat = ringSize >= 380 ? 84 : 72
 
             ScrollView {
                 VStack(spacing: 16) {
                     Spacer(minLength: 8)
 
-                    TimerCircleView(store: store, timerFontSize: 84)
+                    TimerCircleView(store: store, timerFontSize: timerFont)
                         .frame(width: ringSize, height: ringSize)
 
                     phaseSection
@@ -69,18 +70,33 @@ struct MacFocusView: View {
         }
         .toolbar {
             ToolbarItem(placement: .principal) {
-                Picker("Focus mode", selection: selectedModeBinding) {
-                    ForEach(FocusMode.allCases) { mode in
-                        Text(mode.macDisplayName).tag(mode)
+                ZStack {
+                    if store.isRunning {
+                        HStack(spacing: 6) {
+                            Image(systemName: currentMode.systemImage)
+                                .foregroundStyle(modeColor)
+                            Text(currentMode.macDisplayName)
+                                .font(.headline)
+                        }
+                        .accessibilityElement(children: .ignore)
+                        .accessibilityLabel(String(localized: "Focus mode"))
+                        .accessibilityValue(Text(currentMode.macDisplayName))
+                        .help(String(localized: "Current focus mode"))
+                        .transition(.opacity.combined(with: .scale(scale: 0.85)))
+                    } else {
+                        Picker("Focus mode", selection: selectedModeBinding) {
+                            ForEach(FocusMode.allCases) { mode in
+                                Text(mode.macDisplayName).tag(mode)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                        .labelsHidden()
+                        .accessibilityLabel(String(localized: "Focus mode"))
+                        .help(String(localized: "Switch focus mode"))
+                        .transition(.opacity.combined(with: .scale(scale: 0.9)))
                     }
                 }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-                .disabled(store.isRunning)
-                .accessibilityLabel(String(localized: "Focus mode"))
-                .help(store.isRunning
-                      ? String(localized: "Stop the session to change mode")
-                      : String(localized: "Switch focus mode"))
+                .animation(MotionTokens.snappy, value: store.isRunning)
             }
 
             if store.isRunning {
