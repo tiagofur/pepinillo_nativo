@@ -55,6 +55,8 @@ enum MacPlanFilter: String, CaseIterable, Identifiable {
 struct MacPlanView: View {
     @Bindable var store: StoreOf<TaskListFeature>
 
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+
     @State private var filter: MacPlanFilter = .all
     @State private var searchText = ""
     @State private var selection = Set<UUID>()
@@ -63,7 +65,6 @@ struct MacPlanView: View {
     @State private var editingTitle = ""
     @FocusState private var isComposerFocused: Bool
     @FocusState private var isSearchFocused: Bool
-    @FocusState private var isTitleEditorFocused: Bool
 
     var body: some View {
         let tasks = filteredTasks
@@ -94,7 +95,11 @@ struct MacPlanView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: .macPlanRenameRequested)) { _ in
             guard let id = selection.first, let task = store.tasks[id: id] else { return }
-            beginTitleEdit(task)
+            if isInspectorPresented {
+                NotificationCenter.default.post(name: .macInspectorFocusTitleRequested, object: nil)
+            } else {
+                beginTitleEdit(task)
+            }
         }
         .onReceive(NotificationCenter.default.publisher(for: .macPlanInspectorToggleRequested)) { _ in
             toggleInspector()
@@ -107,6 +112,10 @@ struct MacPlanView: View {
             store.send(.planFilterSelected(newValue.sharedFilter))
         }
         .onChange(of: selection) { _, newValue in
+            if let editingTaskID, !newValue.contains(editingTaskID) {
+                commitTitleEdit(for: editingTaskID)
+            }
+
             guard isInspectorPresented,
                   let id = newValue.first,
                   store.detail?.taskID != id else { return }
@@ -164,57 +173,54 @@ struct MacPlanView: View {
     private func taskTable(tasks: IdentifiedArrayOf<TaskListFeature.TaskItemState>) -> some View {
         Table(of: TaskListFeature.TaskItemState.self, selection: $selection) {
             TableColumn(String(localized: "Done")) { task in
-                doneCell(task)
-                    .frame(width: 28, height: 30)
+                MacTaskRowObserver(store: store, taskID: task.id) { current in
+                    doneCell(current)
+                        .frame(width: 28, height: 30)
+                }
             }
             .width(44)
 
             TableColumn(String(localized: "Title")) { task in
-                if editingTaskID == task.id {
-                    TextField(String(localized: "Title"), text: $editingTitle)
-                        .textFieldStyle(.plain)
-                        .font(.body)
-                        .focused($isTitleEditorFocused)
-                        .onSubmit { commitTitleEdit(for: task.id) }
-                        .onExitCommand { cancelTitleEdit() }
-                        .onChange(of: isTitleEditorFocused) { _, isFocused in
-                            if !isFocused, editingTaskID == task.id {
-                                commitTitleEdit(for: task.id)
-                            }
-                        }
-                        .frame(height: 30, alignment: .leading)
-                } else {
-                    Text(task.title)
-                        .font(.body)
-                        .strikethrough(task.isCompleted)
-                        .foregroundStyle(task.isCompleted ? Color.secondary : Color.primary)
-                        .lineLimit(1)
-                        .frame(height: 30, alignment: .leading)
-                }
+                MacTaskTitleCell(
+                    store: store,
+                    taskID: task.id,
+                    editingTaskID: $editingTaskID,
+                    editingTitle: $editingTitle,
+                    onCommit: { commitTitleEdit(for: $0) },
+                    onCancel: { cancelTitleEdit() }
+                )
             }
             .width(min: 180, ideal: 340, max: .infinity)
 
             TableColumn(String(localized: "Priority")) { task in
-                priorityCell(task)
-                    .frame(height: 30, alignment: .leading)
+                MacTaskRowObserver(store: store, taskID: task.id) { current in
+                    priorityCell(current)
+                        .frame(height: 30, alignment: .leading)
+                }
             }
             .width(min: 80, ideal: 100)
 
             TableColumn(String(localized: "Energy")) { task in
-                energyCell(task)
-                    .frame(height: 30, alignment: .leading)
+                MacTaskRowObserver(store: store, taskID: task.id) { current in
+                    energyCell(current)
+                        .frame(height: 30, alignment: .leading)
+                }
             }
             .width(min: 120, ideal: 140)
 
             TableColumn(String(localized: "Pomodoros")) { task in
-                pomodorosCell(task)
-                    .frame(height: 30, alignment: .leading)
+                MacTaskRowObserver(store: store, taskID: task.id) { current in
+                    pomodorosCell(current)
+                        .frame(height: 30, alignment: .leading)
+                }
             }
             .width(min: 80, ideal: 96)
 
             TableColumn(String(localized: "Due")) { task in
-                dueCell(task)
-                    .frame(height: 30, alignment: .leading)
+                MacTaskRowObserver(store: store, taskID: task.id) { current in
+                    dueCell(current)
+                        .frame(height: 30, alignment: .leading)
+                }
             }
             .width(min: 80, ideal: 110)
         } rows: {
@@ -250,12 +256,16 @@ struct MacPlanView: View {
                 .contentTransition(.symbolEffect(.replace))
                 .frame(width: 28, height: 28)
                 .contentShape(Rectangle())
+                .accessibilityHidden(true)
         }
         .buttonStyle(.plain)
+        .accessibilityElement(children: .ignore)
         .accessibilityLabel(
-            task.isCompleted
-                ? String(localized: "Mark as incomplete")
-                : String(localized: "Mark as complete")
+            Text(
+                task.isCompleted
+                    ? String(localized: "Mark as incomplete")
+                    : String(localized: "Mark as complete")
+            )
         )
     }
 
@@ -463,6 +473,7 @@ struct MacPlanView: View {
         HStack(spacing: 8) {
             Image(systemName: "plus.circle.fill")
                 .foregroundStyle(.tint)
+                .accessibilityHidden(true)
 
             TextField(
                 String(localized: "New task"),
@@ -603,26 +614,24 @@ struct MacPlanView: View {
     // MARK: - Inline title edit
 
     private func beginTitleEdit(_ task: TaskListFeature.TaskItemState) {
+        if let editingTaskID, editingTaskID != task.id {
+            commitTitleEdit(for: editingTaskID)
+        }
         selection = [task.id]
         editingTaskID = task.id
         editingTitle = task.title
-        DispatchQueue.main.async {
-            isTitleEditorFocused = true
-        }
     }
 
     private func commitTitleEdit(for id: UUID) {
         guard editingTaskID == id else { return }
         let trimmed = editingTitle.trimmingCharacters(in: .whitespacesAndNewlines)
         editingTaskID = nil
-        isTitleEditorFocused = false
         guard !trimmed.isEmpty else { return }
         store.send(.taskRenamed(id, trimmed))
     }
 
     private func cancelTitleEdit() {
         editingTaskID = nil
-        isTitleEditorFocused = false
     }
 
     // MARK: - Undo
@@ -653,6 +662,7 @@ struct MacPlanView: View {
             Image(systemName: systemImage)
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
+                .accessibilityHidden(true)
 
             Text(message)
                 .font(.subheadline)
@@ -665,8 +675,15 @@ struct MacPlanView: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
-        .background(.regularMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: GlassCornerRadius.tile, style: .continuous))
+        .background {
+            if reduceTransparency {
+                RoundedRectangle(cornerRadius: GlassCornerRadius.tile, style: .continuous)
+                    .fill(Color.pepinilloSecondarySystemGroupedBackground)
+            } else {
+                RoundedRectangle(cornerRadius: GlassCornerRadius.tile, style: .continuous)
+                    .fill(.regularMaterial)
+            }
+        }
         .shadow(color: .black.opacity(0.12), radius: 8, y: 4)
         .padding(12)
     }
@@ -725,5 +742,59 @@ struct MacPlanView: View {
         var reordered = source.filter { !movingSet.contains($0) }
         reordered.insert(contentsOf: moving, at: min(insertionOffset, reordered.count))
         store.send(.planTasksReordered(reordered))
+    }
+}
+
+// MARK: - Inline Title Cell
+
+private struct MacTaskTitleCell: View {
+    let store: StoreOf<TaskListFeature>
+    let taskID: UUID
+    @Binding var editingTaskID: UUID?
+    @Binding var editingTitle: String
+    let onCommit: (UUID) -> Void
+    let onCancel: () -> Void
+
+    @FocusState private var isFocused: Bool
+
+    var body: some View {
+        if let task = store.tasks[id: taskID] {
+            Group {
+                if editingTaskID == taskID {
+                    TextField(String(localized: "Title"), text: $editingTitle)
+                        .textFieldStyle(.plain)
+                        .font(.body)
+                        .focused($isFocused)
+                        .onAppear { isFocused = true }
+                        .onSubmit { onCommit(taskID) }
+                        .onExitCommand { onCancel() }
+                        .onChange(of: isFocused) { _, focused in
+                            if !focused, editingTaskID == taskID {
+                                onCommit(taskID)
+                            }
+                        }
+                        .accessibilityLabel(String(localized: "Title"))
+                } else {
+                    Text(task.title)
+                        .font(.body)
+                        .strikethrough(task.isCompleted)
+                        .foregroundStyle(task.isCompleted ? Color.secondary : Color.primary)
+                        .lineLimit(1)
+                }
+            }
+            .frame(maxWidth: .infinity, minHeight: 30, alignment: .leading)
+        }
+    }
+}
+
+private struct MacTaskRowObserver<Content: View>: View {
+    let store: StoreOf<TaskListFeature>
+    let taskID: UUID
+    let content: (TaskListFeature.TaskItemState) -> Content
+
+    var body: some View {
+        if let task = store.tasks[id: taskID] {
+            content(task)
+        }
     }
 }

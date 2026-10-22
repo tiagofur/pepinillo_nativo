@@ -57,6 +57,8 @@ extension Notification.Name {
     static let macPlanRenameRequested = Notification.Name("pepinillo.mac.plan.rename")
     /// Posted by Plan > Show Inspector and observed by `MacPlanView`.
     static let macPlanInspectorToggleRequested = Notification.Name("pepinillo.mac.plan.inspector")
+    /// Posted when Rename Task should focus the inspector title field.
+    static let macInspectorFocusTitleRequested = Notification.Name("pepinillo.mac.inspector.focusTitle")
 }
 
 struct PepinilloCommands: Commands {

@@ -221,6 +221,14 @@ struct MacAppView: View {
     }
 }
 
+extension FocusMode {
+    /// The macOS design contract uses "Time Block"; the shared display name
+    /// shortens it to "Block" for compact iOS surfaces.
+    var macDisplayName: String {
+        self == .timeBlock ? String(localized: "Time Block") : displayName
+    }
+}
+
 extension AppFeature.Tab {
     static let macSidebarSections: [AppFeature.Tab] = [.focus, .plan, .dashboard]
 

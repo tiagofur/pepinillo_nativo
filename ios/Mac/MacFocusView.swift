@@ -71,15 +71,16 @@ struct MacFocusView: View {
             ToolbarItem(placement: .principal) {
                 Picker("Focus mode", selection: selectedModeBinding) {
                     ForEach(FocusMode.allCases) { mode in
-                        Text(modeTitle(mode)).tag(mode)
+                        Text(mode.macDisplayName).tag(mode)
                     }
                 }
                 .pickerStyle(.segmented)
                 .labelsHidden()
                 .disabled(store.isRunning)
+                .accessibilityLabel(String(localized: "Focus mode"))
                 .help(store.isRunning
-                      ? "Stop the session to change mode"
-                      : "Switch focus mode")
+                      ? String(localized: "Stop the session to change mode")
+                      : String(localized: "Switch focus mode"))
             }
 
             if store.isRunning {
@@ -90,7 +91,7 @@ struct MacFocusView: View {
                         Label("Skip Phase", systemImage: "forward.end")
                     }
                     .labelStyle(.iconOnly)
-                    .help("Skip phase")
+                    .help(String(localized: "Skip phase"))
                 }
 
                 ToolbarItem(placement: .primaryAction) {
@@ -100,7 +101,7 @@ struct MacFocusView: View {
                         Label("Stop Session", systemImage: "stop.fill")
                     }
                     .labelStyle(.iconOnly)
-                    .help("Stop session")
+                    .help(String(localized: "Stop session"))
                 }
             }
         }
@@ -177,9 +178,9 @@ struct MacFocusView: View {
         }
         .buttonStyle(.plain)
         .help(store.linkedTaskTitle == nil
-              ? "Link a task to this session"
-              : "Change or unlink the linked task")
-        .accessibilityLabel(store.linkedTaskTitle.map { "Linked task: \($0)" } ?? "Link a task")
+              ? String(localized: "Link a task to this session")
+              : String(localized: "Change or unlink the linked task"))
+        .accessibilityLabel(store.linkedTaskTitle.map { String(localized: "Linked task: \($0)") } ?? String(localized: "Link a task"))
     }
 
     private var primaryAction: some View {
@@ -198,9 +199,9 @@ struct MacFocusView: View {
 
     private var todayStats: some View {
         HStack(spacing: 20) {
-            stat(value: sessionsToday, label: "sessions")
+            stat(value: sessionsToday, label: sessionsToday == 1 ? "session" : "sessions")
             stat(value: totalFocusMinutesToday, label: "min")
-            stat(value: streakDays, label: "day streak")
+            stat(value: streakDays, label: streakDays == 1 ? "day streak" : "days streak")
         }
         .font(.caption)
         .foregroundStyle(.secondary)
@@ -213,10 +214,7 @@ struct MacFocusView: View {
                 .monospacedDigit()
             Text(label)
         }
-    }
-
-    private func modeTitle(_ mode: FocusMode) -> String {
-        mode == .timeBlock ? String(localized: "Time Block") : mode.displayName
+        .accessibilityElement(children: .combine)
     }
 
     private var primaryActionTitle: String {

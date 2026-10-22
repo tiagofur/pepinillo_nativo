@@ -195,13 +195,15 @@ struct MacTodayView: View {
                 .symbolRenderingMode(.hierarchical)
                 .foregroundStyle(color)
                 .frame(width: 24)
+                .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 6) {
-                    Text(mode?.displayName ?? session.mode)
+                    Text(mode?.macDisplayName ?? session.mode)
                         .font(.body.weight(.medium))
                     Text("·")
                         .foregroundStyle(.tertiary)
+                        .accessibilityHidden(true)
                     Text(durationText(session.actualDuration))
                         .font(.callout)
                         .foregroundStyle(.secondary)
@@ -212,6 +214,7 @@ struct MacTodayView: View {
                     Text(session.startedAt, format: .dateTime.hour().minute())
                     if let taskTitle {
                         Text("·")
+                            .accessibilityHidden(true)
                         Text(taskTitle)
                             .lineLimit(1)
                     }

@@ -14,17 +14,21 @@ struct MacMenuBarLabel: View {
     let store: StoreOf<AppFeature>?
 
     var body: some View {
-        if let store {
-            let focus = store.focus
-            if focus.isRunning {
-                Label(focus.displayTime, systemImage: focus.modeIcon)
-                    .monospacedDigit()
+        Group {
+            if let store {
+                let focus = store.focus
+                if focus.isRunning {
+                    Label(focus.displayTime, systemImage: focus.modeIcon)
+                        .monospacedDigit()
+                } else {
+                    Image(systemName: "timer")
+                }
             } else {
                 Image(systemName: "timer")
             }
-        } else {
-            Image(systemName: "timer")
         }
+        .accessibilityLabel(Text("Pepinillo"))
+        .accessibilityValue(Text(store?.focus.isRunning == true ? store?.focus.displayTime ?? "" : String(localized: "Ready")))
     }
 }
 
@@ -57,7 +61,7 @@ struct MacMenuBarView: View {
         HStack(spacing: 6) {
             Image(systemName: focus.selectedMode.systemImage)
                 .foregroundStyle(.secondary)
-            Text(focus.selectedMode.displayName)
+            Text(focus.selectedMode.macDisplayName)
                 .font(.headline)
             Spacer()
             Text(focus.phaseLabel)
@@ -122,9 +126,15 @@ struct MacMenuBarView: View {
 
     private var todayStats: some View {
         HStack(spacing: 18) {
-            stat(value: store.analytics.todaySessions.formatted(), label: "sessions")
+            stat(
+                value: store.analytics.todaySessions.formatted(),
+                label: store.analytics.todaySessions == 1 ? "session" : "sessions"
+            )
             stat(value: store.analytics.todayFocusMinutes.formatted(), label: "min")
-            stat(value: "\(store.analytics.currentStreakDays)", label: "streak")
+            stat(
+                value: "\(store.analytics.currentStreakDays)",
+                label: store.analytics.currentStreakDays == 1 ? "day streak" : "days streak"
+            )
         }
         .frame(maxWidth: .infinity, alignment: .center)
     }
@@ -139,6 +149,7 @@ struct MacMenuBarView: View {
                 .foregroundStyle(.secondary)
         }
         .frame(minWidth: 52)
+        .accessibilityElement(children: .combine)
     }
 
     private var footer: some View {
@@ -160,6 +171,7 @@ struct MacMenuBarView: View {
             }
             .menuStyle(.borderlessButton)
             .fixedSize()
+            .accessibilityLabel(String(localized: "More"))
         }
     }
 }

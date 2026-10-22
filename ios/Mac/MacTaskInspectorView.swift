@@ -41,6 +41,9 @@ struct MacTaskInspectorView: View {
         }
         .background(Color(nsColor: .windowBackgroundColor))
         .onAppear { store.send(.onAppear) }
+        .onReceive(NotificationCenter.default.publisher(for: .macInspectorFocusTitleRequested)) { _ in
+            focusedField = .title
+        }
         .alert(
             String(localized: "Couldn't Save Changes"),
             isPresented: Binding(
@@ -84,6 +87,11 @@ struct MacTaskInspectorView: View {
                     ? String(localized: "Mark task as incomplete")
                     : String(localized: "Mark task as complete")
             )
+            .accessibilityLabel(
+                store.isCompleted
+                    ? String(localized: "Mark task as incomplete")
+                    : String(localized: "Mark task as complete")
+            )
 
             TextField(
                 String(localized: "Title"),
@@ -108,6 +116,7 @@ struct MacTaskInspectorView: View {
             }
             .buttonStyle(.plain)
             .help(String(localized: "Close Inspector"))
+            .accessibilityLabel(String(localized: "Close Inspector"))
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 14)
@@ -134,6 +143,7 @@ struct MacTaskInspectorView: View {
                         .padding(.top, 8)
                         .padding(.leading, 5)
                         .allowsHitTesting(false)
+                        .accessibilityHidden(true)
                 }
 
                 TextEditor(text: Binding(
@@ -144,6 +154,7 @@ struct MacTaskInspectorView: View {
                 .scrollContentBackground(.hidden)
                 .focused($focusedField, equals: .notes)
                 .frame(minHeight: 84)
+                .accessibilityLabel(String(localized: "Notes"))
             }
         } header: {
             Text(String(localized: "Notes"))
@@ -163,6 +174,7 @@ struct MacTaskInspectorView: View {
                 }
                 .labelsHidden()
                 .pickerStyle(.menu)
+                .accessibilityLabel(String(localized: "Priority"))
             }
 
             LabeledContent(String(localized: "Energy")) {
@@ -176,6 +188,7 @@ struct MacTaskInspectorView: View {
                 }
                 .labelsHidden()
                 .pickerStyle(.menu)
+                .accessibilityLabel(String(localized: "Energy"))
             }
 
             LabeledContent(String(localized: "Estimate")) {
@@ -186,6 +199,8 @@ struct MacTaskInspectorView: View {
                     Text("\(store.estimatedPomodoros)")
                         .monospacedDigit()
                 }
+                .accessibilityLabel(String(localized: "Estimate"))
+                .accessibilityValue("\(store.estimatedPomodoros)")
             }
 
             Toggle(isOn: Binding(
@@ -214,6 +229,7 @@ struct MacTaskInspectorView: View {
                         displayedComponents: .date
                     )
                     .labelsHidden()
+                    .accessibilityLabel(String(localized: "Due Date"))
 
                     Button {
                         store.send(.dueDateChanged(nil))
@@ -223,6 +239,7 @@ struct MacTaskInspectorView: View {
                     }
                     .buttonStyle(.plain)
                     .help(String(localized: "Remove Due Date"))
+                    .accessibilityLabel(String(localized: "Remove Due Date"))
                 } else {
                     Button(String(localized: "Add")) {
                         store.send(.dueDateChanged(Calendar.current.startOfDay(for: .now)))
@@ -244,6 +261,11 @@ struct MacTaskInspectorView: View {
                             .foregroundStyle(subtask.isCompleted ? Color.green : Color.secondary)
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel(
+                        subtask.isCompleted
+                            ? String(localized: "Mark task as incomplete")
+                            : String(localized: "Mark task as complete")
+                    )
 
                     Text(subtask.title)
                         .strikethrough(subtask.isCompleted)
@@ -259,6 +281,7 @@ struct MacTaskInspectorView: View {
                     }
                     .buttonStyle(.plain)
                     .help(String(localized: "Delete"))
+                    .accessibilityLabel(String(localized: "Delete \(subtask.title)"))
                 }
             }
 
@@ -315,9 +338,10 @@ struct MacTaskInspectorView: View {
                     HStack(spacing: 10) {
                         Image(systemName: "timer")
                             .foregroundStyle(.secondary)
+                            .accessibilityHidden(true)
 
                         VStack(alignment: .leading, spacing: 1) {
-                            Text(session.mode.capitalized)
+                            Text(FocusMode(rawValue: session.mode)?.macDisplayName ?? session.mode.capitalized)
                                 .font(.callout)
                             Text(session.startedAt.formatted(date: .abbreviated, time: .shortened))
                                 .font(.caption)
