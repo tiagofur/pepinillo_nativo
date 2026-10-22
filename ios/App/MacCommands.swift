@@ -59,6 +59,10 @@ extension Notification.Name {
     static let macPlanInspectorToggleRequested = Notification.Name("pepinillo.mac.plan.inspector")
     /// Posted when Rename Task should focus the inspector title field.
     static let macInspectorFocusTitleRequested = Notification.Name("pepinillo.mac.inspector.focusTitle")
+    /// Posted by Plan > Quick Capture and observed by `MacQuickCaptureController`
+    /// (a Mac-target class, so the menu routes through a notification instead
+    /// of a direct reference).
+    static let macQuickCaptureToggleRequested = Notification.Name("pepinillo.mac.quickCapture.toggle")
 }
 
 struct PepinilloCommands: Commands {
@@ -124,6 +128,14 @@ struct PepinilloCommands: Commands {
                 store.send(.tasks(.newTaskRequested))
             }
             .keyboardShortcut("n", modifiers: .command)
+
+            Button(String(localized: "Quick Capture")) {
+                NotificationCenter.default.post(name: .macQuickCaptureToggleRequested, object: nil)
+            }
+            // The ⌃⌥T equivalent is registered globally via Carbon
+            // (MacGlobalHotKey); giving the menu item the same shortcut fires
+            // both paths at once when the app is frontmost and toggles the
+            // panel twice.
 
             Divider()
 

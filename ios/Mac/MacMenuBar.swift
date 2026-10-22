@@ -19,8 +19,9 @@ struct MacSessionPulse: Equatable {
     var remainingSeconds: TimeInterval?
     var displayTime = ""
     var modeIcon = "timer"
+    var keepDisplayAwake = false
 
-    init(focus: FocusFeature.State?) {
+    init(focus: FocusFeature.State?, keepDisplayAwake: Bool = false) {
         guard let focus else { return }
         isRunning = focus.isRunning
         isPaused = focus.isPaused
@@ -28,6 +29,7 @@ struct MacSessionPulse: Equatable {
         remainingSeconds = focus.remainingSeconds
         displayTime = focus.displayTime
         modeIcon = focus.modeIcon
+        self.keepDisplayAwake = keepDisplayAwake
     }
 }
 
@@ -62,7 +64,13 @@ final class MacPresencePulse: ObservableObject {
     private func refresh() {
         guard let store else { return }
         let (newPulse, focus) = store.withState { state in
-            (MacSessionPulse(focus: state.focus), state.focus)
+            (
+                MacSessionPulse(
+                    focus: state.focus,
+                    keepDisplayAwake: state.settings.keepScreenOn
+                ),
+                state.focus
+            )
         }
         guard newPulse != pulse else { return }
         pulse = newPulse

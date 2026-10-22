@@ -1,6 +1,7 @@
 // MacTodayView.swift
 // Pepinillo — native macOS Today dashboard
 
+import Charts
 import SwiftUI
 
 struct MacTodayView: View {
@@ -52,6 +53,7 @@ struct MacTodayView: View {
             VStack(alignment: .leading, spacing: 24) {
                 header
                 kpiGrid
+                weeklyChartCard
                 LazyVGrid(
                     columns: [GridItem(.adaptive(minimum: 320), spacing: 24, alignment: .top)],
                     alignment: .leading,
@@ -140,6 +142,108 @@ struct MacTodayView: View {
                 systemImage: "checklist",
                 tint: theme.color(for: .timeBlock)
             )
+        }
+    }
+
+    // MARK: - Weekly Chart
+
+    private var weekMinutes: Int {
+        analytics.chartData.reduce(0) { $0 + $1.totalMinutes }
+    }
+
+    private var weekSessions: Int {
+        analytics.chartData.reduce(0) { $0 + $1.sessionsCompleted }
+    }
+
+    private var bestDay: AnalyticsFeature.State.DayPoint? {
+        analytics.chartData
+            .filter { $0.totalMinutes > 0 }
+            .max { $0.totalMinutes < $1.totalMinutes }
+    }
+
+    private var weeklyChartCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .firstTextBaseline) {
+                Label("Last 7 days", systemImage: "chart.bar")
+                    .font(.headline)
+                Spacer()
+                if weekMinutes > 0 {
+                    Text("\(weekSessions) sessions")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            if analytics.chartData.isEmpty {
+                Text("No sessions this week")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .padding(.vertical, 8)
+            } else {
+                weeklyChart
+                weeklySummary
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
+        .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
+    }
+
+    /// Focus minutes per day. Today's bar is highlighted; past days render at
+    /// reduced emphasis so the current day reads as "where you are".
+    private var weeklyChart: some View {
+        Chart(analytics.chartData) { point in
+            BarMark(
+                x: .value("Day", point.date, unit: .day),
+                y: .value("Minutes", point.totalMinutes)
+            )
+            .foregroundStyle(
+                Calendar.current.isDateInToday(point.date)
+                    ? theme.color(for: .pomodoro)
+                    : theme.color(for: .pomodoro).opacity(0.35)
+            )
+            .cornerRadius(4)
+        }
+        .chartXAxis {
+            AxisMarks(values: analytics.chartData.map(\.date)) { _ in
+                AxisValueLabel(format: .dateTime.weekday(.narrow))
+                    .font(.caption)
+            }
+        }
+        .chartYAxis {
+            AxisMarks(position: .trailing) { value in
+                AxisGridLine()
+                    .foregroundStyle(.quaternary)
+                AxisValueLabel {
+                    if let minutes = value.as(Int.self) {
+                        Text("\(minutes) min")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+        }
+        .frame(height: 148)
+        .accessibilityLabel(Text("Focus minutes over the last 7 days"))
+        .accessibilityValue(Text("\(weekMinutes) minutes"))
+    }
+
+    private var weeklySummary: some View {
+        HStack(spacing: 6) {
+            Text(durationText(TimeInterval(weekMinutes) * 60))
+                .font(.callout.weight(.semibold))
+                .monospacedDigit()
+            Text("this week")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+
+            if let bestDay {
+                Spacer(minLength: 16)
+                Text("Best day: \(bestDay.label)")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .monospacedDigit()
+            }
         }
     }
 

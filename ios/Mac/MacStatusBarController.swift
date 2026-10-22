@@ -69,7 +69,7 @@ final class MacStatusBarController: NSObject, NSPopoverDelegate {
     func sessionChanged(pulse: MacSessionPulse, focus: FocusFeature.State) {
         self.pulse = pulse
         renderLabel()
-        MacDockChrome.shared.sync(focus: focus)
+        MacDockChrome.shared.sync(focus: focus, keepDisplayAwake: pulse.keepDisplayAwake)
     }
 
     private func renderLabel() {

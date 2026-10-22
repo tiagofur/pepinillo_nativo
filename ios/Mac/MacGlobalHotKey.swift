@@ -1,10 +1,11 @@
 // MacGlobalHotKey.swift
-// Pepinillo — native macOS global shortcut
+// Pepinillo — native macOS global shortcuts
 
 import Carbon
 import Foundation
 
-/// Registers one system-wide hotkey (`⌃⌥Space`) that toggles the focus timer.
+/// Registers system-wide hotkeys (Carbon `RegisterEventHotKey`) and dispatches
+/// them by id: `⌃⌥Space` toggles the focus timer, `⌃⌥T` opens Quick Capture.
 ///
 /// Carbon is used instead of `NSEvent.addGlobalMonitorForEvents` because global
 /// key monitors require Accessibility permission, while `RegisterEventHotKey`
@@ -13,33 +14,64 @@ import Foundation
 final class MacGlobalHotKey {
     static let shared = MacGlobalHotKey()
 
-    private var hotKeyRef: EventHotKeyRef?
+    /// Signature used for every Pepinillo hotkey id ("PEN").
+    private static let signature = OSType(0x5045504E)
+
+    enum HotKeyID {
+        static let focusToggle = 1
+        static let quickCapture = 2
+    }
+
+    private var hotKeyRefs: [Int: EventHotKeyRef] = [:]
     private var eventHandlerRef: EventHandlerRef?
-    private var isRegistered = false
-    private var action: (@MainActor () -> Void)?
+    private var actions: [Int: @MainActor () -> Void] = [:]
 
     private init() {}
 
-    /// Installs or updates the action and registers the hotkey once.
-    func configure(action: @escaping @MainActor () -> Void) {
-        self.action = action
-        registerIfNeeded()
+    /// Installs or updates the action for a hotkey and registers it once.
+    func register(
+        id: Int,
+        keyCode: Int,
+        modifiers: Int,
+        action: @escaping @MainActor () -> Void
+    ) {
+        actions[id] = action
+        guard hotKeyRefs[id] == nil else { return }
+        installEventHandlerIfNeeded()
+
+        var hotKeyRef: EventHotKeyRef?
+        let hotKeyID = EventHotKeyID(signature: Self.signature, id: UInt32(id))
+        let status = RegisterEventHotKey(
+            UInt32(keyCode),
+            UInt32(modifiers),
+            hotKeyID,
+            GetApplicationEventTarget(),
+            0,
+            &hotKeyRef
+        )
+        guard status == noErr, let hotKeyRef else {
+            // A conflict with another app's hotkey is the likely cause; the
+            // shortcut silently stays unregistered for that combo.
+            actions[id] = nil
+            return
+        }
+        hotKeyRefs[id] = hotKeyRef
     }
 
-    func unregister() {
-        if let hotKeyRef {
-            UnregisterEventHotKey(hotKeyRef)
-            self.hotKeyRef = nil
+    func unregisterAll() {
+        for ref in hotKeyRefs.values {
+            UnregisterEventHotKey(ref)
         }
+        hotKeyRefs.removeAll()
+        actions.removeAll()
         if let eventHandlerRef {
             RemoveEventHandler(eventHandlerRef)
             self.eventHandlerRef = nil
         }
-        isRegistered = false
     }
 
-    private func registerIfNeeded() {
-        guard !isRegistered else { return }
+    private func installEventHandlerIfNeeded() {
+        guard eventHandlerRef == nil else { return }
 
         var eventType = EventTypeSpec(
             eventClass: OSType(kEventClassKeyboard),
@@ -54,39 +86,34 @@ final class MacGlobalHotKey {
             nil,
             &eventHandlerRef
         )
-        guard handlerStatus == noErr else { return }
-
-        let hotKeyID = EventHotKeyID(signature: OSType(0x5045504E), id: 1)
-        let registerStatus = RegisterEventHotKey(
-            UInt32(kVK_Space),
-            UInt32(controlKey | optionKey),
-            hotKeyID,
-            GetApplicationEventTarget(),
-            0,
-            &hotKeyRef
-        )
-
-        guard registerStatus == noErr else {
-            if let eventHandlerRef {
-                RemoveEventHandler(eventHandlerRef)
-                self.eventHandlerRef = nil
-            }
-            return
+        if handlerStatus != noErr {
+            eventHandlerRef = nil
         }
-
-        isRegistered = true
     }
 
-    fileprivate func handle() {
-        action?()
+    fileprivate func handle(id: UInt32) {
+        actions[Int(id)]?()
     }
 }
 
 /// Carbon invokes this on the main thread. The `Task` hop keeps the callback
 /// free of captured actor-isolated state.
-private let macGlobalHotKeyHandler: EventHandlerUPP = { _, _, _ in
+private let macGlobalHotKeyHandler: EventHandlerUPP = { _, event, _ in
+    var hotKeyID = EventHotKeyID()
+    if let event {
+        GetEventParameter(
+            event,
+            EventParamName(kEventParamDirectObject),
+            EventParamType(typeEventHotKeyID),
+            nil,
+            MemoryLayout<EventHotKeyID>.size,
+            nil,
+            &hotKeyID
+        )
+    }
+    let id = hotKeyID.id
     Task { @MainActor in
-        MacGlobalHotKey.shared.handle()
+        MacGlobalHotKey.shared.handle(id: id)
     }
     return noErr
 }

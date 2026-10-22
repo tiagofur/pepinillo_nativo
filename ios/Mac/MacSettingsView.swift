@@ -171,9 +171,20 @@ struct MacSettingsView: View {
             }
 
             Section {
-                LabeledContent("Global shortcut", value: "⌃⌥Space")
+                Toggle(
+                    "Keep screen on during sessions",
+                    isOn: eventBinding(store.settings.keepScreenOn) { .keepScreenOnToggled }
+                )
             } footer: {
-                Text("Starts or pauses the focus timer from anywhere.")
+                Text("Pepinillo keeps the display awake while a focus session runs.")
+                    .foregroundStyle(.secondary)
+            }
+
+            Section {
+                LabeledContent("Global shortcut", value: "⌃⌥Space")
+                LabeledContent("Quick Capture", value: "⌃⌥T")
+            } footer: {
+                Text("Starts or pauses the focus timer from anywhere; ⌃⌥T captures a task from any app.")
                     .foregroundStyle(.secondary)
             }
         }

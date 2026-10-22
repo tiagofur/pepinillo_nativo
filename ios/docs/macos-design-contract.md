@@ -90,6 +90,7 @@ The Dock icon is a first-class control surface, not a launcher:
 - Context menu (`applicationDockMenu`): Start/Pause/Resume/Next phase (live title), Skip Phase, Stop Session, New Task, and Focus / Plan / Today. Items drive the same `FocusFeature`/`TaskListFeature` actions as the menus.
 - Badge: remaining phase minutes while a session runs (`NSApp.dockTile.badgeLabel`); cleared when paused, stopped, or in Stopwatch (counts up).
 - App Nap: a `ProcessInfo.beginActivity(.userInitiated)` token is held while a session runs so tick delivery stays prompt when the main window is closed. Deliberately NOT `.idleSystemSleepDisabled` — the engine is wall-clock anchored, so letting the Mac sleep is safe.
+- Display: a separate `.idleDisplaySleepDisabled` token is held while a session runs **only when** the shared "Keep screen on during sessions" setting is enabled (Settings > General).
 
 ### 6.2 Capture from anywhere
 
@@ -127,8 +128,16 @@ The Dock icon is a first-class control surface, not a launcher:
 
 - Header: date, streak, total focus time.
 - KPI grid: focus time, sessions, streak, tasks completed.
+- Weekly card: last-7-days focus-minutes bar chart (SwiftUI Charts, data from `AnalyticsFeature.chartData`), with the week total and best day; today's bar is highlighted.
 - Recent sessions list (last 5) and "Start next focus".
-- No weekly/monthly review, AI reports, or calendar in v1.
+- No monthly review, AI reports, or calendar in v1.
+
+## 9.1 Quick Capture
+
+- `⌃⌥T` (global, Carbon) or Plan > Quick Capture opens a floating, non-activating `NSPanel` with a single task field.
+- Return creates the task and hides the panel; Escape or clicking anywhere else dismisses it.
+- The panel never steals focus from the frontmost app: it is a key window of a non-activating panel, so capturing happens in place.
+- The Plan-menu item routes through a notification because `MacCommands.swift` also compiles for the iOS (Catalyst) target, where the Mac controller class does not exist.
 
 ---
 
@@ -196,6 +205,7 @@ SF Pro is the default. Rounded is reserved for numerals and celebration. Do not 
 | `⌘↩` | Start / Pause |
 | `⌘.` | Stop |
 | `⌃⌥Space` | Global start / pause |
+| `⌃⌥T` | Global Quick Capture |
 
 Menus: App, File, Edit (undo/redo), View, Focus, Plan, Window, Help. No bare `Space` or single-letter menu equivalents. Icon-only toolbar buttons get tooltips.
 

@@ -2,6 +2,7 @@
 // Pepinillo — native macOS shell
 
 import AppKit
+import Carbon
 import SwiftData
 import SwiftUI
 import ComposableArchitecture
@@ -36,6 +37,7 @@ private final class MacAppBootstrap: ObservableObject {
     /// which observe the store directly.
     @Published var presence = MacPresencePulse()
     private lazy var statusBar = MacStatusBarController(presence: presence)
+    private lazy var quickCapture = MacQuickCaptureController()
 
     init() {
         Task {
@@ -128,8 +130,21 @@ private final class MacAppBootstrap: ObservableObject {
         presence.startObserving(store: store)
         statusBar.install(store: store)
 
-        MacGlobalHotKey.shared.configure {
+        // Global shortcuts share one Carbon handler and dispatch by id.
+        MacGlobalHotKey.shared.register(
+            id: MacGlobalHotKey.HotKeyID.focusToggle,
+            keyCode: kVK_Space,
+            modifiers: controlKey | optionKey
+        ) {
             FocusToggleCommand.toggle(store: store)
+        }
+        quickCapture.install(store: store)
+        MacGlobalHotKey.shared.register(
+            id: MacGlobalHotKey.HotKeyID.quickCapture,
+            keyCode: kVK_ANSI_T,
+            modifiers: controlKey | optionKey
+        ) {
+            self.quickCapture.togglePanel()
         }
     }
 }

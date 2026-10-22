@@ -25,8 +25,9 @@ final class MacDockChrome {
     static let shared = MacDockChrome()
 
     private var activityToken: NSObjectProtocol?
+    private var displaySleepToken: NSObjectProtocol?
 
-    func sync(focus: FocusFeature.State) {
+    func sync(focus: FocusFeature.State, keepDisplayAwake: Bool = false) {
         let isActive = focus.isRunning && !focus.isPaused
 
         NSApp.dockTile.badgeLabel = badgeLabel(for: focus)
@@ -42,6 +43,16 @@ final class MacDockChrome {
         } else if !isActive, let token = activityToken {
             ProcessInfo.processInfo.endActivity(token)
             activityToken = nil
+        }
+
+        if isActive, keepDisplayAwake, displaySleepToken == nil {
+            displaySleepToken = ProcessInfo.processInfo.beginActivity(
+                options: .idleDisplaySleepDisabled,
+                reason: "Pepinillo session: keep display awake"
+            )
+        } else if (!isActive || !keepDisplayAwake), let token = displaySleepToken {
+            ProcessInfo.processInfo.endActivity(token)
+            displaySleepToken = nil
         }
     }
 
