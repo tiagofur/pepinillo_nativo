@@ -103,8 +103,15 @@ ios/
 │   ├── AppFeature.swift                # Root reducer: coordinates shell tabs, auth/profile sheets, Watch listener, WebSocket lifecycle
 │   ├── AppView.swift                   # Root routing: iPhone TabView, iPad portrait/landscape via GeometryReader
 │   ├── iPadSplitView.swift             # iPad layouts: iPadLandscapeLayout (sidebar+detail), iPadPortraitLayout (top menu + content)
-│   ├── MacCommands.swift               # Menu commands for Mac (Catalyst)
+│   ├── MacCommands.swift               # Menu commands shared by the Mac app target
 │   └── DemoDataSeeder.swift            # Demo data for previews and testing
+│
+├── Mac/                                # Native macOS shell (PepinilloMac)
+│   ├── PepinilloMacApp.swift           # @main, Window/MenuBarExtra/Settings scenes
+│   ├── MacAppView.swift                # Native sidebar + detail shell
+│   ├── MacMenuBar.swift                # MenuBarExtra UI and quick actions
+│   ├── MacSettingsView.swift           # Settings scene and MacPreferences
+│   └── MacGlobalHotKey.swift           # Carbon global shortcut (⌃⌥Space)
 │
 ├── Domain/
 │   ├── Models/                         # SwiftData @Model classes
