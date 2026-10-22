@@ -140,15 +140,13 @@ struct MacAppView: View {
     }
 
     private var focusContent: some View {
-        NavigationStack {
-            FocusView(
-                store: store.scope(state: \.focus, action: \.focus),
-                streakDays: store.analytics.currentStreakDays,
-                sessionsToday: store.analytics.sessionsCompleted,
-                totalFocusMinutesToday: store.analytics.totalFocusMinutes
-            )
-            .withAmbientBackground()
-        }
+        MacFocusView(
+            store: store.scope(state: \.focus, action: \.focus),
+            streakDays: store.analytics.currentStreakDays,
+            sessionsToday: store.analytics.sessionsCompleted,
+            totalFocusMinutesToday: store.analytics.totalFocusMinutes
+        )
+        .withAmbientBackground()
     }
 
     private var planContent: some View {

@@ -888,6 +888,7 @@ private extension View {
 
 struct TimerCircleView: View {
     let store: StoreOf<FocusFeature>
+    var timerFontSize: CGFloat? = nil
 
     @Environment(\.appTheme) private var theme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -924,7 +925,8 @@ struct TimerCircleView: View {
             TimerCenterContent(
                 store: store,
                 breatheScale: $breatheScale,
-                reduceMotion: reduceMotion
+                reduceMotion: reduceMotion,
+                timerFontSize: timerFontSize
             )
         }
         .aspectRatio(1, contentMode: .fit)
@@ -1062,6 +1064,7 @@ private struct TimerCenterContent: View {
     let store: StoreOf<FocusFeature>
     @Binding var breatheScale: CGFloat
     let reduceMotion: Bool
+    let timerFontSize: CGFloat?
 
     var body: some View {
         VStack(spacing: 4) {
@@ -1084,7 +1087,7 @@ private struct TimerCenterContent: View {
 
             // Time display — dominant focal point
             Text(store.displayTime)
-                .font(NumericFont.timer())
+                .font(NumericFont.timer(size: timerFontSize))
                 .contentTransition(.numericText())
                 .minimumScaleFactor(0.5)
                 .lineLimit(1)

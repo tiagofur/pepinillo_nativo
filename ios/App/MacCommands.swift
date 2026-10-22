@@ -30,15 +30,20 @@ enum FocusToggleCommand {
 
     @MainActor
     static func toggle(store: StoreOf<AppFeature>) {
-        switch decision(for: store.focus) {
+        toggle(focusStore: store.scope(state: \.focus, action: \.focus))
+    }
+
+    @MainActor
+    static func toggle(focusStore store: StoreOf<FocusFeature>) {
+        switch decision(for: store.state) {
         case .start:
-            store.send(.focus(.startTapped()))
+            store.send(.startTapped())
         case .pause:
-            store.send(.focus(.pauseTapped))
+            store.send(.pauseTapped)
         case .resume:
-            store.send(.focus(.resumeTapped))
+            store.send(.resumeTapped)
         case .nextPhase:
-            store.send(.focus(.startNextPhaseTapped))
+            store.send(.startNextPhaseTapped)
         }
     }
 }
@@ -56,6 +61,11 @@ struct PepinilloCommands: Commands {
             }
             .keyboardShortcut(.return, modifiers: .command)
 
+            Button(String(localized: "menu.focus.skipphase", defaultValue: "Skip Phase")) {
+                store.send(.focus(.skipPhaseTapped))
+            }
+            .disabled(!store.focus.isRunning)
+
             Button(String(localized: "menu.focus.stopsession", defaultValue: "Stop Session")) {
                 store.send(.focus(.stopTapped))
             }
@@ -68,21 +78,25 @@ struct PepinilloCommands: Commands {
                 store.send(.focus(.modeSelected(.pomodoro)))
             }
             .keyboardShortcut("1", modifiers: [.command, .option])
+            .disabled(store.focus.isRunning)
 
             Button(String(localized: "menu.focus.flowtime", defaultValue: "Flowtime")) {
                 store.send(.focus(.modeSelected(.flowtime)))
             }
             .keyboardShortcut("2", modifiers: [.command, .option])
+            .disabled(store.focus.isRunning)
 
             Button(String(localized: "menu.focus.timeblock", defaultValue: "Time Block")) {
                 store.send(.focus(.modeSelected(.timeBlock)))
             }
             .keyboardShortcut("3", modifiers: [.command, .option])
+            .disabled(store.focus.isRunning)
 
             Button(String(localized: "menu.focus.stopwatch", defaultValue: "Stopwatch")) {
                 store.send(.focus(.modeSelected(.stopwatch)))
             }
             .keyboardShortcut("4", modifiers: [.command, .option])
+            .disabled(store.focus.isRunning)
         }
 
         // MARK: Plan Menu
