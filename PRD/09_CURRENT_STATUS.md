@@ -83,7 +83,7 @@ See:
 | Android | Active Production Platform | Native Android app released and available. Current focus: stability, acquisition and retention. |
 | iOS | Active Production Platform | Native iOS app released and available. Current focus: stability, acquisition and retention. |
 | watchOS | Active Companion Platform | Supports Apple ecosystem experience. Maintained as part of iOS strategy. |
-| macOS | Active Development (v1: Focus-first + Plan) | Native `PepinilloMac` target; menu bar + native shell; Focus/Plan/Today content in progress (F2). No auth/AI in v1. Contract: `ios/docs/macos-design-contract.md`. |
+| macOS | Active Development (v1: Focus-first + Plan) | Native `PepinilloMac` target; menu bar + native shell; Focus and Today native; Plan table next (F2/F3). No auth/AI in v1. Contract: `ios/docs/macos-design-contract.md`. |
 | Wear OS | Active Companion Platform | Supports Android ecosystem experience. Maintained as part of Android strategy. |
 | Backend | Active Infrastructure | Required services and infrastructure should prioritize current mobile needs. |
 | Windows | Paused Experiment | Technical feasibility validated. Not an active roadmap commitment. |
