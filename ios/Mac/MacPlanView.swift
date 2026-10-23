@@ -641,7 +641,7 @@ struct MacPlanView: View {
 
     @ViewBuilder
     private var undoBannerContent: some View {
-        if let completed = store.recentlyCompletedTask {
+        if store.recentlyCompletedTask != nil {
             undoBanner(
                 systemImage: "checkmark.circle",
                 message: String(localized: "Task completed"),

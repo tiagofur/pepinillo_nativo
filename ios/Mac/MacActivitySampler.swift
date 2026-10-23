@@ -59,9 +59,7 @@ final class MacActivitySampler {
 
     private func tick() {
         guard let store else { return }
-        let sessionActive = store.withState { state in
-            state.focus.isRunning && !state.focus.isPaused
-        }
+        let sessionActive = store.focus.isRunning && !store.focus.isPaused
 
         if sessionActive, isEnabled, !isScreenLocked,
            let front = NSWorkspace.shared.frontmostApplication,

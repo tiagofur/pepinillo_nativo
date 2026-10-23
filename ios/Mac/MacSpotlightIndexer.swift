@@ -8,7 +8,7 @@
 // There is no reactive handle on the task store outside views, so the indexer
 // fingerprints the task list on a slow timer and reindexes only real changes.
 
-import CoreSpotlight
+@preconcurrency import CoreSpotlight
 import ComposableArchitecture
 import OSLog
 import UniformTypeIdentifiers
@@ -42,33 +42,33 @@ final class MacSpotlightIndexer {
 
     private func indexIfNeeded() {
         guard let store else { return }
-        let (next, tasks) = store.withState { state in
-            let marks = state.tasks.tasks.map {
-                Fingerprint(id: $0.id, title: $0.title, isCompleted: $0.isCompleted)
-            }
-            return (marks, Array(state.tasks.tasks))
+        let marks = store.tasks.tasks.map {
+            Fingerprint(id: $0.id, title: $0.title, isCompleted: $0.isCompleted)
         }
-        guard !isIndexedOnce || next != fingerprint else { return }
-        fingerprint = next
+        let tasks = Array(store.tasks.tasks)
+        guard !isIndexedOnce || marks != fingerprint else { return }
+        fingerprint = marks
         isIndexedOnce = true
         reindex(tasks)
     }
 
     private func reindex(_ tasks: [TaskListFeature.TaskItemState]) {
-        let index = CSSearchableIndex.default()
         let items = tasks
             .filter { !$0.isCompleted && !$0.isRecurringTemplate }
             .map(taskItem)
 
-        index.deleteSearchableItems(withDomainIdentifiers: [Self.domain]) { [weak self] deleteError in
-            if let deleteError {
-                self?.log(deleteError, phase: "delete")
+        Task {
+            let index = CSSearchableIndex.default()
+            do {
+                try await index.deleteSearchableItems(withDomainIdentifiers: [Self.domain])
+            } catch {
+                log(error, phase: "delete")
             }
             guard !items.isEmpty else { return }
-            index.indexSearchableItems(items) { indexError in
-                if let indexError {
-                    self?.log(indexError, phase: "index")
-                }
+            do {
+                try await index.indexSearchableItems(items)
+            } catch {
+                log(error, phase: "index")
             }
         }
     }
