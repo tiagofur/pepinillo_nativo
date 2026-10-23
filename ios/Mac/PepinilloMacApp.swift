@@ -150,6 +150,29 @@ private final class MacAppBootstrap: ObservableObject {
         ) {
             self.quickCapture.togglePanel()
         }
+        // Extra session shortcuts — the rest of the Kofe-Flow-style
+        // "control from anywhere" surface (⌃⌥Space toggles start/pause).
+        MacGlobalHotKey.shared.register(
+            id: MacGlobalHotKey.HotKeyID.nextPhase,
+            keyCode: kVK_RightArrow,
+            modifiers: controlKey | optionKey
+        ) {
+            MacSessionCommand.nextPhase(store: store)
+        }
+        MacGlobalHotKey.shared.register(
+            id: MacGlobalHotKey.HotKeyID.stopSession,
+            keyCode: kVK_ANSI_X,
+            modifiers: controlKey | optionKey
+        ) {
+            MacSessionCommand.stop(store: store)
+        }
+        MacGlobalHotKey.shared.register(
+            id: MacGlobalHotKey.HotKeyID.showWindow,
+            keyCode: kVK_ANSI_P,
+            modifiers: controlKey | optionKey
+        ) {
+            MacStatusBarController.shared?.openMainWindow()
+        }
     }
 }
 

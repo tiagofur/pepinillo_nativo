@@ -211,6 +211,16 @@ struct SettingsView: View {
                     set: { _ in store.send(.soundToggled) }
                 )
             )
+            Picker(String(localized: "Completion sound"), selection: Binding(
+                get: { CompletionSound.current },
+                set: { sound in
+                    UserDefaults.standard.set(sound.rawValue, forKey: CompletionSound.defaultsKey)
+                }
+            )) {
+                ForEach(CompletionSound.allCases, id: \.self) { sound in
+                    Text(sound.displayName).tag(sound)
+                }
+            }
             Toggle(
                 String(localized: "Haptic feedback"),
                 isOn: Binding(

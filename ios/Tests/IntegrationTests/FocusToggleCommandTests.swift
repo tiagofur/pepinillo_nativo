@@ -32,3 +32,32 @@ struct FocusToggleCommandTests {
         #expect(FocusToggleCommand.decision(for: focus) == .nextPhase)
     }
 }
+
+@Suite("MacSessionCommand")
+struct MacSessionCommandTests {
+    @Test func waitingHoldStartsNextPhase() {
+        #expect(
+            MacSessionCommand.nextPhaseDecision(isRunning: true, isWaitingForNextPhase: true)
+                == .startNextPhase
+        )
+    }
+
+    @Test func runningSkipsPhase() {
+        #expect(
+            MacSessionCommand.nextPhaseDecision(isRunning: true, isWaitingForNextPhase: false)
+                == .skip
+        )
+    }
+
+    @Test func idleDoesNothing() {
+        #expect(
+            MacSessionCommand.nextPhaseDecision(isRunning: false, isWaitingForNextPhase: false)
+                == .none
+        )
+    }
+
+    @Test func stopDecisionGuardsOnRunning() {
+        #expect(MacSessionCommand.stopDecision(isRunning: true) == .stop)
+        #expect(MacSessionCommand.stopDecision(isRunning: false) == .none)
+    }
+}

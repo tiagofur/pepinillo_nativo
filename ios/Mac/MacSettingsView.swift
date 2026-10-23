@@ -12,6 +12,8 @@ enum MacAppStorageKeys {
     static let defaultSection = "mac.defaultSection"
     /// Read raw each tick by `MacActivitySampler`; written by `MacPreferences`.
     static let topActivityEnabled = "mac.topActivityEnabled"
+    /// Read raw each render by `MacStatusBarController`; written by `MacPreferences`.
+    static let menuBarStatusStyle = "mac.menuBarStatusStyle"
 }
 
 // MARK: - App-level preferences
@@ -24,6 +26,7 @@ final class MacPreferences: ObservableObject {
     @Published private(set) var showInDock: Bool
     @Published private(set) var defaultSection: AppFeature.Tab
     @Published private(set) var topActivityEnabled: Bool
+    @Published private(set) var menuBarStatusStyle: MenuBarStatusStyle
     @Published private(set) var errorMessage: String?
 
     private var isApplying = false
@@ -44,6 +47,7 @@ final class MacPreferences: ObservableObject {
         // Opt-in (design contract §18.4): no foreground sampling until the
         // user asks for it.
         topActivityEnabled = defaults.bool(forKey: MacAppStorageKeys.topActivityEnabled)
+        menuBarStatusStyle = MenuBarStatusStyle.current
 
         let defaultRaw = defaults.string(forKey: MacAppStorageKeys.defaultSection)
         let defaultTab = defaultRaw.flatMap { AppFeature.Tab(rawValue: $0) } ?? .focus
@@ -78,6 +82,14 @@ final class MacPreferences: ObservableObject {
         UserDefaults.standard.set(value, forKey: MacAppStorageKeys.topActivityEnabled)
     }
 
+    func setMenuBarStatusStyle(_ style: MenuBarStatusStyle) {
+        guard style != menuBarStatusStyle else { return }
+        menuBarStatusStyle = style
+        UserDefaults.standard.set(style.rawValue, forKey: MacAppStorageKeys.menuBarStatusStyle)
+        // The pulse only re-renders on session changes; nudge the item.
+        MacStatusBarController.shared?.reloadStyle()
+    }
+
     func applyDockPolicy() {
         NSApp.setActivationPolicy(showInDock ? .regular : .accessory)
     }
@@ -110,6 +122,17 @@ struct MacSettingsView: View {
 
     private var activeTheme: AppTheme {
         AppTheme.named(store.settings.themeName)
+    }
+
+    /// Mirrors the Focus-tab mode convention: Pepinillo+ styles carry a
+    /// "(Pro)" suffix and are disabled for free users.
+    private func statusStyleLabel(_ style: MenuBarStatusStyle) -> String {
+        let base: String = switch style {
+        case .countdown: String(localized: "Countdown")
+        case .timeOnly: String(localized: "Time only")
+        case .iconOnly: String(localized: "Icon only")
+        }
+        return style.isPro && !store.subscriptionState.isPro ? "\(base) (Pro)" : base
     }
 
     private var preferredColorScheme: ColorScheme? {
@@ -195,8 +218,32 @@ struct MacSettingsView: View {
             Section {
                 LabeledContent("Global shortcut", value: "⌃⌥Space")
                 LabeledContent("Quick Capture", value: "⌃⌥T")
+                LabeledContent("Skip / next phase", value: "⌃⌥→")
+                LabeledContent("End session", value: "⌃⌥X")
+                LabeledContent("Open Pepinillo", value: "⌃⌥P")
             } footer: {
                 Text("Starts or pauses the focus timer from anywhere; ⌃⌥T captures a task from any app.")
+                    .foregroundStyle(.secondary)
+            }
+
+            Section {
+                Picker(
+                    "Status style",
+                    selection: Binding(
+                        get: { preferences.menuBarStatusStyle },
+                        set: { preferences.setMenuBarStatusStyle($0) }
+                    )
+                ) {
+                    ForEach(MenuBarStatusStyle.allCases, id: \.self) { style in
+                        Text(statusStyleLabel(style))
+                            .tag(style)
+                            .disabled(style.isPro && !store.subscriptionState.isPro)
+                    }
+                }
+            } header: {
+                Label(String(localized: "Menu bar"), systemImage: "menubar.rectangle")
+            } footer: {
+                Text("How the session shows in the menu bar. The minimal styles need Pepinillo+.")
                     .foregroundStyle(.secondary)
             }
 
@@ -404,6 +451,19 @@ struct MacSettingsView: View {
                     "Sound effects",
                     isOn: eventBinding(store.settings.soundEnabled) { .soundToggled }
                 )
+                Picker(
+                    "Completion sound",
+                    selection: Binding(
+                        get: { CompletionSound.current },
+                        set: { sound in
+                            UserDefaults.standard.set(sound.rawValue, forKey: CompletionSound.defaultsKey)
+                        }
+                    )
+                ) {
+                    ForEach(CompletionSound.allCases, id: \.self) { sound in
+                        Text(sound.displayName).tag(sound)
+                    }
+                }
                 Toggle(
                     "Post-session reflection",
                     isOn: eventBinding(store.settings.showJournalAfterSession) { .showJournalAfterSessionToggled }
