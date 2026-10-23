@@ -29,6 +29,14 @@ struct FocusWidgetEntry: TimelineEntry {
     /// True while the engine is in the "waiting for next phase" hold (tick suspended).
     /// Pause/Resume widget controls must be hidden/no-op during this state.
     let isWaiting: Bool
+    /// True while the engine is in the "waiting for next phase" hold (tick suspended).
+    /// Pause/Resume widget controls must be hidden/no-op during this state.
+    let isBreakPhase: Bool
+    /// True only for the long break phase.
+    let isLongBreakPhase: Bool
+    /// Full target seconds of the pending phase while `isWaiting` holds.
+    /// Views show this coming-next duration instead of a stale countdown.
+    let nextPhaseTarget: TimeInterval?
     let focusMode: String?        // FocusMode.rawValue
     let phase: String?
     let timerText: String?        // e.g. "23:14" or "34:02" for elapsed
@@ -66,6 +74,9 @@ struct FocusWidgetEntry: TimelineEntry {
         isSessionActive: Bool,
         isPaused: Bool,
         isWaiting: Bool,
+        isBreakPhase: Bool = false,
+        isLongBreakPhase: Bool = false,
+        nextPhaseTarget: TimeInterval? = nil,
         focusMode: String?,
         phase: String?,
         timerText: String?,
@@ -91,6 +102,9 @@ struct FocusWidgetEntry: TimelineEntry {
         self.isSessionActive = isSessionActive
         self.isPaused = isPaused
         self.isWaiting = isWaiting
+        self.isBreakPhase = isBreakPhase
+        self.isLongBreakPhase = isLongBreakPhase
+        self.nextPhaseTarget = nextPhaseTarget
         self.focusMode = focusMode
         self.phase = phase
         self.timerText = timerText

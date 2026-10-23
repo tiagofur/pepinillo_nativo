@@ -185,13 +185,16 @@ struct SettingsFeatureTests {
         }
     }
 
-    @Test("Pomodoro duration is clamped to minimum of 1")
+    @Test("Pomodoro duration is clamped to minimum of 5")
     func testPomodoroDurationClampedMin() async {
         let store = makeStore()
         store.exhaustivity = .off
 
         await store.send(.pomodoroDurationChanged(0)) {
-            $0.pomodoroDurationMinutes = 1
+            $0.pomodoroDurationMinutes = 5
+        }
+        await store.send(.pomodoroDurationChanged(1)) {
+            $0.pomodoroDurationMinutes = 5
         }
     }
 

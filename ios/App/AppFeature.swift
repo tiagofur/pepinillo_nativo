@@ -728,7 +728,18 @@ struct AppFeature {
                         pausedAt: pausedAt
                     )))
                 }
-                
+
+                // Widget "start next phase" tap during the waiting hold.
+                // Same guard as the app button; a tap outside the hold (stale
+                // entry rendered late) is a safe no-op. Cheap idempotent action.
+                if AppGroupDefaults.externalNextPhaseRequested {
+                    AppGroupDefaults.clearExternalCommands()
+                    guard state.focus.isRunning, state.focus.isWaitingForNextPhase else {
+                        return .none
+                    }
+                    return .send(.focus(.startNextPhaseTapped))
+                }
+
                 // S7: drain task-completion commands (not time-sensitive — no TTL,
                 // survives stale-discard by design since clearExternalCommands
                 // doesn't know these keys). take...() reads + clears atomically;

@@ -277,6 +277,9 @@ struct FocusFeature {
                 let initialTarget = state.selectedMode.strategy.targetDuration(config: state.config, phase: initialPhase)
                 let initialElapsed = engineTimerStart.map { max(0, now.timeIntervalSince($0)) } ?? 0
                 state.elapsedSeconds = initialElapsed
+                AppGroupDefaults.activeSessionPhase = initialPhase.displayName
+                AppGroupDefaults.activeSessionPhaseIsBreak = initialPhase.isBreak
+                AppGroupDefaults.activeSessionPhaseIsLongBreak = initialPhase == .longBreak
 
                 if state.selectedMode.direction == .countDown, let initialTarget {
                     let initialRemaining = engineTimerEnd.map { max(0, $0.timeIntervalSince(now)) }
@@ -695,6 +698,8 @@ struct FocusFeature {
                     AppGroupDefaults.activeSessionElapsed = elapsed
                     AppGroupDefaults.activeSessionRemaining = remaining
                     AppGroupDefaults.activeSessionPhase = phaseLabel
+                    AppGroupDefaults.activeSessionPhaseIsBreak = sessionState.phase.isBreak
+                    AppGroupDefaults.activeSessionPhaseIsLongBreak = sessionState.phase == .longBreak
                     AppGroupDefaults.activeSessionProgress = progress
                     AppGroupDefaults.activeSessionPomodoroNumber = pomodoroNumber
                     AppGroupDefaults.activeSessionTotalPomodoros = totalPomodoros
@@ -823,6 +828,7 @@ struct FocusFeature {
                         }
                         AppGroupDefaults.activeSessionIsPaused = false
                         AppGroupDefaults.activeSessionIsWaiting = false
+                        AppGroupDefaults.activeSessionNextPhaseTarget = nil
                         WidgetSurfaceReload.reloadFocusTasksAndControlCenter()
                     }
                 )
@@ -842,10 +848,14 @@ struct FocusFeature {
                     AppGroupDefaults.activeSessionTimerStart = Date.now
                     AppGroupDefaults.activeSessionTimerEnd = Date.now.addingTimeInterval(target)
                     AppGroupDefaults.activeSessionPhase = nextPhase.displayName
+                    AppGroupDefaults.activeSessionPhaseIsBreak = nextPhase.isBreak
+                    AppGroupDefaults.activeSessionPhaseIsLongBreak = nextPhase == .longBreak
                 } else {
                     AppGroupDefaults.activeSessionTimerStart = Date.now
                     AppGroupDefaults.activeSessionTimerEnd = nil
                     AppGroupDefaults.activeSessionPhase = nextPhase?.displayName
+                    AppGroupDefaults.activeSessionPhaseIsBreak = nextPhase?.isBreak ?? false
+                    AppGroupDefaults.activeSessionPhaseIsLongBreak = nextPhase == .longBreak
                 }
                 WidgetCenter.shared.reloadTimelines(ofKind: "FocusHomeScreenWidget")
                 WidgetCenter.shared.reloadTimelines(ofKind: "FocusLockScreenWidget")
@@ -1072,6 +1082,13 @@ struct FocusFeature {
 
                 // Update widget/AppGroup so the lock screen widget reflects the hold state.
                 AppGroupDefaults.activeSessionPhase = nextPhase.displayName
+                AppGroupDefaults.activeSessionPhaseIsBreak = nextPhase.isBreak
+                AppGroupDefaults.activeSessionPhaseIsLongBreak = nextPhase == .longBreak
+                // Publish the pending phase's full target so widgets show what is
+                // coming next (e.g. "5:00") instead of a stale leftover countdown.
+                AppGroupDefaults.activeSessionNextPhaseTarget = mode.strategy.targetDuration(
+                    config: state.config, phase: nextPhase
+                )
                 AppGroupDefaults.activeSessionIsPaused = true
                 // Signal to widget intents and widget views that the engine is in the
                 // waiting hold, so they suppress pause/resume controls and intents.
@@ -1115,10 +1132,13 @@ struct FocusFeature {
                 let config = state.config
                 AppGroupDefaults.activeSessionIsPaused = false
                 AppGroupDefaults.activeSessionIsWaiting = false
+                AppGroupDefaults.activeSessionNextPhaseTarget = nil
                 if let target = mode.strategy.targetDuration(config: config, phase: pending) {
                     AppGroupDefaults.activeSessionTimerStart = Date.now
                     AppGroupDefaults.activeSessionTimerEnd = Date.now.addingTimeInterval(target)
                     AppGroupDefaults.activeSessionPhase = pending.displayName
+                    AppGroupDefaults.activeSessionPhaseIsBreak = pending.isBreak
+                    AppGroupDefaults.activeSessionPhaseIsLongBreak = pending == .longBreak
                 }
                 WidgetCenter.shared.reloadTimelines(ofKind: "FocusHomeScreenWidget")
                 WidgetCenter.shared.reloadTimelines(ofKind: "FocusLockScreenWidget")
@@ -1151,6 +1171,7 @@ struct FocusFeature {
                 let extensionMinutes: TimeInterval = 5 * 60
                 AppGroupDefaults.activeSessionIsPaused = false
                 AppGroupDefaults.activeSessionIsWaiting = false
+                AppGroupDefaults.activeSessionNextPhaseTarget = nil
                 AppGroupDefaults.activeSessionTimerStart = Date.now
                 AppGroupDefaults.activeSessionTimerEnd = Date.now.addingTimeInterval(extensionMinutes)
                 let extendedPhase = FocusPhase.work(
@@ -1158,6 +1179,8 @@ struct FocusFeature {
                     total: state.config.pomodorosPerCycle
                 )
                 AppGroupDefaults.activeSessionPhase = extendedPhase.displayName
+                AppGroupDefaults.activeSessionPhaseIsBreak = false
+                AppGroupDefaults.activeSessionPhaseIsLongBreak = false
                 AppGroupDefaults.activeSessionRemaining = extensionMinutes
                 AppGroupDefaults.activeSessionProgress = 0.0
                 WidgetCenter.shared.reloadTimelines(ofKind: "FocusHomeScreenWidget")

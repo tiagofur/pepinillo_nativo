@@ -175,7 +175,7 @@ struct SettingsFeature {
         var currentStreakDays: Int
 
         init(from prefs: UserPreferencesDTO) {
-            pomodoroDurationMinutes = Int(prefs.pomodoroDuration / 60)
+            pomodoroDurationMinutes = max(5, Int(prefs.pomodoroDuration / 60))
             shortBreakMinutes = Int(prefs.shortBreakDuration / 60)
             longBreakMinutes = Int(prefs.longBreakDuration / 60)
             pomodorosPerCycle = prefs.pomodorosPerCycle
@@ -262,7 +262,7 @@ struct SettingsFeature {
             // MARK: - Mutations (each triggers autosave)
 
             case .pomodoroDurationChanged(let v):
-                state.pomodoroDurationMinutes = max(1, min(120, v))
+                state.pomodoroDurationMinutes = max(5, min(120, v))
                 PreferenceDirtyTracker.markDirty("pomodoroMinutes")
                 return .send(.saveSettings)
 
