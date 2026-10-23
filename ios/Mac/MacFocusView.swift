@@ -13,6 +13,7 @@ struct MacFocusView: View {
     @Environment(\.appTheme) private var theme
 
     @State private var showStopConfirmation = false
+    @Namespace private var glassNS
 
     private var currentMode: FocusMode {
         store.activeMode ?? store.selectedMode
@@ -50,25 +51,16 @@ struct MacFocusView: View {
             let timerFont: CGFloat = ringSize >= 380 ? 84 : 72
 
             ScrollView {
-                VStack(spacing: 16) {
-                    Spacer(minLength: 8)
-
-                    TimerCircleView(store: store, timerFontSize: timerFont)
-                        .frame(width: ringSize, height: ringSize)
-
-                    phaseSection
-                    linkedTaskChip
-                    primaryAction
-                    secondaryControls
-                        .animation(MotionTokens.snappy, value: store.isRunning)
-                    todayStats
-
-                    Spacer(minLength: 8)
+                // iOS-parity Liquid Glass (macOS 26+): one container scopes the
+                // interactive glass elements (link chip, start capsule) so they
+                // share the effect and can morph; macOS 15 renders plain.
+                if #available(macOS 26.0, *) {
+                    GlassEffectContainer(spacing: 16) {
+                        focusColumn(ringSize: ringSize, timerFont: timerFont, geometry: geometry)
+                    }
+                } else {
+                    focusColumn(ringSize: ringSize, timerFont: timerFont, geometry: geometry)
                 }
-                .frame(maxWidth: .infinity)
-                .frame(minHeight: geometry.size.height)
-                .padding(.horizontal, 32)
-                .padding(.vertical, 16)
             }
             .scrollIndicators(.hidden)
         }
@@ -127,6 +119,32 @@ struct MacFocusView: View {
                 Text(String(localized: "focus.sessionSaveError.message", defaultValue: "Your focus time was completed but couldn't be saved. \(sessionSaveError)"))
             }
         }
+    }
+
+    private func focusColumn(
+        ringSize: CGFloat,
+        timerFont: CGFloat,
+        geometry: GeometryProxy
+    ) -> some View {
+        VStack(spacing: 16) {
+            Spacer(minLength: 8)
+
+            TimerCircleView(store: store, timerFontSize: timerFont)
+                .frame(width: ringSize, height: ringSize)
+
+            phaseSection
+            linkedTaskChip
+            primaryAction
+            secondaryControls
+                .animation(MotionTokens.snappy, value: store.isRunning)
+            todayStats
+
+            Spacer(minLength: 8)
+        }
+        .frame(maxWidth: .infinity)
+        .frame(minHeight: geometry.size.height)
+        .padding(.horizontal, 32)
+        .padding(.vertical, 16)
     }
 
     /// Mirrors the iPhone control row: Skip only where it applies (active
@@ -217,7 +235,7 @@ struct MacFocusView: View {
             .font(.callout)
             .padding(.horizontal, 12)
             .padding(.vertical, 6)
-            .background(.quaternary, in: Capsule())
+            .adaptiveGlassCapsule(id: "link-task-chip", namespace: glassNS)
         }
         .buttonStyle(.plain)
         .help(store.linkedTaskTitle == nil
@@ -226,18 +244,34 @@ struct MacFocusView: View {
         .accessibilityLabel(store.linkedTaskTitle.map { String(localized: "Linked task: \($0)") } ?? String(localized: "Link a task"))
     }
 
+    @ViewBuilder
     private var primaryAction: some View {
-        Button {
-            FocusToggleCommand.toggle(focusStore: store)
-        } label: {
-            Label(primaryActionTitle, systemImage: primaryActionSymbol)
-                .frame(minWidth: 200, minHeight: 34)
+        let label = Label(primaryActionTitle, systemImage: primaryActionSymbol)
+            .frame(minWidth: 200, minHeight: 34)
+
+        if #available(macOS 26.0, *) {
+            // iOS-parity hero CTA: tinted Liquid Glass capsule in the mode
+            // color, morphing inside the stage's GlassEffectContainer.
+            Button {
+                FocusToggleCommand.toggle(focusStore: store)
+            } label: {
+                label.primaryFocusActionGlass(tint: modeColor, namespace: glassNS)
+            }
+            .buttonStyle(.pressable)
+            .keyboardShortcut(.defaultAction)
+            .accessibilityHint(primaryActionHint)
+        } else {
+            Button {
+                FocusToggleCommand.toggle(focusStore: store)
+            } label: {
+                label
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.large)
+            .tint(modeColor)
+            .keyboardShortcut(.defaultAction)
+            .accessibilityHint(primaryActionHint)
         }
-        .buttonStyle(.borderedProminent)
-        .controlSize(.large)
-        .tint(modeColor)
-        .keyboardShortcut(.defaultAction)
-        .accessibilityHint(primaryActionHint)
     }
 
     private var todayStats: some View {

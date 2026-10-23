@@ -205,7 +205,7 @@ struct MacStatisticsView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(16)
-            .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
+            .pepinilloMatteCard()
         }
     }
 
@@ -240,7 +240,7 @@ struct MacStatisticsView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
-        .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
+        .pepinilloMatteCard()
     }
 
     private var chart: some View {
