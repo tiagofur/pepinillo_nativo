@@ -1,9 +1,10 @@
 // MacPlanView.swift
 // Pepinillo — native macOS Plan table
 //
-// The shared TaskListFeature owns tasks and persistence. This view owns only
-// native macOS presentation: the table, smart-list filter, search, selection,
-// context menu, drag reorder, and the inline new-task composer.
+// The shared TaskListFeature owns tasks and persistence (including the
+// selected Plan filter driven from the sidebar). This view owns only native
+// macOS presentation: the table, search, selection, context menu, drag
+// reorder, and the inline new-task composer.
 
 import SwiftUI
 import ComposableArchitecture
@@ -48,6 +49,17 @@ enum MacPlanFilter: String, CaseIterable, Identifiable {
         case .completed: return .completed
         }
     }
+
+    /// Inverse mapping: the sidebar drives the shared `selectedPlanFilter`
+    /// (single source of truth), so the stage derives its local filter from it.
+    init(shared: PlanFilter) {
+        switch shared {
+        case .inbox:     self = .all
+        case .today:     self = .today
+        case .upcoming:  self = .upcoming
+        case .completed: self = .completed
+        }
+    }
 }
 
 // MARK: - View
@@ -57,7 +69,12 @@ struct MacPlanView: View {
 
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
-    @State private var filter: MacPlanFilter = .all
+    /// Derived from the shared reducer state — the sidebar's Plan section owns
+    /// the selection (Reminders model); the stage never filters on its own.
+    private var filter: MacPlanFilter {
+        MacPlanFilter(shared: store.selectedPlanFilter)
+    }
+
     @State private var searchText = ""
     @State private var selection = Set<UUID>()
     @State private var isInspectorPresented = false
@@ -102,10 +119,6 @@ struct MacPlanView: View {
         }
         .onAppear {
             store.send(.onAppear)
-            store.send(.planFilterSelected(filter.sharedFilter))
-        }
-        .onChange(of: filter) { _, newValue in
-            store.send(.planFilterSelected(newValue.sharedFilter))
         }
         .onChange(of: selection) { _, newValue in
             if let editingTaskID, !newValue.contains(editingTaskID) {
@@ -445,28 +458,6 @@ struct MacPlanView: View {
             }
             .help(String(localized: "Show Inspector (⌘⌥I)"))
             .accessibilityLabel(String(localized: "Show Inspector"))
-        }
-
-        ToolbarItem(placement: .primaryAction) {
-            Menu {
-                ForEach(MacPlanFilter.allCases) { item in
-                    Button {
-                        filter = item
-                    } label: {
-                        if filter == item {
-                            Label(item.title, systemImage: "checkmark")
-                        } else {
-                            Label(item.title, systemImage: item.systemImage)
-                        }
-                    }
-                }
-            } label: {
-                Label(filter.title, systemImage: filter.systemImage)
-                    .labelStyle(.titleAndIcon)
-            }
-            .menuStyle(.borderlessButton)
-            .fixedSize()
-            .help(String(localized: "Filter tasks"))
         }
 
         ToolbarItem(placement: .primaryAction) {
