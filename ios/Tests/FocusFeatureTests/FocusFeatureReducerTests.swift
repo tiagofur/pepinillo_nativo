@@ -262,7 +262,7 @@ struct FocusFeatureReducerTests {
         await store.send(.resumeTapped) {
             $0.isPaused = false
             // phaseLabel is NOT updated here — the engine's next tick restores the correct phase.
-            // This avoids a brief "Paused" flash since state.phase is still .paused from the last tick.
+            // state.phase kept the timed phase across the pause, so the label snaps back cleanly.
         }
     }
 

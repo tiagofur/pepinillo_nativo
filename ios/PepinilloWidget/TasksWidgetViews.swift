@@ -21,23 +21,84 @@ private func energyEmoji(for icon: String) -> String {
     }
 }
 
-struct TasksWidgetLockedView: View {
+/// Free-tier surface (PRD/04): the day's task count without the interactive
+/// list. Same chrome as the Pro widgets so the upgrade reads as "more", not
+/// "different".
+struct TasksWidgetFreeCountView: View {
+    let entry: TasksWidgetEntry
+    @Environment(\.showsWidgetContainerBackground) var showsBackground
+
     var body: some View {
-        VStack(spacing: 7) {
-            Image(systemName: "lock.fill")
-                .font(.title2)
-                .foregroundStyle(Color.accentColor)
-            Text(String(localized: "Pepinillo+"))
-                .font(.headline)
-            Text(String(localized: LocalizedStringResource(
-                "widget.tasks.locked.message",
-                defaultValue: "Open Pepinillo to unlock the Tasks widget."
-            )))
-            .font(.caption)
-            .foregroundStyle(.secondary)
-            .multilineTextAlignment(.center)
+        Group {
+            if showsBackground {
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "checklist")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                        Text(String(localized: "Tasks (\(entry.todayTaskCount))"))
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                        if entry.isSessionActive {
+                            Image(systemName: "timer")
+                                .font(.caption2)
+                                .foregroundStyle(Color.accentColor)
+                        }
+                    }
+
+                    Spacer(minLength: 4)
+
+                    if entry.todayTaskCount == 0 {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Image(systemName: "checkmark.circle")
+                                .font(.title2)
+                                .foregroundStyle(.green)
+                            Text(String(localized: "All done!"))
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                            Text(String(localized: "No pending tasks"))
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    } else {
+                        Text("\(entry.todayTaskCount)")
+                            .font(.system(.largeTitle, design: .rounded, weight: .bold))
+
+                        Text(entry.todayTaskCount == 1
+                             ? String(localized: "task for today")
+                             : String(localized: "tasks for today"))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+
+                        HStack(spacing: 4) {
+                            Text(String(localized: "Pepinillo+"))
+                                .font(.caption2)
+                                .fontWeight(.semibold)
+                                .foregroundStyle(Color.accentColor)
+                            Text(String(localized: LocalizedStringResource(
+                                "widget.tasks.free.hint",
+                                defaultValue: "shows your full task list."
+                            )))
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(2)
+                        }
+                    }
+                }
+                .padding(0)
+            } else {
+                // StandBy mode
+                VStack(spacing: 8) {
+                    Text("\(entry.todayTaskCount)")
+                        .font(.system(size: 48, weight: .bold, design: .rounded))
+                        .foregroundStyle(.primary)
+                    Text(String(localized: "tasks"))
+                        .font(.title3)
+                        .foregroundStyle(.secondary)
+                }
+            }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .accessibilityElement(children: .combine)
     }
 }

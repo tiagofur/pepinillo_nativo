@@ -541,6 +541,48 @@ enum AppGroupDefaults {
         set { defaults?.set(newValue, forKey: "activeSessionPhase") }
     }
 
+    /// Typed phase parity with the watch snapshot (`isBreakPhase`): whether the
+    /// current phase is a break. `activeSessionPhase` is a localized display
+    /// string, which `ModeColors.color(for:phase:)` cannot pattern-match outside
+    /// English — widgets need these bools to pick the break colour variants.
+    static var activeSessionPhaseIsBreak: Bool {
+        get { defaults?.bool(forKey: "activeSessionPhaseIsBreak") ?? false }
+        set { defaults?.set(newValue, forKey: "activeSessionPhaseIsBreak") }
+    }
+
+    /// True only when the current phase is the long break.
+    static var activeSessionPhaseIsLongBreak: Bool {
+        get { defaults?.bool(forKey: "activeSessionPhaseIsLongBreak") ?? false }
+        set { defaults?.set(newValue, forKey: "activeSessionPhaseIsLongBreak") }
+    }
+
+    /// Target seconds of the pending phase while the engine holds
+    /// (`waitingForNextPhase`). Lets widgets show what is coming next instead
+    /// of a stale countdown of the finished phase.
+    static var activeSessionNextPhaseTarget: Double? {
+        get {
+            let val = defaults?.object(forKey: "activeSessionNextPhaseTarget")
+            return val as? Double
+        }
+        set {
+            if let v = newValue {
+                defaults?.set(v, forKey: "activeSessionNextPhaseTarget")
+            } else {
+                defaults?.removeObject(forKey: "activeSessionNextPhaseTarget")
+            }
+        }
+    }
+
+    /// Widget tap on "start next phase" during the waiting hold.
+    /// Setting `true` posts the cross-process change signal (see `externalStartRequested`).
+    static var externalNextPhaseRequested: Bool {
+        get { defaults?.bool(forKey: "externalNextPhaseRequested") ?? false }
+        set {
+            defaults?.set(newValue, forKey: "externalNextPhaseRequested")
+            if newValue { postExternalCommandSignal() }
+        }
+    }
+
     /// Active session progress (0.0–1.0 for countdown modes, nil for count-up).
     static var activeSessionProgress: Double? {
         get {
@@ -780,6 +822,7 @@ enum AppGroupDefaults {
             || externalStopRequested
             || externalPauseRequested
             || externalResumeRequested
+            || externalNextPhaseRequested
         guard hasCommand else { return false }
         guard let issued = externalCommandIssuedAt else { return true }
         return Date.now.timeIntervalSince(issued) > externalCommandTTL
@@ -840,6 +883,7 @@ enum AppGroupDefaults {
         defaults?.set(false, forKey: "externalStopRequested")
         defaults?.set(false, forKey: "externalPauseRequested")
         defaults?.set(false, forKey: "externalResumeRequested")
+        defaults?.set(false, forKey: "externalNextPhaseRequested")
         defaults?.set(false, forKey: "controlCenterToggleRequested")
         defaults?.removeObject(forKey: "requestedMode")
         defaults?.removeObject(forKey: "requestedTaskID")
@@ -1053,6 +1097,9 @@ enum AppGroupDefaults {
         defaults?.set(0, forKey: "activeSessionElapsed")
         defaults?.removeObject(forKey: "activeSessionRemaining")
         defaults?.removeObject(forKey: "activeSessionPhase")
+        defaults?.set(false, forKey: "activeSessionPhaseIsBreak")
+        defaults?.set(false, forKey: "activeSessionPhaseIsLongBreak")
+        defaults?.removeObject(forKey: "activeSessionNextPhaseTarget")
         defaults?.removeObject(forKey: "activeSessionProgress")
         defaults?.removeObject(forKey: "activeSessionPomodoroNumber")
         defaults?.removeObject(forKey: "activeSessionTotalPomodoros")

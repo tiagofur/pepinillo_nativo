@@ -356,7 +356,7 @@ struct MacSettingsView: View {
                 Stepper(
                     String(localized: "\(store.settings.pomodoroDurationMinutes) min focus"),
                     value: binding(\.pomodoroDurationMinutes) { .pomodoroDurationChanged($0) },
-                    in: 1...120, step: 5
+                    in: 5...120, step: 5
                 )
                 Stepper(
                     String(localized: "\(store.settings.shortBreakMinutes) min short break"),

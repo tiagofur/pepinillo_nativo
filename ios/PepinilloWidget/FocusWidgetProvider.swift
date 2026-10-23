@@ -97,24 +97,34 @@ struct FocusWidgetProvider: AppIntentTimelineProvider {
             let isWaiting = isActive ? AppGroupDefaults.activeSessionIsWaiting : false
             let activeMode = isActive ? activeModeName : nil
             let activePhase = isActive ? AppGroupDefaults.activeSessionPhase : nil
-            let liveElapsed = isActive ? AppGroupDefaults.activeSessionLiveElapsed() : 0
-            let liveRemaining = isActive ? AppGroupDefaults.activeSessionLiveRemaining() : nil
+            let activeIsBreak = isActive ? AppGroupDefaults.activeSessionPhaseIsBreak : false
+            let activeIsLongBreak = isActive ? AppGroupDefaults.activeSessionPhaseIsLongBreak : false
+            // Waiting hold: the only running-clock value is what comes next.
+            // timerText shows the pending phase's full target (e.g. the break's
+            // 5:00 after a pomodoro), never a stale leftover of the finished phase.
+            let waitingTarget = isWaiting ? AppGroupDefaults.activeSessionNextPhaseTarget : nil
+            let liveElapsed = isWaiting ? 0 : (isActive ? AppGroupDefaults.activeSessionLiveElapsed() : 0)
+            let liveRemaining = isWaiting ? nil : (isActive ? AppGroupDefaults.activeSessionLiveRemaining() : nil)
             let activeProgress: Double?
-            if isActive, let remaining = liveRemaining {
+            if let waitingTarget, waitingTarget > 0 {
+                activeProgress = 0
+            } else if isActive, let remaining = liveRemaining {
                 let duration = max(liveElapsed + remaining, 1)
                 activeProgress = min(max(liveElapsed / duration, 0), 1)
             } else {
-                activeProgress = isActive ? AppGroupDefaults.activeSessionProgress : nil
+                activeProgress = isActive && !isWaiting ? AppGroupDefaults.activeSessionProgress : nil
             }
             let activePomodoroNumber = isActive ? AppGroupDefaults.activeSessionPomodoroNumber : nil
             let activeTotalPomodoros = isActive ? AppGroupDefaults.activeSessionTotalPomodoros : nil
             let activeTaskTitle = isActive ? AppGroupDefaults.activeSessionTaskTitle : nil
-            let timerStart = isActive ? AppGroupDefaults.activeSessionTimerStart : nil
-            let timerEnd = isActive ? AppGroupDefaults.activeSessionTimerEnd : nil
+            let timerStart = isWaiting ? nil : (isActive ? AppGroupDefaults.activeSessionTimerStart : nil)
+            let timerEnd = isWaiting ? nil : (isActive ? AppGroupDefaults.activeSessionTimerEnd : nil)
 
             // Build a snapshot timer string. Live widget text uses timerStart/timerEnd where possible.
             let timerText: String?
-            if isActive {
+            if isWaiting, let waitingTarget, waitingTarget > 0 {
+                timerText = Self.formatTimer(waitingTarget)
+            } else if isActive {
                 if let remaining = liveRemaining {
                     timerText = Self.formatTimer(remaining)
                 } else {
@@ -149,6 +159,9 @@ struct FocusWidgetProvider: AppIntentTimelineProvider {
                 isSessionActive: isActive,
                 isPaused: isPaused,
                 isWaiting: isWaiting,
+                isBreakPhase: activeIsBreak,
+                isLongBreakPhase: activeIsLongBreak,
+                nextPhaseTarget: waitingTarget,
                 focusMode: activeMode,
                 phase: activePhase,
                 timerText: timerText,
@@ -179,19 +192,24 @@ struct FocusWidgetProvider: AppIntentTimelineProvider {
         let isActive = AppGroupDefaults.isSessionActive && AppGroupDefaults.activeModeName != nil
         let isPaused = isActive ? AppGroupDefaults.activeSessionIsPaused : false
         let isWaiting = isActive ? AppGroupDefaults.activeSessionIsWaiting : false
-        let liveElapsed = isActive ? AppGroupDefaults.activeSessionLiveElapsed() : 0
-        let liveRemaining = isActive ? AppGroupDefaults.activeSessionLiveRemaining() : nil
+        let waitingTarget = isWaiting ? AppGroupDefaults.activeSessionNextPhaseTarget : nil
+        let liveElapsed = isWaiting ? 0 : (isActive ? AppGroupDefaults.activeSessionLiveElapsed() : 0)
+        let liveRemaining = isWaiting ? nil : (isActive ? AppGroupDefaults.activeSessionLiveRemaining() : nil)
 
         let activeProgress: Double?
-        if isActive, let liveRemaining {
+        if let waitingTarget, waitingTarget > 0 {
+            activeProgress = 0
+        } else if isActive, let liveRemaining {
             let duration = max(liveElapsed + liveRemaining, 1)
             activeProgress = min(max(liveElapsed / duration, 0), 1)
         } else {
-            activeProgress = isActive ? AppGroupDefaults.activeSessionProgress : nil
+            activeProgress = isActive && !isWaiting ? AppGroupDefaults.activeSessionProgress : nil
         }
 
         let timerText: String?
-        if isActive {
+        if isWaiting, let waitingTarget, waitingTarget > 0 {
+            timerText = formatTimer(waitingTarget)
+        } else if isActive {
             timerText = formatTimer(liveRemaining ?? liveElapsed)
         } else {
             timerText = nil
@@ -208,6 +226,9 @@ struct FocusWidgetProvider: AppIntentTimelineProvider {
             isSessionActive: isActive,
             isPaused: isPaused,
             isWaiting: isWaiting,
+            isBreakPhase: isActive ? AppGroupDefaults.activeSessionPhaseIsBreak : false,
+            isLongBreakPhase: isActive ? AppGroupDefaults.activeSessionPhaseIsLongBreak : false,
+            nextPhaseTarget: waitingTarget,
             focusMode: isActive ? AppGroupDefaults.activeModeName : nil,
             phase: isActive ? AppGroupDefaults.activeSessionPhase : nil,
             timerText: timerText,
@@ -215,8 +236,8 @@ struct FocusWidgetProvider: AppIntentTimelineProvider {
             pomodoroNumber: isActive ? AppGroupDefaults.activeSessionPomodoroNumber : nil,
             totalPomodoros: isActive ? AppGroupDefaults.activeSessionTotalPomodoros : nil,
             linkedTaskTitle: isActive ? AppGroupDefaults.activeSessionTaskTitle : nil,
-            timerStart: isActive ? AppGroupDefaults.activeSessionTimerStart : nil,
-            timerEnd: isActive ? AppGroupDefaults.activeSessionTimerEnd : nil,
+            timerStart: isWaiting ? nil : (isActive ? AppGroupDefaults.activeSessionTimerStart : nil),
+            timerEnd: isWaiting ? nil : (isActive ? AppGroupDefaults.activeSessionTimerEnd : nil),
             todayFocusMinutes: 0,
             todaySessionsCompleted: 0,
             currentStreakDays: 0,

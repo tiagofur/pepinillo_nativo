@@ -87,7 +87,7 @@ struct SettingsView: View {
                     get: { store.pomodoroDurationMinutes },
                     set: { store.send(.pomodoroDurationChanged($0)) }
                 ),
-                in: 1...120, step: 5
+                in: 5...120, step: 5
             )
             Stepper(
                 String(localized: "\(store.shortBreakMinutes) min short break"),

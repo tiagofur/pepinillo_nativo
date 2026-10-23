@@ -104,6 +104,47 @@ struct ResumeFocusFromWidgetIntent: AppIntent {
     }
 }
 
+// MARK: - Start Next Phase from Widget
+
+/// Widget "start next phase" tap during the waiting hold (auto-start OFF).
+/// Optimistically clears the hold so the widget switches to the pending
+/// phase's live countdown instantly; the app reconciles via
+/// `externalNextPhaseRequested` and re-anchors with the true engine time.
+struct StartNextPhaseFromWidgetIntent: AppIntent {
+    static let title: LocalizedStringResource = "Start Next Phase"
+    static let description = IntentDescription("Start the pending phase from the widget.")
+    static let openAppWhenRun: Bool = false
+
+    func perform() async throws -> some IntentResult {
+        guard AppGroupDefaults.isSessionActive, AppGroupDefaults.activeSessionIsWaiting else {
+            return .result()
+        }
+        let now = Date.now
+        if let target = AppGroupDefaults.activeSessionNextPhaseTarget, target > 0 {
+            AppGroupDefaults.activeSessionTimerStart = now
+            AppGroupDefaults.activeSessionTimerEnd = now.addingTimeInterval(target)
+            AppGroupDefaults.activeSessionRemaining = target
+            AppGroupDefaults.activeSessionProgress = 0
+        } else {
+            // Open-ended pending phase (flow/block/freeform): no countdown end.
+            AppGroupDefaults.activeSessionTimerStart = now
+            AppGroupDefaults.activeSessionTimerEnd = nil
+            AppGroupDefaults.activeSessionRemaining = nil
+            AppGroupDefaults.activeSessionProgress = nil
+        }
+        AppGroupDefaults.activeSessionElapsed = 0
+        AppGroupDefaults.activeSessionNextPhaseTarget = nil
+        AppGroupDefaults.activeSessionIsPaused = false
+        AppGroupDefaults.activeSessionIsWaiting = false
+
+        AppGroupDefaults.externalCommandID = UUID().uuidString
+        AppGroupDefaults.externalCommandIssuedAt = now
+        AppGroupDefaults.externalNextPhaseRequested = true
+        WidgetCenter.shared.reloadAllTimelines()
+        return .result()
+    }
+}
+
 // MARK: - Stop Focus from Widget
 
 struct StopFocusFromWidgetIntent: AppIntent {

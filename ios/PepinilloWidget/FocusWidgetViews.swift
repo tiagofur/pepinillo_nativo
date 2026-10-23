@@ -18,6 +18,23 @@ private func modeAccentColor(_ mode: String, renderingMode: WidgetRenderingMode)
     renderingMode == .accented ? .primary : ModeColors.color(for: mode)
 }
 
+/// Phase-aware accent: breaks render the break variants (mint/short,
+/// teal/long) so the widget never counts "Break time in work red".
+/// Uses the entry's typed phase bools — the display phase label is
+/// localized and cannot be matched reliably.
+private func phaseAccentColor(
+    _ mode: String,
+    isBreakPhase: Bool,
+    isLongBreakPhase: Bool,
+    renderingMode: WidgetRenderingMode
+) -> Color {
+    if renderingMode == .accented { return .primary }
+    let base = ModeColors.color(for: mode)
+    if isLongBreakPhase { return base.longBreakVariant() }
+    if isBreakPhase { return base.shortBreakVariant() }
+    return base
+}
+
 // MARK: - Reusable Progress Ring
 
 private struct WidgetProgressRing<Content: View>: View {
@@ -326,22 +343,27 @@ private struct WidgetControls: View {
 
     var body: some View {
         HStack(spacing: compact ? 10 : 14) {
-            // Hide pause/resume during the "waiting for next phase" hold.
-            // The engine has no running timer then, so these controls are meaningless.
-            if !entry.isWaiting {
-                if entry.isPaused {
-                    Button(intent: ResumeFocusFromWidgetIntent()) {
-                        controlIcon("play.fill", color: .green)
-                    }
-                    .buttonStyle(.plain)
-                    .contentShape(Circle())
-                } else {
-                    Button(intent: PauseFocusFromWidgetIntent()) {
-                        controlIcon("pause.fill", color: .orange)
-                    }
-                    .buttonStyle(.plain)
-                    .contentShape(Circle())
+            // Waiting for next phase: the engine has no running timer, so
+            // pause/resume are meaningless — offer the hold CTA instead (the
+            // widget twin of the app's "start next phase" button).
+            if entry.isWaiting {
+                Button(intent: StartNextPhaseFromWidgetIntent()) {
+                    controlIcon("play.fill", color: .green)
                 }
+                .buttonStyle(.plain)
+                .contentShape(Circle())
+            } else if entry.isPaused {
+                Button(intent: ResumeFocusFromWidgetIntent()) {
+                    controlIcon("play.fill", color: .green)
+                }
+                .buttonStyle(.plain)
+                .contentShape(Circle())
+            } else {
+                Button(intent: PauseFocusFromWidgetIntent()) {
+                    controlIcon("pause.fill", color: .orange)
+                }
+                .buttonStyle(.plain)
+                .contentShape(Circle())
             }
 
             Button(intent: StopFocusFromWidgetIntent()) {
@@ -378,7 +400,12 @@ struct FocusWidgetSmall: View {
         ZStack {
             if entry.isSessionActive, let mode = entry.focusMode {
                 let style = WidgetModeStyle.style(for: mode)
-                let modeColor = modeAccentColor(mode, renderingMode: renderingMode)
+                let modeColor = phaseAccentColor(
+                    mode,
+                    isBreakPhase: entry.isBreakPhase,
+                    isLongBreakPhase: entry.isLongBreakPhase,
+                    renderingMode: renderingMode
+                )
 
                 VStack(spacing: 6) {
                     WidgetProgressRing(
@@ -453,7 +480,12 @@ struct FocusWidgetMedium: View {
     @ViewBuilder
     private func liquidActiveLayout(for mode: String) -> some View {
         let style = WidgetModeStyle.style(for: mode)
-        let modeColor = modeAccentColor(mode, renderingMode: renderingMode)
+        let modeColor = phaseAccentColor(
+            mode,
+            isBreakPhase: entry.isBreakPhase,
+            isLongBreakPhase: entry.isLongBreakPhase,
+            renderingMode: renderingMode
+        )
         let taskTitle = entry.linkedTaskTitle ?? String(localized: "No task linked")
 
         HStack(alignment: .center, spacing: 18) {
@@ -600,7 +632,12 @@ struct FocusWidgetLarge: View {
     @ViewBuilder
     private func liquidActiveLayout(for mode: String) -> some View {
         let style = WidgetModeStyle.style(for: mode)
-        let modeColor = modeAccentColor(mode, renderingMode: renderingMode)
+        let modeColor = phaseAccentColor(
+            mode,
+            isBreakPhase: entry.isBreakPhase,
+            isLongBreakPhase: entry.isLongBreakPhase,
+            renderingMode: renderingMode
+        )
 
         VStack(spacing: 14) {
             HStack {

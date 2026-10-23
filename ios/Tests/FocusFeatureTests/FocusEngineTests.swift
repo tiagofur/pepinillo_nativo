@@ -147,7 +147,14 @@ struct FocusEnginePauseResumeTests {
         let state = await engine.currentState()
 
         #expect(state?.isPaused == true)
-        #expect(state?.phase == .paused)
+        // The timed phase survives — isPaused is the only pause signal, so a
+        // paused break never dissolves into .paused (break color must hold).
+        if case .work(let number, let total) = state?.phase {
+            #expect(number == 1)
+            #expect(total == 4)
+        } else {
+            Issue.record("Expected timed .work phase across pause, got \(String(describing: state?.phase))")
+        }
         #expect(state?.pausedAt != nil)
     }
 
@@ -158,7 +165,12 @@ struct FocusEnginePauseResumeTests {
 
         await engine.pause()
         let pausedState = await engine.currentState()
-        #expect(pausedState?.phase == .paused)
+        #expect(pausedState?.isPaused == true)
+        // Phase preserved across the pause (no .paused rewrite)
+        if case .work = pausedState?.phase {
+        } else {
+            Issue.record("Expected .work phase across pause, got \(String(describing: pausedState?.phase))")
+        }
 
         await engine.resume()
         try await Task.sleep(for: .milliseconds(300))
@@ -167,7 +179,7 @@ struct FocusEnginePauseResumeTests {
         #expect(resumedState?.isPaused == false)
         #expect(resumedState?.pausedAt == nil)
 
-        // Phase should be restored to work, not stay on .paused
+        // Phase was never disturbed by the pause — still timed work
         if case .work(let number, let total) = resumedState?.phase {
             #expect(number == 1)
             #expect(total == 4)
@@ -182,7 +194,7 @@ struct FocusEnginePauseResumeTests {
         try await Task.sleep(for: .milliseconds(300))
 
         await engine.pause()
-        #expect(await engine.currentState()?.phase == .paused)
+        #expect(await engine.currentState()?.phase == .flow)
 
         await engine.resume()
         try await Task.sleep(for: .milliseconds(300))
@@ -198,7 +210,7 @@ struct FocusEnginePauseResumeTests {
         try await Task.sleep(for: .milliseconds(300))
 
         await engine.pause()
-        #expect(await engine.currentState()?.phase == .paused)
+        #expect(await engine.currentState()?.phase == .block)
 
         await engine.resume()
         try await Task.sleep(for: .milliseconds(300))
@@ -212,7 +224,7 @@ struct FocusEnginePauseResumeTests {
         try await Task.sleep(for: .milliseconds(300))
 
         await engine.pause()
-        #expect(await engine.currentState()?.phase == .paused)
+        #expect(await engine.currentState()?.phase == .freeform)
 
         await engine.resume()
         try await Task.sleep(for: .milliseconds(300))
@@ -237,18 +249,19 @@ struct FocusEnginePauseResumeTests {
         #expect(preBreakState?.phase == .shortBreak,
                 "Expected shortBreak after skipping work, got \(String(describing: preBreakState?.phase))")
 
-        // Pause during the break
+        // Pause during the break — the break phase survives the pause
+        // (isPaused is the only pause signal), keeping its break color.
         await engine.pause()
-        #expect(await engine.currentState()?.phase == .paused)
+        #expect(await engine.currentState()?.phase == .shortBreak)
 
-        // Resume — the break phase must be restored, NOT work
+        // Resume — the break phase was never disturbed, NOT rewritten to work
         await engine.resume()
         try await Task.sleep(for: .milliseconds(300))
 
         let resumedState = await engine.currentState()
         #expect(resumedState?.isPaused == false)
         #expect(resumedState?.phase == .shortBreak,
-                "Regression: resume during break should restore .shortBreak, got \(String(describing: resumedState?.phase))")
+                "Regression: resume during break should keep .shortBreak, got \(String(describing: resumedState?.phase))")
     }
 
     @Test func pauseWhenAlreadyPausedIsNoOp() async throws {
@@ -869,7 +882,7 @@ struct FocusEngineFlowtimeBreakTests {
         try await Task.sleep(for: .milliseconds(300))
 
         await engine.pause()
-        #expect(await engine.currentState()?.phase == .paused)
+        #expect(await engine.currentState()?.phase.isBreak == true)
 
         await engine.resume()
         try await Task.sleep(for: .milliseconds(300))

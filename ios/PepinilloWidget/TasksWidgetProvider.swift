@@ -13,11 +13,11 @@ struct TasksWidgetProvider: AppIntentTimelineProvider {
     typealias Intent = ConfigureTasksWidgetIntent
 
     func placeholder(in context: Context) -> TasksWidgetEntry {
-        .locked
+        .empty
     }
 
     func snapshot(for configuration: ConfigureTasksWidgetIntent, in context: Context) async -> TasksWidgetEntry {
-        context.isPreview ? .locked : await buildEntry(configuration: configuration)
+        context.isPreview ? .empty : await buildEntry(configuration: configuration)
     }
 
     func timeline(for configuration: ConfigureTasksWidgetIntent, in context: Context) async -> Timeline<TasksWidgetEntry> {
@@ -32,11 +32,16 @@ struct TasksWidgetProvider: AppIntentTimelineProvider {
     // MARK: - Entry Construction
 
     private func buildEntry(configuration: ConfigureTasksWidgetIntent, now: Date = Date.now) async -> TasksWidgetEntry {
+        // Tier split (PRD/04): free gets the daily count, Pro the interactive
+        // list. One authorized SwiftData pass serves both.
+        let isPro = TasksWidgetAccess.isCurrentUserAuthorized(now: now)
         do {
             guard let container = try TasksWidgetAccess.loadIfAuthorized(now: now, {
                 try makeWidgetModelContainer()
             }) else {
-                return .locked
+                // Unreachable (isPro mirrors the same check) — kept as a
+                // type-level safety net for the loadIfAuthorized contract.
+                return .empty
             }
             let context = ModelContext(container)
 
@@ -65,16 +70,27 @@ struct TasksWidgetProvider: AppIntentTimelineProvider {
             let calendar = Calendar.current
             let now = Date.now
             let todayStart = calendar.startOfDay(for: now)
-            let tasks = try context.fetch(descriptor)
+            let todayTasks = try context.fetch(descriptor)
                 .filter { task in
                     let isDueToday = task.dueDate.map { calendar.isDateInToday($0) } ?? false
                     let isOverdue = task.dueDate.map { $0 < todayStart } ?? false
                     return task.scheduledForToday || isDueToday || isOverdue
                 }
-                .prefix(8)
+            let tasks = todayTasks.prefix(8)
 
             let isSessionActive = AppGroupDefaults.isSessionActive
             let activeTaskID = isSessionActive ? AppGroupDefaults.activeTaskID : nil
+
+            if !isPro {
+                return TasksWidgetEntry(
+                    date: Date.now,
+                    tasks: [],
+                    activeTaskID: nil,
+                    isSessionActive: isSessionActive,
+                    isProUser: false,
+                    todayTaskCount: todayTasks.count
+                )
+            }
 
             let widgetTasks = tasks.map { task in
                 TasksWidgetEntry.WidgetTask(
@@ -90,10 +106,11 @@ struct TasksWidgetProvider: AppIntentTimelineProvider {
 
             return TasksWidgetEntry(
                 date: Date.now,
-                tasks: widgetTasks,
+                tasks: Array(widgetTasks),
                 activeTaskID: activeTaskID,
                 isSessionActive: isSessionActive,
-                isLocked: false
+                isProUser: true,
+                todayTaskCount: todayTasks.count
             )
         } catch {
             // If an authorized SwiftData fetch fails, return an unlocked empty state.

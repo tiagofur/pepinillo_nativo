@@ -63,6 +63,25 @@ struct FocusWidgetEntryView: View {
         switch family {
         case .systemSmall:
             FocusWidgetSmall(entry: entry)
+        case .systemMedium, .systemLarge:
+            // Tier split (PRD/04): free keeps the small timer; the full
+            // live-timer layouts are Pepinillo+.
+            if entry.isProUser {
+                familyView
+            } else {
+                WidgetProRequiredView(title: String(localized: LocalizedStringResource(
+                    "widget.focus.pro.title",
+                    defaultValue: "Medium and large focus widgets"
+                )))
+            }
+        default:
+            FocusWidgetSmall(entry: entry)
+        }
+    }
+
+    @ViewBuilder
+    private var familyView: some View {
+        switch family {
         case .systemMedium:
             FocusWidgetMedium(entry: entry)
         case .systemLarge:
