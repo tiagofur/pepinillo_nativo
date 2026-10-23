@@ -49,11 +49,14 @@ enum HapticManager {
     }
 
     /// Phase-complete feedback: optional notification sound and haptic (respects user prefs).
+    /// The cue sound plays on both platforms; haptics are iOS-only.
     static func phaseComplete(soundEnabled: Bool, hapticEnabled: Bool) {
-        #if os(iOS)
+        #if !os(watchOS)
         if soundEnabled {
-            AudioServicesPlaySystemSound(1007)
+            CompletionSound.current.play()
         }
+        #endif
+        #if os(iOS)
         if hapticEnabled {
             notificationGenerator.notificationOccurred(.success)
         }
@@ -62,10 +65,12 @@ enum HapticManager {
 
     /// Lightweight pulse for midpoint / break-suggestion cues.
     static func feedbackPulse(soundEnabled: Bool, hapticEnabled: Bool) {
-        #if os(iOS)
+        #if !os(watchOS)
         if soundEnabled {
-            AudioServicesPlaySystemSound(1007)
+            CompletionSound.current.play()
         }
+        #endif
+        #if os(iOS)
         if hapticEnabled {
             mediumGenerator.impactOccurred()
         }
