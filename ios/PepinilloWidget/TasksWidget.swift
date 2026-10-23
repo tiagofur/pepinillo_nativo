@@ -3,6 +3,9 @@
 //
 // Home Screen widget showing active tasks with pomodoro progress,
 // interactive completion toggles, and quick focus-start per task.
+//
+// Tier split (PRD/04): free users get the basic daily count; the
+// interactive task list (completion toggles, focus start) is Pepinillo+.
 
 import WidgetKit
 import SwiftUI
@@ -35,9 +38,7 @@ struct TasksWidgetEntryView: View {
     let entry: TasksWidgetEntry
 
     var body: some View {
-        if entry.isLocked {
-            TasksWidgetLockedView()
-        } else {
+        if entry.isProUser {
             switch family {
             case .systemSmall:
                 TasksWidgetSmall(entry: entry)
@@ -48,6 +49,8 @@ struct TasksWidgetEntryView: View {
             default:
                 TasksWidgetSmall(entry: entry)
             }
+        } else {
+            TasksWidgetFreeCountView(entry: entry)
         }
     }
 }
@@ -59,7 +62,11 @@ struct TasksWidgetEntry: TimelineEntry {
     let tasks: [WidgetTask]
     let activeTaskID: String?
     let isSessionActive: Bool
-    let isLocked: Bool
+    /// Pepinillo+ entitlement. Free renders the basic daily count only.
+    let isProUser: Bool
+    /// Active tasks scheduled for today / due today / overdue. Shown as the
+    /// free-tier count; Pro users see them listed in `tasks`.
+    let todayTaskCount: Int
 
     struct WidgetTask: Identifiable {
         let id: String
@@ -71,20 +78,13 @@ struct TasksWidgetEntry: TimelineEntry {
         let priorityValue: Int       // 0=none, 1=low, 2=medium, 3=high
     }
 
-    static let locked = TasksWidgetEntry(
-        date: Date(),
-        tasks: [],
-        activeTaskID: nil,
-        isSessionActive: false,
-        isLocked: true
-    )
-
     static let empty = TasksWidgetEntry(
         date: Date(),
         tasks: [],
         activeTaskID: nil,
         isSessionActive: false,
-        isLocked: false
+        isProUser: false,
+        todayTaskCount: 0
     )
 }
 

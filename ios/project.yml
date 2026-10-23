@@ -308,7 +308,7 @@ targets:
     type: app-extension
     platform: macOS
     deploymentTarget: "15.0"
-    bundleId: com.pepinillo.app.widget
+    bundleId: com.pepinillo.app.widget.mac
     configFiles:
       Debug: Config/Dev.xcconfig
       Staging: Config/Staging.xcconfig
@@ -353,7 +353,7 @@ targets:
         product: ComposableArchitecture
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.pepinillo.app.widget
+        PRODUCT_BUNDLE_IDENTIFIER: com.pepinillo.app.widget.mac
         SKIP_INSTALL: "YES"
         CODE_SIGN_STYLE: Automatic
         ENABLE_HARDENED_RUNTIME: "NO"

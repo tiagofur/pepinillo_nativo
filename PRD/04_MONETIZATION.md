@@ -51,7 +51,7 @@ This split exists because local premium features can be sold once, but multi-pla
 | Tasks | Up to 3 active tasks | Lets users form a habit before paying |
 | Subtasks / recurrence | Not available | High perceived value for serious planners |
 | Analytics | Today + last 7 days | Demonstrates value, preserves upgrade trigger |
-| Widgets | One basic timer widget | Good trial surface without giving away the full ecosystem |
+| Widgets | Small timer widget + daily task-count widget | One basic widget per category; full lists and large layouts stay Pro |
 | Themes | Default / system only | Simple aesthetic gate |
 | Soundscapes | 4 basics | Enough to feel product quality |
 | Apple Watch / Wear OS | No full companion experience | Companion apps remain a premium differentiator |

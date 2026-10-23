@@ -18925,30 +18925,6 @@
         }
       }
     },
-    "widget.tasks.locked.message" : {
-      "comment" : "TasksWidget — locked entitlement message",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Open Pepinillo to unlock the Tasks widget."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Abre Pepinillo para desbloquear el widget de Tareas."
-          }
-        },
-        "pt" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Abra o Pepinillo para desbloquear o widget de Tarefas."
-          }
-        }
-      }
-    },
     "Wind down with lighter tasks as the day closes." : {
       "localizations" : {
         "es" : {
@@ -21341,6 +21317,102 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Melhore para o Pepinillo+"
+          }
+        }
+      }
+    },
+    "widget.tasks.free.hint" : {
+      "comment" : "TasksWidget — free-tier count view upgrade hint",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "shows your full task list."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "muestra tu lista completa de tareas."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "mostra sua lista completa de tarefas."
+          }
+        }
+      }
+    },
+    "widget.focus.pro.title" : {
+      "comment" : "FocusWidget — pro-required title for medium/large families",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Medium and large focus widgets"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Widgets de enfoque medianos y grandes"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Widgets de foco médios e grandes"
+          }
+        }
+      }
+    },
+    "task for today" : {
+      "comment" : "TasksWidget — free count singular label",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "task for today"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "tarea para hoy"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "tarefa para hoje"
+          }
+        }
+      }
+    },
+    "tasks for today" : {
+      "comment" : "TasksWidget — free count plural label",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "tasks for today"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "tareas para hoy"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "tarefas para hoje"
           }
         }
       }
