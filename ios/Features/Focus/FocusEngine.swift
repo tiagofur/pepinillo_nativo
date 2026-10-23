@@ -489,6 +489,22 @@ public actor FocusEngine {
         advancePhase(toResolved: pending, from: current)
     }
 
+    /// From the waiting-for-next-phase hold after a completed work phase, run
+    /// `minutes` more of work instead of advancing into the pending break (the
+    /// notification "+5 min" action). The extension is a fresh work interval:
+    /// when it completes, the strategy re-derives the normal next phase, so the
+    /// Pomodoro cycle continues unchanged. No-op outside the hold or when the
+    /// pending phase is not a break (e.g. after a completed break).
+    public func extendWorkPhase(minutes: TimeInterval) {
+        guard let current = state, pendingNextPhase?.isBreak == true else { return }
+        pendingNextPhase = nil
+        let extended = FocusPhase.work(
+            number: currentPomodoroNumber,
+            total: config.pomodorosPerCycle
+        )
+        advancePhase(toResolved: extended, from: current, targetOverride: minutes)
+    }
+
     /// Get the current session state snapshot.
     public func currentState() -> FocusSessionState? {
         state
@@ -864,19 +880,28 @@ public actor FocusEngine {
     /// Advance into an already-resolved next phase.
     /// Used by `phaseComplete()` (which pre-resolves to avoid duplicate number increments)
     /// and by `startNextPhase()` (user taps CTA from waiting state).
-    private func advancePhase(toResolved resolvedPhase: FocusPhase, from current: FocusSessionState) {
+    /// `targetOverride` replaces the strategy-derived duration (work extension).
+    private func advancePhase(
+        toResolved resolvedPhase: FocusPhase,
+        from current: FocusSessionState,
+        targetOverride: TimeInterval? = nil
+    ) {
         var mutable = current
         if case .work = resolvedPhase {
             mutable.pomodoroNumber = currentPomodoroNumber
         }
-        applyPhaseTransition(to: resolvedPhase, current: &mutable)
+        applyPhaseTransition(to: resolvedPhase, current: &mutable, targetOverride: targetOverride)
     }
 
     /// Shared phase-transition logic: reset timing state, start ticking, emit tick.
-    private func applyPhaseTransition(to resolvedPhase: FocusPhase, current: inout FocusSessionState) {
+    private func applyPhaseTransition(
+        to resolvedPhase: FocusPhase,
+        current: inout FocusSessionState,
+        targetOverride: TimeInterval? = nil
+    ) {
         guard let strategy = strategy else { return }
 
-        let newTarget = strategy.targetDuration(config: config, phase: resolvedPhase)
+        let newTarget = targetOverride ?? strategy.targetDuration(config: config, phase: resolvedPhase)
         // S1: fold the elapsed focus time of the outgoing phase into the session
         // total before its counters are reset below. Break phases never accumulate.
         if current.phase.isWork {

@@ -132,6 +132,9 @@ struct FocusFeature {
 
         // User action: advance from the waiting-for-next-phase hold
         case startNextPhaseTapped
+        // Notification "+5 min": run five more minutes of work from the hold
+        // after a completed work phase, instead of advancing into the break.
+        case extendSessionTapped
 
         // Navigation
         case modeInfoTapped
@@ -1133,6 +1136,36 @@ struct FocusFeature {
                         #endif
                     }
                 )
+
+            case .extendSessionTapped:
+                // Same hold as startNextPhaseTapped, but the engine swaps the
+                // pending break for a five-minute work interval. Guarded on
+                // `.isBreak` so it only fires after a completed work phase —
+                // the only place the "+5 min" notification action exists.
+                guard state.isWaitingForNextPhase,
+                      let pending = state.pendingNextPhase,
+                      pending.isBreak else { return .none }
+                state.isWaitingForNextPhase = false
+                state.pendingNextPhase = nil
+
+                let extensionMinutes: TimeInterval = 5 * 60
+                AppGroupDefaults.activeSessionIsPaused = false
+                AppGroupDefaults.activeSessionIsWaiting = false
+                AppGroupDefaults.activeSessionTimerStart = Date.now
+                AppGroupDefaults.activeSessionTimerEnd = Date.now.addingTimeInterval(extensionMinutes)
+                let extendedPhase = FocusPhase.work(
+                    number: state.pomodoroNumber ?? 1,
+                    total: state.config.pomodorosPerCycle
+                )
+                AppGroupDefaults.activeSessionPhase = extendedPhase.displayName
+                AppGroupDefaults.activeSessionRemaining = extensionMinutes
+                AppGroupDefaults.activeSessionProgress = 0.0
+                WidgetCenter.shared.reloadTimelines(ofKind: "FocusHomeScreenWidget")
+                WidgetCenter.shared.reloadTimelines(ofKind: "FocusLockScreenWidget")
+
+                return .run { [focusClient] _ in
+                    await focusClient.extendNextPhase(extensionMinutes)
+                }
 
             case .delegate(.sessionSaveFailed(let message)):
                 // Surface persist failure to the user instead of dropping it silently (issue #75)

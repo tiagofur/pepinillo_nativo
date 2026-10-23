@@ -1189,6 +1189,14 @@ struct AppFeature {
                     }
                 case .stopSession:
                     return .send(.focus(.stopTapped))
+                case .extendSession:
+                    // "+5 min" from the session-complete notification: five more
+                    // minutes of work instead of advancing into the pending break.
+                    if state.focus.isWaitingForNextPhase,
+                       state.focus.pendingNextPhase?.isBreak == true {
+                        return .send(.focus(.extendSessionTapped))
+                    }
+                    return .none
                 case .dismissed:
                     return .none
                 }

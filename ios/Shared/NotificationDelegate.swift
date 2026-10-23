@@ -14,6 +14,7 @@ enum NotificationAction: Sendable, Equatable {
     case startSession
     case pauseSession
     case stopSession
+    case extendSession
     case dismissed
 }
 
@@ -52,6 +53,8 @@ final class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate, @u
             continuation.yield(.pauseSession)
         case "STOP_SESSION":
             continuation.yield(.stopSession)
+        case "EXTEND_SESSION":
+            continuation.yield(.extendSession)
         case UNNotificationDismissActionIdentifier:
             continuation.yield(.dismissed)
         default:

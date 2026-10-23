@@ -32,6 +32,10 @@ public struct FocusClient: Sendable {
     /// Advance from the waiting-for-next-phase hold into the pending next phase.
     /// Only has an effect when the engine is in the waiting state (auto-start OFF).
     public var startNextPhase: @Sendable () async -> Void
+    /// Run the given minutes of extra work from the waiting-for-next-phase hold
+    /// after a completed work phase (notification "+5 min"). No-op outside the
+    /// hold or when the pending phase is not a break.
+    public var extendNextPhase: @Sendable (TimeInterval) async -> Void
     /// Update the focus configuration while a session is active (real-time settings sync).
     public var updateConfig: @Sendable (FocusConfig) async -> Void
     /// Observe engine events as an AsyncStream (no-op on watchOS).
@@ -97,6 +101,9 @@ extension FocusClient: DependencyKey {
             startNextPhase: {
                 await engine.startNextPhase()
             },
+            extendNextPhase: { minutes in
+                await engine.extendWorkPhase(minutes: minutes)
+            },
             updateConfig: { newConfig in
                 await engine.updateConfig(newConfig)
             },
@@ -133,6 +140,7 @@ extension FocusClient: DependencyKey {
             recordInterruption: {},
             skipPhase: {},
             startNextPhase: {},
+            extendNextPhase: { _ in },
             updateConfig: { _ in },
             events: { .finished },
             currentState: { nil },

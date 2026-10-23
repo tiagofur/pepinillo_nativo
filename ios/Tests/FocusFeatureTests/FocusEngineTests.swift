@@ -1321,6 +1321,57 @@ struct FocusEngineHoldStopTests {
     }
 }
 
+// MARK: - Extend work from the waiting hold (+5 min notification action)
+
+@Suite("FocusEngine — Extend work", .serialized, .appGroupDefaultsSerialized)
+struct FocusEngineExtendWorkTests {
+
+    @Test func extendWorkPhaseRunsFiveMoreMinutesInsteadOfBreak() async throws {
+        // 1s work phases with auto-start OFF: completing work enters the hold.
+        var config = FocusConfig()
+        config.pomodoroDuration = 1
+        config.autoStartBreaks = false
+        let engine = FocusEngine()
+        await engine.start(mode: .pomodoro, config: config)
+        try await Task.sleep(for: .milliseconds(2000))
+
+        await engine.extendWorkPhase(minutes: 300)
+        try await Task.sleep(for: .milliseconds(300))
+
+        let state = await engine.currentState()
+        #expect(state != nil)
+        #expect(state?.isPaused == false)
+        // Same pomodoro number: the extension belongs to the interval that just
+        // completed, not a new cycle position.
+        if case .work(let number, let total) = state?.phase {
+            #expect(number == 1)
+            #expect(total == 4)
+        } else {
+            Issue.record("Expected .work(1, 4) after extension, got \(String(describing: state?.phase))")
+        }
+        #expect(state?.targetDuration == 300)
+        let remaining = state?.remainingSeconds ?? -1
+        #expect(remaining > 290 && remaining <= 300)
+    }
+
+    @Test func extendWorkPhaseIsNoOpOutsideTheHold() async throws {
+        var config = FocusConfig()
+        config.pomodoroDuration = 1
+        config.autoStartBreaks = false
+        let engine = FocusEngine()
+        await engine.start(mode: .pomodoro, config: config)
+
+        // The work phase is still ticking, so the extension must not touch it.
+        await engine.extendWorkPhase(minutes: 300)
+        try await Task.sleep(for: .milliseconds(300))
+
+        let state = await engine.currentState()
+        #expect(state != nil)
+        #expect(state?.targetDuration == 1)
+        #expect(state?.phase == .work(number: 1, total: 4))
+    }
+}
+
 // MARK: - Direct abandon (S7)
 
 @Suite("FocusEngine — Abandon session", .serialized, .appGroupDefaultsSerialized)
