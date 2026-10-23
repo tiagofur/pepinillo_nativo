@@ -41,6 +41,10 @@ private final class MacAppBootstrap: ObservableObject {
     private lazy var quickCapture = MacQuickCaptureController()
     private lazy var spotlight = MacSpotlightIndexer()
     private lazy var activitySampler = MacActivitySampler()
+    /// Live consumer of widget/Siri/Control Center commands — the Mac app can
+    /// stay in the background for a whole session, so it must not wait for
+    /// window activation to react to widget taps.
+    private lazy var externalCommandObserver = MacExternalCommandObserver()
 
     init() {
         Task {
@@ -133,6 +137,7 @@ private final class MacAppBootstrap: ObservableObject {
         statusBar.install(store: store)
         spotlight.install(store: store)
         activitySampler.install(store: store)
+        externalCommandObserver.install(store: store)
 
         // Global shortcuts share one Carbon handler and dispatch by id.
         MacGlobalHotKey.shared.register(
