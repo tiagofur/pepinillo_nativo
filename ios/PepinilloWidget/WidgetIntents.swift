@@ -110,22 +110,34 @@ struct ResumeFocusFromWidgetIntent: AppIntent {
 /// Pure function so FocusWidgetProviderTests can pin the staggering math
 /// without instantiating the provider (which the test target cannot see).
 ///
+/// Density is adaptive: the step shrinks to fit ~90 snapshots in the
+/// remaining phase (floor 2 s — sub-second steps get throttled by the
+/// system and buy nothing), so short phases feel near-live while a
+/// 25-minute phase still advances every ~15 s. WidgetKit truncates
+/// oversized timelines, hence the hard cap.
+///
 /// - Parameters:
 ///   - start: phase start anchor (progress denominator origin).
 ///   - now: timeline generation time (first snapshot date).
 ///   - end: phase end anchor (last snapshot date).
-///   - step: seconds between snapshots; `maxEntries` caps long phases.
+///   - targetEntries: snapshots to spread across the remaining phase.
+///   - minStep: fastest snapshot cadence, in seconds.
+///   - maxEntries: hard cap (system truncates beyond this).
 /// - Returns: snapshots from `now` to `end`, dates strictly advancing,
 ///   progress climbing 0→1. Empty when `end <= now`.
 func staggeredTimelineSnapshots(
     start: Date,
     now: Date,
     end: Date,
-    step: TimeInterval = 30,
-    maxEntries: Int = 50
+    targetEntries: Int = 90,
+    minStep: TimeInterval = 2,
+    maxEntries: Int = 100
 ) -> [(date: Date, progress: Double)] {
     let total = end.timeIntervalSince(now)
     guard total > 0 else { return [] }
+    // Fit the target count into what remains, never faster than minStep.
+    // Short phases (test durations) get near-live rings; long phases spread out.
+    let step = max(minStep, total / Double(max(targetEntries - 1, 1)))
     let count = min(maxEntries, max(2, Int(ceil(total / step)) + 1))
     let duration = max(end.timeIntervalSince(start), 1)
     return (0..<count).map { i in
