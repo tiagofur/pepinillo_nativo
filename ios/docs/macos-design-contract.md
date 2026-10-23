@@ -108,7 +108,7 @@ The Dock icon is a first-class control surface, not a launcher:
 ## 7. Focus
 
 - Centered stage; ring max 360 pt (responsive to window height, floor 260 pt) so the stage content below never feels cramped; timer numerals 72–84 pt, `.rounded`, `.monospacedDigit()`.
-- Mode switcher: segmented control in the toolbar (Pomodoro / Flowtime / Time Block / Stopwatch). Existing Pro gate unchanged. While a session runs, the picker swaps (snappy opacity+scale) to a compact mode label in the phase color with Skip/Stop beside it, mirroring the iOS collapse.
+- Mode switcher: segmented control in the toolbar (Pomodoro / Flowtime / Time Block / Stopwatch). Existing Pro gate unchanged. While a session runs the toolbar empties completely - like the system Clock app on macOS - and the controls move into the stage under the primary action: contextual Skip (only active Flowtime flow or breaks, matching the iPhone control row) and a destructive End Session with the shared confirmation dialog. Skip/Stop never live in the toolbar.
 - Primary action: Start/Pause, `.borderedProminent`, minimum height 32, default keyboard action.
 - Secondary actions: Skip, Reset, Stop in the toolbar or Focus menu.
 - Linked task: optional chip; picker over active tasks; never required to start.

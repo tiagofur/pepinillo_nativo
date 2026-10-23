@@ -12,6 +12,8 @@ struct MacFocusView: View {
 
     @Environment(\.appTheme) private var theme
 
+    @State private var showStopConfirmation = false
+
     private var currentMode: FocusMode {
         store.activeMode ?? store.selectedMode
     }
@@ -57,6 +59,8 @@ struct MacFocusView: View {
                     phaseSection
                     linkedTaskChip
                     primaryAction
+                    secondaryControls
+                        .animation(MotionTokens.snappy, value: store.isRunning)
                     todayStats
 
                     Spacer(minLength: 8)
@@ -69,55 +73,19 @@ struct MacFocusView: View {
             .scrollIndicators(.hidden)
         }
         .toolbar {
-            ToolbarItem(placement: .principal) {
-                ZStack {
-                    if store.isRunning {
-                        HStack(spacing: 6) {
-                            Image(systemName: currentMode.systemImage)
-                                .foregroundStyle(modeColor)
-                            Text(currentMode.macDisplayName)
-                                .font(.headline)
+            // While a session runs the toolbar stays empty (the stage carries
+            // the controls), mirroring the system Clock app on macOS.
+            if !store.isRunning {
+                ToolbarItem(placement: .principal) {
+                    Picker("Focus mode", selection: selectedModeBinding) {
+                        ForEach(FocusMode.allCases) { mode in
+                            Text(mode.macDisplayName).tag(mode)
                         }
-                        .accessibilityElement(children: .ignore)
-                        .accessibilityLabel(String(localized: "Focus mode"))
-                        .accessibilityValue(Text(currentMode.macDisplayName))
-                        .help(String(localized: "Current focus mode"))
-                        .transition(.opacity.combined(with: .scale(scale: 0.85)))
-                    } else {
-                        Picker("Focus mode", selection: selectedModeBinding) {
-                            ForEach(FocusMode.allCases) { mode in
-                                Text(mode.macDisplayName).tag(mode)
-                            }
-                        }
-                        .pickerStyle(.segmented)
-                        .labelsHidden()
-                        .accessibilityLabel(String(localized: "Focus mode"))
-                        .help(String(localized: "Switch focus mode"))
-                        .transition(.opacity.combined(with: .scale(scale: 0.9)))
                     }
-                }
-                .animation(MotionTokens.snappy, value: store.isRunning)
-            }
-
-            if store.isRunning {
-                ToolbarItem(placement: .primaryAction) {
-                    Button {
-                        store.send(.skipPhaseTapped)
-                    } label: {
-                        Label("Skip Phase", systemImage: "forward.end")
-                    }
-                    .labelStyle(.iconOnly)
-                    .help(String(localized: "Skip phase"))
-                }
-
-                ToolbarItem(placement: .primaryAction) {
-                    Button {
-                        store.send(.stopTapped)
-                    } label: {
-                        Label("Stop Session", systemImage: "stop.fill")
-                    }
-                    .labelStyle(.iconOnly)
-                    .help(String(localized: "Stop session"))
+                    .pickerStyle(.segmented)
+                    .labelsHidden()
+                    .accessibilityLabel(String(localized: "Focus mode"))
+                    .help(String(localized: "Switch focus mode"))
                 }
             }
         }
@@ -137,6 +105,15 @@ struct MacFocusView: View {
             SessionJournalView(store: journalStore)
                 .frame(minWidth: 440, minHeight: 520)
         }
+        .confirmationDialog(
+            String(localized: "focus.endsession.title", defaultValue: "End Session?"),
+            isPresented: $showStopConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button(String(localized: "focus.endsession.button", defaultValue: "End Session"), role: .destructive) {
+                store.send(.stopTapped)
+            }
+        }
         .alert(
             String(localized: "focus.sessionSaveError.title", defaultValue: "Couldn't Save Session"),
             isPresented: Binding(
@@ -150,6 +127,56 @@ struct MacFocusView: View {
                 Text(String(localized: "focus.sessionSaveError.message", defaultValue: "Your focus time was completed but couldn't be saved. \(sessionSaveError)"))
             }
         }
+    }
+
+    /// Mirrors the iPhone control row: Skip only where it applies (active
+    /// Flowtime flow, or any break) and a destructive Stop with the same
+    /// end-session confirmation.
+    @ViewBuilder
+    private var secondaryControls: some View {
+        if store.isRunning && !store.isWaitingForNextPhase {
+            HStack(spacing: 12) {
+                if showsSkip {
+                    Button {
+                        store.send(.skipPhaseTapped)
+                    } label: {
+                        Label(
+                            String(localized: "Skip phase"),
+                            systemImage: skipIcon
+                        )
+                    }
+                    .buttonStyle(.bordered)
+                    .help(String(localized: "Skip to next phase"))
+                    .transition(.opacity.combined(with: .scale(scale: 0.95)))
+                }
+
+                Button(role: .destructive) {
+                    showStopConfirmation = true
+                } label: {
+                    Label(
+                        String(localized: "focus.endsession.button", defaultValue: "End Session"),
+                        systemImage: "stop.fill"
+                    )
+                }
+                .buttonStyle(.bordered)
+                .help(String(localized: "Stop session"))
+                .transition(.opacity.combined(with: .scale(scale: 0.95)))
+            }
+        }
+    }
+
+    /// Skip visibility, matching the iPhone control row exactly.
+    private var showsSkip: Bool {
+        guard store.activeMode == .flowtime else {
+            return store.phase.isBreak
+        }
+        return store.phase == .flow || store.phase.isBreak
+    }
+
+    private var skipIcon: String {
+        store.activeMode == .flowtime && store.phase == .flow
+            ? "cup.and.saucer.fill"
+            : "forward.fill"
     }
 
     private var phaseSection: some View {
