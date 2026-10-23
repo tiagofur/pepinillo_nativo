@@ -63,15 +63,11 @@ final class MacPresencePulse: ObservableObject {
 
     private func refresh() {
         guard let store else { return }
-        let (newPulse, focus) = store.withState { state in
-            (
-                MacSessionPulse(
-                    focus: state.focus,
-                    keepDisplayAwake: state.settings.keepScreenOn
-                ),
-                state.focus
-            )
-        }
+        let focus = store.focus
+        let newPulse = MacSessionPulse(
+            focus: focus,
+            keepDisplayAwake: store.settings.keepScreenOn
+        )
         guard newPulse != pulse else { return }
         pulse = newPulse
         onPulseChanged?(newPulse, focus)
