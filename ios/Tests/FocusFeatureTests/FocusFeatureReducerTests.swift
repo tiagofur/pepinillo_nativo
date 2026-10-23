@@ -998,6 +998,53 @@ struct FocusGhostAdoptTests {
         #expect(scheduledMinutes.value == 5)
     }
 
+    @Test func extendSessionTappedRunsFiveMoreMinutesFromHold() async {
+        let extendCalled = LockIsolated(false)
+
+        var state = FocusFeature.State()
+        state.isRunning = true
+        state.activeMode = .pomodoro
+        state.phase = .work(number: 1, total: 4)
+        state.pomodoroNumber = 1
+        state.isWaitingForNextPhase = true
+        state.pendingNextPhase = .shortBreak
+
+        let store = TestStore(initialState: state) {
+            FocusFeature()
+        } withDependencies: {
+            $0.focusClient.extendNextPhase = { _ in extendCalled.setValue(true) }
+        }
+
+        store.exhaustivity = .off
+
+        await store.send(.extendSessionTapped) {
+            $0.isWaitingForNextPhase = false
+            $0.pendingNextPhase = nil
+        }
+        await store.finish()
+
+        #expect(extendCalled.value == true)
+    }
+
+    @Test func extendSessionTappedIsNoOpWhenPendingPhaseIsWork() async {
+        var state = FocusFeature.State()
+        state.isRunning = true
+        state.activeMode = .pomodoro
+        state.isWaitingForNextPhase = true
+        // Break finished and work is pending: there is nothing to extend.
+        state.pendingNextPhase = .work(number: 2, total: 4)
+
+        let store = TestStore(initialState: state) {
+            FocusFeature()
+        } withDependencies: {
+            $0.focusClient.extendNextPhase = { _ in Issue.record("extend must not run") }
+        }
+
+        store.exhaustivity = .off
+
+        await store.send(.extendSessionTapped)
+    }
+
     @Test func waitingForNextPhaseSeedsDisplayFromPendingTarget() async {
         var state = FocusFeature.State()
         state.isRunning = true

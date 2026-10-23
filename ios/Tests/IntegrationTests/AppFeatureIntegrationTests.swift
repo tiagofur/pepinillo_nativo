@@ -1118,6 +1118,34 @@ struct AppFeatureIntegrationTests {
         #expect(startNextPhaseCalled.value == true)
     }
 
+    @Test("extendSession notification runs five more minutes of work (+5 min)")
+    func extendSessionNotificationExtendsWorkPhase() async {
+        let extendCalled = LockIsolated(false)
+
+        var initialState = AppFeature.State()
+        initialState.focus.isRunning = true
+        initialState.focus.isWaitingForNextPhase = true
+        initialState.focus.pendingNextPhase = .shortBreak
+
+        let store = TestStore(initialState: initialState) {
+            AppFeature()
+        } withDependencies: {
+            $0.persistenceClient.resolveAchievements = { derived in derived }
+            $0.focusClient.extendNextPhase = { _ in
+                extendCalled.setValue(true)
+            }
+            $0.liveActivityClient.update = { _, _ in }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.notificationActionReceived(.extendSession))
+
+        await store.receive(.focus(.extendSessionTapped))
+        await store.finish()
+
+        #expect(extendCalled.value == true)
+    }
+
     // MARK: - Phase 2 billing: offline grace + sequential identity (#214, #217)
 
     @Test("App launch seeds Everywhere+ from cache within offline grace when live check throws")

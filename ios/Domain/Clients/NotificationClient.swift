@@ -304,9 +304,14 @@ extension NotificationClient {
             title: "End Session",
             options: [.destructive]
         )
+        let extendAction = UNNotificationAction(
+            identifier: "EXTEND_SESSION",
+            title: String(localized: "+5 min"),
+            options: []
+        )
         let sessionCompleteWithStopCategory = UNNotificationCategory(
             identifier: "SESSION_COMPLETE",
-            actions: [completeAction, stopAction],
+            actions: [completeAction, extendAction, stopAction],
             intentIdentifiers: [],
             options: .customDismissAction
         )
