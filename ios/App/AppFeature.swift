@@ -1788,13 +1788,20 @@ extension WatchSessionState {
         let phaseForFlags: FocusPhase = focusState.isWaitingForNextPhase
             ? (focusState.pendingNextPhase ?? focusState.phase)
             : focusState.phase
+        // The engine preserves the timed phase across pauses (isPaused is the
+        // only pause signal), so `.paused` never reaches here — a paused break
+        // correctly maps to break flags. Written exhaustively: leaving `.paused`
+        // in a "false" arm would silently re-break this if it ever recurred.
         let isBreak: Bool
         let isLongBreak: Bool
         switch phaseForFlags {
         case .shortBreak, .flowBreak:            isBreak = true;  isLongBreak = false
         case .longBreak:                         isBreak = true;  isLongBreak = true
         case .work, .flow, .block, .freeform,
-             .idle, .paused:                     isBreak = false; isLongBreak = false
+             .idle:                              isBreak = false; isLongBreak = false
+        case .paused:
+            assertionFailure("Engine emitted .paused as a timed phase — it must preserve the timed phase across pauses")
+            isBreak = false; isLongBreak = false
         }
         self.init(
             isActive:         focusState.isRunning,

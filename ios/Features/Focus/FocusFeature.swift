@@ -409,6 +409,8 @@ struct FocusFeature {
                 state.isPaused = true
                 state.elapsedSeconds = frozenElapsed
                 state.remainingSeconds = frozenRemaining
+                // Timed phase preserved — only the label shows "Paused" (a paused
+                // break keeps its break color on every surface). See engine pause().
                 state.phaseLabel = FocusPhase.paused.displayName
                 if let remaining = frozenRemaining {
                     let duration = max(frozenElapsed + remaining, 1)
@@ -418,6 +420,9 @@ struct FocusFeature {
                 AppGroupDefaults.activeSessionElapsed = frozenElapsed
                 AppGroupDefaults.activeSessionIsPaused = true
                 AppGroupDefaults.activeSessionRemaining = frozenRemaining
+                AppGroupDefaults.activeSessionPhase = state.phase.displayName
+                AppGroupDefaults.activeSessionPhaseIsBreak = state.phase.isBreak
+                AppGroupDefaults.activeSessionPhaseIsLongBreak = state.phase == .longBreak
                 WidgetSurfaceReload.reloadFocusAndControlCenter()
                 let taskTitle = state.linkedTaskTitle
                 return .merge(
@@ -437,6 +442,9 @@ struct FocusFeature {
                 state.isPaused = true
                 state.elapsedSeconds = max(0, elapsed)
                 state.remainingSeconds = remaining
+                // The timed phase survives pauses untouched — only the label
+                // switches to "Paused", so a paused break keeps its break color
+                // (app ring, widget, watch) instead of repainting as .paused.
                 state.phaseLabel = FocusPhase.paused.displayName
                 if let remaining {
                     let duration = max(elapsed + remaining, 1)
@@ -450,6 +458,11 @@ struct FocusFeature {
                 AppGroupDefaults.activeSessionRemaining = remaining
                 AppGroupDefaults.activeSessionPausedAt = pausedAt
                 AppGroupDefaults.activeSessionIsPaused = true
+                // Preserve the timed phase's kind across the pause so the widget
+                // keeps the break color instead of dissolving to mode red.
+                AppGroupDefaults.activeSessionPhase = state.phase.displayName
+                AppGroupDefaults.activeSessionPhaseIsBreak = state.phase.isBreak
+                AppGroupDefaults.activeSessionPhaseIsLongBreak = state.phase == .longBreak
                 WidgetSurfaceReload.reloadFocusAndControlCenter()
                 let taskTitle = state.linkedTaskTitle
                 return .merge(
