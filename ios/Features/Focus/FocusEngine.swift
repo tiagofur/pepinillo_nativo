@@ -47,7 +47,6 @@ public actor FocusEngine {
 
     // Pause tracking
     private var pauseCount: Int = 0
-    private var phaseBeforePause: FocusPhase?
 
     // Flowtime: emit breakSuggested once per flow phase when threshold is reached
     private var breakSuggestionEmitted = false
@@ -345,14 +344,16 @@ public actor FocusEngine {
         guard var current = state, !current.isPaused else { return }
         // FIX 4: During the waiting-for-next-phase hold the tick task is already
         // cancelled and no countdown is running. Pausing a hold has no meaningful
-        // effect and would set phaseBeforePause to the completed phase (remaining = 0),
-        // causing resume() → startTicking() → phaseComplete() to fire again (double
+        // effect and would corrupt the hold bookkeeping (remaining = 0), causing
+        // resume() → startTicking() → phaseComplete() to fire again (double
         // pomodoro increment). Guard here so pause is a no-op in this state.
         guard pendingNextPhase == nil else { return }
-        phaseBeforePause = current.phase
         current.isPaused = true
         current.pausedAt = Date.now
-        current.phase = .paused
+        // The timed phase is preserved across the pause: isPaused is the only
+        // pause signal. Rewriting the phase to `.paused` would push "not a
+        // break" down every consumer (app ring, widget, watch) and repaint a
+        // paused break in work colors (issue: pause must keep break color).
         state = current
         pauseCount += 1
 
@@ -377,10 +378,7 @@ public actor FocusEngine {
         current.pausedAt = nil
         current.totalPausedDuration = totalPausedDuration
 
-        // Restore the phase that was active before pause
-        if strategy != nil {
-            restorePhaseAfterPause(&current)
-        }
+        // The timed phase survived the pause untouched — nothing to restore.
 
         // S2: shift a widget-adopted end anchor across the pause so the frozen
         // remaining time is preserved. Without this, tick() recomputes remaining
@@ -423,9 +421,9 @@ public actor FocusEngine {
 
         // S1: fold the final phase into the session total so the reported total
         // covers every focus phase, not just the last one. Break phases never
-        // accumulate. When paused, resolve the underlying timed phase (same as
-        // updateConfig) so stop-while-paused keeps the work done before pausing.
-        let effectivePhase = current.phase == .paused ? (phaseBeforePause ?? current.phase) : current.phase
+        // accumulate. The phase survives pauses untouched, so stop-while-paused
+        // keeps the work done before pausing without any remap.
+        let effectivePhase = current.phase
         let phaseElapsed = max(0, current.elapsedSeconds)
         if effectivePhase.isWork {
             accumulatedFocusSeconds += phaseElapsed
@@ -519,8 +517,8 @@ public actor FocusEngine {
 
         guard var current = state, strategy != nil else { return }
 
-        // When paused the public phase is `.paused`; resolve the underlying timed phase.
-        let timedPhase: FocusPhase = current.phase == .paused ? (phaseBeforePause ?? current.phase) : current.phase
+        // The phase survives pauses untouched, so the timed phase is always direct.
+        let timedPhase: FocusPhase = current.phase
 
         // Determine if the current phase is duration-sensitive (work phase uses pomodoroDuration).
         let phaseTargetChanged: Bool
@@ -601,13 +599,12 @@ public actor FocusEngine {
         guard var current = state else { return }
 
         if !current.isPaused {
-            phaseBeforePause = current.phase
             pauseCount += 1
         }
 
         current.isPaused = true
         current.pausedAt = pausedAt
-        current.phase = .paused
+        // Phase preserved — see pause().
         current.elapsedSeconds = max(0, elapsed)
         current.remainingSeconds = remaining
         if let target = current.targetDuration, let remaining {
@@ -639,7 +636,6 @@ public actor FocusEngine {
         if current.isPaused {
             current.isPaused = false
             current.pausedAt = nil
-            restorePhaseAfterPause(&current)
         }
 
         current.elapsedSeconds = max(0, elapsed)
@@ -930,27 +926,6 @@ public actor FocusEngine {
         emit(.tick(current))
     }
 
-    private func restorePhaseAfterPause(_ current: inout FocusSessionState) {
-        // Restore the exact phase that was active before the pause.
-        // This correctly handles pausing during breaks (short break, long break, flow break).
-        if let savedPhase = phaseBeforePause {
-            current.phase = savedPhase
-            phaseBeforePause = nil
-        } else {
-            // Fallback: restore to the default work phase for the mode
-            switch current.mode {
-            case .pomodoro:
-                current.phase = .work(number: currentPomodoroNumber, total: config.pomodorosPerCycle)
-            case .flowtime:
-                current.phase = .flow
-            case .timeBlock:
-                current.phase = .block
-            case .stopwatch:
-                current.phase = .freeform
-            }
-        }
-    }
-
     // MARK: - Private: Helpers
 
     private func emit(_ event: FocusEngineEvent) {
@@ -965,7 +940,6 @@ public actor FocusEngine {
         accumulatedFocusSeconds = 0
         currentPomodoroNumber = 1
         pauseCount = 0
-        phaseBeforePause = nil
         pendingNextPhase = nil
         breakSuggestionEmitted = false
         midpointEmitted = false
