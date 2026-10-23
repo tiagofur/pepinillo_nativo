@@ -20,6 +20,9 @@ final class MacGlobalHotKey {
     enum HotKeyID {
         static let focusToggle = 1
         static let quickCapture = 2
+        static let nextPhase = 3
+        static let stopSession = 4
+        static let showWindow = 5
     }
 
     private var hotKeyRefs: [Int: EventHotKeyRef] = [:]

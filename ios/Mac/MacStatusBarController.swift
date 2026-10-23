@@ -11,6 +11,26 @@ import AppKit
 import ComposableArchitecture
 import SwiftUI
 
+/// Status-item presentation while a session runs. `countdown` (mode icon +
+/// live time) is the free default; the minimal styles are Pepinillo+ (the
+/// "menu bar control" tier from the Kofe-Flow parity pass). Idle always shows
+/// the timer icon so the item never disappears.
+enum MenuBarStatusStyle: String, CaseIterable, Sendable {
+    case countdown
+    case timeOnly
+    case iconOnly
+
+    /// Device-local choice (standard defaults — shell preference).
+    static var current: MenuBarStatusStyle {
+        MenuBarStatusStyle(
+            rawValue: UserDefaults.standard.string(forKey: MacAppStorageKeys.menuBarStatusStyle) ?? ""
+        ) ?? .countdown
+    }
+
+    /// The minimal styles are Pepinillo+.
+    var isPro: Bool { self != .countdown }
+}
+
 @MainActor
 final class MacStatusBarController: NSObject, NSPopoverDelegate {
     static private(set) var shared: MacStatusBarController?
@@ -72,26 +92,41 @@ final class MacStatusBarController: NSObject, NSPopoverDelegate {
         MacDockChrome.shared.sync(focus: focus, keepDisplayAwake: pulse.keepDisplayAwake)
     }
 
+    /// Settings changed the status style. The pulse only fires on session
+    /// state changes, so re-render explicitly from the cached pulse.
+    func reloadStyle() {
+        renderLabel()
+    }
+
     private func renderLabel() {
         guard let button = statusItem?.button else { return }
+        let style = MenuBarStatusStyle.current
 
         if pulse.isRunning {
-            let text = NSMutableAttributedString()
-            if let icon = statusIcon(pulse.modeIcon) {
-                text.append(icon)
-                text.append(NSAttributedString(string: "  "))
-            }
-            text.append(
-                NSAttributedString(
-                    string: pulse.displayTime,
-                    attributes: [
-                        .font: NSFont.monospacedDigitSystemFont(ofSize: 12, weight: .medium),
-                        .foregroundColor: NSColor.labelColor,
-                    ]
+            switch style {
+            case .countdown, .timeOnly:
+                let text = NSMutableAttributedString()
+                if style == .countdown, let icon = statusIcon(pulse.modeIcon) {
+                    text.append(icon)
+                    text.append(NSAttributedString(string: "  "))
+                }
+                text.append(
+                    NSAttributedString(
+                        string: pulse.displayTime,
+                        attributes: [
+                            .font: NSFont.monospacedDigitSystemFont(ofSize: 12, weight: .medium),
+                            .foregroundColor: NSColor.labelColor,
+                        ]
+                    )
                 )
-            )
-            button.attributedTitle = text
-            button.appearance = nil
+                button.image = nil
+                button.attributedTitle = text
+                button.appearance = nil
+            case .iconOnly:
+                button.attributedTitle = NSAttributedString()
+                button.image = NSImage(systemSymbolName: pulse.modeIcon, accessibilityDescription: nil)?
+                    .withSymbolConfiguration(.init(pointSize: 13, weight: .regular))
+            }
         } else {
             button.attributedTitle = NSAttributedString()
             button.image = NSImage(systemSymbolName: "timer", accessibilityDescription: nil)?

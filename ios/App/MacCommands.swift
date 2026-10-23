@@ -48,6 +48,58 @@ enum FocusToggleCommand {
     }
 }
 
+// MARK: - Session Hot-Key Commands
+
+/// Decisions for the extra global session shortcuts (`⌃⌥→` skip / next phase,
+/// `⌃⌥X` end session). Pure so they can be tested without AppKit and cannot
+/// drift from the Focus-menu equivalents.
+enum MacSessionCommand {
+    enum NextPhaseDecision: Equatable {
+        /// Waiting hold: advance into the pending phase.
+        case startNextPhase
+        /// Running: skip the current phase.
+        case skip
+        case none
+    }
+
+    static func nextPhaseDecision(isRunning: Bool, isWaitingForNextPhase: Bool) -> NextPhaseDecision {
+        if isWaitingForNextPhase { return .startNextPhase }
+        if isRunning { return .skip }
+        return .none
+    }
+
+    @MainActor
+    static func nextPhase(store: StoreOf<AppFeature>) {
+        switch nextPhaseDecision(
+            isRunning: store.state.focus.isRunning,
+            isWaitingForNextPhase: store.state.focus.isWaitingForNextPhase
+        ) {
+        case .startNextPhase:
+            store.send(.focus(.startNextPhaseTapped))
+        case .skip:
+            store.send(.focus(.skipPhaseTapped))
+        case .none:
+            break
+        }
+    }
+
+    enum StopDecision: Equatable {
+        case stop
+        case none
+    }
+
+    static func stopDecision(isRunning: Bool) -> StopDecision {
+        isRunning ? .stop : .none
+    }
+
+    @MainActor
+    static func stop(store: StoreOf<AppFeature>) {
+        if store.state.focus.isRunning {
+            store.send(.focus(.stopTapped))
+        }
+    }
+}
+
 // MARK: - Pepinillo Commands
 
 extension Notification.Name {
