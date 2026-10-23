@@ -104,6 +104,40 @@ struct ResumeFocusFromWidgetIntent: AppIntent {
     }
 }
 
+// MARK: - Staggered Timeline Math (testable, pure)
+
+/// Computes the (date, progress) snapshots for a live countdown timeline.
+/// Pure function so FocusWidgetProviderTests can pin the staggering math
+/// without instantiating the provider (which the test target cannot see).
+///
+/// - Parameters:
+///   - start: phase start anchor (progress denominator origin).
+///   - now: timeline generation time (first snapshot date).
+///   - end: phase end anchor (last snapshot date).
+///   - step: seconds between snapshots; `maxEntries` caps long phases.
+/// - Returns: snapshots from `now` to `end`, dates strictly advancing,
+///   progress climbing 0→1. Empty when `end <= now`.
+func staggeredTimelineSnapshots(
+    start: Date,
+    now: Date,
+    end: Date,
+    step: TimeInterval = 30,
+    maxEntries: Int = 50
+) -> [(date: Date, progress: Double)] {
+    let total = end.timeIntervalSince(now)
+    guard total > 0 else { return [] }
+    let count = min(maxEntries, max(2, Int(ceil(total / step)) + 1))
+    let duration = max(end.timeIntervalSince(start), 1)
+    return (0..<count).map { i in
+        // Anchor forward from NOW, not from the phase start: entries dated in
+        // the past are discarded by WidgetKit, collapsing the timeline back
+        // to a single effective entry (frozen ring).
+        let date = i == 0 ? now : min(now.addingTimeInterval(Double(i) * step), end)
+        let completed = min(max(date.timeIntervalSince(start) / duration, 0), 1)
+        return (date, completed)
+    }
+}
+
 // MARK: - Start Next Phase from Widget
 
 /// Widget "start next phase" tap during the waiting hold (auto-start OFF).
