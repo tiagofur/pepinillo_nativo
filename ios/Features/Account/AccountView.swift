@@ -376,6 +376,7 @@ struct AccountView: View {
             .buttonStyle(.plain)
             .accessibilityHint(String(localized: "a11y.account.nav.settings.hint", defaultValue: "Opens app settings"))
 
+            #if os(iOS)
             Divider()
                 .padding(.leading, 52)
 
@@ -396,6 +397,7 @@ struct AccountView: View {
             }
             .buttonStyle(.plain)
             .accessibilityHint(String(localized: "a11y.account.nav.export.hint", defaultValue: "Opens data export options"))
+            #endif
         }
         .pepinilloGlass()
         .padding(.horizontal, 20)

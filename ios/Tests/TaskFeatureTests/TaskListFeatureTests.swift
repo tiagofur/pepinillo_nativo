@@ -113,6 +113,7 @@ struct TaskListFeatureTests {
     }
 
     @Test func completeTaskTogglesCompletion() async {
+        let testDate = Date(timeIntervalSince1970: 1_700_000_000)
         var initialState = TaskListFeature.State()
         let taskID = UUID()
         initialState.tasks = [
@@ -133,15 +134,20 @@ struct TaskListFeatureTests {
         let store = TestStore(initialState: initialState) {
             TaskListFeature()
         } withDependencies: {
+            $0.date = .constant(testDate)
             $0.persistenceClient.fetchTasks = { [] }
             $0.persistenceClient.fetchTask = { _ in basicTaskDTO(id: taskID, title: "Write tests") }
             $0.persistenceClient.saveTask = { _ in }
         }
 
+        store.exhaustivity = .off
+
         await store.send(.taskCompleted(taskID))
 
         await store.receive(\.setTaskCompleted) {
             $0.tasks[id: taskID]?.isCompleted = true
+            $0.tasks[id: taskID]?.completedAt = testDate
+            $0.recentlyCompletedTask = $0.tasks[id: taskID]
         }
     }
 
@@ -525,6 +531,7 @@ struct TaskListFeatureTests {
     // MARK: - Recurrence Preservation (issue #178)
 
     @Test func completeTaskPreservesRecurrenceOnSave() async throws {
+        let testDate = Date(timeIntervalSince1970: 1_700_000_000)
         let taskID = UUID()
         let fetchedTask = recurringTaskDTO(id: taskID)
         let savedTask = LockIsolated<TaskItemDTO?>(nil)
@@ -535,6 +542,7 @@ struct TaskListFeatureTests {
         let store = TestStore(initialState: initialState) {
             TaskListFeature()
         } withDependencies: {
+            $0.date = .constant(testDate)
             $0.persistenceClient.fetchTask = { _ in fetchedTask }
             $0.persistenceClient.saveTask = { savedTask.setValue($0) }
         }
@@ -544,6 +552,7 @@ struct TaskListFeatureTests {
         await store.send(.taskCompleted(taskID))
         await store.receive(\.setTaskCompleted) {
             $0.tasks[id: taskID]?.isCompleted = true
+            $0.tasks[id: taskID]?.completedAt = testDate
         }
 
         let saved = try #require(savedTask.value)
@@ -553,6 +562,7 @@ struct TaskListFeatureTests {
     }
 
     @Test func completeTaskPreservesRecurrenceAfterReload() async {
+        let testDate = Date(timeIntervalSince1970: 1_700_000_000)
         let taskID = UUID()
         let persistedTask = LockIsolated(recurringTaskDTO(id: taskID))
 
@@ -562,6 +572,7 @@ struct TaskListFeatureTests {
         let store = TestStore(initialState: initialState) {
             TaskListFeature()
         } withDependencies: {
+            $0.date = .constant(testDate)
             $0.persistenceClient.fetchTask = { _ in persistedTask.value }
             $0.persistenceClient.saveTask = { persistedTask.setValue($0) }
             $0.persistenceClient.fetchTasks = { [persistedTask] in [persistedTask.value] }
@@ -573,6 +584,7 @@ struct TaskListFeatureTests {
         await store.send(.taskCompleted(taskID))
         await store.receive(\.setTaskCompleted) {
             $0.tasks[id: taskID]?.isCompleted = true
+            $0.tasks[id: taskID]?.completedAt = testDate
         }
 
         await store.send(.refresh) {
@@ -1356,6 +1368,7 @@ struct TaskListFeatureTests {
 
         await store.send(.addTaskTapped) {
             $0.newTaskTitle = ""
+            $0.isNewTaskComposerPresented = false
             $0.tasks.append(TaskListFeature.TaskItemState(
                 id: testID,
                 title: "Buy groceries",
@@ -1376,6 +1389,7 @@ struct TaskListFeatureTests {
         await store.receive(\.mutationFailed) {
             $0.tasks = []
             $0.newTaskTitle = "Buy groceries"
+            $0.isNewTaskComposerPresented = true
             $0.mutationError = TestError().localizedDescription
         }
     }
@@ -1383,6 +1397,7 @@ struct TaskListFeatureTests {
     @Test("completeTask save failure restores completion state (#189)")
     func completeTaskSaveFailureRollsBack() async {
         struct TestError: Error {}
+        let testDate = Date(timeIntervalSince1970: 1_700_000_000)
         let taskID = UUID(1)
         var initialState = TaskListFeature.State()
         initialState.tasks = [
@@ -1406,18 +1421,25 @@ struct TaskListFeatureTests {
         let store = TestStore(initialState: initialState) {
             TaskListFeature()
         } withDependencies: {
+            $0.date = .constant(testDate)
             $0.persistenceClient.fetchTask = { _ in basicTaskDTO(id: taskID) }
             $0.persistenceClient.saveTask = { _ in throw TestError() }
         }
+
+        store.exhaustivity = .off
 
         await store.send(.taskCompleted(taskID))
 
         await store.receive(\.setTaskCompleted) {
             $0.tasks[id: taskID]?.isCompleted = true
+            $0.tasks[id: taskID]?.completedAt = testDate
+            $0.recentlyCompletedTask = $0.tasks[id: taskID]
         }
 
         await store.receive(\.mutationFailed) {
             $0.tasks[id: taskID]?.isCompleted = false
+            $0.tasks[id: taskID]?.completedAt = nil
+            $0.recentlyCompletedTask = nil
             $0.mutationError = TestError().localizedDescription
         }
     }
@@ -1462,6 +1484,209 @@ struct TaskListFeatureTests {
             $0.recentlyDeletedTask = task
             $0.mutationError = TestError().localizedDescription
         }
+    }
+
+    @Test("new task request opens the inline composer without presenting a sheet")
+    func newTaskRequestOpensComposer() async {
+        let store = TestStore(initialState: TaskListFeature.State()) {
+            TaskListFeature()
+        }
+
+        await store.send(.newTaskRequested) {
+            $0.isNewTaskComposerPresented = true
+        }
+
+        await store.send(.newTaskTitleChanged("Native task")) {
+            $0.newTaskTitle = "Native task"
+        }
+
+        await store.send(.newTaskComposerDismissed) {
+            $0.isNewTaskComposerPresented = false
+            $0.newTaskTitle = ""
+        }
+    }
+
+    @Test("priority changed persists the new priority")
+    func priorityChangedPersistsPriority() async {
+        let taskID = UUID(0)
+        var initialState = TaskListFeature.State()
+        initialState.tasks = [
+            makeTask(
+                id: taskID,
+                title: "Plan task",
+                scheduledForToday: false,
+                isCompleted: false,
+                sortOrder: 0
+            ),
+        ]
+
+        let savedPriority = LockIsolated<TaskPriority?>(nil)
+        let store = TestStore(initialState: initialState) {
+            TaskListFeature()
+        } withDependencies: {
+            $0.persistenceClient.fetchTask = { id in
+                TaskItemDTO(id: id, title: "Plan task", priority: .none)
+            }
+            $0.persistenceClient.saveTask = { dto in
+                savedPriority.setValue(dto.priority)
+            }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.priorityChanged(taskID, .high)) {
+            $0.tasks[id: taskID]?.priority = .high
+        }
+
+        #expect(savedPriority.value == .high)
+    }
+
+    @Test("inline rename persists the new title")
+    func taskRenamedPersistsTitle() async {
+        let taskID = UUID(0)
+        var initialState = TaskListFeature.State()
+        initialState.tasks = [
+            makeTask(
+                id: taskID,
+                title: "Plan task",
+                scheduledForToday: false,
+                isCompleted: false,
+                sortOrder: 0
+            ),
+        ]
+
+        let savedTitle = LockIsolated<String?>(nil)
+        let store = TestStore(initialState: initialState) {
+            TaskListFeature()
+        } withDependencies: {
+            $0.persistenceClient.fetchTask = { id in
+                TaskItemDTO(id: id, title: "Plan task")
+            }
+            $0.persistenceClient.saveTask = { dto in
+                savedTitle.setValue(dto.title)
+            }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.taskRenamed(taskID, "Renamed task")) {
+            $0.tasks[id: taskID]?.title = "Renamed task"
+        }
+
+        #expect(savedTitle.value == "Renamed task")
+    }
+
+    @Test("inline rename failure restores the previous title")
+    func taskRenamedFailureRollsBack() async {
+        struct TestError: Error {}
+        let taskID = UUID(0)
+        var initialState = TaskListFeature.State()
+        initialState.tasks = [
+            makeTask(
+                id: taskID,
+                title: "Plan task",
+                scheduledForToday: false,
+                isCompleted: false,
+                sortOrder: 0
+            ),
+        ]
+
+        let store = TestStore(initialState: initialState) {
+            TaskListFeature()
+        } withDependencies: {
+            $0.persistenceClient.fetchTask = { id in
+                TaskItemDTO(id: id, title: "Plan task")
+            }
+            $0.persistenceClient.saveTask = { _ in throw TestError() }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.taskRenamed(taskID, "Renamed task")) {
+            $0.tasks[id: taskID]?.title = "Renamed task"
+        }
+
+        await store.receive(\.mutationFailed) {
+            $0.tasks[id: taskID]?.title = "Plan task"
+            $0.mutationError = TestError().localizedDescription
+        }
+    }
+
+    @Test("completing a task exposes undo and restores it")
+    func completionUndoRestoresTask() async {
+        let taskID = UUID(0)
+        let now = Date(timeIntervalSince1970: 1_000_000)
+        var initialState = TaskListFeature.State()
+        initialState.tasks = [
+            makeTask(
+                id: taskID,
+                title: "Plan task",
+                scheduledForToday: false,
+                isCompleted: false,
+                sortOrder: 0
+            ),
+        ]
+
+        let savedCompletion = LockIsolated<Bool?>(nil)
+        let store = TestStore(initialState: initialState) {
+            TaskListFeature()
+        } withDependencies: {
+            $0.date = .constant(now)
+            $0.persistenceClient.fetchTask = { id in
+                TaskItemDTO(id: id, title: "Plan task", isCompleted: false)
+            }
+            $0.persistenceClient.saveTask = { dto in
+                savedCompletion.setValue(dto.isCompleted)
+            }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.setTaskCompleted(taskID, true)) {
+            $0.tasks[id: taskID]?.isCompleted = true
+            $0.tasks[id: taskID]?.completedAt = now
+            $0.recentlyCompletedTask = $0.tasks[id: taskID]
+        }
+
+        #expect(store.state.recentlyCompletedTask?.id == taskID)
+
+        await store.send(.undoCompleteTask)
+
+        #expect(store.state.recentlyCompletedTask == nil)
+        #expect(store.state.tasks[id: taskID]?.isCompleted == false)
+        #expect(savedCompletion.value == false)
+    }
+
+    @Test("plan table reorder rewrites only the visible task sort orders")
+    func planTableReorderRewritesVisibleSortOrders() async {
+        let first = UUID(0)
+        let second = UUID(1)
+        let third = UUID(2)
+        let untouched = UUID(3)
+
+        var initialState = TaskListFeature.State()
+        initialState.tasks = [
+            makeTask(id: first, title: "First", scheduledForToday: false, isCompleted: false, sortOrder: 0),
+            makeTask(id: second, title: "Second", scheduledForToday: false, isCompleted: false, sortOrder: 1),
+            makeTask(id: third, title: "Third", scheduledForToday: false, isCompleted: false, sortOrder: 2),
+            makeTask(id: untouched, title: "Untouched", scheduledForToday: false, isCompleted: false, sortOrder: 3),
+        ]
+
+        let savedOrder = LockIsolated<[(id: UUID, sortOrder: Int)]>([])
+        let store = TestStore(initialState: initialState) {
+            TaskListFeature()
+        } withDependencies: {
+            $0.persistenceClient.saveTaskOrder = { order in
+                savedOrder.setValue(order)
+            }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.planTasksReordered([third, first, second])) {
+            $0.tasks[id: third]?.sortOrder = 0
+            $0.tasks[id: first]?.sortOrder = 1
+            $0.tasks[id: second]?.sortOrder = 2
+            $0.tasks.sort { $0.sortOrder < $1.sortOrder }
+        }
+
+        #expect(store.state.tasks[id: untouched]?.sortOrder == 3)
+        #expect(savedOrder.value.map(\.id) == [third, first, second, untouched])
     }
 
     private func makeTask(
@@ -1601,5 +1826,17 @@ struct TaskListFeatureTests {
         // S7 RED pre-fix: the partial import never reaches state.
         #expect(store.state.tasks.count == 1)
         #expect(store.state.importError != nil)
+    }
+
+    @Test("updatingCompletion keeps completedAt consistent")
+    func updatingCompletionKeepsTimestampConsistent() {
+        let now = Date(timeIntervalSince1970: 1_000)
+        let completed = basicTaskDTO(id: UUID()).updatingCompletion(true, at: now)
+        #expect(completed.isCompleted)
+        #expect(completed.completedAt == now)
+
+        let reopened = completed.updatingCompletion(false, at: nil)
+        #expect(!reopened.isCompleted)
+        #expect(reopened.completedAt == nil)
     }
 }

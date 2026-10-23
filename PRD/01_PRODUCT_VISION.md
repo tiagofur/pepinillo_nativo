@@ -71,7 +71,7 @@ The name "Pepinillo" (pickle/gherkin) is a playful contrast with the seriousness
 | **Windows**         | WinUI 3 / Windows App SDK (C#)     | In Development |
 | **Web (companion)** | Lightweight SPA (planned: SvelteKit + TS) | **Planned** — product approved; not shipped ([PRD/14](14_WEB_CLIENT_DECISION_BRIEF.md)) |
 | **iPad**            | SwiftUI (NavigationSplitView)      | Planned        |
-| **macOS**           | SwiftUI native                     | Planned        |
+| **macOS**           | SwiftUI + AppKit native            | In Development (v1) |
 | **Android Tablets** | Jetpack Compose (adaptive layouts) | Planned        |
 
 **Web role:** companion extra (larger screen without install). Free = browser-local with Free caps; Everywhere/AI+ unlocks web-capable premium features + backend sync. Not a fourth native OS — OS-exclusive surfaces stay N/A. Canonical decision: [14_WEB_CLIENT_DECISION_BRIEF.md](14_WEB_CLIENT_DECISION_BRIEF.md).

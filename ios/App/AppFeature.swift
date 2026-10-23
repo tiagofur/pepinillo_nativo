@@ -51,6 +51,19 @@ enum AppSubscriptionBootstrap {
 
 @Reducer
 struct AppFeature {
+    /// Legacy export scratch directories are an iOS-only concern. Keeping the
+    /// platform gate in a single effect avoids conditional compilation inside
+    /// the launch `merge`.
+    private static var cleanupLegacyExports: Effect<Action> {
+        #if os(iOS)
+        .run { _ in
+            ExportService.cleanLegacyExportDirectories()
+        }
+        #else
+        .none
+        #endif
+    }
+
     @ObservableState
     struct State: Equatable {
         var selectedTab: Tab = .focus
@@ -571,9 +584,7 @@ struct AppFeature {
                         }
                     }
                     .cancellable(id: CancelID.appleCredentialRevocation),
-                    .run { _ in
-                        ExportService.cleanLegacyExportDirectories()
-                    }
+                    Self.cleanupLegacyExports
                 )
 
             case .requestNotificationPermission:
@@ -1446,7 +1457,12 @@ struct AppFeature {
                             _ = await notificationClient.requestAuthorization()
                             UserDefaults.standard.set(true, forKey: "pepinillo.hasRequestedNotificationPermission")
                             let updated = await notificationClient.authorizationStatus()
-                            guard updated == .authorized || updated == .provisional || updated == .ephemeral else {
+                            #if os(iOS)
+                            let isAuthorized = updated == .authorized || updated == .provisional || updated == .ephemeral
+                            #else
+                            let isAuthorized = updated == .authorized || updated == .provisional
+                            #endif
+                            guard isAuthorized else {
                                 await send(.settings(.notificationAuthorizationDenied))
                                 return
                             }
