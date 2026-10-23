@@ -5,6 +5,7 @@
 // (7D/30D/Year) over the shared AnalyticsFeature state. The Year period is
 // aggregated into weekly buckets client-side; month and week render daily bars.
 
+import AppKit
 import Charts
 import ComposableArchitecture
 import SwiftUI
@@ -14,10 +15,16 @@ struct MacStatisticsView: View {
 
     @Environment(\.appTheme) private var theme
 
+    /// Local-only foreground rollup written by `MacActivitySampler`; created
+    /// lazily so the JSON file is not read on every render.
+    @State private var activityStore: AppActivityUsageStore?
+    @State private var topActivity: [AppActivitySummary] = []
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
                 summaryHeader
+                topActivityCard
                 chartCard
             }
             .frame(maxWidth: 880, alignment: .leading)
@@ -65,6 +72,10 @@ struct MacStatisticsView: View {
         }
         .onAppear {
             store.send(.onAppear)
+            refreshTopActivity()
+        }
+        .onChange(of: store.period) {
+            refreshTopActivity()
         }
     }
 
@@ -163,6 +174,55 @@ struct MacStatisticsView: View {
             .font(.callout)
             .foregroundStyle(.secondary)
         }
+    }
+
+    // MARK: - Top activity
+
+    private func refreshTopActivity() {
+        if activityStore == nil {
+            activityStore = AppActivityUsageStore()
+        }
+        topActivity = activityStore?.topApps(
+            limit: 4,
+            daysBack: store.period.days,
+            reference: .now
+        ) ?? []
+    }
+
+    /// Foreground apps captured during focus sessions (opt-in sampler). The
+    /// card stays hidden until the sampler has written at least one rollup.
+    @ViewBuilder
+    private var topActivityCard: some View {
+        if !topActivity.isEmpty {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Top activity")
+                    .font(.headline)
+                HStack(spacing: 16) {
+                    ForEach(topActivity, id: \.bundleID) { app in
+                        topActivityIcon(app)
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(16)
+            .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
+        }
+    }
+
+    private func topActivityIcon(_ app: AppActivitySummary) -> some View {
+        Group {
+            if let appURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: app.bundleID) {
+                Image(nsImage: NSWorkspace.shared.icon(forFile: appURL.path))
+                    .resizable()
+            } else {
+                Image(systemName: "app.dashed")
+                    .font(.system(size: 26))
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .frame(width: 32, height: 32)
+        .help("\(app.name) · \(durationText(app.seconds))")
+        .accessibilityLabel(Text("\(app.name), \(durationText(app.seconds))"))
     }
 
     // MARK: - Chart

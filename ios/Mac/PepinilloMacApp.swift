@@ -40,6 +40,7 @@ private final class MacAppBootstrap: ObservableObject {
     private lazy var statusBar = MacStatusBarController(presence: presence)
     private lazy var quickCapture = MacQuickCaptureController()
     private lazy var spotlight = MacSpotlightIndexer()
+    private lazy var activitySampler = MacActivitySampler()
 
     init() {
         Task {
@@ -131,6 +132,7 @@ private final class MacAppBootstrap: ObservableObject {
         presence.startObserving(store: store)
         statusBar.install(store: store)
         spotlight.install(store: store)
+        activitySampler.install(store: store)
 
         // Global shortcuts share one Carbon handler and dispatch by id.
         MacGlobalHotKey.shared.register(
