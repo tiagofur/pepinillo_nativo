@@ -31,8 +31,12 @@ concurrency:
 jobs:
   test:
     runs-on: macos-15
-    # PRs: fail fast on simulator hangs. Main: allow integration + timer suites.
-    timeout-minutes: ${{ github.event_name == 'pull_request' && 25 || 45 }}
+    # PRs: fail fast on simulator hangs (the per-step 12-minute caps on the
+    # simulator and fast-gate steps still enforce that). Main: allow
+    # integration + timer suites. PR job budget raised 25→35: setup variance
+    # (SPM resolution + simulator boot + build-for-testing) was cancelling
+    # otherwise-green PRs at exactly 25 minutes.
+    timeout-minutes: ${{ github.event_name == 'pull_request' && 35 || 45 }}
 
     defaults:
       run:
