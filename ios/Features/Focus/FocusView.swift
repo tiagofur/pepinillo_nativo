@@ -853,35 +853,6 @@ private extension View {
             }
         }
     }
-
-    // P2 item 1: Solid mode-accent CTA — confident fill on both iOS generations.
-    // iOS 26: tinted glass at 0.72 opacity so the mode color reads strongly
-    //         over the liquid glass system while preserving the glass language.
-    // iOS 17-25: solid gradient fill with drop shadow (pre-existing pattern).
-    @ViewBuilder
-    func primaryFocusActionGlass(tint: Color, namespace: Namespace.ID) -> some View {
-        if #available(iOS 26.0, macOS 26.0, *) {
-            self
-                .foregroundStyle(.white)
-                .glassEffect(
-                    .regular
-                        .interactive(true)
-                        .tint(tint.opacity(0.72)),
-                    in: .capsule
-                )
-                .glassEffectID("start-button", in: namespace)
-                .overlay {
-                    Capsule()
-                        .stroke(.white.opacity(0.22), lineWidth: 1)
-                }
-        } else {
-            self
-                .foregroundStyle(.white)
-                .background(tint.gradient)
-                .clipShape(Capsule())
-                .shadow(color: tint.opacity(0.35), radius: 14, y: 7)
-        }
-    }
 }
 
 // MARK: - Timer Circle View

@@ -37,18 +37,15 @@ struct PepinilloGlassModifier: ViewModifier {
                 .background(tint?.opacity(tintOpacity) ?? Color.pepinilloSecondarySystemGroupedBackground, in: RoundedRectangle(cornerRadius: cornerRadius))
             #endif
         } else if #available(iOS 26.0, macOS 26.0, watchOS 26.0, *) {
+            // System Liquid Glass already renders its own specular highlights;
+            // the hand-rolled glare overlays are only for the pre-26 material
+            // fallback (stacking them over real glass read as fake gloss).
             content
                 .glassEffect(
                     .regular
                         .tint((tint ?? .clear).opacity(tint == nil ? 0 : tintOpacity)),
                     in: .rect(cornerRadius: cornerRadius)
                 )
-                .overlay {
-                    specularHighlight(cornerRadius: cornerRadius)
-                }
-                .overlay {
-                    glareSheen(cornerRadius: cornerRadius)
-                }
         } else {
             content
                 .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: cornerRadius))
@@ -217,6 +214,76 @@ struct GlassEffectIDModifier: ViewModifier {
 extension View {
     func startButtonGlassID(namespace: Namespace.ID) -> some View {
         modifier(GlassEffectIDModifier(id: "start-button", namespace: namespace))
+    }
+}
+
+// MARK: - Matte Content Card (macOS content areas)
+
+/// The macOS 26 material rule: Liquid Glass belongs to chrome and floating
+/// standout controls; content areas stay matte. Dashboard/stat cards use this
+/// instead of `pepinilloGlass` so they sit quietly under the window's real
+/// glass toolbar (and still read as cards via the grouped background fill).
+struct PepinilloMatteCardModifier: ViewModifier {
+    // Literal (not GlassCornerRadius.card) because this file also compiles
+    // into widget/CC targets that don't include GlassTokens.swift. The value
+    // mirrors the card token.
+    var cornerRadius: CGFloat = 20
+
+    func body(content: Content) -> some View {
+        content
+            .background(
+                matteFill,
+                in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+            )
+    }
+
+    private var matteFill: Color {
+        #if os(watchOS)
+        // The system-color extension is gated to !os(watchOS); watch never
+        // renders matte content cards, this only keeps the file compiling.
+        Color.white.opacity(0.12)
+        #else
+        Color.pepinilloSecondarySystemGroupedBackground
+        #endif
+    }
+}
+
+extension View {
+    func pepinilloMatteCard(cornerRadius: CGFloat = 20) -> some View {
+        modifier(PepinilloMatteCardModifier(cornerRadius: cornerRadius))
+    }
+}
+
+// MARK: - Primary Focus Action (shared iOS + macOS hero CTA)
+
+/// Solid mode-accent CTA — confident fill on every OS generation.
+/// iOS/macOS 26: tinted glass at 0.72 opacity so the mode color reads strongly
+///               over the Liquid Glass system while preserving the glass language.
+/// Earlier: solid gradient fill with drop shadow.
+extension View {
+    @ViewBuilder
+    func primaryFocusActionGlass(tint: Color, namespace: Namespace.ID) -> some View {
+        if #available(iOS 26.0, macOS 26.0, watchOS 26.0, *) {
+            self
+                .foregroundStyle(.white)
+                .glassEffect(
+                    .regular
+                        .interactive(true)
+                        .tint(tint.opacity(0.72)),
+                    in: .capsule
+                )
+                .glassEffectID("start-button", in: namespace)
+                .overlay {
+                    Capsule()
+                        .stroke(.white.opacity(0.22), lineWidth: 1)
+                }
+        } else {
+            self
+                .foregroundStyle(.white)
+                .background(tint.gradient)
+                .clipShape(Capsule())
+                .shadow(color: tint.opacity(0.35), radius: 14, y: 7)
+        }
     }
 }
 

@@ -194,7 +194,7 @@ struct MacTodayView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
-        .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
+        .pepinilloMatteCard()
     }
 
     /// Focus minutes per day. Today's bar is highlighted; past days render at
@@ -293,7 +293,7 @@ struct MacTodayView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
-        .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
+        .pepinilloMatteCard()
     }
 
     private func recentSessionRow(_ session: SessionRecordDTO) -> some View {
@@ -402,7 +402,7 @@ struct MacTodayView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
-        .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
+        .pepinilloMatteCard()
     }
 
     // MARK: - Formatting
@@ -436,7 +436,7 @@ private struct TodayKPI: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
-        .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
+        .pepinilloMatteCard()
         .accessibilityElement(children: .combine)
     }
 }
