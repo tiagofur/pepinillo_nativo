@@ -397,7 +397,9 @@ struct TaskListFeature {
                 )
                 state.tasks.append(newTask)
                 state.newTaskTitle = ""
-                state.isNewTaskComposerPresented = false
+                // The composer stays presented when it was presented (chained
+                // entry, the Reminders behavior); add paths that never opened
+                // it (drag-drop text, quick capture) keep it closed.
 
                 return .run { send in
                     let dto = TaskItemDTO(

@@ -334,12 +334,11 @@ private struct MacTaskPickerView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
+            // Popovers dismiss on outside click — no Done header (an iOS
+            // sheet idiom). The title row just labels the popover.
             HStack {
                 Text("Link Task")
                     .font(.headline)
-                Spacer()
-                Button("Done") { dismiss() }
-                    .buttonStyle(.link)
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 10)
@@ -363,7 +362,6 @@ private struct MacTaskPickerView: View {
                 } else {
                     ForEach(activeTasks) { task in
                         Button {
-                            HapticManager.selection()
                             onSelectTask(task.id, task.title, task.energyLevel.icon)
                             dismiss()
                         } label: {
