@@ -16,6 +16,7 @@
 // otherwise the widget reads from a different SQLite file.
 
 import Foundation
+import CoreFoundation
 import SwiftData
 import OSLog
 import SQLite3
@@ -177,6 +178,43 @@ enum AppGroupDefaults {
     private static var defaults: UserDefaults? { UserDefaults(suiteName: AppGroup.id) }
     private static let userCapabilitiesKey = "userCapabilities"
 
+    // MARK: Cross-Process Change Signal
+
+    /// Darwin notification posted whenever an external surface (widget, Siri,
+    /// Control Center) changes command flags or the widget mode selection.
+    ///
+    /// `UserDefaults` suite writes are visible cross-process, but nothing wakes
+    /// a *running* app to consume them: on macOS the app can live in the
+    /// background (menu bar only) for the whole session, so widget taps would
+    /// sit unconsumed until the window becomes key. Darwin notifications fire
+    /// instantly in every interested process; the Mac shell observes this name
+    /// (`MacExternalCommandObserver`) and forwards to
+    /// `AppFeature.consumeExternalCommands`. Posting is coalesced and
+    /// payload-less — the flags in this suite are the payload.
+    static let externalCommandDarwinNotification = "com.pepinillo.app.externalCommand"
+
+    /// Broadcasts the change signal. Safe from any process/target; a missing
+    /// App Group configuration (unsigned dev builds) still posts — the kernel
+    /// notification itself needs no entitlement.
+    static func postExternalCommandSignal() {
+        let name = CFNotificationName(rawValue: externalCommandDarwinNotification as CFString)
+        CFNotificationCenterPostNotification(
+            CFNotificationCenterGetDarwinNotifyCenter(),
+            name,
+            nil,
+            nil,
+            true
+        )
+    }
+
+    /// Forces the receiving process's suite cache to re-read from cfprefsd.
+    /// The Darwin notification can arrive before the local cache has caught up
+    /// with the writer's last `set`, so observers refresh before consuming.
+    /// `synchronize()` is exactly the documented cross-process refresh here.
+    static func refreshFromOtherProcesses() {
+        defaults?.synchronize()
+    }
+
     enum SyncMode: String, Codable, Sendable {
         case local
         case appleCloud
@@ -304,9 +342,14 @@ enum AppGroupDefaults {
     }
 
     /// External start request (from Siri, widget, Control Center).
+    /// Setting `true` posts the cross-process change signal so a running app
+    /// consumes it immediately instead of waiting for window activation.
     static var externalStartRequested: Bool {
         get { defaults?.bool(forKey: "externalStartRequested") ?? false }
-        set { defaults?.set(newValue, forKey: "externalStartRequested") }
+        set {
+            defaults?.set(newValue, forKey: "externalStartRequested")
+            if newValue { postExternalCommandSignal() }
+        }
     }
 
     /// Unique command identifier used to avoid losing or double-consuming widget commands.
@@ -334,21 +377,33 @@ enum AppGroupDefaults {
     }
 
     /// External stop request (from Siri, widget, Control Center).
+    /// Setting `true` posts the change signal (see `externalStartRequested`).
     static var externalStopRequested: Bool {
         get { defaults?.bool(forKey: "externalStopRequested") ?? false }
-        set { defaults?.set(newValue, forKey: "externalStopRequested") }
+        set {
+            defaults?.set(newValue, forKey: "externalStopRequested")
+            if newValue { postExternalCommandSignal() }
+        }
     }
 
     /// External pause request (from widget / Siri).
+    /// Setting `true` posts the change signal (see `externalStartRequested`).
     static var externalPauseRequested: Bool {
         get { defaults?.bool(forKey: "externalPauseRequested") ?? false }
-        set { defaults?.set(newValue, forKey: "externalPauseRequested") }
+        set {
+            defaults?.set(newValue, forKey: "externalPauseRequested")
+            if newValue { postExternalCommandSignal() }
+        }
     }
 
     /// External resume request (from Siri).
+    /// Setting `true` posts the change signal (see `externalStartRequested`).
     static var externalResumeRequested: Bool {
         get { defaults?.bool(forKey: "externalResumeRequested") ?? false }
-        set { defaults?.set(newValue, forKey: "externalResumeRequested") }
+        set {
+            defaults?.set(newValue, forKey: "externalResumeRequested")
+            if newValue { postExternalCommandSignal() }
+        }
     }
 
     /// Requested focus mode ID (from Siri).
@@ -383,7 +438,10 @@ enum AppGroupDefaults {
     /// updates); the app applies the completion on next activation.
     static var externalCompleteTaskRequested: Bool {
         get { defaults?.bool(forKey: "externalCompleteTaskRequested") ?? false }
-        set { defaults?.set(newValue, forKey: "externalCompleteTaskRequested") }
+        set {
+            defaults?.set(newValue, forKey: "externalCompleteTaskRequested")
+            if newValue { postExternalCommandSignal() }
+        }
     }
     static var externalCompleteTaskID: String? {
         get { defaults?.string(forKey: "externalCompleteTaskID") }
@@ -404,9 +462,15 @@ enum AppGroupDefaults {
     }
 
     /// The focus mode currently selected in the widget (interactive selection).
+    /// Changes post the cross-process signal so the running app mirrors the
+    /// widget's mode pick while idle (same path widget start commands use).
     static var widgetSelectedMode: String? {
         get { defaults?.string(forKey: "widgetSelectedMode") }
-        set { defaults?.set(newValue, forKey: "widgetSelectedMode") }
+        set {
+            let oldValue = widgetSelectedMode
+            defaults?.set(newValue, forKey: "widgetSelectedMode")
+            if newValue != oldValue { postExternalCommandSignal() }
+        }
     }
 
     /// Cached pomodoro duration for widget proactive starts.
