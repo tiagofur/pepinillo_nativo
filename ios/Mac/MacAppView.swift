@@ -22,12 +22,35 @@ struct MacAppView: View {
         }
     }
 
-    private var selectedSectionBinding: Binding<AppFeature.Tab?> {
+    /// Sidebar selection model (Reminders-style): the Plan filters live as
+    /// section rows in the sidebar instead of a toolbar menu. The shared
+    /// `selectedPlanFilter` reducer state stays the single source of truth.
+    private enum SidebarSelection: Hashable {
+        case focus
+        case plan(MacPlanFilter)
+        case dashboard
+    }
+
+    private var sidebarSelection: Binding<SidebarSelection?> {
         Binding(
-            get: { store.selectedTab },
-            set: { tab in
-                if let tab {
-                    store.send(.tabSelected(tab))
+            get: {
+                switch store.selectedTab {
+                case .focus: return .focus
+                case .plan: return .plan(MacPlanFilter(shared: store.tasks.selectedPlanFilter))
+                case .dashboard: return .dashboard
+                case .account: return nil
+                }
+            },
+            set: { selection in
+                guard let selection else { return }
+                switch selection {
+                case .focus:
+                    store.send(.tabSelected(.focus))
+                case .plan(let filter):
+                    store.send(.tabSelected(.plan))
+                    store.send(.tasks(.planFilterSelected(filter.sharedFilter)))
+                case .dashboard:
+                    store.send(.tabSelected(.dashboard))
                 }
             }
         )
@@ -77,15 +100,19 @@ struct MacAppView: View {
     }
 
     private var sidebar: some View {
-        List(selection: selectedSectionBinding) {
-            ForEach(AppFeature.Tab.macSidebarSections, id: \.self) { tab in
-                Label {
-                    Text(tab.macTitle)
-                } icon: {
-                    Image(systemName: tab.macSystemImage)
+        List(selection: sidebarSelection) {
+            Label(String(localized: "Focus"), systemImage: AppFeature.Tab.focus.macSystemImage)
+                .tag(SidebarSelection.focus)
+
+            Section(String(localized: "Plan")) {
+                ForEach(MacPlanFilter.allCases) { filter in
+                    Label(filter.title, systemImage: filter.systemImage)
+                        .tag(SidebarSelection.plan(filter))
                 }
-                .tag(tab)
             }
+
+            Label(String(localized: "Dashboard"), systemImage: AppFeature.Tab.dashboard.macSystemImage)
+                .tag(SidebarSelection.dashboard)
         }
         .listStyle(.sidebar)
         .navigationSplitViewColumnWidth(min: 200, ideal: 220, max: 280)
@@ -287,7 +314,8 @@ extension AppFeature.Tab {
         switch self {
         case .focus: return String(localized: "Focus")
         case .plan: return String(localized: "Plan")
-        case .dashboard: return String(localized: "Today")
+        // Matches the iOS tab name; frees "Today" for the sidebar task list.
+        case .dashboard: return String(localized: "Dashboard")
         case .account: return String(localized: "Account")
         }
     }
