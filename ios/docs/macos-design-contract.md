@@ -82,6 +82,8 @@ Bottom of the sidebar: Pepinillo+ entitlement status or app version.
 ## 6. Menu bar
 
 - Label while running: `Image(systemName: phaseSymbol)` + `Text(mm:ss)` with `.monospacedDigit()`. Idle: icon only.
+- Status styles (T23): Countdown (icon + time, free default), Time only and Icon only (Pepinillo+; disabled with the "(Pro)" suffix for free users). Idle always shows the timer icon regardless of style; the choice is device-local (`mac.menuBarStatusStyle`) and `MacStatusBarController.reloadStyle()` re-renders from the cached pulse because the 1 Hz pulse only fires on session changes.
+- Global session shortcuts (T23): `⌃⌥→` skip, or advance into the pending phase during the hold (`MacSessionCommand.nextPhaseDecision`); `⌃⌥X` end session (running only); `⌃⌥P` open the main window. Decisions are pure and tested beside `FocusToggleCommand`.
 - Do not rely on color in the menu bar; it renders as a template.
 - Popover width: 320 pt.
 - Content: mode + phase, large time, primary Start/Pause, Skip/Stop, Link task (recent 5), today stats (sessions / minutes), Open Pepinillo, Settings…, Quit.
@@ -160,9 +162,9 @@ The Dock icon is a first-class control surface, not a launcher:
 
 | Tab | Contents |
 | --- | --- |
-| General | Launch at login, Show in Dock, default section, global shortcut, Usage statistics (opt-in foreground sampling) |
+| General | Launch at login, Show in Dock, default section, global shortcuts, menu bar status style, Usage statistics (opt-in foreground sampling) |
 | Focus | Default mode, durations, auto-start behavior (shared `SettingsFeature`) |
-| Notifications | Sound effects, post-session reflection, daily reminder + time |
+| Notifications | Sound effects, completion sound (device-local `CompletionSound`, plays on both platforms — macOS was silent before T23), post-session reflection, daily reminder + time |
 | Appearance | Theme (Classic/Forest/Ocean/Sunset), light/dark/system |
 
 About (version) and iCloud Sync status/retry mirror the iPhone settings over the shared `SettingsFeature`. Apple Health is intentionally absent: the domain client is built `#if canImport(HealthKit) && !os(macOS)`. Account credentials and Everywhere sync require the backend to be deployed for end-to-end use.
