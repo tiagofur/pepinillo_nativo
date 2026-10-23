@@ -7,6 +7,9 @@ import ComposableArchitecture
 struct MacAppView: View {
     @Bindable var store: StoreOf<AppFeature>
 
+    @Environment(\.appTheme) private var theme
+    @Environment(\.openSettings) private var openSettings
+
     private var activeTheme: AppTheme {
         AppTheme.named(store.settings.themeName)
     }
@@ -92,23 +95,86 @@ struct MacAppView: View {
         }
     }
 
+    /// Bottom-of-sidebar account row + settings gear, the common modern Mac
+    /// pattern for secondary surfaces. The gear opens the standard Settings
+    /// scene (Cmd+,); the row selects the Account section.
     private var sidebarFooter: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            if store.subscriptionState.isPro {
-                Label("Pepinillo+", systemImage: "sparkles")
-            } else {
-                Text("Pepinillo \(appVersion)")
+        HStack(spacing: 8) {
+            Button {
+                store.send(.tabSelected(.account))
+            } label: {
+                HStack(spacing: 8) {
+                    accountAvatar
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(footerTitle)
+                            .font(.callout.weight(.medium))
+                            .lineLimit(1)
+                        if isSignedIn, let email = store.userEmail {
+                            Text(email)
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                        }
+                    }
+                    Spacer(minLength: 0)
+                }
+                .contentShape(Rectangle())
             }
+            .buttonStyle(.plain)
+            .background {
+                if store.selectedTab == .account {
+                    RoundedRectangle(cornerRadius: 7, style: .continuous)
+                        .fill(.quaternary)
+                }
+            }
+
+            Button {
+                openSettings()
+            } label: {
+                Image(systemName: "gearshape")
+                    .font(.body)
+                    .frame(width: 28, height: 28)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(.secondary)
+            .help(String(localized: "Settings"))
         }
-        .font(.caption)
-        .foregroundStyle(.secondary)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 12)
+        .padding(.horizontal, 10)
         .padding(.vertical, 8)
+        .frame(maxWidth: .infinity)
+        .background(.bar)
     }
 
-    private var appVersion: String {
-        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
+    private var isSignedIn: Bool {
+        store.cachedUser != nil || store.userEmail != nil
+    }
+
+    private var footerTitle: String {
+        if isSignedIn, let name = store.displayName, !name.isEmpty {
+            return name
+        }
+        if let email = store.userEmail {
+            return email
+        }
+        return String(localized: "Account")
+    }
+
+    @ViewBuilder
+    private var accountAvatar: some View {
+        if isSignedIn {
+            let initial = String((store.displayName ?? store.userEmail ?? "P").prefix(1)).uppercased()
+            Text(initial)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.white)
+                .frame(width: 26, height: 26)
+                .background(Circle().fill(theme.color(for: .pomodoro)))
+        } else {
+            Image(systemName: "person.crop.circle")
+                .font(.title3)
+                .foregroundStyle(.secondary)
+                .frame(width: 26, height: 26)
+        }
     }
 
     @ViewBuilder
@@ -215,7 +281,7 @@ extension FocusMode {
 }
 
 extension AppFeature.Tab {
-    static let macSidebarSections: [AppFeature.Tab] = [.focus, .plan, .dashboard, .account]
+    static let macSidebarSections: [AppFeature.Tab] = [.focus, .plan, .dashboard]
 
     var macTitle: String {
         switch self {
