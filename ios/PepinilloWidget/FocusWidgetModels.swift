@@ -122,6 +122,41 @@ struct FocusWidgetEntry: TimelineEntry {
         self.modeMinutes = modeMinutes
     }
 
+    /// Copy with a new timeline date and progress snapshot. Used by the
+    /// provider's staggered entries so the ring advances between reloads
+    /// (TimelineView(.periodic) does not re-render inside WidgetKit views).
+    func with(date: Date, progress: Double?) -> FocusWidgetEntry {
+        FocusWidgetEntry(
+            date: date,
+            isProUser: isProUser,
+            preferredModeID: preferredModeID,
+            preferredTimerText: preferredTimerText,
+            showStreak: showStreak,
+            showModeBreakdown: showModeBreakdown,
+            isSessionActive: isSessionActive,
+            isPaused: isPaused,
+            isWaiting: isWaiting,
+            isBreakPhase: isBreakPhase,
+            isLongBreakPhase: isLongBreakPhase,
+            nextPhaseTarget: nextPhaseTarget,
+            focusMode: focusMode,
+            phase: phase,
+            timerText: timerText,
+            progress: progress,
+            pomodoroNumber: pomodoroNumber,
+            totalPomodoros: totalPomodoros,
+            linkedTaskTitle: linkedTaskTitle,
+            timerStart: timerStart,
+            timerEnd: timerEnd,
+            todayFocusMinutes: todayFocusMinutes,
+            todaySessionsCompleted: todaySessionsCompleted,
+            currentStreakDays: currentStreakDays,
+            streakProtectionApplied: streakProtectionApplied,
+            dominantMode: dominantMode,
+            modeMinutes: modeMinutes
+        )
+    }
+
     static let placeholder = FocusWidgetEntry(
         date: Date(),
         isProUser: true,

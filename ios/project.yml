@@ -323,8 +323,9 @@ targets:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
         NSSupportsLiveActivities: false
     entitlements:
-      path: PepinilloWidget/PepinilloWidget.entitlements
+      path: PepinilloWidget/PepinilloWidgetMac.entitlements
       properties:
+        com.apple.security.app-sandbox: true
         com.apple.security.application-groups:
           - group.com.pepinillo.app
     sources:

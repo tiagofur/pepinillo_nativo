@@ -72,12 +72,16 @@ private struct WidgetProgressRing<Content: View>: View {
             Circle()
                 .stroke(modeColor.opacity(0.15), lineWidth: lineWidth)
 
-            if let start = timerStart, let end = timerEnd, !isPaused {
+            // Prefer the entry's snapshot progress: the provider emits staggered
+            // entries during live countdowns, and WidgetKit renders each in turn.
+            // TimelineView(.periodic) does NOT re-render inside widget views on
+            // macOS, so it can only serve as a fallback where no snapshot exists.
+            if let progress {
+                ringStroke(visibleProgress: visibleProgress(from: progress))
+            } else if let start = timerStart, let end = timerEnd, !isPaused {
                 TimelineView(.periodic(from: .now, by: 1)) { context in
                     ringStroke(visibleProgress: liveVisibleProgress(at: context.date, start: start, end: end))
                 }
-            } else if let progress {
-                ringStroke(visibleProgress: visibleProgress(from: progress))
             }
 
             content

@@ -24,14 +24,43 @@ struct FocusWidgetProvider: AppIntentTimelineProvider {
     }
 
     func timeline(for configuration: ConfigureFocusWidgetIntent, in context: Context) async -> Timeline<FocusWidgetEntry> {
+        let now = Date.now
         let entry = await buildEntry(configuration: configuration)
-        // S6: no 1-minute polling — Text(timerInterval:) self-ticks from the
-        // entry anchors, and transitions push reloads. Refresh at phase end.
-        if entry.isSessionActive, let timerEnd = entry.timerEnd, timerEnd > Date.now {
+        // Active countdown: emit staggered entries so the progress ring visibly
+        // advances. Text(timerInterval:) self-ticks, but TimelineView(.periodic)
+        // does NOT re-render inside WidgetKit views on macOS — a single-entry
+        // timeline leaves the ring frozen until the next reload. Entries are
+        // cheap snapshots (one SwiftData pass below, pure math per entry).
+        if entry.isSessionActive, !entry.isPaused, !entry.isWaiting,
+           let timerEnd = entry.timerEnd, timerEnd > now {
+            let entries = staggeredEntries(base: entry, now: now, end: timerEnd)
+            return Timeline(entries: entries, policy: .after(timerEnd))
+        }
+        if entry.isSessionActive, let timerEnd = entry.timerEnd, timerEnd > now {
             return Timeline(entries: [entry], policy: .after(timerEnd))
         }
-        let nextRefresh = Calendar.current.date(byAdding: .minute, value: 15, to: Date.now) ?? Date.now
+        let nextRefresh = Calendar.current.date(byAdding: .minute, value: 15, to: now) ?? now
         return Timeline(entries: [entry], policy: .after(nextRefresh))
+    }
+
+    /// Snapshots every 30 s from `now` to `end` (capped), each carrying the
+    /// progress computed for its own date. WidgetKit renders each snapshot in
+    /// turn, so the ring advances deterministically even though the extension
+    /// process never re-runs between entries.
+    private func staggeredEntries(base: FocusWidgetEntry, now: Date, end: Date) -> [FocusWidgetEntry] {
+        let step: TimeInterval = 30
+        let maxEntries = 50
+        let total = end.timeIntervalSince(now)
+        guard total > 0 else { return [base] }
+        let count = min(maxEntries, max(2, Int(ceil(total / step)) + 1))
+        // Anchor math mirrors the view's liveVisibleProgress so ring and digits agree.
+        let start = base.timerStart ?? now
+        let duration = max(end.timeIntervalSince(start), 1)
+        return (0..<count).map { i in
+            let date = i == 0 ? now : min(start.addingTimeInterval(Double(i) * step), end)
+            let completed = min(max(date.timeIntervalSince(start) / duration, 0), 1)
+            return base.with(date: date, progress: completed)
+        }
     }
 
     // MARK: - Entry Construction
