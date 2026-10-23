@@ -1,0 +1,36 @@
+# ios-suite-stabilization — Stabilize the iOS suite for App Store trust
+
+~50 tests fail on `main` in every local run mode (parallel, serial, isolated
+single-suite). Root causes identified but not fixed: suites read real unmocked
+environment (`AppGroupDefaults.syncStatus` read directly, `DemoDataSeeder.effectiveIsPro`
+reads `UserDefaults.standard`) and the test host app (`com.pepinillo.app`) launches
+live code that writes AppGroup state concurrent with assertions (Swift Dependencies
+"Testing gotchas" host-application warnings in xcresult).
+
+## Specs
+
+- S1 (verbatim): "~50 tests inestables en main: lecturas reales sin mockear de AppGroupDefaults/DemoDataSeeder + interferencia del host app"
+- S2 (verbatim): "Relevante si querés confiar en la suite para lanzar a la App Store"
+- S3: Scope decision pending (see question in session): quarantine-and-document vs mock-the-seams vs full CI overhaul.
+- S3 decided: mock-the-seams (mock AppGroupDefaults/DemoDataSeeder seams + host-app launch hygiene, target: locally green suite).
+- S4 BLOCKER (T1 cannot run yet): no buildable iOS project metadata for current main. ios/Pepinillo.xcodeproj is gitignored (ios/.gitignore:10); the local untracked pbxproj predates #637+ files (0 refs to TasksWidgetAccess.swift, no PBXFileSystemSynchronizedRootGroup) so origin/main's widget target fails with "cannot find in scope". The only up-to-date pbxproj copy lived in /private/tmp/pep-fix1 and was deleted with the worktree cleanup. Recovery options with the user (T1 resumes after).
+- L2 (S4 RESOLVED — pbxproj reconstructed): only 3 Swift files were missing from the stale pbxproj (TasksWidgetAccess, PaywallCommercialClaims + its Tests; no missing non-Swift resources). Script /tmp/add_refs.py replicated each file's target membership from a same-directory sibling (new UUIDs, fileRef+BuildFile stanzas, files-list + group insertions). Two self-inflicted bugs fixed along the way: (1) new BuildFile stanzas initially pointed at the sibling's fileRef; (2) files-list insertion assumed 3-tab indent, project uses 4-tab in some phases (indentation-agnostic now). Verified: plutil OK + `build-for-testing` BUILD SUCCEEDED (exit 0) on origin/main in scratch worktree. Installed into the live tree (backup /tmp/pbxproj.pre-reconstruct.bak). PROPOSAL PENDING (user decision): track the pbxproj in git (replace blanket `Pepinillo.xcodeproj` ignore in ios/.gitignore with targeted xcuserdata ignores) so clones/worktrees/CI always have buildable metadata.
+- L3 (T1 running): full suite on current main (incl. #644) launched in the verify worktree (job-16) to quantify per-suite failure classes with fresh evidence.
+- L4 (T1 DONE — landscape changed): main suite is GREEN: 876 passed / 0 failed / 1 skipped (intentional spotlight quarantine), reproduced twice (job-16 + job-17, identical). The ~50 "flaky" failures were a stale-base artifact + real bugs already fixed by the merged stack (#636-644). Remaining red was exactly ONE item: unattributed host-app-launch `Unimplemented: KeychainClient.hasTokens` (AppView.onAppear fires .appLaunched in the test host; deferred profile-refresh effect traps on testValue). T3 FIX (branch fix/ios-test-host-launch-hygiene, commit 701bef80, 17 lines, in /tmp/pep-verify worktree): gate the send on NSClassFromString(XCTestCase); TestStore tests send explicitly, unaffected. T4 VERIFIED (job-18): result Passed, 876/0/1 — the orphan issue is gone. PR pending (user decision: needs issue link per repo convention + push). Mock-seams scope now MOOT for greenness; leftover hardening (hermetic AppGroupDefaults/DemoDataSeeder reads) is optional tech debt — propose closing epic after hygiene PR merges.
+
+## Tasks
+
+- T1 (S1): Quantify per-suite failure classes on current main (isolated runs, evidence per suite). Route: inline parent. Commit: n/a (read-only).
+- T2 (S1-S3): Scope decision + quarantine/fix policy. Route: parent question, stop and wait. Commit: n/a.
+- T3 (S1-S2): Implement per the decision. Route: per Writer rule. Commit: work-unit(s) on feature branch.
+- T4 (S2): Verify (isolated suites + CI ios-test gate on the PR). Commit: same branch.
+
+## Log
+
+- L0 (epic proposal, verbatim): "Nuevo epic propuesto: el ruido preexistente de la suite (~50 tests inestables en main: lecturas reales sin mockear de AppGroupDefaults/DemoDataSeeder + interferencia del host app). Relevante si querés confiar en la suite para lanzar a la App Store."
+- L1 (prior evidence): branch runs job-3/job-6 (50/153 fails) vs main baseline job-5 (51 fails) — same landscape; serial refuted the parallel-clone hypothesis; "Testing gotchas" host-app warnings (24 mentions) + `Unimplemented: PersistenceClient.fetchPreferences/savePreferences`, `SyncModeClient.reconcile` false positives; SettingsFeature isProUser/syncStatus state pollution reproduced isolated. Full logs: /tmp/ach-suite.log, /tmp/serial-suite.log, /tmp/main-suite.log (volatile). Prior session's speculative spotlight re-enable preserved at odd/patches/pep-fix1-uncommitted.patch (quarantine @Test(.disabled()) on main stays until root-caused — see #634).
+- L5 (DELIVERED): issue #645 (type:bug) + branch pushed + PR #646 `fix(ios): suppress live app launch inside unit-test host` (type:bug, Closes #645, repo template filled with real evidence). CI watch running (job-19). Merge = user decision. Remaining user items: pbxproj git-tracking proposal, delete stale local feat/ios-achievements-persisted (active checkout; needs clean tree), remove /tmp/pep-verify worktree after merge.
+- L6 (CI GREEN): PR #646 checks pass — workflow "iOS Tests" success + secret-scan pass. PR is merge-ready; merge = user decision. After merge: remove /tmp/pep-verify worktree, close epic (mock-seams hardening deferred as optional tech debt).
+- L7 (EPIC CLOSED): PR #646 MERGED (b89c9ee0). Verify worktree removed, local fix branch deleted, local main fast-forwarded to origin/main (in sync). Suite: green in CI and locally (876/0/1). Open user leftovers (not this epic): pbxproj git-tracking proposal, delete stale local feat/ios-achievements-persisted when tree is clean.
+- L8 (pbxproj swap REVERTED in live tree): installing the reconstructed pbxproj (main file set) into the live checkout (stale feat/ios-achievements-persisted + old file set) broke its build ("Build input file cannot be found" for the 3 new files) — reproduced the user's Xcode failures. Reverted to the backup; live tree BUILD SUCCEEDS again. Correct pairing: old pbxproj <-> stale checkout, new pbxproj (/tmp/pbxproj.new, script /tmp/add_refs.py) <-> main. User must move checkout to main (blocked by others' uncommitted .atl/xcstrings deletions) before the new pbxproj can live here.
+- L9 (live-tree build fixed): user's Xcode showed "Build input file cannot be found: Localizable.xcstrings" — the pre-existing uncommitted deletion (not upstream-aligned: origin/main has and uses the file, touched by #624). Restored from git (reversible; .atl deletions left untouched). Plain `build` now SUCCEEDS on the live checkout. Side effect: checkout to main is now unblocked (remaining .atl deletions don't differ between branches). Pending user go: switch checkout to main + install validated new pbxproj (/tmp/pbxproj.new).
