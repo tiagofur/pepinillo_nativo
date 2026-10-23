@@ -43,7 +43,7 @@ Native macOS app (`PepinilloMac`) with a macOS-first shell: menu bar presence, F
 | T17 | S1, S2 | Account surface (sign-in/profile) + Settings About & iCloud Sync | inline | 52e68870 |
 | T18 | S2 | Running-state controls move to the stage (Apple Clock pattern) | inline | c27be725 |
 | T19 | S10 | Mac app icon: same artwork as iOS, classic multi-size macOS catalog | inline | b4ea7864 |
-| T20 | S1 | Sidebar footer: account row bottom-left + settings gear (user request) | inline | — |
+| T20 | S1 | Sidebar footer: account row bottom-left + settings gear (user request) | inline | 0c1f2ff5 |
 
 ## Log
 
