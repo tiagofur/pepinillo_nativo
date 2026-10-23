@@ -131,3 +131,91 @@ private func computeStreak(from allStats: [DailyStats], today: Date) -> Int {
     }
     return streak
 }
+
+// MARK: - Staggered Timeline Tests
+
+@Suite("FocusWidgetProvider — Staggered Entries")
+struct FocusWidgetStaggeredEntriesTests {
+
+    @Test("Mid-phase timeline anchors forward from now, never the past")
+    func staggeredSnapshotsAnchorForwardFromNow() {
+        // Regression: the first staggered implementation anchored from the
+        // phase START, so every entry mid-phase dated in the past. WidgetKit
+        // discarded them all — frozen ring, the exact live symptom.
+        let now = Date.now
+        let start = now.addingTimeInterval(-180) // phase started 3 min ago
+        let end = now.addingTimeInterval(120)    // 2 min left
+
+        let snapshots = staggeredTimelineSnapshots(start: start, now: now, end: end)
+
+        #expect(snapshots.count >= 2)
+        for snapshot in snapshots {
+            #expect(snapshot.date >= now.addingTimeInterval(-1),
+                    "Snapshot dated in the past collapses the timeline")
+            #expect(snapshot.date <= end.addingTimeInterval(1))
+        }
+        for (prev, next) in zip(snapshots, snapshots.dropFirst()) {
+            #expect(next.date > prev.date)
+        }
+    }
+
+    @Test("Staggered progress climbs toward 1 at phase end")
+    func staggeredProgressClimbsToOne() {
+        let now = Date.now
+        let start = now.addingTimeInterval(-180)
+        let end = now.addingTimeInterval(120)
+
+        let snapshots = staggeredTimelineSnapshots(start: start, now: now, end: end)
+
+        #expect(snapshots.count >= 2)
+        for (prev, next) in zip(snapshots, snapshots.dropFirst()) {
+            #expect(next.progress >= prev.progress)
+        }
+        #expect(abs((snapshots.last?.progress ?? 0) - 1.0) < 0.01)
+        // Mid-phase progress must reflect elapsed wall time (~180/300 = 0.6).
+        #expect(abs((snapshots.first?.progress ?? 0) - 0.6) < 0.05)
+    }
+
+    @Test("Staggering caps snapshot count on long phases")
+    func staggeredSnapshotsCapCount() {
+        let now = Date.now
+
+        let snapshots = staggeredTimelineSnapshots(
+            start: now, now: now, end: now.addingTimeInterval(7200))
+
+        #expect(snapshots.count <= 100)
+        #expect(snapshots.count >= 2)
+    }
+
+    @Test("Short phases get dense near-live snapshots")
+    func staggeredSnapshotsDenseOnShortPhases() {
+        // A 2-minute test phase should spread ~90 snapshots (~1.3 s apart,
+        // floored at 2 s) so the ring feels near-live — not the old 30 s gait.
+        let now = Date.now
+        let end = now.addingTimeInterval(120)
+
+        let snapshots = staggeredTimelineSnapshots(
+            start: now.addingTimeInterval(-180), now: now, end: end)
+
+        #expect(snapshots.count >= 50)
+        let gaps = zip(snapshots, snapshots.dropFirst()).map {
+            $1.date.timeIntervalSince($0.date)
+        }
+        #expect(gaps.allSatisfy { $0 >= 1.9 && $0 <= 3.5 })
+        for (prev, next) in zip(snapshots, snapshots.dropFirst()) {
+            #expect(next.progress >= prev.progress)
+        }
+    }
+
+    @Test("Ended phase yields no snapshots")
+    func staggeredSnapshotsEmptyWhenEnded() {
+        let now = Date.now
+
+        let snapshots = staggeredTimelineSnapshots(
+            start: now.addingTimeInterval(-300),
+            now: now,
+            end: now.addingTimeInterval(-1))
+
+        #expect(snapshots.isEmpty)
+    }
+}

@@ -46,21 +46,14 @@ struct FocusWidgetProvider: AppIntentTimelineProvider {
     /// Snapshots every 30 s from `now` to `end` (capped), each carrying the
     /// progress computed for its own date. WidgetKit renders each snapshot in
     /// turn, so the ring advances deterministically even though the extension
-    /// process never re-runs between entries.
+    /// process never re-runs between entries. Math lives in
+    /// `staggeredTimelineSnapshots` (WidgetIntents.swift) so tests can pin it.
     private func staggeredEntries(base: FocusWidgetEntry, now: Date, end: Date) -> [FocusWidgetEntry] {
-        let step: TimeInterval = 30
-        let maxEntries = 50
-        let total = end.timeIntervalSince(now)
-        guard total > 0 else { return [base] }
-        let count = min(maxEntries, max(2, Int(ceil(total / step)) + 1))
-        // Anchor math mirrors the view's liveVisibleProgress so ring and digits agree.
-        let start = base.timerStart ?? now
-        let duration = max(end.timeIntervalSince(start), 1)
-        return (0..<count).map { i in
-            let date = i == 0 ? now : min(start.addingTimeInterval(Double(i) * step), end)
-            let completed = min(max(date.timeIntervalSince(start) / duration, 0), 1)
-            return base.with(date: date, progress: completed)
-        }
+        let snapshots = staggeredTimelineSnapshots(
+            start: base.timerStart ?? now, now: now, end: end
+        )
+        guard !snapshots.isEmpty else { return [base] }
+        return snapshots.map { base.with(date: $0.date, progress: $0.progress) }
     }
 
     // MARK: - Entry Construction
