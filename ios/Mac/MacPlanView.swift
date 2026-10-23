@@ -34,7 +34,7 @@ enum MacPlanFilter: String, CaseIterable, Identifiable {
     var systemImage: String {
         switch self {
         case .all:       return "tray.full"
-        case .today:     return "flame.fill"
+        case .today:     return "sun.max"
         case .upcoming:  return "calendar"
         case .completed: return "checkmark.circle"
         }
@@ -69,15 +69,8 @@ struct MacPlanView: View {
     var body: some View {
         let tasks = filteredTasks
 
-        VStack(spacing: 0) {
-            if store.isNewTaskComposerPresented {
-                newTaskComposer
-                Divider()
-            }
-
-            content(tasks: tasks)
-        }
-        .background(Color.pepinilloSystemBackground)
+        content(tasks: tasks)
+            .background(Color.pepinilloSystemBackground)
         .dropDestination(for: String.self) { items, _ in
             createTaskFromDroppedText(items)
         }
@@ -133,7 +126,11 @@ struct MacPlanView: View {
             selection.formIntersection(Set(ids))
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            undoBannerContent
+            VStack(spacing: 0) {
+                undoBannerContent
+                Divider()
+                newTaskRow
+            }
         }
         .alert(
             String(localized: "Couldn't Load Tasks"),
@@ -190,7 +187,12 @@ struct MacPlanView: View {
                     editingTaskID: $editingTaskID,
                     editingTitle: $editingTitle,
                     onCommit: { commitTitleEdit(for: $0) },
-                    onCancel: { cancelTitleEdit() }
+                    onCancel: { cancelTitleEdit() },
+                    onOpenInspector: {
+                        selection = [task.id]
+                        store.send(.taskTapped(task.id))
+                        isInspectorPresented = true
+                    }
                 )
             }
             .width(min: 180, ideal: 340, max: .infinity)
@@ -287,10 +289,20 @@ struct MacPlanView: View {
     }
 
     private func energyCell(_ task: TaskListFeature.TaskItemState) -> some View {
-        Label(task.energyLevel.displayName, systemImage: task.energyLevel.icon)
-            .font(.callout)
-            .foregroundStyle(task.energyLevel.color)
-            .lineLimit(1)
+        // Color lives in the icon; text stays primary for contrast (the
+        // priorityCell convention) — saturated small text fails AA.
+        HStack(spacing: 4) {
+            Image(systemName: task.energyLevel.icon)
+                .font(.caption2)
+                .foregroundStyle(task.energyLevel.color)
+                .accessibilityHidden(true)
+
+            Text(task.energyLevel.displayName)
+                .foregroundStyle(Color.primary)
+                .lineLimit(1)
+        }
+        .font(.callout)
+        .accessibilityElement(children: .combine)
     }
 
     private func pomodorosCell(_ task: TaskListFeature.TaskItemState) -> some View {
@@ -465,12 +477,47 @@ struct MacPlanView: View {
                     String(localized: "menu.plan.newtask", defaultValue: "New Task"),
                     systemImage: "plus"
                 )
+                .labelStyle(.iconOnly)
             }
             .help(String(localized: "New Task (⌘N)"))
+            .accessibilityLabel(String(localized: "New Task"))
         }
     }
 
-    // MARK: - New task composer
+    // MARK: - New task row (Reminders-style, bottom of the list)
+
+    /// The persistent creation affordance, mirroring Reminders' "New Reminder"
+    /// row at the bottom of the list: collapsed by default, expanding into the
+    /// composer in place. Never pushes the table content down.
+    @ViewBuilder
+    private var newTaskRow: some View {
+        if store.isNewTaskComposerPresented {
+            newTaskComposer
+        } else {
+            Button {
+                store.send(.newTaskRequested)
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "plus.circle.fill")
+                        .foregroundStyle(.tint)
+                        .accessibilityHidden(true)
+
+                    Text(String(localized: "New task"))
+                        .foregroundStyle(.secondary)
+
+                    Spacer()
+                }
+                .font(.body)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 9)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .background(.bar)
+            .help(String(localized: "New Task (⌘N)"))
+            .accessibilityLabel(String(localized: "Add a new task"))
+        }
+    }
 
     private var newTaskComposer: some View {
         HStack(spacing: 8) {
@@ -519,29 +566,37 @@ struct MacPlanView: View {
 
     // MARK: - Empty state
 
+    /// Apple's `ContentUnavailableView` pattern (Mail/Notes/Music): symbol,
+    /// title, one-line message, and the action integrated — directly on the
+    /// content background, no card container.
     private var emptyState: some View {
-        VStack(spacing: 16) {
-            PepinilloEmptyState(
-                title: emptyTitle,
-                description: emptyDescription,
-                systemImage: filter.systemImage,
-                tint: .accentColor,
-                cornerRadius: GlassCornerRadius.card
-            )
-
-            Button {
-                store.send(.newTaskRequested)
-            } label: {
-                Label(String(localized: "New task"), systemImage: "plus")
+        ContentUnavailableView {
+            Label(emptyTitle, systemImage: emptySystemImage)
+        } description: {
+            Text(emptyDescription)
+        } actions: {
+            if isSearching {
+                Button(String(localized: "Clear Search")) {
+                    searchText = ""
+                }
+            } else if filter != .completed {
+                Button {
+                    store.send(.newTaskRequested)
+                } label: {
+                    Label(String(localized: "New task"), systemImage: "plus")
+                }
+                .buttonStyle(.borderedProminent)
             }
-            .buttonStyle(.borderedProminent)
         }
-        .padding(24)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private var isSearching: Bool {
         !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    private var emptySystemImage: String {
+        isSearching ? "magnifyingglass" : filter.systemImage
     }
 
     private var emptyTitle: String {
@@ -769,8 +824,10 @@ private struct MacTaskTitleCell: View {
     @Binding var editingTitle: String
     let onCommit: (UUID) -> Void
     let onCancel: () -> Void
+    var onOpenInspector: () -> Void = {}
 
     @FocusState private var isFocused: Bool
+    @State private var isHovering = false
 
     var body: some View {
         if let task = store.tasks[id: taskID] {
@@ -790,11 +847,34 @@ private struct MacTaskTitleCell: View {
                         }
                         .accessibilityLabel(String(localized: "Title"))
                 } else {
-                    Text(task.title)
-                        .font(.body)
-                        .strikethrough(task.isCompleted)
-                        .foregroundStyle(task.isCompleted ? Color.secondary : Color.primary)
-                        .lineLimit(1)
+                    HStack(spacing: 6) {
+                        Text(task.title)
+                            .font(.body)
+                            .strikethrough(task.isCompleted)
+                            .foregroundStyle(task.isCompleted ? Color.secondary : Color.primary)
+                            .lineLimit(1)
+
+                        Spacer(minLength: 8)
+
+                        // Reminders-style trailing ⓘ: appears on hover as the
+                        // row's visible signal that details live in the inspector
+                        // (double-click and ⌘⌥I remain the power paths).
+                        Button(action: onOpenInspector) {
+                            Image(systemName: "info.circle")
+                                .font(.callout)
+                                .foregroundStyle(.secondary)
+                                .frame(width: 22, height: 22)
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .opacity(isHovering ? 1 : 0)
+                        .animation(.easeOut(duration: 0.15), value: isHovering)
+                        .help(String(localized: "Show Details (⌘⌥I)"))
+                        .accessibilityLabel(String(localized: "Show Details"))
+                    }
+                    .onHover { hovering in
+                        isHovering = hovering
+                    }
                 }
             }
             .frame(maxWidth: .infinity, minHeight: 30, alignment: .leading)
