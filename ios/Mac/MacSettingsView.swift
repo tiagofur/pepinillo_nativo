@@ -10,6 +10,8 @@ import SwiftUI
 enum MacAppStorageKeys {
     static let selectedSection = "mac.selectedSection"
     static let defaultSection = "mac.defaultSection"
+    /// Read raw each tick by `MacActivitySampler`; written by `MacPreferences`.
+    static let topActivityEnabled = "mac.topActivityEnabled"
 }
 
 // MARK: - App-level preferences
@@ -21,6 +23,7 @@ final class MacPreferences: ObservableObject {
     @Published private(set) var launchAtLogin: Bool
     @Published private(set) var showInDock: Bool
     @Published private(set) var defaultSection: AppFeature.Tab
+    @Published private(set) var topActivityEnabled: Bool
     @Published private(set) var errorMessage: String?
 
     private var isApplying = false
@@ -38,6 +41,9 @@ final class MacPreferences: ObservableObject {
 
         launchAtLogin = SMAppService.mainApp.status == .enabled
         showInDock = defaults.bool(forKey: Keys.showInDock)
+        // Opt-in (design contract §18.4): no foreground sampling until the
+        // user asks for it.
+        topActivityEnabled = defaults.bool(forKey: MacAppStorageKeys.topActivityEnabled)
 
         let defaultRaw = defaults.string(forKey: MacAppStorageKeys.defaultSection)
         let defaultTab = defaultRaw.flatMap { AppFeature.Tab(rawValue: $0) } ?? .focus
@@ -64,6 +70,12 @@ final class MacPreferences: ObservableObject {
         guard tab != .account, tab != defaultSection else { return }
         defaultSection = tab
         UserDefaults.standard.set(tab.rawValue, forKey: MacAppStorageKeys.defaultSection)
+    }
+
+    func setTopActivityEnabled(_ value: Bool) {
+        guard value != topActivityEnabled else { return }
+        topActivityEnabled = value
+        UserDefaults.standard.set(value, forKey: MacAppStorageKeys.topActivityEnabled)
     }
 
     func applyDockPolicy() {
@@ -185,6 +197,21 @@ struct MacSettingsView: View {
                 LabeledContent("Quick Capture", value: "⌃⌥T")
             } footer: {
                 Text("Starts or pauses the focus timer from anywhere; ⌃⌥T captures a task from any app.")
+                    .foregroundStyle(.secondary)
+            }
+
+            Section {
+                Toggle(
+                    "Track apps during focus sessions",
+                    isOn: Binding(
+                        get: { preferences.topActivityEnabled },
+                        set: { preferences.setTopActivityEnabled($0) }
+                    )
+                )
+            } header: {
+                Label(String(localized: "Usage statistics"), systemImage: "chart.bar")
+            } footer: {
+                Text("Counts which apps are frontmost while a focus session runs. App names never leave this Mac.")
                     .foregroundStyle(.secondary)
             }
 

@@ -53,6 +53,7 @@ Coherence means the same palette, ring geometry, glass language, motion feel, an
 - `Settings` scene, opened with `⌘,`.
 - `Window("Statistics", id: "statistics")` — opened with `⌘4` or Visualización > Estadísticas; period-switchable (7D/30D/Year) over the shared `AnalyticsFeature`. The Year period aggregates into weekly buckets client-side. Because the analytics period is shared state, the Today weekly card always filters to the trailing 7 days.
 - AI reports: a Reports (sparkles) menu in the Statistics toolbar offers Weekly/Monthly AI Report (gated by `AppConfig.aiInsightsEnabled` and the shared Pro gate). The report presents as a sheet in the Statistics window; for free users the paywall surfaces on the main window via the shared `focus.showPaywall` path.
+- Top activity: while the opt-in foreground sampler (Settings → General → Usage statistics) has rollups for the period, the Statistics window shows a Top activity card — up to four app icons for 7D/30D/Year, tooltip with app name + focused time, `app.dashed` fallback for uninstalled apps. Data is a local JSON daily rollup (`AppActivityUsageStore`); only bundle IDs and names are captured, never window titles, and nothing is synced.
 - Closing the main window must not stop the timer. Set `applicationShouldTerminateAfterLastWindowClosed = false`. Clicking the Dock icon (or a Dock-menu section) restores the window.
 - Restore the selected sidebar section, window frame, and inspector visibility.
 - The timer lives in the app-level `StoreOf<AppFeature>`, not in a view's lifecycle.
@@ -159,7 +160,7 @@ The Dock icon is a first-class control surface, not a launcher:
 
 | Tab | Contents |
 | --- | --- |
-| General | Launch at login, Show in Dock, default section, global shortcut |
+| General | Launch at login, Show in Dock, default section, global shortcut, Usage statistics (opt-in foreground sampling) |
 | Focus | Default mode, durations, auto-start behavior (shared `SettingsFeature`) |
 | Notifications | Sound effects, post-session reflection, daily reminder + time |
 | Appearance | Theme (Classic/Forest/Ocean/Sunset), light/dark/system |
@@ -259,4 +260,4 @@ Menus: App, File, Edit (undo/redo), View, Focus, Plan, Window, Help. No bare `Sp
 1. Global shortcut dependency: `KeyboardShortcuts` package vs in-house Carbon wrapper.
 2. Pro entitlement on macOS: existing gate with a clear state vs free modes only in v1.
 3. Mac test target: add `PepinilloMacTests` or run shared tests with a macOS destination.
-4. App-usage insights (F4): opt-in `NSWorkspace` foreground sampling; not v1.
+4. RESOLVED (T22): app-usage insights shipped as opt-in `NSWorkspace` foreground sampling — see §4 (Top activity) and §10 (General).

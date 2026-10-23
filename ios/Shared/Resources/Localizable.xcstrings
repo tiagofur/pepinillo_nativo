@@ -17596,6 +17596,70 @@
         }
       }
     },
+    "Top activity" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Actividad principal"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Atividade principal"
+          }
+        }
+      }
+    },
+    "Track apps during focus sessions" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Registrar apps durante las sesiones de foco"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Registrar apps durante as sessões de foco"
+          }
+        }
+      }
+    },
+    "Usage statistics" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Estadísticas de uso"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Estatísticas de uso"
+          }
+        }
+      }
+    },
+    "Counts which apps are frontmost while a focus session runs. App names never leave this Mac." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Registra qué apps están en primer plano mientras dura una sesión de foco. Los nombres de las apps nunca salen de este Mac."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Registra quais apps estão em primeiro plano enquanto uma sessão de foco dura. Os nomes dos apps nunca saem deste Mac."
+          }
+        }
+      }
+    },
     "Try %@" : {
       "localizations" : {
         "es" : {
