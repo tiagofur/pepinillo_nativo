@@ -559,6 +559,11 @@ struct AppFeature {
                         }
                     }
                     .cancellable(id: CancelID.watchCommandListener),
+                    // Hydrate persisted settings into settings + focus state so
+                    // the Focus stage opens with the saved durations instead of
+                    // the compiled defaults. Without this the timer only picked
+                    // up the saved times after Settings was opened.
+                    .send(.settings(.onAppear)),
                     // Load tasks early so they are available for focus linking
                     .send(.tasks(.onAppear)),
                     // Reconcile widget/intent commands even if they arrived before bootstrap finished.
@@ -1452,6 +1457,14 @@ struct AppFeature {
                     keepScreenOn: s.keepScreenOn
                 )
                 return .send(.focus(.configUpdated(updatedConfig)))
+
+            // MARK: - Settings: hydrate persisted config into focus at launch
+
+            case .settings(.preferencesLoaded(let snapshot)):
+                // Launch-time hydration: the settings load triggered by
+                // .appLaunched lands here and pushes the persisted durations
+                // into the Focus stage so a fresh session uses the saved times.
+                return .send(.focus(.configUpdated(snapshot.focusConfig)))
 
             // MARK: - Settings: theme sync phone → watch (#533)
 

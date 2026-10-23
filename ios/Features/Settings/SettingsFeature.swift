@@ -522,6 +522,27 @@ struct SettingsFeature {
 // MARK: - Convenience init for SettingsSnapshot
 
 extension SettingsFeature.SettingsSnapshot {
+    /// The focus-engine configuration equivalent of this snapshot. Shared by
+    /// the launch hydration (`AppFeature` on `.preferencesLoaded`) so the Focus
+    /// stage and the Settings UI always derive timers from the same values.
+    var focusConfig: FocusConfig {
+        FocusConfig(
+            pomodoroDuration: TimeInterval(pomodoroDurationMinutes * 60),
+            shortBreakDuration: TimeInterval(shortBreakMinutes * 60),
+            longBreakDuration: TimeInterval(longBreakMinutes * 60),
+            pomodorosPerCycle: pomodorosPerCycle,
+            autoStartBreaks: autoStartBreaks,
+            autoStartWork: autoStartWork,
+            defaultBlockDuration: TimeInterval(blockDurationMinutes * 60),
+            blockMidpointCheckIn: blockMidpointCheckIn,
+            flowtimeMinSessionMinutes: flowtimeMinMinutes,
+            flowtimeShowBreakSuggestion: true,
+            soundEnabled: soundEnabled,
+            hapticEnabled: hapticEnabled,
+            keepScreenOn: keepScreenOn
+        )
+    }
+
     init(
         pomodoroDurationMinutes: Int,
         shortBreakMinutes: Int,

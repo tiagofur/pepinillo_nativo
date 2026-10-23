@@ -1096,6 +1096,44 @@ struct FocusGhostAdoptTests {
         #expect(updateConfigCalled.value == true)
     }
 
+    /// configUpdated must keep Time Block's start duration in sync with the
+    /// config: startTapped reads customDurationMinutes, so a hydrated or
+    /// settings-changed block length has to flow through it.
+    @Test func configUpdatedSyncsCustomBlockDuration() async {
+        let store = TestStore(initialState: FocusFeature.State()) {
+            FocusFeature()
+        }
+
+        store.exhaustivity = .off
+
+        var updated = FocusConfig.default
+        updated.defaultBlockDuration = 90 * 60
+        await store.send(.configUpdated(updated)) {
+            $0.config = updated
+            $0.customDurationMinutes = 90
+        }
+    }
+
+    /// The launch hydration path: while idle, an incoming config must repaint
+    /// the stage with the saved durations instead of the compiled defaults.
+    @Test func configUpdatedWhileIdleAppliesSavedDurationsToDisplay() async {
+        let store = TestStore(initialState: FocusFeature.State()) {
+            FocusFeature()
+        }
+
+        store.exhaustivity = .off
+
+        var updated = FocusConfig.default
+        updated.pomodoroDuration = 50 * 60
+        updated.shortBreakDuration = 8 * 60
+        await store.send(.configUpdated(updated)) {
+            $0.config = updated
+            $0.customDurationMinutes = 60
+            $0.displayTime = "50:00"
+            $0.remainingSeconds = 50 * 60
+        }
+    }
+
     @Test func phaseCompletedUsesSoundAndHapticPreferences() async {
         var state = FocusFeature.State()
         state.isRunning = true
