@@ -631,6 +631,11 @@ struct FocusFeature {
 
             case .configUpdated(let config):
                 state.config = config
+                // Keep Time Block's start duration in sync: startTapped reads
+                // customDurationMinutes, so a hydrated/changed block setting
+                // must flow through it or a fresh session would use the stale
+                // 60-minute default instead of the saved block length.
+                state.customDurationMinutes = max(1, min(480, Int(config.defaultBlockDuration / 60)))
                 
                 // Sync cached durations for widget proactive starts
                 AppGroupDefaults.pomodoroDuration = config.pomodoroDuration

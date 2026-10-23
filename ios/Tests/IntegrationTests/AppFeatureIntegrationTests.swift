@@ -392,6 +392,81 @@ struct AppFeatureIntegrationTests {
         #expect(store.state.hasCompletedOnboarding == false)
     }
 
+    /// Launch must hydrate persisted durations into the focus config, or the
+    /// Focus stage opens with the compiled defaults (25 min) until Settings
+    /// is opened — the launch-sync bug.
+    @Test func appLaunchHydratesSavedDurationsIntoFocusConfig() async {
+        let savedDefaults = AppGroupDefaultsSnapshot.capture()
+        defer { savedDefaults.restore() }
+        AppGroupDefaults.clearExternalCommands()
+        AppGroupDefaults.clearActiveSession()
+
+        var prefs = UserPreferencesDTO()
+        prefs.hasCompletedOnboarding = true
+        prefs.pomodoroDuration = 50 * 60
+        prefs.shortBreakDuration = 8 * 60
+        prefs.longBreakDuration = 20 * 60
+        prefs.defaultBlockDuration = 90 * 60
+        prefs.pomodorosPerCycle = 3
+        let savedPrefs = prefs
+
+        let store = TestStore(initialState: AppFeature.State()) {
+            AppFeature()
+        } withDependencies: {
+            $0.persistenceClient.resolveAchievements = { derived in derived }
+            $0.persistenceClient.fetchPreferences = { savedPrefs }
+            $0.persistenceClient.savePreferences = { _ in }
+            $0.persistenceClient.fetchCachedUser = { nil }
+            $0.persistenceClient.fetchSessions = { _, _ in [] }
+            $0.persistenceClient.generateRecurringTasks = { }
+            $0.persistenceClient.fetchTasks = { [] }
+            $0.subscriptionClient.checkEntitlement = { .free }
+            $0.signInWithAppleClient.observeCredentialRevocation = { AsyncStream { $0.finish() } }
+            $0.subscriptionClient.listenForTransactionUpdates = { AsyncStream { $0.finish() } }
+            $0.notificationClient.requestAuthorization = { false }
+            $0.notificationClient.observeActions = { .finished }
+            $0.watchConnectivityClient.isSupported = { false }
+            $0.watchConnectivityClient.sendTasks = { _ in }
+            $0.signInWithAppleClient.checkCredentialState = { _ in false }
+            $0.keychainClient.hasTokens = { false }
+            $0.spotlightClient.indexTasks = { _ in }
+            $0.syncModeClient.reconcile = { _ in }
+            $0.syncClient.syncAll = { }
+            $0.webSocketClient.connect = { }
+            $0.webSocketClient.disconnect = { }
+            $0.focusClient.start = { _, _, _, _, _, _, _ in }
+            $0.focusClient.events = { AsyncStream { $0.finish() } }
+            $0.focusClient.currentState = { nil }
+            $0.liveActivityClient.isAvailable = { false }
+            $0.soundscapeClient.play = { _, _ in }
+            $0.healthClient.isAuthorized = { false }
+        }
+
+        store.exhaustivity = .off
+
+        await store.send(.appLaunched)
+
+        await store.receive(.settings(.preferencesLoaded(
+            SettingsFeature.SettingsSnapshot(from: savedPrefs)
+        )))
+        // The hydration cascade lands in the focus scope as a config update.
+        await store.receive(.focus(.configUpdated(
+            SettingsFeature.SettingsSnapshot(from: savedPrefs).focusConfig
+        )))
+
+        #expect(store.state.settings.pomodoroDurationMinutes == 50)
+        #expect(store.state.focus.config.pomodoroDuration == 50 * 60)
+        #expect(store.state.focus.config.shortBreakDuration == 8 * 60)
+        #expect(store.state.focus.config.longBreakDuration == 20 * 60)
+        #expect(store.state.focus.config.pomodorosPerCycle == 3)
+        // Time Block's start duration must follow the saved block length,
+        // not the compiled 60-minute default.
+        #expect(store.state.focus.customDurationMinutes == 90)
+        #expect(store.state.focus.config.defaultBlockDuration == 90 * 60)
+        // The idle stage shows the saved focus time immediately.
+        #expect(store.state.focus.displayTime == "50:00")
+    }
+
     @Test func appleSignInSeedsProfileFromIdentityWhenBackendUserIsUnavailable() async {
         let store = TestStore(initialState: AppFeature.State()) {
             AppFeature()
