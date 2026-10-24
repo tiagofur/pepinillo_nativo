@@ -244,6 +244,14 @@ struct PepinilloMacApp: App {
         .defaultSize(width: 780, height: 560)
         .windowResizability(.contentMinSize)
 
+        // The macOS Help menu target (Help ▸ Pepinillo Help, ⇧⌘?). Renders
+        // the shared FAQ catalog; no store needed.
+        Window("Pepinillo Help", id: "help") {
+            MacHelpView()
+        }
+        .defaultSize(width: 600, height: 640)
+        .windowResizability(.contentMinSize)
+
         Settings {
             if let store = bootstrap.store {
                 MacSettingsView(store: store, preferences: preferences)
