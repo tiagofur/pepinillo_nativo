@@ -142,9 +142,10 @@ struct MacAppView: View {
         }
     }
 
-    /// Podcasts/Music sidebar treatment: selected row = filled accent capsule
-    /// with white icon+label; unselected rows carry the accent on their icons
-    /// with primary text.
+    /// Podcasts/Music sidebar treatment: selected row = compact filled accent
+    /// capsule (inset, rounded — not a full-width row fill) with white
+    /// icon+label; unselected rows carry the accent on their icons with
+    /// primary text.
     private func sidebarRow(
         _ title: String,
         systemImage: String,
@@ -162,19 +163,19 @@ struct MacAppView: View {
                 .font(.system(size: 13, weight: isSelected ? .semibold : .regular))
                 .foregroundStyle(isSelected ? Color.white : Color.primary)
         }
-        .padding(.vertical, 1)
+        .padding(.horizontal, 9)
+        .padding(.vertical, 4)
         .frame(maxWidth: .infinity, alignment: .leading)
+        .background {
+            if isSelected {
+                RoundedRectangle(cornerRadius: 7, style: .continuous)
+                    .fill(Color.accentColor)
+            }
+        }
         .contentShape(Rectangle())
         .tag(tag)
-        .listRowBackground(
-            Group {
-                if isSelected {
-                    Color.accentColor
-                } else {
-                    Color.clear
-                }
-            }
-        )
+        .listRowBackground(Color.clear)
+        .listRowInsets(EdgeInsets(top: 2, leading: 10, bottom: 2, trailing: 10))
     }
 
     /// Bottom-of-sidebar account row + settings gear, the common modern Mac
