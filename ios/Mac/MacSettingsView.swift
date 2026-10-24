@@ -157,7 +157,10 @@ struct MacSettingsView: View {
             appearance
                 .tabItem { Label("Appearance", systemImage: "paintpalette") }
         }
-        .frame(width: 520, height: 460)
+        // Tall enough for the longest tab (Focus: mode + 4 steppers + 2 toggles
+        // + Flowtime + Time Block); shorter heights clipped the Flowtime rows
+        // at the bottom edge with no visible scroll affordance.
+        .frame(width: 520, height: 560)
         .environment(\.appTheme, activeTheme)
         .preferredColorScheme(preferredColorScheme)
         .onAppear {
