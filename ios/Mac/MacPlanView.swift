@@ -246,8 +246,18 @@ struct MacPlanView: View {
                 TableRow(task)
                     .draggable(task.id.uuidString)
                     .dropDestination(for: String.self) { items in
-                        guard let targetIndex = tasks.firstIndex(where: { $0.id == task.id }) else { return }
-                        reorder(items, at: targetIndex, tasks: tasks)
+                        guard let targetIndex = tasks.firstIndex(where: { $0.id == task.id }) else {
+                            return
+                        }
+                        // UUID payloads reorder; anything else (text dragged
+                        // from another app) creates a task — the same gesture
+                        // must not silently fail just because it landed on a
+                        // row instead of the space between rows.
+                        if items.contains(where: { UUID(uuidString: $0) != nil }) {
+                            reorder(items, at: targetIndex, tasks: tasks)
+                        } else {
+                            _ = createTaskFromDroppedText(items)
+                        }
                     }
             }
         }
@@ -860,6 +870,10 @@ private struct MacTaskTitleCell: View {
                         .buttonStyle(.plain)
                         .opacity(isHovering ? 1 : 0)
                         .animation(.easeOut(duration: 0.15), value: isHovering)
+                        // Hidden must also be un-clickable: at opacity(0) the
+                        // button otherwise leaves an invisible 22pt hot zone
+                        // at the trailing edge of the cell.
+                        .allowsHitTesting(isHovering)
                         .help(String(localized: "Show Details (⌘⌥I)"))
                         .accessibilityLabel(String(localized: "Show Details"))
                     }

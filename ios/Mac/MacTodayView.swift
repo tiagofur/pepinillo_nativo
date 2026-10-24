@@ -12,6 +12,7 @@ struct MacTodayView: View {
     let onRefresh: () -> Void
 
     @Environment(\.appTheme) private var theme
+    @Environment(\.openWindow) private var openWindow
 
     private var tasksCompletedToday: Int {
         tasks.tasks.filter { task in
@@ -73,6 +74,18 @@ struct MacTodayView: View {
                     Label("Refresh", systemImage: "arrow.clockwise")
                 }
                 .help("Refresh Today")
+            }
+            // The Statistics window has no other visible entry (⌘4 / View
+            // menu only) — surface it where the analytics live.
+            ToolbarItem(placement: .primaryAction) {
+                Button {
+                    openWindow(id: "statistics")
+                } label: {
+                    Label(String(localized: "Statistics"), systemImage: "chart.bar.square")
+                        .labelStyle(.iconOnly)
+                }
+                .help(String(localized: "Open Statistics (⌘4)"))
+                .accessibilityLabel(String(localized: "Statistics"))
             }
         }
     }
@@ -424,9 +437,18 @@ private struct TodayKPI: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Label(title, systemImage: systemImage)
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(tint)
+            // Color lives in the icon; the caption label stays secondary for
+            // AA contrast (the Plan energy/priority cell convention).
+            HStack(spacing: 4) {
+                Image(systemName: systemImage)
+                    .font(.caption2)
+                    .foregroundStyle(tint)
+                    .accessibilityHidden(true)
+
+                Text(title)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+            }
 
             Text(value)
                 .font(.system(.title2, design: .rounded).weight(.semibold))
