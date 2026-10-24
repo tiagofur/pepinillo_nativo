@@ -142,10 +142,11 @@ struct MacAppView: View {
         }
     }
 
-    /// Podcasts/Music sidebar treatment: selected row = compact filled accent
-    /// capsule (inset, rounded — not a full-width row fill) with white
+    /// Podcasts/Music sidebar treatment: selected row = filled accent capsule
+    /// filling the row height (content vertically centered) with white
     /// icon+label; unselected rows carry the accent on their icons with
-    /// primary text.
+    /// primary text. Fixed row height so the capsule aligns edge-to-edge
+    /// vertically with neighboring rows.
     private func sidebarRow(
         _ title: String,
         systemImage: String,
@@ -162,20 +163,22 @@ struct MacAppView: View {
             Text(title)
                 .font(.system(size: 13, weight: isSelected ? .semibold : .regular))
                 .foregroundStyle(isSelected ? Color.white : Color.primary)
+                .lineLimit(1)
         }
         .padding(.horizontal, 9)
-        .padding(.vertical, 4)
+        .frame(height: 26, alignment: .leading)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background {
             if isSelected {
-                RoundedRectangle(cornerRadius: 7, style: .continuous)
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
                     .fill(Color.accentColor)
+                    .padding(.vertical, 1)
             }
         }
         .contentShape(Rectangle())
         .tag(tag)
         .listRowBackground(Color.clear)
-        .listRowInsets(EdgeInsets(top: 2, leading: 10, bottom: 2, trailing: 10))
+        .listRowInsets(EdgeInsets(top: 0, leading: 8, bottom: 0, trailing: 8))
     }
 
     /// Bottom-of-sidebar account row + settings gear, the common modern Mac
