@@ -140,6 +140,10 @@ struct MacAppView: View {
         // column's top area. Applied inside the split view — the system only
         // honors it on the sidebar content, not on the container.
         .modifier(SidebarToggleRemoval())
+        // The brand-green selection capsule must stay filled when the window
+        // is not key: List otherwise paints its inactive gray selection over
+        // the row background, leaving the accent capsule a ghost outline.
+        .environment(\.controlActiveState, .active)
         .navigationSplitViewColumnWidth(min: 200, ideal: 220, max: 280)
         .navigationTitle("Pepinillo")
         .safeAreaInset(edge: .bottom) {
