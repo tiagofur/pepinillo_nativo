@@ -127,7 +127,7 @@ struct MacAccountView: View {
             .font(.title2.weight(.semibold))
             .foregroundStyle(.white)
             .frame(width: 56, height: 56)
-            .background(Circle().fill(theme.color(for: .pomodoro)))
+            .background(Circle().fill(Color.accentColor))
             .accessibilityHidden(true)
     }
 
