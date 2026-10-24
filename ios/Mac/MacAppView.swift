@@ -101,8 +101,13 @@ struct MacAppView: View {
 
     private var sidebar: some View {
         List(selection: sidebarSelection) {
-            Label(String(localized: "Focus"), systemImage: AppFeature.Tab.focus.macSystemImage)
-                .tag(SidebarSelection.focus)
+            // Explicit sections: a bare row following the Plan section renders
+            // visually attached to it — Dashboard is a sibling of Plan, never
+            // a member of it.
+            Section {
+                Label(String(localized: "Focus"), systemImage: AppFeature.Tab.focus.macSystemImage)
+                    .tag(SidebarSelection.focus)
+            }
 
             Section(String(localized: "Plan")) {
                 ForEach(MacPlanFilter.allCases) { filter in
@@ -111,8 +116,10 @@ struct MacAppView: View {
                 }
             }
 
-            Label(String(localized: "Dashboard"), systemImage: AppFeature.Tab.dashboard.macSystemImage)
-                .tag(SidebarSelection.dashboard)
+            Section {
+                Label(String(localized: "Dashboard"), systemImage: AppFeature.Tab.dashboard.macSystemImage)
+                    .tag(SidebarSelection.dashboard)
+            }
         }
         .listStyle(.sidebar)
         .navigationSplitViewColumnWidth(min: 200, ideal: 220, max: 280)

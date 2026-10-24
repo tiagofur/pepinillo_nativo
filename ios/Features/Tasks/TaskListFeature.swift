@@ -397,9 +397,12 @@ struct TaskListFeature {
                 )
                 state.tasks.append(newTask)
                 state.newTaskTitle = ""
-                // The composer stays presented when it was presented (chained
-                // entry, the Reminders behavior); add paths that never opened
-                // it (drag-drop text, quick capture) keep it closed.
+                // The composer completes its action and collapses back to the
+                // resting "+ New task" affordance (owner preference: one add
+                // per interaction; the persistent collapsed row stays one
+                // click away — Apple's Reminders instead keeps an always-
+                // armed inline row, a different affordance model).
+                state.isNewTaskComposerPresented = false
 
                 return .run { send in
                     let dto = TaskItemDTO(
