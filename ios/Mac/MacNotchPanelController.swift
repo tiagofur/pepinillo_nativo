@@ -26,17 +26,19 @@ final class MacNotchPanelController {
     private var cancellable: AnyCancellable?
     private let gap: CGRect
 
-    /// Tallest the island can grow; the panel is pre-sized so the expansion
-    /// never re-anchors the window.
-    private static let expandedHeight: CGFloat = 240
+    /// Widest/tallest the island can grow; the panel is pre-sized so the
+    /// expansion never re-anchors the window. The expanded panel is wider
+    /// than the notch itself, centered under it.
+    private static let expandedSize = CGSize(width: 340, height: 380)
 
     private init(gap: CGRect) {
         self.gap = gap
+        let size = Self.expandedSize
         let frame = CGRect(
-            x: gap.minX,
-            y: gap.minY - Self.expandedHeight,
-            width: gap.width,
-            height: Self.expandedHeight
+            x: gap.midX - size.width / 2,
+            y: gap.minY - size.height,
+            width: size.width,
+            height: size.height
         )
         panel = NSPanel(
             contentRect: frame,
@@ -182,36 +184,111 @@ private struct MacNotchIslandView: View {
     // MARK: Expanded — the options panel
 
     private var expandedPanel: some View {
-        VStack(spacing: 12) {
-            // Header: what finished, what's next.
-            HStack(spacing: 6) {
-                Image(systemName: p.modeIcon)
-                    .font(.system(size: 11, weight: .semibold))
+        VStack(spacing: 14) {
+            header
+
+            countdownBlock
+
+            actions
+
+            Divider()
+                .overlay(Color.primary.opacity(0.08))
+
+            statsFooter
+        }
+        .padding(16)
+        .frame(width: Self.panelWidth)
+        .frame(maxHeight: .infinity, alignment: .top)
+        .islandBackground(cornerRadius: 26, tint: .accentColor, interactive: false)
+    }
+
+    private static let panelWidth: CGFloat = 320
+
+    private var header: some View {
+        HStack(spacing: 8) {
+            Image(systemName: p.modeIcon)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(.secondary)
+                .accessibilityHidden(true)
+
+            VStack(alignment: .leading, spacing: 1) {
+                Text(headerTitle)
+                    .font(.system(size: 12, weight: .semibold))
+                    .lineLimit(1)
+
+                Text(headerSubtitle)
+                    .font(.system(size: 10))
                     .foregroundStyle(.secondary)
-                    .accessibilityHidden(true)
-                Text(pending?.displayName ?? String(localized: "Next phase"))
-                    .font(.headline)
-                Spacer(minLength: 0)
-                Button {
-                    withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) { expanded = false }
-                } label: {
-                    Image(systemName: "chevron.up")
-                        .font(.system(size: 10, weight: .bold))
-                        .foregroundStyle(.tertiary)
-                        .frame(width: 20, height: 20)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .help(String(localized: "Collapse"))
-                .accessibilityLabel(String(localized: "Collapse"))
+                    .lineLimit(1)
             }
 
-            // The pending phase's countdown, seeded by the engine hold.
+            Spacer(minLength: 0)
+
+            Button {
+                withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) { expanded = false }
+            } label: {
+                Image(systemName: "chevron.up")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundStyle(.tertiary)
+                    .frame(width: 22, height: 22)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .help(String(localized: "Collapse"))
+            .accessibilityLabel(String(localized: "Collapse"))
+        }
+    }
+
+    /// "Pomodoro 2 of 4" — during the hold `pomodoroNumber` is the one that
+    /// just completed.
+    private var headerTitle: String {
+        let mode = focus.activeMode ?? focus.selectedMode
+        guard mode == .pomodoro, let number = focus.pomodoroNumber else {
+            return mode.macDisplayName
+        }
+        return String(localized: "Pomodoro \(number) of \(focus.config.pomodorosPerCycle)")
+    }
+
+    private var headerSubtitle: String {
+        if let task = focus.linkedTaskTitle {
+            return task
+        }
+        return String(localized: "focus.notch.phase-ready", defaultValue: "Next phase ready")
+    }
+
+    // Countdown + cycle progress dots.
+    private var countdownBlock: some View {
+        VStack(spacing: 10) {
             Text(p.displayTime)
-                .font(.system(size: 34, weight: .medium, design: .rounded).monospacedDigit())
+                .font(.system(size: 44, weight: .medium, design: .rounded).monospacedDigit())
                 .lineLimit(1)
                 .minimumScaleFactor(0.6)
 
+            if showsCycleDots {
+                HStack(spacing: 6) {
+                    ForEach(1...focus.config.pomodorosPerCycle, id: \.self) { number in
+                        Circle()
+                            .fill(number <= (focus.pomodoroNumber ?? 0) ? Color.accentColor : Color.primary.opacity(0.15))
+                            .frame(width: 7, height: 7)
+                    }
+                }
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(String(localized: "Cycle progress"))
+            }
+
+            Text(pending?.displayName ?? String(localized: "Next phase"))
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    private var showsCycleDots: Bool {
+        (focus.activeMode ?? focus.selectedMode) == .pomodoro && focus.pomodoroNumber != nil
+    }
+
+    private var actions: some View {
+        VStack(spacing: 8) {
             // Primary: start whatever is pending.
             Button {
                 store.send(.focus(.startNextPhaseTapped))
@@ -220,12 +297,14 @@ private struct MacNotchIslandView: View {
                     String(localized: "focus.notch.startnext", defaultValue: "Start"),
                     systemImage: "play.fill"
                 )
-                .font(.system(size: 12, weight: .semibold))
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(.white)
                 .frame(maxWidth: .infinity)
-                .frame(height: 30)
+                .frame(height: 38)
+                .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .islandBackground(cornerRadius: 15, tint: .accentColor, interactive: true)
+            .islandBackground(cornerRadius: 19, tint: .accentColor, interactive: true, solid: true)
             .accessibilityLabel(String(localized: "Start next phase"))
 
             HStack(spacing: 8) {
@@ -249,10 +328,43 @@ private struct MacNotchIslandView: View {
                 }
             }
         }
-        .padding(14)
-        .frame(width: notchWidth)
-        .frame(maxHeight: .infinity, alignment: .top)
-        .islandBackground(cornerRadius: 22, tint: .accentColor, interactive: false)
+    }
+
+    private var statsFooter: some View {
+        HStack(spacing: 0) {
+            footerStat(
+                value: "\(store.analytics.todaySessions)",
+                label: String(localized: "sessions"),
+                icon: "checkmark.circle"
+            )
+            footerStat(
+                value: "\(store.analytics.todayFocusMinutes)",
+                label: String(localized: "min"),
+                icon: "clock"
+            )
+            footerStat(
+                value: "\(store.analytics.currentStreakDays)",
+                label: String(localized: "day streak"),
+                icon: "flame.fill"
+            )
+        }
+    }
+
+    private func footerStat(value: String, label: String, icon: String) -> some View {
+        VStack(spacing: 3) {
+            Label {
+                Text("\(value) \(label)")
+                    .font(.system(size: 10, weight: .medium))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+            } icon: {
+                Image(systemName: icon)
+                    .font(.system(size: 9))
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .accessibilityElement(children: .combine)
     }
 
     private func islandButton(
@@ -266,11 +378,11 @@ private struct MacNotchIslandView: View {
                 .font(.system(size: 11, weight: .medium))
                 .foregroundStyle(isDestructive ? Color.red : Color.primary)
                 .frame(maxWidth: .infinity)
-                .frame(height: 26)
+                .frame(height: 30)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .islandBackground(cornerRadius: 13, tint: .accentColor, interactive: false)
+        .islandBackground(cornerRadius: 15, tint: .accentColor, interactive: false)
         .accessibilityLabel(title)
     }
 }
@@ -280,14 +392,21 @@ private struct MacNotchIslandView: View {
 private extension View {
     /// System Liquid Glass on macOS 26+, tinted like the tray surfaces;
     /// ultraThinMaterial fallback on macOS 15. Opaque under reduceTransparency.
+    /// `solid` renders the primary CTA's strong tint (the Focus start-capsule
+    /// treatment) instead of a subtle surface tint.
     @ViewBuilder
-    func islandBackground(cornerRadius: CGFloat, tint: Color, interactive: Bool) -> some View {
+    func islandBackground(cornerRadius: CGFloat, tint: Color, interactive: Bool, solid: Bool = false) -> some View {
         if #available(macOS 26.0, *) {
             self.glassEffect(
                 .regular
                     .interactive(interactive)
-                    .tint(tint.opacity(0.14)),
+                    .tint(tint.opacity(solid ? 0.72 : 0.14)),
                 in: .rect(cornerRadius: cornerRadius)
+            )
+        } else if solid {
+            self.background(
+                tint.opacity(0.85),
+                in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
             )
         } else {
             self.background(
