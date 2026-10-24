@@ -105,20 +105,33 @@ struct MacAppView: View {
             // visually attached to it — Dashboard is a sibling of Plan, never
             // a member of it.
             Section {
-                Label(String(localized: "Focus"), systemImage: AppFeature.Tab.focus.macSystemImage)
-                    .tag(SidebarSelection.focus)
+                sidebarRow(
+                    String(localized: "Focus"),
+                    systemImage: AppFeature.Tab.focus.macSystemImage,
+                    tag: .focus,
+                    isSelected: store.selectedTab == .focus
+                )
             }
 
             Section(String(localized: "Plan")) {
                 ForEach(MacPlanFilter.allCases) { filter in
-                    Label(filter.title, systemImage: filter.systemImage)
-                        .tag(SidebarSelection.plan(filter))
+                    sidebarRow(
+                        filter.title,
+                        systemImage: filter.systemImage,
+                        tag: .plan(filter),
+                        isSelected: store.selectedTab == .plan
+                            && store.tasks.selectedPlanFilter == filter.sharedFilter
+                    )
                 }
             }
 
             Section {
-                Label(String(localized: "Dashboard"), systemImage: AppFeature.Tab.dashboard.macSystemImage)
-                    .tag(SidebarSelection.dashboard)
+                sidebarRow(
+                    String(localized: "Dashboard"),
+                    systemImage: AppFeature.Tab.dashboard.macSystemImage,
+                    tag: .dashboard,
+                    isSelected: store.selectedTab == .dashboard
+                )
             }
         }
         .listStyle(.sidebar)
@@ -127,6 +140,41 @@ struct MacAppView: View {
         .safeAreaInset(edge: .bottom) {
             sidebarFooter
         }
+    }
+
+    /// Podcasts/Music sidebar treatment: selected row = filled accent capsule
+    /// with white icon+label; unselected rows carry the accent on their icons
+    /// with primary text.
+    private func sidebarRow(
+        _ title: String,
+        systemImage: String,
+        tag: SidebarSelection,
+        isSelected: Bool
+    ) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: systemImage)
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(isSelected ? Color.white : Color.accentColor)
+                .frame(width: 22)
+                .accessibilityHidden(true)
+
+            Text(title)
+                .font(.system(size: 13, weight: isSelected ? .semibold : .regular))
+                .foregroundStyle(isSelected ? Color.white : Color.primary)
+        }
+        .padding(.vertical, 1)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(Rectangle())
+        .tag(tag)
+        .listRowBackground(
+            Group {
+                if isSelected {
+                    Color.accentColor
+                } else {
+                    Color.clear
+                }
+            }
+        )
     }
 
     /// Bottom-of-sidebar account row + settings gear, the common modern Mac
