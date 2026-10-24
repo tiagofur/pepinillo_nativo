@@ -303,7 +303,7 @@ struct AppView: View {
         }
         .tabViewStyle(.sidebarAdaptable)
         .conditionalTabBarMinimize()
-        .tint(sizeClass == .regular ? activeTheme.color(for: .pomodoro) : .primary)
+        .tint(sizeClass == .regular ? Color.accentColor : .primary)
         .animation(.snappy(duration: 0.25), value: store.selectedTab)
         .focusedValue(\.appStore, store)
     }
@@ -417,7 +417,7 @@ struct CompactTopTabBar: View {
         HStack(spacing: 4) {
             ForEach(AppFeature.Tab.allCases, id: \.self) { tab in
                 let isSelected = selectedTab == tab
-                let accentColor = theme.color(for: .pomodoro)
+                let accentColor = Color.accentColor
 
                 Button {
                     onSelectTab(tab)

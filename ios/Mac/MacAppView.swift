@@ -96,7 +96,7 @@ struct MacAppView: View {
                 .navigationTitle(store.selectedTab.macTitle)
         }
         .frame(minWidth: 960, minHeight: 640)
-        .tint(activeTheme.color(for: .pomodoro))
+        .tint(Color.accentColor)
     }
 
     private var sidebar: some View {
@@ -202,7 +202,7 @@ struct MacAppView: View {
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.white)
                 .frame(width: 26, height: 26)
-                .background(Circle().fill(theme.color(for: .pomodoro)))
+                .background(Circle().fill(Color.accentColor))
         } else {
             Image(systemName: "person.crop.circle")
                 .font(.title3)
