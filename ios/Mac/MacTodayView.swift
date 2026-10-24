@@ -81,7 +81,9 @@ struct MacTodayView: View {
                 Button {
                     openWindow(id: "statistics")
                 } label: {
-                    Label(String(localized: "Statistics"), systemImage: "chart.bar.square")
+                    // "chart.bar" (not "chart.bar.square" — that name doesn't
+                    // exist in SF Symbols and renders an empty glyph).
+                    Label(String(localized: "Statistics"), systemImage: "chart.bar")
                         .labelStyle(.iconOnly)
                 }
                 .help(String(localized: "Open Statistics (⌘4)"))
