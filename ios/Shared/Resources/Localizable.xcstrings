@@ -21524,6 +21524,125 @@
           }
         }
       }
+    },
+    "Pepinillo Help" : {
+      "comment" : "macOS Help menu item and help window title. Apple localizes this pattern as 'Ayuda de <app name>'.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ayuda de Pepinillo"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ajuda do Pepinillo"
+          }
+        }
+      }
+    },
+    "Help…" : {
+      "comment" : "Menu bar popover item that opens the help window.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ayuda…"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ajuda…"
+          }
+        }
+      }
+    },
+    "Short answers to common questions — and a quick way to reach us." : {
+      "comment" : "Intro line of the macOS help window.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Respuestas breves a preguntas comunes — y una forma rápida de contactarnos."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Respostas rápidas para dúvidas comuns — e um jeito rápido de falar com a gente."
+          }
+        }
+      }
+    },
+    "Why don't I receive notifications?" : {
+      "comment" : "FAQ question.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¿Por qué no recibo notificaciones?"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Por que não recebo notificações?"
+          }
+        }
+      }
+    },
+    "Make sure notifications are allowed for Pepinillo in System Settings → Notifications (Mac) or Settings → Notifications (iPhone/iPad), and that session alerts or reminders are turned on inside Pepinillo. A Focus mode or Do Not Disturb can also silence alerts from the system side." : {
+      "comment" : "FAQ answer.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Comprueba que las notificaciones estén permitidas para Pepinillo en Ajustes del Sistema → Notificaciones (Mac) o en Ajustes → Notificaciones (iPhone/iPad), y que las alertas de sesión o los recordatorios estén activados dentro de Pepinillo. Un modo de Concentración o No molestar también puede silenciar alertas desde el sistema."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verifique se as notificações do Pepinillo estão permitidas em Ajustes do Sistema → Notificações (Mac) ou em Ajustes → Notificações (iPhone/iPad), e se os alertas de sessão ou lembretes estão ativados dentro do Pepinillo. Um modo de Concentração ou Não Perturbe também pode silenciar alertas pelo sistema."
+          }
+        }
+      }
+    },
+    "Why isn't my widget updating?" : {
+      "comment" : "FAQ question.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¿Por qué no se actualiza mi widget?"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Por que meu widget não atualiza?"
+          }
+        }
+      }
+    },
+    "Widgets don't tick every second — the system refreshes them on a battery-friendly schedule. During a live session the ring advances about every 30 seconds, and data refreshes every time you open the app. If a widget looks frozen, remove it and add it again from the widget gallery." : {
+      "comment" : "FAQ answer.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Los widgets no avanzan cada segundo: el sistema los refresca con una cadencia pensada para ahorrar batería. Durante una sesión en curso el anillo avanza aproximadamente cada 30 segundos, y los datos se actualizan cada vez que abres la app. Si un widget parece congelado, elimínalo y vuélvelo a añadir desde la galería de widgets."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Os widgets não avançam a cada segundo: o sistema os atualiza em uma cadência pensada para economizar bateria. Durante uma sessão em andamento o anel avança aproximadamente a cada 30 segundos, e os dados são atualizados sempre que você abre o app. Se um widget parecer congelado, remova-o e adicione-o novamente pela galeria de widgets."
+          }
+        }
+      }
     }
   },
   "version" : "1.1"
