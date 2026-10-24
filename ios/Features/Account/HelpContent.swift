@@ -23,6 +23,27 @@ enum HelpLinks {
     static let feedback = URL(string: "https://creapolis.dev/proyectos/pepinillo/feedback")!
     /// Official X profile.
     static let xProfile = URL(string: "https://x.com/creapolisdev")!
+    /// Full privacy policy on the product site.
+    static let privacyPolicy = URL(string: "https://creapolis.dev/privacy-policy/")!
+}
+
+// MARK: - Privacy Card
+// Styled after Apple Podcasts' "…and privacy" sheet: a short honest
+// summary of how data is handled plus the full policy link. Every point
+// must stay backed by the published policy (creapolis.dev/privacy-policy)
+// — update the policy first, then these bullets.
+
+enum PrivacyContent {
+    static let title = String(localized: "Pepinillo and privacy")
+    static let intro = String(localized: "Pepinillo is designed to protect your information and let you choose what you share.")
+
+    static let points: [String] = [
+        String(localized: "Your tasks and focus history are stored on your device — Pepinillo works offline and without an account."),
+        String(localized: "With iCloud Sync, your data goes only to your personal iCloud account; we never see that content."),
+        String(localized: "With your permission, focus minutes are logged to Apple Health and stay on your device."),
+    ]
+
+    static let policyLinkTitle = String(localized: "Read the full privacy policy")
 }
 
 // MARK: - FAQ

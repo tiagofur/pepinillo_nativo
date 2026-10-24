@@ -21643,6 +21643,108 @@
           }
         }
       }
+    },
+    "Pepinillo and privacy" : {
+      "comment" : "Privacy card title, styled after Apple Podcasts' privacy sheet.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pepinillo y la privacidad"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pepinillo e a privacidade"
+          }
+        }
+      }
+    },
+    "Pepinillo is designed to protect your information and let you choose what you share." : {
+      "comment" : "Privacy card intro line.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pepinillo se diseñó para proteger tu información y permitirte elegir lo que compartes."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O Pepinillo foi desenhado para proteger suas informações e permitir que você escolha o que compartilha."
+          }
+        }
+      }
+    },
+    "Your tasks and focus history are stored on your device — Pepinillo works offline and without an account." : {
+      "comment" : "Privacy card bullet: local-first storage.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tus tareas y tu historial de enfoque se guardan en tu dispositivo: Pepinillo funciona sin conexión y sin necesidad de cuenta."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Suas tarefas e seu histórico de foco ficam guardados no seu dispositivo — o Pepinillo funciona offline e sem precisar de conta."
+          }
+        }
+      }
+    },
+    "With iCloud Sync, your data goes only to your personal iCloud account; we never see that content." : {
+      "comment" : "Privacy card bullet: iCloud sync scope.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Si activas la sincronización con iCloud, tus datos van solo a tu cuenta personal de iCloud: nosotros nunca vemos ese contenido."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Com a sincronização do iCloud, seus dados vão apenas para a sua conta pessoal do iCloud; nós nunca vemos esse conteúdo."
+          }
+        }
+      }
+    },
+    "With your permission, focus minutes are logged to Apple Health and stay on your device." : {
+      "comment" : "Privacy card bullet: Apple Health opt-in.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Con tu permiso, los minutos de enfoque se registran en Apple Salud y se quedan en tu dispositivo."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Com sua permissão, os minutos de foco são registrados no Apple Saúde e ficam no seu dispositivo."
+          }
+        }
+      }
+    },
+    "Read the full privacy policy" : {
+      "comment" : "Privacy card link to the full published policy.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Consulta la política de privacidad"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Consulte a política de privacidade"
+          }
+        }
+      }
     }
   },
   "version" : "1.1"

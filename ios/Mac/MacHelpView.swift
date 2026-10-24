@@ -17,6 +17,7 @@ struct MacHelpView: View {
                 intro
                 gettingStartedCard
                 faqCard
+                privacyCard
                 contactCard
             }
             .frame(maxWidth: 560, alignment: .leading)
@@ -83,6 +84,47 @@ struct MacHelpView: View {
                     Divider()
                 }
             }
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .pepinilloMatteCard()
+    }
+
+    // MARK: - Privacy
+    // Apple Podcasts pattern: a short honest summary ("…and privacy")
+    // followed by the full policy link. Points live in HelpContent so iOS
+    // shows the same summary.
+
+    private var privacyCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Image(systemName: "hand.raised.fill")
+                .font(.system(size: 30, weight: .medium))
+                .foregroundStyle(.tint)
+                .accessibilityHidden(true)
+
+            Text(PrivacyContent.title)
+                .font(.headline)
+
+            Text(PrivacyContent.intro)
+                .font(.callout)
+                .foregroundStyle(.secondary)
+
+            VStack(alignment: .leading, spacing: 8) {
+                ForEach(PrivacyContent.points, id: \.self) { point in
+                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                        Image(systemName: "circle.fill")
+                            .font(.system(size: 5))
+                            .foregroundStyle(.tertiary)
+                            .accessibilityHidden(true)
+                        Text(point)
+                            .font(.subheadline)
+                            .foregroundStyle(.primary)
+                    }
+                }
+            }
+            .padding(.top, 2)
+
+            helpLink(HelpLinks.privacyPolicy, title: PrivacyContent.policyLinkTitle, icon: "hand.raised")
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)

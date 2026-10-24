@@ -34,6 +34,18 @@ struct HelpSupportView: View {
                 }
             }
 
+            // MARK: - Privacy
+            // Same summary as the macOS help window's privacy card.
+            Section(PrivacyContent.title) {
+                ForEach(PrivacyContent.points, id: \.self) { point in
+                    Text(point)
+                        .font(.subheadline)
+                }
+                Link(destination: HelpLinks.privacyPolicy) {
+                    Label(PrivacyContent.policyLinkTitle, systemImage: "hand.raised")
+                }
+            }
+
             // MARK: - Contact
             Section {
                 Link(destination: HelpLinks.emailSupport) {

@@ -35,6 +35,7 @@ struct HelpContentTests {
             HelpLinks.emailSupport,
             HelpLinks.feedback,
             HelpLinks.xProfile,
+            HelpLinks.privacyPolicy,
         ]
         for url in urls {
             #expect(url.scheme == "https" || url.scheme == "mailto")
@@ -42,5 +43,16 @@ struct HelpContentTests {
                 #expect(url.host?.isEmpty == false)
             }
         }
+    }
+
+    @Test("Privacy card stays a short honest summary backed by the published policy")
+    func privacySummaryStaysShort() {
+        #expect(!PrivacyContent.title.isEmpty)
+        #expect(!PrivacyContent.intro.isEmpty)
+        #expect(PrivacyContent.points.count >= 3)
+        #expect(PrivacyContent.points.count <= 5)
+        #expect(PrivacyContent.points.allSatisfy { !$0.isEmpty })
+        #expect(!PrivacyContent.policyLinkTitle.isEmpty)
+        #expect(HelpLinks.privacyPolicy.host?.contains("creapolis.dev") == true)
     }
 }
