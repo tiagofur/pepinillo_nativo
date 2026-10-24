@@ -135,6 +135,11 @@ struct MacAppView: View {
             }
         }
         .listStyle(.sidebar)
+        // The sidebar is core navigation, not a collapsible pane: drop the
+        // system toggle (a prominent glass circle on macOS 26+) from the
+        // column's top area. Applied inside the split view — the system only
+        // honors it on the sidebar content, not on the container.
+        .modifier(SidebarToggleRemoval())
         .navigationSplitViewColumnWidth(min: 200, ideal: 220, max: 280)
         .navigationTitle("Pepinillo")
         .safeAreaInset(edge: .bottom) {
@@ -385,6 +390,20 @@ extension AppFeature.Tab {
         case .plan: return "checklist"
         case .dashboard: return "chart.bar"
         case .account: return "person.crop.circle"
+        }
+    }
+}
+
+/// Hides the automatic NavigationSplitView sidebar toggle on macOS 26+, where
+/// it renders as a prominent Liquid Glass circle over the sidebar. The sidebar
+/// here is core navigation (Reminders model), not a collapsible pane. On
+/// macOS 15 there is no removal API and the default item stays.
+private struct SidebarToggleRemoval: ViewModifier {
+    func body(content: Content) -> some View {
+        if #available(macOS 26.0, *) {
+            content.toolbar(removing: .sidebarToggle)
+        } else {
+            content
         }
     }
 }
