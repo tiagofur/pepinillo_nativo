@@ -1,11 +1,13 @@
 // MacNotchPanelController.swift
-// Pepinillo — Kofe-Flow-style notch presence
+// Pepinillo — Dynamic-Island-style notch notification
 //
-// A non-activating panel floating over the MacBook notch gap showing the
-// live countdown and phase controls while a session runs. The gap between
-// `auxiliaryTopLeftArea` and `auxiliaryTopRightArea` carries no system UI,
-// so the pill never covers menu items. Screens without a notch install
-// nothing (the menu bar status item already covers them).
+// The notch stays untouched while a session runs (the menu bar item carries
+// the countdown). When a phase completes and the engine holds for the next
+// one, a compact pill materializes directly UNDER the notch gap — never over
+// the camera housing (the system's notch cover always wins there). Clicking
+// the pill expands it downward into a Liquid Glass panel with the phase
+// options, mirroring the tray popover's model. Acting on any option ends the
+// hold and the island dissolves back into the notch.
 
 import AppKit
 import Combine
@@ -22,10 +24,22 @@ final class MacNotchPanelController {
 
     private let panel: NSPanel
     private var cancellable: AnyCancellable?
+    private let gap: CGRect
+
+    /// Tallest the island can grow; the panel is pre-sized so the expansion
+    /// never re-anchors the window.
+    private static let expandedHeight: CGFloat = 240
 
     private init(gap: CGRect) {
+        self.gap = gap
+        let frame = CGRect(
+            x: gap.minX,
+            y: gap.minY - Self.expandedHeight,
+            width: gap.width,
+            height: Self.expandedHeight
+        )
         panel = NSPanel(
-            contentRect: gap,
+            contentRect: frame,
             styleMask: [.borderless, .nonactivatingPanel],
             backing: .buffered,
             defer: false
@@ -35,25 +49,26 @@ final class MacNotchPanelController {
         panel.backgroundColor = .clear
         panel.isOpaque = false
         panel.hasShadow = false
-        panel.ignoresMouseEvents = false
         panel.collectionBehavior = [
             .canJoinAllSpaces, .stationary, .fullScreenAuxiliary, .ignoresCycle
         ]
-        panel.setFrame(gap, display: false)
+        panel.setFrame(frame, display: false)
     }
 
     func install(store: StoreOf<AppFeature>, pulse: MacPresencePulse) {
-        panel.contentView = NSHostingView(rootView: MacNotchPillView(
+        panel.contentView = NSHostingView(rootView: MacNotchIslandView(
+            store: store,
             pulse: pulse,
-            onToggle: { FocusToggleCommand.toggle(store: store) },
-            onNextPhase: { MacSessionCommand.nextPhase(store: store) },
-            onStop: { MacSessionCommand.stop(store: store) }
+            notchWidth: gap.width
         ))
 
         cancellable = pulse.$pulse
             .receive(on: RunLoop.main)
             .sink { [weak self] pulse in
-                self?.setVisible(pulse.isRunning)
+                // Visible exactly while the engine holds for the next phase —
+                // the "timer finished" moment. Every action that advances the
+                // hold flips this flag and the island dissolves on its own.
+                self?.setVisible(pulse.isWaitingForNextPhase)
             }
     }
 
@@ -88,75 +103,197 @@ final class MacNotchPanelController {
     }
 }
 
-// MARK: - Pill content
+// MARK: - Island content
 
-private struct MacNotchPillView: View {
+private struct MacNotchIslandView: View {
+    let store: StoreOf<AppFeature>
     @ObservedObject var pulse: MacPresencePulse
-    let onToggle: () -> Void
-    let onNextPhase: () -> Void
-    let onStop: () -> Void
+    let notchWidth: CGFloat
 
+    @State private var expanded = false
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
+    private var focus: FocusFeature.State { store.focus }
     private var p: MacSessionPulse { pulse.pulse }
 
+    /// The phase waiting behind the hold ("Short Break", "Focus 2/4", …).
+    private var pending: FocusPhase? { focus.pendingNextPhase }
+
     var body: some View {
-        HStack(spacing: 10) {
-            Image(systemName: p.modeIcon)
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(.secondary)
-                .accessibilityHidden(true)
+        VStack(spacing: 0) {
+            if expanded {
+                expandedPanel
+                    .transition(.asymmetric(
+                        insertion: .opacity.combined(with: .move(edge: .top)).combined(with: .scale(scale: 0.9, anchor: .top)),
+                        removal: .opacity
+                    ))
+            } else {
+                collapsedPill
+                    .transition(.opacity)
+            }
+            Spacer(minLength: 0)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        // Reset when the hold ends (an action ran elsewhere: notch, tray,
+        // hotkey — every path must collapse the island).
+        .onChange(of: p.isWaitingForNextPhase) { _, waiting in
+            if !waiting { expanded = false }
+        }
+        .animation(.spring(response: 0.4, dampingFraction: 0.8), value: expanded)
+    }
 
+    // MARK: Collapsed — the notification itself
+
+    private var collapsedPill: some View {
+        Button {
+            expanded = true
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: p.modeIcon)
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                    .accessibilityHidden(true)
+
+                Text(pending?.displayName ?? String(localized: "Next phase"))
+                    .font(.system(size: 11, weight: .semibold))
+                    .lineLimit(1)
+
+                Text(p.displayTime)
+                    .font(.system(size: 11, design: .rounded).monospacedDigit().weight(.medium))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 8, weight: .bold))
+                    .foregroundStyle(.tertiary)
+                    .accessibilityHidden(true)
+            }
+            .padding(.horizontal, 10)
+            .frame(height: 28)
+            .frame(maxWidth: notchWidth)
+            .islandBackground(cornerRadius: 14, tint: .accentColor, interactive: false)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .help(String(localized: "Show phase options"))
+        .accessibilityLabel(String(localized: "Phase complete. Show options."))
+    }
+
+    // MARK: Expanded — the options panel
+
+    private var expandedPanel: some View {
+        VStack(spacing: 12) {
+            // Header: what finished, what's next.
+            HStack(spacing: 6) {
+                Image(systemName: p.modeIcon)
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                    .accessibilityHidden(true)
+                Text(pending?.displayName ?? String(localized: "Next phase"))
+                    .font(.headline)
+                Spacer(minLength: 0)
+                Button {
+                    withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) { expanded = false }
+                } label: {
+                    Image(systemName: "chevron.up")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundStyle(.tertiary)
+                        .frame(width: 20, height: 20)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .help(String(localized: "Collapse"))
+                .accessibilityLabel(String(localized: "Collapse"))
+            }
+
+            // The pending phase's countdown, seeded by the engine hold.
             Text(p.displayTime)
-                .font(.system(size: 13, weight: .medium, design: .rounded).monospacedDigit())
-                .foregroundStyle(.primary)
+                .font(.system(size: 34, weight: .medium, design: .rounded).monospacedDigit())
+                .lineLimit(1)
+                .minimumScaleFactor(0.6)
 
-            controlsDivider()
+            // Primary: start whatever is pending.
+            Button {
+                store.send(.focus(.startNextPhaseTapped))
+            } label: {
+                Label(
+                    String(localized: "focus.notch.startnext", defaultValue: "Start"),
+                    systemImage: "play.fill"
+                )
+                .font(.system(size: 12, weight: .semibold))
+                .frame(maxWidth: .infinity)
+                .frame(height: 30)
+            }
+            .buttonStyle(.plain)
+            .islandBackground(cornerRadius: 15, tint: .accentColor, interactive: true)
+            .accessibilityLabel(String(localized: "Start next phase"))
 
-            controlButton(
-                p.isWaitingForNextPhase || p.isPaused ? "play.fill" : "pause.fill",
-                label: p.isWaitingForNextPhase
-                    ? String(localized: "Start next phase")
-                    : (p.isPaused ? String(localized: "Resume") : String(localized: "Pause")),
-                action: p.isWaitingForNextPhase ? onNextPhase : onToggle
-            )
+            HStack(spacing: 8) {
+                // "+5 min" only after a work phase (the engine guard matches).
+                if pending?.isBreak == true {
+                    islandButton(
+                        String(localized: "+5 min"),
+                        systemImage: "plus",
+                        isDestructive: false
+                    ) {
+                        store.send(.focus(.extendSessionTapped))
+                    }
+                }
 
-            if !p.isWaitingForNextPhase {
-                controlButton("forward.end.fill", label: String(localized: "Skip phase"), action: onNextPhase)
-                controlsDivider()
-                controlButton("stop.fill", label: String(localized: "End session"), action: onStop, destructive: true)
+                islandButton(
+                    String(localized: "focus.endsession.button", defaultValue: "End Session"),
+                    systemImage: "stop.fill",
+                    isDestructive: true
+                ) {
+                    MacSessionCommand.stop(store: store)
+                }
             }
         }
-        .padding(.horizontal, 10)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(reduceTransparency ? Color.black : Color.black.opacity(0.82), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-        .preferredColorScheme(.dark)
+        .padding(14)
+        .frame(width: notchWidth)
+        .frame(maxHeight: .infinity, alignment: .top)
+        .islandBackground(cornerRadius: 22, tint: .accentColor, interactive: false)
     }
 
-    @ViewBuilder
-    private func controlsDivider() -> some View {
-        Rectangle()
-            .fill(Color.white.opacity(0.18))
-            .frame(width: 1, height: 12)
-            .accessibilityHidden(true)
-    }
-
-    private func controlButton(
-        _ symbol: String,
-        label: String,
-        action: @escaping () -> Void,
-        destructive: Bool = false
+    private func islandButton(
+        _ title: String,
+        systemImage: String,
+        isDestructive: Bool,
+        action: @escaping () -> Void
     ) -> some View {
         Button(action: action) {
-            Image(systemName: symbol)
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(destructive ? Color.red.opacity(0.9) : Color.primary)
-                .frame(width: 22, height: 22)
+            Label(title, systemImage: systemImage)
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(isDestructive ? Color.red : Color.primary)
+                .frame(maxWidth: .infinity)
+                .frame(height: 26)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .help(label)
-        .accessibilityLabel(label)
+        .islandBackground(cornerRadius: 13, tint: .accentColor, interactive: false)
+        .accessibilityLabel(title)
+    }
+}
+
+// MARK: - Island material
+
+private extension View {
+    /// System Liquid Glass on macOS 26+, tinted like the tray surfaces;
+    /// ultraThinMaterial fallback on macOS 15. Opaque under reduceTransparency.
+    @ViewBuilder
+    func islandBackground(cornerRadius: CGFloat, tint: Color, interactive: Bool) -> some View {
+        if #available(macOS 26.0, *) {
+            self.glassEffect(
+                .regular
+                    .interactive(interactive)
+                    .tint(tint.opacity(0.14)),
+                in: .rect(cornerRadius: cornerRadius)
+            )
+        } else {
+            self.background(
+                .ultraThinMaterial,
+                in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+            )
+        }
     }
 }
