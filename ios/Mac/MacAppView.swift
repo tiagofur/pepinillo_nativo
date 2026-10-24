@@ -9,6 +9,7 @@ struct MacAppView: View {
 
     @Environment(\.appTheme) private var theme
     @Environment(\.openSettings) private var openSettings
+    @Environment(\.controlActiveState) private var controlActiveState
 
     private var activeTheme: AppTheme {
         AppTheme.named(store.settings.themeName)
@@ -135,6 +136,11 @@ struct MacAppView: View {
             }
         }
         .listStyle(.sidebar)
+        // The sidebar is core navigation, not a collapsible pane: drop the
+        // system toggle (a prominent glass circle on macOS 26+) from the
+        // column's top area. Applied inside the split view — the system only
+        // honors it on the sidebar content, not on the container.
+        .modifier(SidebarToggleRemoval())
         .navigationSplitViewColumnWidth(min: 200, ideal: 220, max: 280)
         .navigationTitle("Pepinillo")
         .safeAreaInset(edge: .bottom) {
@@ -147,6 +153,12 @@ struct MacAppView: View {
     /// icon+label; unselected rows carry the accent on their icons with
     /// primary text. Fixed row height so the capsule aligns edge-to-edge
     /// vertically with neighboring rows.
+    /// Music/Podcasts sidebar selection, adapted to the brand green: the
+    /// capsule is inset from the column edges (their ~8pt menu-to-button
+    /// padding), fills the row height with ~10pt radius, and follows the
+    /// system's active state — the brand green only while the window is
+    /// focused; unfocused it settles into the system's unemphasized
+    /// selection gray with primary text, exactly like Apple's apps.
     private func sidebarRow(
         _ title: String,
         systemImage: String,
@@ -156,29 +168,40 @@ struct MacAppView: View {
         HStack(spacing: 6) {
             Image(systemName: systemImage)
                 .font(.system(size: 13, weight: .medium))
-                .foregroundStyle(isSelected ? Color.white : Color.accentColor)
+                .foregroundStyle(rowIconColor(isSelected: isSelected))
                 .frame(width: 22)
                 .accessibilityHidden(true)
 
             Text(title)
                 .font(.system(size: 13, weight: isSelected ? .semibold : .regular))
-                .foregroundStyle(isSelected ? Color.white : Color.primary)
+                .foregroundStyle(rowTextColor(isSelected: isSelected))
                 .lineLimit(1)
         }
-        .padding(.horizontal, 9)
-        .frame(height: 26, alignment: .leading)
+        .padding(.horizontal, 18)
+        .frame(minHeight: 30, alignment: .leading)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background {
-            if isSelected {
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .fill(Color.accentColor)
-                    .padding(.vertical, 1)
-            }
-        }
         .contentShape(Rectangle())
         .tag(tag)
-        .listRowBackground(Color.clear)
-        .listRowInsets(EdgeInsets(top: 0, leading: 8, bottom: 0, trailing: 8))
+        // The capsule lives in the row-background layer — the same layer the
+        // system paints its selection glass in — so it replaces that layer
+        // outright instead of peeking out from behind a smaller in-content
+        // fill. The horizontal padding is the menu-to-button inset.
+        .listRowBackground(SidebarRowBackground(isSelected: isSelected))
+        .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+    }
+
+    private func rowIconColor(isSelected: Bool) -> Color {
+        guard isSelected else { return Color.accentColor }
+        return isActiveWindow ? Color.white : Color.primary
+    }
+
+    private func rowTextColor(isSelected: Bool) -> Color {
+        guard isSelected else { return Color.primary }
+        return isActiveWindow ? Color.white : Color.primary
+    }
+
+    private var isActiveWindow: Bool {
+        controlActiveState != .inactive
     }
 
     /// Bottom-of-sidebar account row + settings gear, the common modern Mac
@@ -386,5 +409,47 @@ extension AppFeature.Tab {
         case .dashboard: return "chart.bar"
         case .account: return "person.crop.circle"
         }
+    }
+}
+
+/// Hides the automatic NavigationSplitView sidebar toggle on macOS 26+, where
+/// it renders as a prominent Liquid Glass circle over the sidebar. The sidebar
+/// here is core navigation (Reminders model), not a collapsible pane. On
+/// macOS 15 there is no removal API and the default item stays.
+private struct SidebarToggleRemoval: ViewModifier {
+    func body(content: Content) -> some View {
+        if #available(macOS 26.0, *) {
+            content.toolbar(removing: .sidebarToggle)
+        } else {
+            content
+        }
+    }
+}
+
+/// The sidebar selection capsule, drawn in the row-background layer so it
+/// replaces the system's selection glass outright. Brand green while the
+/// window is focused; the system's unemphasized selection gray once it is
+/// not — the Music/Podcasts behavior. The horizontal padding is the
+/// menu-to-button inset their sidebars carry.
+private struct SidebarRowBackground: View {
+    let isSelected: Bool
+    @Environment(\.controlActiveState) private var controlActiveState
+
+    var body: some View {
+        Group {
+            if isSelected {
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .fill(fillColor)
+                    .padding(.horizontal, 8)
+            } else {
+                Color.clear
+            }
+        }
+    }
+
+    private var fillColor: Color {
+        controlActiveState == .inactive
+            ? Color(nsColor: .unemphasizedSelectedContentBackgroundColor)
+            : Color.accentColor
     }
 }

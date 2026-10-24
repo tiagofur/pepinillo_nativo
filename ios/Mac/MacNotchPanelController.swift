@@ -173,7 +173,7 @@ private struct MacNotchIslandView: View {
             .padding(.horizontal, 10)
             .frame(height: 28)
             .frame(maxWidth: notchWidth)
-            .islandBackground(cornerRadius: 14, tint: .accentColor, interactive: false)
+            .islandBackground(cornerRadius: 14, tint: .accentColor, interactive: false, opaque: reduceTransparency)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -199,7 +199,7 @@ private struct MacNotchIslandView: View {
         .padding(16)
         .frame(width: Self.panelWidth)
         .frame(maxHeight: .infinity, alignment: .top)
-        .islandBackground(cornerRadius: 26, tint: .accentColor, interactive: false)
+        .islandBackground(cornerRadius: 26, tint: .accentColor, interactive: false, opaque: reduceTransparency)
     }
 
     private static let panelWidth: CGFloat = 320
@@ -304,7 +304,7 @@ private struct MacNotchIslandView: View {
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .islandBackground(cornerRadius: 19, tint: .accentColor, interactive: true, solid: true)
+            .islandBackground(cornerRadius: 19, tint: .accentColor, interactive: true, solid: true, opaque: reduceTransparency)
             .accessibilityLabel(String(localized: "Start next phase"))
 
             HStack(spacing: 8) {
@@ -382,7 +382,7 @@ private struct MacNotchIslandView: View {
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .islandBackground(cornerRadius: 15, tint: .accentColor, interactive: false)
+        .islandBackground(cornerRadius: 15, tint: .accentColor, interactive: false, opaque: reduceTransparency)
         .accessibilityLabel(title)
     }
 }
@@ -391,12 +391,19 @@ private struct MacNotchIslandView: View {
 
 private extension View {
     /// System Liquid Glass on macOS 26+, tinted like the tray surfaces;
-    /// ultraThinMaterial fallback on macOS 15. Opaque under reduceTransparency.
-    /// `solid` renders the primary CTA's strong tint (the Focus start-capsule
-    /// treatment) instead of a subtle surface tint.
+    /// ultraThinMaterial fallback on macOS 15. `solid` renders the primary CTA's
+    /// strong tint (the Focus start-capsule treatment) instead of a subtle
+    /// surface tint. `opaque` swaps every translucent surface for its opaque
+    /// equivalent under Reduce Transparency so the island stays readable.
     @ViewBuilder
-    func islandBackground(cornerRadius: CGFloat, tint: Color, interactive: Bool, solid: Bool = false) -> some View {
-        if #available(macOS 26.0, *) {
+    func islandBackground(cornerRadius: CGFloat, tint: Color, interactive: Bool, solid: Bool = false, opaque: Bool = false) -> some View {
+        let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+        if opaque {
+            self.background(
+                solid ? tint.opacity(0.95) : Color(nsColor: .windowBackgroundColor),
+                in: shape
+            )
+        } else if #available(macOS 26.0, *) {
             self.glassEffect(
                 .regular
                     .interactive(interactive)
@@ -404,15 +411,9 @@ private extension View {
                 in: .rect(cornerRadius: cornerRadius)
             )
         } else if solid {
-            self.background(
-                tint.opacity(0.85),
-                in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-            )
+            self.background(tint.opacity(0.85), in: shape)
         } else {
-            self.background(
-                .ultraThinMaterial,
-                in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-            )
+            self.background(.ultraThinMaterial, in: shape)
         }
     }
 }
