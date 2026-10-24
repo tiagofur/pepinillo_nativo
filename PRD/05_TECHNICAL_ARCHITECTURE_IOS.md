@@ -1119,6 +1119,10 @@ When Foundation Models is unavailable (iOS < 26, model not downloaded, unsupport
 | **Ocean**             | Blues, turquoises               | Calm, fluidity        |
 | **Sunset**            | Oranges, pinks                  | Energy, warmth        |
 
+### App Accent (chrome) vs Mode Colors (content)
+
+The app-level accent — buttons, selection, links, toggles on iOS, iPadOS and macOS — is the **brand cucumber green** defined in the `AccentColor` asset catalog (light `#2E7D46`, dark `#3D9C5E`, plus high-contrast variants; AA-verified). Mode colors below are *content semantics* (timer ring, phase visuals) and never tint chrome, so Pomodoro's red no longer competes with the interface accent.
+
 ### Accent Colors per Mode
 
 Each focus mode has a unique accent color (defined in `ModeColors.swift`):
