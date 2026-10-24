@@ -38,6 +38,8 @@ private final class MacAppBootstrap: ObservableObject {
     /// which observe the store directly.
     @Published var presence = MacPresencePulse()
     private lazy var statusBar = MacStatusBarController(presence: presence)
+    /// Kofe-Flow-style notch pill — nil on displays without a notch.
+    private lazy var notchPanel = MacNotchPanelController.create()
     private lazy var quickCapture = MacQuickCaptureController()
     private lazy var spotlight = MacSpotlightIndexer()
     private lazy var activitySampler = MacActivitySampler()
@@ -135,6 +137,7 @@ private final class MacAppBootstrap: ObservableObject {
 
         presence.startObserving(store: store)
         statusBar.install(store: store)
+        notchPanel?.install(store: store, pulse: presence)
         spotlight.install(store: store)
         activitySampler.install(store: store)
         externalCommandObserver.install(store: store)
