@@ -21524,6 +21524,227 @@
           }
         }
       }
+    },
+    "Pepinillo Help" : {
+      "comment" : "macOS Help menu item and help window title. Apple localizes this pattern as 'Ayuda de <app name>'.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ayuda de Pepinillo"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ajuda do Pepinillo"
+          }
+        }
+      }
+    },
+    "Help…" : {
+      "comment" : "Menu bar popover item that opens the help window.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ayuda…"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ajuda…"
+          }
+        }
+      }
+    },
+    "Short answers to common questions — and a quick way to reach us." : {
+      "comment" : "Intro line of the macOS help window.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Respuestas breves a preguntas comunes — y una forma rápida de contactarnos."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Respostas rápidas para dúvidas comuns — e um jeito rápido de falar com a gente."
+          }
+        }
+      }
+    },
+    "Why don't I receive notifications?" : {
+      "comment" : "FAQ question.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¿Por qué no recibo notificaciones?"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Por que não recebo notificações?"
+          }
+        }
+      }
+    },
+    "Make sure notifications are allowed for Pepinillo in System Settings → Notifications (Mac) or Settings → Notifications (iPhone/iPad), and that session alerts or reminders are turned on inside Pepinillo. A Focus mode or Do Not Disturb can also silence alerts from the system side." : {
+      "comment" : "FAQ answer.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Comprueba que las notificaciones estén permitidas para Pepinillo en Ajustes del Sistema → Notificaciones (Mac) o en Ajustes → Notificaciones (iPhone/iPad), y que las alertas de sesión o los recordatorios estén activados dentro de Pepinillo. Un modo de Concentración o No molestar también puede silenciar alertas desde el sistema."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verifique se as notificações do Pepinillo estão permitidas em Ajustes do Sistema → Notificações (Mac) ou em Ajustes → Notificações (iPhone/iPad), e se os alertas de sessão ou lembretes estão ativados dentro do Pepinillo. Um modo de Concentração ou Não Perturbe também pode silenciar alertas pelo sistema."
+          }
+        }
+      }
+    },
+    "Why isn't my widget updating?" : {
+      "comment" : "FAQ question.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¿Por qué no se actualiza mi widget?"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Por que meu widget não atualiza?"
+          }
+        }
+      }
+    },
+    "Widgets don't tick every second — the system refreshes them on a battery-friendly schedule. During a live session the ring advances about every 30 seconds, and data refreshes every time you open the app. If a widget looks frozen, remove it and add it again from the widget gallery." : {
+      "comment" : "FAQ answer.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Los widgets no avanzan cada segundo: el sistema los refresca con una cadencia pensada para ahorrar batería. Durante una sesión en curso el anillo avanza aproximadamente cada 30 segundos, y los datos se actualizan cada vez que abres la app. Si un widget parece congelado, elimínalo y vuélvelo a añadir desde la galería de widgets."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Os widgets não avançam a cada segundo: o sistema os atualiza em uma cadência pensada para economizar bateria. Durante uma sessão em andamento o anel avança aproximadamente a cada 30 segundos, e os dados são atualizados sempre que você abre o app. Se um widget parecer congelado, remova-o e adicione-o novamente pela galeria de widgets."
+          }
+        }
+      }
+    },
+    "Pepinillo and privacy" : {
+      "comment" : "Privacy card title, styled after Apple Podcasts' privacy sheet.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pepinillo y la privacidad"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pepinillo e a privacidade"
+          }
+        }
+      }
+    },
+    "Pepinillo is designed to protect your information and let you choose what you share." : {
+      "comment" : "Privacy card intro line.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pepinillo se diseñó para proteger tu información y permitirte elegir lo que compartes."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O Pepinillo foi desenhado para proteger suas informações e permitir que você escolha o que compartilha."
+          }
+        }
+      }
+    },
+    "Your tasks and focus history are stored on your device — Pepinillo works offline and without an account." : {
+      "comment" : "Privacy card bullet: local-first storage.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tus tareas y tu historial de enfoque se guardan en tu dispositivo: Pepinillo funciona sin conexión y sin necesidad de cuenta."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Suas tarefas e seu histórico de foco ficam guardados no seu dispositivo — o Pepinillo funciona offline e sem precisar de conta."
+          }
+        }
+      }
+    },
+    "With iCloud Sync, your data goes only to your personal iCloud account; we never see that content." : {
+      "comment" : "Privacy card bullet: iCloud sync scope.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Si activas la sincronización con iCloud, tus datos van solo a tu cuenta personal de iCloud: nosotros nunca vemos ese contenido."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Com a sincronização do iCloud, seus dados vão apenas para a sua conta pessoal do iCloud; nós nunca vemos esse conteúdo."
+          }
+        }
+      }
+    },
+    "With your permission, focus minutes are logged to Apple Health and stay on your device." : {
+      "comment" : "Privacy card bullet: Apple Health opt-in.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Con tu permiso, los minutos de enfoque se registran en Apple Salud y se quedan en tu dispositivo."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Com sua permissão, os minutos de foco são registrados no Apple Saúde e ficam no seu dispositivo."
+          }
+        }
+      }
+    },
+    "Read the full privacy policy" : {
+      "comment" : "Privacy card link to the full published policy.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Consulta la política de privacidad"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Consulte a política de privacidade"
+          }
+        }
+      }
     }
   },
   "version" : "1.1"

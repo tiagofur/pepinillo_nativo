@@ -206,6 +206,10 @@ struct MacMenuBarView: View {
 
             Menu {
                 Button("Settings…") { openSettings() }
+                Button("Help…") {
+                    openWindow(id: "help")
+                    NSApp.activate(ignoringOtherApps: true)
+                }
                 Divider()
                 Button("Quit Pepinillo") { NSApplication.shared.terminate(nil) }
             } label: {

@@ -8,6 +8,10 @@
 import SwiftUI
 import ComposableArchitecture
 
+#if os(macOS)
+import AppKit
+#endif
+
 // MARK: - Focus Toggle Command
 
 /// Single mapping shared by the menu command, the menu bar primary action, and
@@ -237,5 +241,27 @@ struct PepinilloCommands: Commands {
             .keyboardShortcut("4", modifiers: .command)
             #endif
         }
+
+        // MARK: Help Menu
+        // The macOS convention: Help ▸ "AppName Help" (⇧⌘?) as the first
+        // item. The iOS app keeps its Help & Support screen in the Account
+        // tab, so this group only exists on the native Mac target.
+        #if os(macOS)
+        CommandGroup(replacing: .help) {
+            Button(String(localized: "Pepinillo Help")) {
+                openWindow(id: "help")
+            }
+            // "?" already implies ⇧; adding .shift again registers a
+            // double-shift equivalent that never matches the real ⇧⌘/ key
+            // event. `.command` alone is the documented help-shortcut form.
+            .keyboardShortcut("?", modifiers: .command)
+
+            Divider()
+
+            Button(String(localized: "Send Feedback")) {
+                NSWorkspace.shared.open(HelpLinks.feedback)
+            }
+        }
+        #endif
     }
 }

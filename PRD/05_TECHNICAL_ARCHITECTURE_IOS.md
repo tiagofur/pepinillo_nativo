@@ -111,6 +111,7 @@ ios/
 │   ├── MacAppView.swift                # Native sidebar + detail shell
 │   ├── MacMenuBar.swift                # MenuBarExtra UI and quick actions
 │   ├── MacSettingsView.swift           # Settings scene and MacPreferences
+│   ├── MacHelpView.swift               # Native Help window (Help ▸ Pepinillo Help ⇧⌘?); renders the shared FAQ catalog
 │   └── MacGlobalHotKey.swift           # Carbon global shortcut (⌃⌥Space)
 │
 ├── Domain/
@@ -202,6 +203,7 @@ ios/
 │   ├── Account/
 │   │   ├── AccountView.swift           # `More` tab hub for auth, billing, settings, export and support
 │   │   ├── ExportView.swift            # Export surface launched from More
+│   │   ├── HelpContent.swift           # Shared help catalog: outbound links + FAQ items (iOS screen and macOS window)
 │   │   └── HelpSupportView.swift       # Help and support surface launched from More
 │   │
 │   ├── Profile/

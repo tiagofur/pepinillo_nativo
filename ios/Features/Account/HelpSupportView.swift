@@ -13,10 +13,10 @@ struct HelpSupportView: View {
         Form {
             // MARK: - Getting Started
             Section(String(localized: "Getting Started")) {
-                Link(destination: URL(string: "https://creapolis.dev/proyectos/pepinillo/guide")!) {
+                Link(destination: HelpLinks.quickStartGuide) {
                     Label(String(localized: "Quick Start Guide"), systemImage: "book")
                 }
-                Link(destination: URL(string: "https://creapolis.dev/proyectos/pepinillo/tips")!) {
+                Link(destination: HelpLinks.focusTips) {
                     Label(String(localized: "Focus Tips & Techniques"), systemImage: "lightbulb")
                 }
             }
@@ -34,15 +34,27 @@ struct HelpSupportView: View {
                 }
             }
 
+            // MARK: - Privacy
+            // Same summary as the macOS help window's privacy card.
+            Section(PrivacyContent.title) {
+                ForEach(PrivacyContent.points, id: \.self) { point in
+                    Text(point)
+                        .font(.subheadline)
+                }
+                Link(destination: HelpLinks.privacyPolicy) {
+                    Label(PrivacyContent.policyLinkTitle, systemImage: "hand.raised")
+                }
+            }
+
             // MARK: - Contact
             Section {
-                Link(destination: URL(string: "mailto:hola@creapolis.dev")!) {
+                Link(destination: HelpLinks.emailSupport) {
                     Label(String(localized: "Email Support"), systemImage: "envelope")
                 }
-                Link(destination: URL(string: "https://creapolis.dev/proyectos/pepinillo/feedback")!) {
+                Link(destination: HelpLinks.feedback) {
                     Label(String(localized: "Send Feedback"), systemImage: "text.bubble")
                 }
-                Link(destination: URL(string: "https://x.com/creapolisdev")!) {
+                Link(destination: HelpLinks.xProfile) {
                     Label(String(localized: "Follow on X"), systemImage: "bubble.left.and.bubble.right")
                 }
             } header: {
@@ -57,38 +69,9 @@ struct HelpSupportView: View {
     }
 }
 
-// MARK: - FAQ Model
-
-private struct FAQItem: Identifiable {
-    let id = UUID()
-    let question: String
-    let answer: String
-
-    static let all: [FAQItem] = [
-        FAQItem(
-            question: String(localized: "How do focus modes work?"),
-            answer: String(localized: "Pepinillo offers four focus modes: Pomodoro (25/5 cycles), Flowtime (start when ready, stop when done), Time Blocks (fixed schedule), and Stopwatch (simple timer). Choose the mode that fits your work style from the Focus tab.")
-        ),
-        FAQItem(
-            question: String(localized: "How do I sync across devices?"),
-            answer: String(localized: "Pepinillo+ (one-time purchase) syncs tasks, sessions, settings, and analytics between iPhone and iPad using your iCloud account — no Pepinillo sign-in required. Everywhere/AI+ (subscription) syncs tasks, focus sessions, and settings through your Pepinillo account and can recover synced data after you sign in again. Check Settings → iCloud Sync for your current status.")
-        ),
-        FAQItem(
-            question: String(localized: "Can I use Pepinillo without a subscription?"),
-            answer: String(localized: "Yes! The free tier includes the Pomodoro timer, basic task management, and daily streaks. Pepinillo+ adds all focus modes, advanced analytics, and iCloud sync between iPhone and iPad. Everywhere/AI+ adds Pepinillo account sync and recovery.")
-        ),
-        FAQItem(
-            question: String(localized: "How do I cancel my subscription?"),
-            answer: String(localized: "Go to Settings → [Your Name] → Subscriptions, find Pepinillo, and tap Cancel Subscription. You can also manage this from the App Store.")
-        ),
-        FAQItem(
-            question: String(localized: "Why didn't my streak update?"),
-            answer: String(localized: "Streaks require at least one completed focus session per day. Make sure you complete a session (not just start one). Pepinillo+ and Everywhere/AI+ users get one free streak skip per week.")
-        ),
-    ]
-}
-
 // MARK: - FAQ Row
+// The FAQ catalog lives in `HelpContent.swift` and is shared with the
+// native macOS Help window.
 
 private struct FAQRow: View {
     let item: FAQItem
