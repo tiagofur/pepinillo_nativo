@@ -175,19 +175,26 @@ struct MacAppView: View {
                 .lineLimit(1)
         }
         .padding(.horizontal, 9)
-        .frame(height: 26, alignment: .leading)
+        .frame(minHeight: 30, alignment: .leading)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background {
-            if isSelected {
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .fill(Color.accentColor)
-                    .padding(.vertical, 1)
-            }
-        }
         .contentShape(Rectangle())
         .tag(tag)
-        .listRowBackground(Color.clear)
-        .listRowInsets(EdgeInsets(top: 0, leading: 8, bottom: 0, trailing: 8))
+        // The capsule lives in the row-background layer, the same layer the
+        // system paints its selection glass in, so the brand green fully
+        // replaces that layer instead of peeking out from behind a smaller
+        // in-content fill (the Music/Podcasts geometry: ~10pt radius, full
+        // column width, row-height capsule).
+        .listRowBackground(
+            Group {
+                if isSelected {
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .fill(Color.accentColor)
+                } else {
+                    Color.clear
+                }
+            }
+        )
+        .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
     }
 
     /// Bottom-of-sidebar account row + settings gear, the common modern Mac
