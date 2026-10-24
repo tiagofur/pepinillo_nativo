@@ -84,3 +84,6 @@ android/.artifacts/
 .zcode/
 .kilo/
 .atl/
+
+# Impeccable skill workspace (session-local critique reports)
+.impeccable/
