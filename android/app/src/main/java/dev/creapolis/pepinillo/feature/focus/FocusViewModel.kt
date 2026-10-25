@@ -1,5 +1,6 @@
 package dev.creapolis.pepinillo.feature.focus
 
+import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -23,6 +24,7 @@ import dev.creapolis.pepinillo.domain.timer.FailedSession
 import dev.creapolis.pepinillo.domain.timer.TimerStatus
 import dev.creapolis.pepinillo.domain.timer.displayTime
 import dev.creapolis.pepinillo.domain.timer.phaseLabelRes
+import dev.creapolis.pepinillo.util.InAppReviewManager
 import dev.creapolis.pepinillo.domain.timer.progress
 import dev.creapolis.pepinillo.feature.tasks.model.Task
 import dev.creapolis.pepinillo.service.FocusTimerService
@@ -130,7 +132,11 @@ class FocusViewModel @Inject constructor(
     private val prefsRepo: UserPreferencesRepository,
     private val featureGate: FeatureGate,
     private val soundscapeManager: SoundscapeManager,
+    private val inAppReviewManager: InAppReviewManager,
 ) : ViewModel() {
+
+    private val _requestInAppReview = MutableStateFlow(false)
+    val requestInAppReview: StateFlow<Boolean> = _requestInAppReview.asStateFlow()
 
     private val _linkedTaskName = MutableStateFlow<String?>(null)
     private val _showTaskPicker = MutableStateFlow(false)
@@ -259,9 +265,12 @@ class FocusViewModel @Inject constructor(
         viewModelScope.launch {
             focusEngine.workSessionCompleted.collect { sessionId ->
                 _lastCompletedSessionId = sessionId
+                prefsRepo.incrementCompletedSessionsCount()
                 val prefs = prefsRepo.preferences.first()
                 if (prefs.showJournalAfterSession) {
                     _showJournalSheet.value = true
+                } else {
+                    checkReviewEligibility()
                 }
             }
         }
@@ -559,12 +568,33 @@ class FocusViewModel @Inject constructor(
             sessionRepository.saveJournalEntry(sessionId, note, rating)
             _showJournalSheet.value = false
             _lastCompletedSessionId = null
+            checkReviewEligibility()
         }
     }
 
     fun skipJournal() {
         _showJournalSheet.value = false
         _lastCompletedSessionId = null
+        checkReviewEligibility()
+    }
+
+    fun consumeReviewRequest() {
+        _requestInAppReview.value = false
+    }
+
+    fun launchReviewIfEligible(activity: Activity) {
+        viewModelScope.launch {
+            inAppReviewManager.checkAndPromptReview(activity)
+        }
+    }
+
+    private fun checkReviewEligibility() {
+        viewModelScope.launch {
+            val prefs = prefsRepo.preferences.first()
+            if (!prefs.hasPromptedForReview && prefs.completedSessionsCount >= InAppReviewManager.SESSIONS_THRESHOLD_FOR_REVIEW) {
+                _requestInAppReview.value = true
+            }
+        }
     }
 
     // ── Soundscape ──

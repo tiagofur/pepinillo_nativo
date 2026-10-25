@@ -12,6 +12,7 @@ import dev.creapolis.pepinillo.data.repository.TaskRepository
 import dev.creapolis.pepinillo.domain.timer.FocusEngine
 import dev.creapolis.pepinillo.domain.timer.FocusPhase
 import dev.creapolis.pepinillo.domain.timer.TimerStatus
+import dev.creapolis.pepinillo.util.InAppReviewManager
 import dev.creapolis.pepinillo.domain.soundscape.Soundscape
 import dev.creapolis.pepinillo.domain.soundscape.SoundscapeManager
 import dev.creapolis.pepinillo.platform.feedback.FeedbackManager
@@ -120,6 +121,7 @@ class FocusViewModelTest {
     private lateinit var subscriptionManager: SubscriptionManager
     private lateinit var featureGate: FeatureGate
     private lateinit var soundscapeManager: SoundscapeManager
+    private lateinit var inAppReviewManager: InAppReviewManager
 
     private val prefsFlow = MutableStateFlow(UserPreferences())
 
@@ -191,6 +193,7 @@ class FocusViewModelTest {
             every { subscriptionState } returns subscriptionStateFlow
         }
         featureGate = FeatureGate(subscriptionManager)
+        inAppReviewManager = mockk(relaxed = true)
 
         // Real FocusEngine backed by mocks
         engine = FocusEngine(
@@ -210,6 +213,7 @@ class FocusViewModelTest {
             prefsRepo = prefsRepo,
             featureGate = featureGate,
             soundscapeManager = soundscapeManager,
+            inAppReviewManager = inAppReviewManager,
         )
 
     }
@@ -343,6 +347,7 @@ class FocusViewModelTest {
             prefsRepo = prefsRepo,
             featureGate = featureGate,
             soundscapeManager = soundscapeManager,
+            inAppReviewManager = inAppReviewManager,
         )
         backgroundScope.launch { localViewModel.uiState.collect {} }
         
@@ -740,6 +745,7 @@ class FocusViewModelTest {
             prefsRepo = prefsRepo,
             featureGate = featureGate,
             soundscapeManager = soundscapeManager,
+            inAppReviewManager = inAppReviewManager,
         )
 
         // No collection yet: the very first values must already reflect the

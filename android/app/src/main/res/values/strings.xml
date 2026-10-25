@@ -423,6 +423,8 @@
     <string name="more_desc_help">Feedback and documentation</string>
     <string name="more_btn_about">About</string>
     <string name="more_desc_about">Version and legal info</string>
+    <string name="more_btn_rate">Rate on Google Play</string>
+    <string name="more_desc_rate">Support Pepinillo with a 5-star review</string>
     <string name="more_promo_title">Get Pepinillo+</string>
     <string name="more_promo_desc">Unlock all local premium features forever</string>
     <string name="more_signin_desc">Sync your data across devices</string>

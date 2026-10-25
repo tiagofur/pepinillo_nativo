@@ -53,6 +53,15 @@ data class UserPreferences(
      * Device-local preference — not synced across devices.
      */
     val hapticTimerTickEnabled: Boolean = false,
+    /**
+     * Whether the Google Play in-app review prompt has already been requested.
+     * Once true, the app will NEVER ask the user again.
+     */
+    val hasPromptedForReview: Boolean = false,
+    /**
+     * Completed focus sessions on this device, used to trigger the one-time review prompt.
+     */
+    val completedSessionsCount: Int = 0,
 )
 
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "user_preferences")
@@ -92,6 +101,8 @@ class UserPreferencesRepository @Inject constructor(
         val SELECTED_SOUNDSCAPE = stringPreferencesKey("selected_soundscape")
         val SOUNDSCAPE_VOLUME = floatPreferencesKey("soundscape_volume")
         val HAPTIC_TIMER_TICK_ENABLED = booleanPreferencesKey("haptic_timer_tick_enabled")
+        val HAS_PROMPTED_FOR_REVIEW = booleanPreferencesKey("has_prompted_for_review")
+        val COMPLETED_SESSIONS_COUNT = intPreferencesKey("completed_sessions_count")
     }
 
     val preferences: Flow<UserPreferences> = dataStore.data.map { prefs ->
@@ -122,6 +133,8 @@ class UserPreferencesRepository @Inject constructor(
             selectedSoundscape = prefs[Keys.SELECTED_SOUNDSCAPE],
             soundscapeVolume = prefs[Keys.SOUNDSCAPE_VOLUME] ?: 0.5f,
             hapticTimerTickEnabled = prefs[Keys.HAPTIC_TIMER_TICK_ENABLED] ?: false,
+            hasPromptedForReview = prefs[Keys.HAS_PROMPTED_FOR_REVIEW] ?: false,
+            completedSessionsCount = prefs[Keys.COMPLETED_SESSIONS_COUNT] ?: 0,
         )
     }
 
@@ -161,6 +174,16 @@ class UserPreferencesRepository @Inject constructor(
     }
     suspend fun updateSoundscapeVolume(volume: Float) = update { it[Keys.SOUNDSCAPE_VOLUME] = volume }
     suspend fun updateHapticTimerTickEnabled(value: Boolean) = update { it[Keys.HAPTIC_TIMER_TICK_ENABLED] = value }
+    suspend fun markReviewPrompted() = update { it[Keys.HAS_PROMPTED_FOR_REVIEW] = true }
+    suspend fun incrementCompletedSessionsCount(): Int {
+        var count = 0
+        update {
+            val cur = it[Keys.COMPLETED_SESSIONS_COUNT] ?: 0
+            count = cur + 1
+            it[Keys.COMPLETED_SESSIONS_COUNT] = count
+        }
+        return count
+    }
 
     // ── Sync applying helper (clean update from server) ──
 
