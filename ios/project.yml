@@ -28,7 +28,7 @@ packages:
 settings:
   base:
     MARKETING_VERSION: "1.1.0"
-    CURRENT_PROJECT_VERSION: "4"
+    CURRENT_PROJECT_VERSION: "5"
     SWIFT_VERSION: "6.0"
     CODE_SIGN_STYLE: Automatic
     ENABLE_BITCODE: "NO"
@@ -192,6 +192,9 @@ targets:
         NSCalendarsFullAccessUsageDescription: >
           Pepinillo reads and updates your Calendar so your focus sessions
           appear alongside your existing schedule.
+        NSRemindersFullAccessUsageDescription: >
+          Pepinillo imports your Reminders as tasks so you can start focusing
+          on them right away.
         ITSAppUsesNonExemptEncryption: false
         NSUserActivityTypes:
           - com.pepinillo.app.focusSession
@@ -309,7 +312,7 @@ targets:
     type: app-extension
     platform: macOS
     deploymentTarget: "15.0"
-    bundleId: com.pepinillo.app.widget.mac
+    bundleId: com.pepinillo.app.widgetmac
     configFiles:
       Debug: Config/Dev.xcconfig
       Staging: Config/Staging.xcconfig
@@ -355,7 +358,7 @@ targets:
         product: ComposableArchitecture
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.pepinillo.app.widget.mac
+        PRODUCT_BUNDLE_IDENTIFIER: com.pepinillo.app.widgetmac
         SKIP_INSTALL: "YES"
         CODE_SIGN_STYLE: Automatic
         ENABLE_HARDENED_RUNTIME: "NO"

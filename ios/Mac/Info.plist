@@ -47,6 +47,9 @@
 	<key>NSCalendarsUsageDescription</key>
 	<string>Pepinillo reads your Calendar events so you can plan focus sessions around your existing schedule.
 </string>
+	<key>NSRemindersFullAccessUsageDescription</key>
+	<string>Pepinillo imports your Reminders as tasks so you can start focusing on them right away.
+</string>
 	<key>NSServices</key>
 	<array>
 		<dict>
