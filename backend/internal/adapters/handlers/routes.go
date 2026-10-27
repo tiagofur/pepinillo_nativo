@@ -43,6 +43,12 @@ type RouteHandlers struct {
 func RegisterAPIRoutes(api fiber.Router, deps RouteHandlers) {
 	RegisterHealthRoutes(api, deps.HealthChecks)
 
+	// RevenueCat webhook (no JWT auth - uses its own auth token).
+	// Must be registered BEFORE protected := api.Group("", middleware.JWT(...))
+	// because Fiber v2 applies empty-prefix group middleware to all subsequent routes on api.
+	webhooks := api.Group("/webhooks")
+	webhooks.Post("/revenuecat", deps.RevenueCat.Webhook)
+
 	auth := api.Group("/auth")
 	authLimiter := limiter.New(limiter.Config{Max: 60})
 	// Per-IP limits — the existing line of defence.
@@ -174,10 +180,6 @@ func RegisterAPIRoutes(api fiber.Router, deps RouteHandlers) {
 
 	billing := protected.Group("/billing")
 	billing.Post("/verify-receipt", deps.Billing.VerifyReceipt)
-
-	// RevenueCat webhook (no JWT auth - uses its own auth token)
-	webhooks := api.Group("/webhooks")
-	webhooks.Post("/revenuecat", deps.RevenueCat.Webhook)
 
 	push := verified.Group("/push")
 	push.Post("/devices", deps.Push.RegisterDevice)
