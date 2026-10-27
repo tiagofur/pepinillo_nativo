@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -367,4 +368,24 @@ func TestProductionRoutes_SyncGroupHasRequireBackendSync(t *testing.T) {
 		"routes.go must still register the task sync endpoint")
 	assertContains(t, routesFile, "deps.Tasks.Sync",
 		"tasks/sync must remain wired to the task sync handler after adding backend sync gating")
+}
+
+// TestProductionRoutes_RevenueCatWebhookRegisteredBeforeProtectedGroup verifies that
+// webhooks := api.Group("/webhooks") is registered BEFORE protected := api.Group("", middleware.JWT(...))
+// to avoid Fiber v2 empty-prefix group middleware pollution.
+func TestProductionRoutes_RevenueCatWebhookRegisteredBeforeProtectedGroup(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test")
+	}
+
+	routesFile := readRoutesFile(t)
+
+	webhookIdx := strings.Index(routesFile, `webhooks := api.Group("/webhooks")`)
+	require.True(t, webhookIdx > 0, "routes.go must register webhooks group")
+
+	protectedIdx := strings.Index(routesFile, `protected := api.Group("", middleware.JWT(deps.JWTSecret))`)
+	require.True(t, protectedIdx > 0, "routes.go must register protected group with JWT middleware")
+
+	require.True(t, webhookIdx < protectedIdx,
+		"webhooks group must be registered BEFORE protected group to avoid JWT middleware intercepting webhook calls")
 }
