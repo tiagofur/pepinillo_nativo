@@ -134,6 +134,7 @@ class MainActivity : ComponentActivity() {
     @Inject lateinit var subscriptionManager: SubscriptionManager
     @Inject lateinit var syncStatusManager: dev.creapolis.pepinillo.data.sync.SyncStatusManager
     @Inject lateinit var authExpiredEvent: dev.creapolis.pepinillo.core.network.AuthExpiredEvent
+    @Inject lateinit var inAppReviewManager: dev.creapolis.pepinillo.util.InAppReviewManager
 
     private val syncScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -230,6 +231,7 @@ class MainActivity : ComponentActivity() {
                         authStore = authStore,
                         authExpiredEvent = authExpiredEvent,
                         onboardingCompleted = onboardingCompleted,
+                        onRateClick = { inAppReviewManager.openPlayStore(this@MainActivity) },
                     )
                 }
         }
@@ -277,6 +279,7 @@ fun PepinilloApp(
     authStore: AuthStore? = null,
     authExpiredEvent: dev.creapolis.pepinillo.core.network.AuthExpiredEvent? = null,
     onboardingCompleted: Boolean = true,
+    onRateClick: () -> Unit = {},
 ) {
     val navController = rememberNavController()
 
@@ -495,6 +498,7 @@ fun PepinilloApp(
                     onExportClick = { navController.navigate("export") },
                     onHelpSupportClick = { navController.navigate("help") },
                     onAboutClick = { navController.navigate("about") },
+                    onRateClick = onRateClick,
                 ) {
                     navController.navigate("paywall")
                 }

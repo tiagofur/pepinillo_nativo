@@ -60,6 +60,7 @@ fun MoreScreen(
     onExportClick: () -> Unit = {},
     onHelpSupportClick: () -> Unit = {},
     onAboutClick: () -> Unit = {},
+    onRateClick: () -> Unit = {},
     onNavigateToPaywall: () -> Unit = {},
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -183,6 +184,13 @@ fun MoreScreen(
                     subtitle = stringResource(R.string.more_desc_about),
                     icon = Icons.Rounded.Info,
                     onClick = onAboutClick,
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                ActionCard(
+                    title = stringResource(R.string.more_btn_rate),
+                    subtitle = stringResource(R.string.more_desc_rate),
+                    icon = Icons.Rounded.Star,
+                    onClick = onRateClick,
                 )
             }
         }

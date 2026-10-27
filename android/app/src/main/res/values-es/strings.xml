@@ -446,6 +446,8 @@
     <string name="more_desc_help">Feedback y documentación</string>
     <string name="more_btn_about">Acerca de</string>
     <string name="more_desc_about">Versión e info legal</string>
+    <string name="more_btn_rate">Calificar en Google Play</string>
+    <string name="more_desc_rate">Apoya a Pepinillo con 5 estrellas</string>
     <string name="more_promo_title">Obtené Pepinillo+</string>
     <string name="more_promo_desc">Desbloqueá todas las funciones y sincronización en la nube</string>
     <string name="more_signin_desc">Sincronizá tus datos entre dispositivos</string>

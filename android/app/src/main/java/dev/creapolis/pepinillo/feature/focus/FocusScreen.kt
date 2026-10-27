@@ -111,6 +111,7 @@ import dev.creapolis.pepinillo.ui.theme.HeroTimerTextStyle
 import dev.creapolis.pepinillo.ui.theme.HeroTimerTextStyleActive
 import dev.creapolis.pepinillo.ui.theme.PepinilloTheme
 import dev.creapolis.pepinillo.ui.theme.colorScheme
+import dev.creapolis.pepinillo.util.findActivity
 
 @Composable
 fun FocusScreen(
@@ -180,7 +181,15 @@ fun FocusScreen(
     ) { /* granted or denied — session already started, nothing to do */ }
 
     val keepScreenActive = uiState.keepScreenOn && (uiState.isRunning || uiState.isPaused)
-    val activity = context as? Activity
+    val activity = context as? Activity ?: context.findActivity()
+
+    val requestReview by viewModel.requestInAppReview.collectAsState()
+    LaunchedEffect(requestReview) {
+        if (requestReview) {
+            activity?.let { viewModel.launchReviewIfEligible(it) }
+            viewModel.consumeReviewRequest()
+        }
+    }
     DisposableEffect(keepScreenActive) {
         if (keepScreenActive) {
             activity?.window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)

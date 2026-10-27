@@ -201,6 +201,9 @@ dependencies {
     // RevenueCat (Billing)
     implementation(libs.revenuecat.purchases)
 
+    // In-App Review
+    implementation(libs.play.review.ktx)
+
     // Vico (Charts)
     implementation(libs.vico.compose.m3)
 

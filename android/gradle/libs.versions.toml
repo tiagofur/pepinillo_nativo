@@ -23,6 +23,7 @@ securityCrypto = "1.1.0"
 workManager = "2.11.2"
 hiltWork = "1.4.0"
 playServicesWearable = "20.0.1"
+playReview = "2.0.2"
 wearCompose = "1.6.2"
 wear = "1.4.0"
 wearOngoing = "1.1.0"
@@ -115,6 +116,9 @@ androidx-hilt-compiler = { group = "androidx.hilt", name = "hilt-compiler", vers
 
 # RevenueCat (Billing)
 revenuecat-purchases = { group = "com.revenuecat.purchases", name = "purchases", version.ref = "revenuecat" }
+
+# In-App Review
+play-review-ktx = { group = "com.google.android.play", name = "review-ktx", version.ref = "playReview" }
 
 # Wear OS
 play-services-wearable = { group = "com.google.android.gms", name = "play-services-wearable", version.ref = "playServicesWearable" }
