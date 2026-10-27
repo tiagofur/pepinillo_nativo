@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
+
 	"pepinillo/backend/internal/domain"
 	"pepinillo/backend/internal/ports"
 )
@@ -138,8 +140,14 @@ func (s *RevenueCatService) ProcessWebhookEvent(ctx context.Context, payload *Re
 	appUserID := payload.Event.AppUserID
 	eventType := strings.ToUpper(strings.TrimSpace(payload.Event.Type))
 
-	// Find user by their RevenueCat app_user_id (typically their user ID)
-	// In this implementation, we assume app_user_id maps directly to our user ID
+	// Find user by their RevenueCat app_user_id (typically their user ID).
+	// If the user is an anonymous RevenueCat ID (e.g. "$RCAnonymousID:...") or not a valid UUID,
+	// they cannot exist in our local database (users.id is UUID). Return ErrUserNotFound so
+	// the handler ACKs with 200 OK without triggering unprocessable DB errors.
+	if _, err := uuid.Parse(appUserID); err != nil {
+		return ErrUserNotFound
+	}
+
 	user, err := s.users.GetByID(ctx, appUserID)
 	if err != nil {
 		s.logRevenueCatEvent(ctx, appUserID, "webhook_process_failed", map[string]any{
@@ -632,6 +640,11 @@ func (s *RevenueCatService) extractRevenueCatEntitlements(subscriber RevenueCatS
 
 func (s *RevenueCatService) logRevenueCatEvent(ctx context.Context, userID, eventType string, eventData map[string]any) {
 	if s.behavior == nil {
+		return
+	}
+	// user_behavior_log.user_id is a UUID column with a foreign key to users.
+	// Skip logging if userID is not a valid UUID (e.g. anonymous RC IDs).
+	if _, err := uuid.Parse(userID); err != nil {
 		return
 	}
 	_ = s.behavior.LogEvent(ctx, userID, eventType, eventData)

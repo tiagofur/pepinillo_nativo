@@ -5,6 +5,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 
 	"pepinillo/backend/internal/domain"
@@ -23,6 +24,10 @@ func (r *UserRepository) Create(ctx context.Context, user *domain.User) error {
 }
 
 func (r *UserRepository) GetByID(ctx context.Context, userID string) (*domain.User, error) {
+	if _, err := uuid.Parse(userID); err != nil {
+		// Non-UUID IDs cannot match any Postgres uuid primary key.
+		return nil, nil
+	}
 	var user domain.User
 	err := r.db.WithContext(ctx).Where("id = ?", userID).First(&user).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
