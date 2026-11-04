@@ -1,0 +1,61 @@
+{
+  "schema_version": 2,
+  "notice": "CAPABILITY CONTEXT ONLY. Never use this file as a work queue or authorization source. GitHub Issues with status:ready / status:approved are the sole operational queue.",
+  "factory_version": "1.0.0",
+  "capabilities": [
+    {
+      "id": "CAP-FACTORY-001",
+      "domain": "governance",
+      "title": "Portable ODD Orchestration & Checkpoints C1-C5",
+      "status": "active",
+      "entrypoints": [
+        "AGENTS.md",
+        "CHECKPOINTS.md",
+        ".atl/skill-registry.md"
+      ]
+    },
+    {
+      "id": "CAP-FACTORY-002",
+      "domain": "verification",
+      "title": "Fail-Closed Preflight, PR Metadata Validator & Clean-Context Handoff",
+      "status": "active",
+      "entrypoints": [
+        "scripts/factory_preflight.py",
+        "scripts/check_pr_metadata.py",
+        "scripts/factory_handoff.py"
+      ]
+    },
+    {
+      "id": "CAP-FACTORY-003",
+      "domain": "contracts",
+      "title": "Contract-First OpenAPI 3.1 Governance (Spectral + oasdiff)",
+      "status": "active",
+      "entrypoints": [
+        "contracts/openapi.yaml",
+        "contracts/Makefile"
+      ]
+    },
+    {
+      "id": "CAP-FOCUS-001",
+      "domain": "core-product",
+      "title": "Deep Work & Focus Timer Engine",
+      "status": "active",
+      "entrypoints": [
+        "android/app/src/main/java/",
+        "ios/Sources/",
+        "backend/internal/"
+      ]
+    },
+    {
+      "id": "CAP-SYNC-001",
+      "domain": "cross-platform",
+      "title": "Multi-Device Focus & Companion Sync (Wear OS / watchOS)",
+      "status": "active",
+      "entrypoints": [
+        "android/wear/",
+        "ios/watchOS/",
+        "backend/cmd/api/"
+      ]
+    }
+  ]
+}

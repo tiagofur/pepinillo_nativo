@@ -1,0 +1,107 @@
+# CHECKPOINTS.md — Fail-Closed Software Factory Gates
+
+Every change in Pepinillo passes through five deterministic checkpoints (`C1`–`C5`). Checkpoints are enforced by executable scripts, tests, and CI, not prose promises.
+
+---
+
+## C1 — Authority, DoR & Clean Workspace
+
+**Actor**: `leader`, `explorer`, `implementer`  
+**Script**: `python3 scripts/factory_preflight.py`
+
+1. **Issue Authority**: Work links to an open GitHub Issue in `status:ready` or `status:approved`.
+2. **Definition of Ready (DoR)**:
+   - Objective, user/system value, and explicit exclusions are stated.
+   - Verifiable acceptance criteria exist (`S1..Sn`).
+   - Labels assigned: exactly one `type:*`, one `priority:p0..p2`, one `size:xs..l`, and `ux:shape` if UI flows change.
+   - If `ux:shape` is present, a UX brief (`.agents/skills/ux-brief/SKILL.md`) is published as an issue comment **before** implementation starts.
+3. **Topology & Edit Surface**:
+   - Task is classified as **Inline Direct** or **Delegated Direct** (`odd/tasks/<issue>-<slug>.md`).
+   - Allowed edit surfaces (`## Allowed edit surfaces`) are explicitly enumerated before any writer runs.
+
+---
+
+## C2 — Architecture, Hierarchy of Truth & Contract Gate
+
+**Actor**: `implementer`  
+**Script**: `make -C contracts lint diff`
+
+1. **Hierarchy of Truth (Strict Order)**:
+   1. **Architecture Decision Records (`docs/architecture/adr/`)** — Active ADRs are binding.
+   2. **Product Source of Truth (`PRD/`) & Executable Contracts (`contracts/openapi.yaml`)** — Feature scope and RFC 9457 API schemas.
+   3. **Strategy & Operational Docs (`docs/strategy/`, `docs/`)** — Product direction and platform decisions.
+   4. **Existing Code** — Follow established architecture, never overriding tiers 1–3.
+2. **Contract-First OpenAPI**:
+   - Any backend HTTP API change updates `contracts/openapi.yaml` **first**.
+   - `Spectral` lint passes with zero errors.
+   - `oasdiff` detects zero breaking changes against `origin/main` (unless labeled with `contract-break`).
+3. **Agent-First Structural Hygiene**:
+   - Source files respect the soft ~500-line cognitive budget (`docs/agent-first-methodology.md`).
+   - Public symbols are descriptive and greppable.
+
+---
+
+## C3 — Proportional Test-First Verification (`V0` / `V1` / `V2`)
+
+**Actor**: `implementer`  
+**Script**: `make test` and per-surface test commands
+
+Verification scales with the risk tier of the diff:
+
+| Level | Risk Profile | Required Evidence |
+| :--- | :--- | :--- |
+| **V0 — Structural & Static** | Passive docs, comments, or non-executable config | Structural readback, `python3 scripts/factory_preflight.py`, markdown/schema lint |
+| **V1 — Focused RED/GREEN & Affected Suite** | Standard behavior change within a single platform/module | Observe deterministic **RED** test per rule → implement **GREEN** → run platform unit tests: <br>• Backend: `cd backend && go test ./...`<br>• Android/Wear: `cd android && ./gradlew :app:testDebugUnitTest :wear:testDebugUnitTest`<br>• iOS/watchOS: `xcodebuild test` |
+| **V2 — Integration, Contract & Boundary Suite** | High-risk change: DB migrations, auth/security, sync protocol, contracts, CI/scripts | V1 + full cross-platform regression checks, `make contracts-lint`, `make test-factory` |
+
+- Every work unit closes with an atomic Conventional Commit (`feat:`, `fix:`, `refactor:`, `test:`, `docs:`, `chore:`) without AI attribution trailers.
+- Close every code delivery with an explicit `Risk:` line (`Risk: none` or `Risk: item N (<reason>)`), where `N` is an item of the canonical list below.
+
+### High-Risk Items (canonical — referenced by `Risk: item N`)
+
+A change is high risk when a mistake would be hard to detect, hard to undo, or reaches beyond the change. It touches:
+
+1. **Data / irreversible effects**: migrations, changing or deleting existing stored focus/task data, persisted format changes.
+2. **Security**: auth, permissions, credentials, secrets, revenue/billing keys.
+3. **Contracts others consume**: changing or removing public API, companion sync protocol, config formats, or shared code that unmentioned existing behavior also uses.
+4. **Concurrency**: locks, races, async ordering, timer dispatch, wear/watch background sync.
+5. **Delivery / environment**: store configurations, release CI, deploy scripts, factory guardrail scripts.
+6. **No test would catch a regression** in what changes.
+
+Before writing `Risk: none`, check whether the diff changes code that existing behavior the request did not mention also uses; if so, that is item 3.
+
+---
+
+## C4 — Stateless Clean-Context Independent Review
+
+**Actor**: `reviewer` (fresh subagent or session with **zero** implementer chat context)  
+**Script**: `python3 scripts/factory_handoff.py --base <base> --head <head> --issue <N> --verification-file <evidence.txt> --out <bundle.md>`
+
+1. **Zero Rationale Contamination**: The reviewer never reads the implementer's conversation log. It consumes only the deterministic handoff packet generated by `scripts/factory_handoff.py`:
+   - Pinned `base_sha` and `head_sha` + SHA-256 scope digest
+   - Issue acceptance criteria & explicit exclusions
+   - Declared `## Allowed edit surfaces` and touched files outside them
+   - Full `git diff <base_sha>...<head_sha>`
+   - Recorded `V0`/`V1`/`V2` command outputs
+   - Fails closed (`HANDOFF_BLOCKED`, exit 3) if acceptance criteria or verification evidence are missing.
+2. **Severity Rubric (`P0`–`P3`)**: canonical in [`reviewer/SKILL.md` §3](.agents/skills/reviewer/SKILL.md). Any `P0`/`P1` blocks approval. Verdict: `APPROVED` | `CHANGES_REQUESTED` | `BLOCKED`.
+3. **Correction Bound**: At most **one** consolidated correction batch for reported P0/P1 blockers, followed by one scoped re-review on a regenerated bundle. If any P0/P1 remains, stop automated iteration, label `needs-human`, and escalate as `Needs your decision`.
+4. **Judgment-Day Triggers (canonical)**: Blind dual review (`judgment-day`: `jd-judge-a` + `jd-judge-b`, same frozen bundle, no shared output) is required when the diff touches:
+   - **Path-detected** by `scripts/factory_handoff.py` (`judgment_day_required: true`):
+     - `contracts/**`, `scripts/**`, `.github/workflows/**`, `docs/architecture/adr/**`, `CHECKPOINTS.md`
+     - Path tokens for auth/security/secrets/crypto/permissions/migrations
+     - More than **400** changed lines (size exception / chained-PR slice that was not split)
+
+---
+
+## C5 — Fail-Closed PR Delivery Contract
+
+**Actor**: `leader`  
+**Script**: `python3 scripts/check_pr_metadata.py`
+
+Every PR body must conform to `.github/PULL_REQUEST_TEMPLATE.md`:
+1. Line 1: `Closes #N`, `Fixes #N`, `Resolves #N` (if `complete`) or `Refs #N` (if `partial`).
+2. Line 2: `Delivery: complete` or `Delivery: partial`.
+3. Required headings: `## Summary`, `## Decisions Made Without Asking`, `## Verification Evidence`, `## Clean-Context Review Handoff`, `## Risk`.
+4. Valid risk declaration line matching `Risk: none` or `Risk: item <1-6> (<reason>)`.
+5. Mechanical proof of C4 approval in `## Clean-Context Review Handoff`.

@@ -1,101 +1,84 @@
-# AGENTS.md — Pepinillo monorepo
+# AGENTS.md — Pepinillo Agentic Software Factory Routing Map
 
-## What this repo is
+Pepinillo is a multi-platform **deep work / focus + tasks** product in the **Growth Validation Phase** (priorities: Activation, Retention, Monetization, Reliability).
+Development is governed by an **Agentic Software Factory** with **Organic Driven Development (ODD)** and **Contract-First OpenAPI 3.1**.
 
-Multi-platform **deep work / focus + tasks** product.
+---
 
-| Path | Stack |
-| ---- | ----- |
-| `ios/` | Swift, TCA, SwiftUI — iPhone + watchOS |
-| `android/` | Kotlin, Compose — phone + Wear OS |
-| `windows/` | C# / WinUI 3 / Windows App SDK — experimental desktop implementation (paused) |
-| `backend/` | Go REST API |
-| `PRD/` | **Product source of truth** (product decisions, features, roadmap, current status) |
-| `docs/` | Operational documentation, guides, strategy context — **not** a second PRD |
-| `docs/strategy/` | Product direction, growth validation, lessons learned |
-| `DEPLOYMENT.md` | Backend deployment source of truth |
+## 1. Hierarchy of Truth (Strict Order)
 
-Live status: **`PRD/09_CURRENT_STATUS.md`**.
+1. **Architecture Decision Records (`docs/architecture/adr/`)** — Active ADRs are binding. Propose a new ADR for structural shifts.
+2. **Product Source of Truth (`PRD/`) & Executable Contracts (`contracts/openapi.yaml`)** — `PRD/09_CURRENT_STATUS.md` is live product status; OpenAPI is single source for HTTP APIs and RFC 9457 errors.
+3. **Strategy & Operational Docs (`docs/strategy/`, `docs/`)** — Product direction, growth validation, platform decisions (`docs/strategy/PLATFORM_DECISIONS.md`).
+4. **Existing Code** — Follow established patterns, never overriding tiers 1–3.
 
-## Current product phase
+---
 
-Pepinillo is currently in **Growth Validation Phase**.
+## 2. Start & Authorization Protocol
 
-The product already has production-ready mobile foundations. The main objective is no longer expanding platforms or adding large feature surfaces. The priority is learning from real users and improving:
+1. **Establish Authority**: GitHub Issues in `status:ready` or `status:approved` are the **sole operational work queue**.
+2. **Read Cognitive Role Skill**: Load assigned role from `.agents/skills/<role>/SKILL.md` and check `.atl/skill-registry.md`.
+3. **Run Read-Only Preflight**:
+   ```bash
+   python3 scripts/factory_preflight.py
+   ```
+4. **Scope Reads**: Read only affected platforms and stack standards. Never scan `odd/tasks/` globally at startup.
 
-1. Activation — users understand the value and start focusing.
-2. Retention — users return and build a focus habit.
-3. Monetization — users perceive enough value to upgrade.
-4. Reliability — users trust Pepinillo every day.
+---
 
-Before implementing large initiatives, ask:
+## 3. Portable ODD Execution Topologies
 
-- Does this improve activation?
-- Does this improve retention?
-- Does this improve monetization?
-- Is there evidence users need it?
+The repository enforces deterministic gates `C1`–`C5` ([`CHECKPOINTS.md`](CHECKPOINTS.md)):
 
-If the answer is no, prefer documenting the idea instead of expanding scope.
+| ODD Topology | When to Use | Execution Artifact |
+| :--- | :--- | :--- |
+| **Inline Direct** | Small, bounded change with contained risk; resumable from request + `git diff` | **None** (observe RED → GREEN, run focused test suite) |
+| **Delegated Direct** | Multi-unit, cross-session, or cross-platform authorized work | **Single `odd/tasks/<issue>-<slug>.md`** |
 
-## Platform strategy
+### Core Factory Invariants
+- **Single Writer per Unit**: Every issue has at most one active `implementer` bounded by declared `## Allowed edit surfaces`.
+- **Stateless Clean-Context Review (`C4`)**: The independent `reviewer` **never** reads the implementer's chat transcript. It evaluates only the bundle from `python3 scripts/factory_handoff.py`.
+- **Automatic Blind Dual Review (`judgment-day`)**: High-risk diffs (auth, security, migrations, contracts, or >400 lines) escalate to two independent judges.
+- **Assertiveness Contract**: Resolve details using `docs/` and log under `## Decisions Made Without Asking` in PR body.
 
-### Active platforms
+---
 
-- iOS
-- Android
-- watchOS
-- Wear OS
-- Backend services required by production features
+## 4. Cognitive Roles & Stack Skills
 
-### Paused experiments
+| Role / Stack | Skill Path | Reference Standard |
+| :--- | :--- | :--- |
+| **Leader / Orchestrator** | `.agents/skills/leader/SKILL.md` | `docs/factory/human-start.md` |
+| **Explorer & Issue Triage (DoR)** | `.agents/skills/explorer/SKILL.md` | `docs/factory/human-start.md` |
+| **Implementer (Sole Writer)** | `.agents/skills/implementer/SKILL.md` | `CHECKPOINTS.md` |
+| **Independent Reviewer (Clean Context)** | `.agents/skills/reviewer/SKILL.md` | `docs/factory/clean-context-review.md` |
+| **UX Brief (`ux:shape` issues)** | `.agents/skills/ux-brief/SKILL.md` | `CHECKPOINTS.md` (C1, C5) |
+| **Go Backend** | `.agents/skills/go-backend/SKILL.md` | `backend/`, `ADR-0001` |
+| **iOS / watchOS Native** | `.agents/skills/ios-native/SKILL.md` | `ios/` (Swift 6, TCA, SwiftUI) |
+| **Android / Wear OS Native** | `.agents/skills/android-native/SKILL.md` | `android/` (Kotlin, Jetpack Compose) |
 
-Windows and Web are **not active roadmap work**.
+---
 
-They were valuable technical explorations and should be preserved, but agents should not continue implementing them unless there is a clear product/business reason approved through the roadmap.
+## 5. Platform Invariants & Rules
 
-Examples of valid reasons to resume:
+- **Active Platforms**: iOS, Android, watchOS, Wear OS, Go Backend.
+- **Paused Experiments**: Windows and Web are **not active roadmap work**; do not expand them without explicit roadmap approval.
+- **Cross-Platform Parity**: Fixes/features affecting timer or session state must preserve parity across iOS, Android, Wear OS, and watchOS.
+- **Secrets**: Never commit API keys (`REVENUECAT_SECRET_KEY`, etc.). Use env/CI only.
+- **Commits**: Conventional Commits in **English** (`feat:`, `fix:`, `refactor:`, ...). **No AI co-author trailers.**
+- **File Budget**: Respect the ~500-line cognitive cap (`docs/agent-first-methodology.md`).
 
-- strong user demand;
-- validated business opportunity;
-- meaningful retention or revenue improvement.
+---
 
-## Agent rules (short)
+## 6. Quick Commands
 
-1. **Docs SoT:** product truth lives in `PRD/`; operational context lives in `docs/`; deployment truth lives in root deployment docs. Never recreate PRD forks under `docs/PRD/`.
-2. **Strategy context:** read `docs/strategy/` before proposing large product changes. It contains decisions about direction, validation and lessons learned.
-3. **Secrets:** never commit API secrets. Use env/CI only (`REVENUECAT_SECRET_KEY`, etc.).
-4. **Cross-platform parity:** fixes/features affecting shared product behavior should be reviewed across relevant platforms (iOS, Android, Wear, watchOS, backend).
-5. **PRD maintenance:** after significant product work, update `PRD/09` and related feature documents when the product surface changes.
-6. **Commits:** Conventional Commits in **English** (`feat:`, `fix:`, `docs:`, …). Platform scope when useful: `feat(android):`, `fix(ios):`. **No** AI co-author trailers.
-7. **Scope discipline:** prefer existing architecture and dependencies. Do not invent unrelated scaffolding or workflows.
-8. **User value first:** avoid feature expansion without validating that it improves user experience, retention or revenue.
-
-## Tests (typical)
-
-| Platform | Command (from relevant root) |
-| -------- | ---------------------------- |
-| Android | `cd android && ./gradlew :app:testDebugUnitTest :wear:testDebugUnitTest` |
-| Backend | `cd backend && go test ./...` |
-| Windows Core | `dotnet test windows/Pepinillo.Core.Tests/Pepinillo.Core.Tests.csproj -c Release` (use `DOTNET_ROLL_FORWARD=Major` if host SDK mismatch requires it) |
-| iOS | Xcode / `xcodebuild` test schemes for Pepinillo targets (device/simulator as available) |
-
-Prefer project checklists:
-
-- `android/QA_RELEASE_CHECKLIST.md`
-- `windows/store/LAUNCH_CHECKLIST.md`
-- iOS App Store docs under `ios/docs/`
-
-## Where to look
-
-| Need | Location |
-| ---- | -------- |
-| Current implementation status | `PRD/09_CURRENT_STATUS.md` |
-| Product direction | `docs/strategy/PRODUCT_DIRECTION.md` |
-| Growth validation | `docs/strategy/GROWTH_VALIDATION_PLAN.md` |
-| Platform decisions | `docs/strategy/PLATFORM_DECISIONS.md` |
-| Lessons learned | `docs/strategy/LESSONS_LEARNED.md` |
-| Roadmap | `PRD/07_ROADMAP.md` |
-| Deploy backend | `DEPLOYMENT.md`, `VPS_SETUP_CHECKLIST.md` |
-| Vault dashboard | `docs/00_DASHBOARD.md` |
-
-Do not point agents at obsolete scaffold paths (`.context` generators, `dist/`, Jest).
+```bash
+make preflight        # Read-only factory health check (C1)
+make test             # Run factory guardrails and backend tests (C3)
+make test-factory     # Run factory script unit tests
+make test-android     # Run Android and Wear OS unit tests
+make test-backend     # Run Go backend unit tests
+make contracts-lint   # Lint contracts/openapi.yaml with Spectral (C2)
+make contracts-diff   # Check breaking OpenAPI changes against origin/main (C2)
+make handoff          # Generate stateless clean-context review bundle (C4)
+make labels           # Synchronize GitHub factory labels
+```
