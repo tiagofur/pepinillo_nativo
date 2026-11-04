@@ -1,0 +1,26 @@
+name: Bug / Regression Report (RDD)
+description: Report a deterministic defect with reproduction steps for RED-first fixing
+title: "fix: "
+labels: ["status:new", "type:fix"]
+body:
+  - type: textarea
+    id: symptom
+    attributes:
+      label: Observed Failure vs Expected Behavior
+      description: Exact error message, status code, or broken invariant.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Deterministic Reproduction Steps
+      description: Command or sequence of actions that reproduces the failure (used for RED test).
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Suspected Surface & Exclusions
+      description: Affected files/modules and what must remain untouched.
+    validations:
+      required: true

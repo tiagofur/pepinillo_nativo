@@ -49,6 +49,10 @@ ios/Config/Secrets.xcconfig
 # Generated distribution logs may contain tokens and personal data
 ios/**/logs/*.log
 
+# Software factory base reference folder
+software-factory-base/
+screenshots/dist/
+
 # === Go / Backend ===
 backend/bin/
 backend/tmp/

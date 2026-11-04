@@ -1,0 +1,45 @@
+name: Feature / Capability (ODD Ready)
+description: Propose a verifiable feature or capability for the Agentic Software Factory
+title: "feat: "
+labels: ["status:new", "type:feat"]
+body:
+  - type: textarea
+    id: objective
+    attributes:
+      label: Objective & User/System Value
+      description: One-paragraph description of the problem and desired outcome.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Verifiable Acceptance Criteria (S1..Sn)
+      description: Concrete, deterministic behaviors and edge cases that must be proven by tests.
+      value: |
+        - **S1**:
+        - **S2**:
+    validations:
+      required: true
+  - type: textarea
+    id: exclusions
+    attributes:
+      label: Explicit Exclusions (Out of Scope)
+      description: What the implementer MUST NOT touch or build in this issue.
+    validations:
+      required: true
+  - type: dropdown
+    id: surfaces
+    attributes:
+      label: Affected Surfaces
+      multiple: true
+      options:
+        - contracts (OpenAPI 3.1)
+        - backend (Go)
+        - web (React + Vite)
+        - desktop (Tauri v2)
+        - mobile-tauri (Tauri v2 MVP)
+        - ios-native (SwiftUI)
+        - android-native (Jetpack Compose)
+        - factory / ci / docs
+    validations:
+      required: true
