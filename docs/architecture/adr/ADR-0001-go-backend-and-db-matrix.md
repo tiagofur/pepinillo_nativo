@@ -1,48 +1,48 @@
-# ADR-0001: Go Backend Standard and Workload-Driven Database Selection Matrix
+# ADR-0001: Backend Go (Fiber v2 + GORM) y Matriz de Persistencia
 
-- **Status**: Accepted
-- **Date**: 2026-10-29
-- **Deciders**: Software Factory Architecture Core
-
----
-
-## 1. Context
-
-A multi-product Agentic Software Factory requires a backend language and persistence architecture that optimize simultaneously for:
-1. **LLM Generation Accuracy**: Explicit control flow, minimal hidden magic, fast compiler diagnostics, and deterministic static typing.
-2. **Operational Simplicity**: Single static binary deployment, low memory footprint, predictable concurrency, and fast test execution.
-3. **Domain Flexibility**: While the backend language should remain constant across products to maximize skill reuse, different products have radically different persistence profiles (multi-tenant SaaS vs. local-first desktop companion vs. edge CLI vs. high-ingest telemetry).
+- **Estado**: Accepted (reconciliado con la arquitectura en producción)
+- **Fecha**: 2026-11-10 (original de plantilla: 2026-10-29)
+- **Decisores**: Pepinillo Architecture Core
 
 ---
 
-## 2. Decision
+## 1. Contexto
 
-### 2.1 Backend Language & Architecture: Go (Golang)
-All backend services, APIs, and background workers in the Software Factory standardize on **Go** (1.23+):
-- **Architecture**: Screaming Hexagonal / Clean Architecture (`domain -> application -> adapters`). Domain packages contain zero database or HTTP transport imports.
-- **HTTP Transport**: Standard library `net/http` (Go 1.22+ enhanced routing) or lightweight `go-chi/chi/v5` middleware composition, bound to OpenAPI 3.1 generated types (`contracts/openapi.yaml`).
-- **Database Access**: **SQL-first via `sqlc`** (compile-time type-safe Go generated from raw SQL) or explicit repository interfaces. Heavy reflection ORMs (`GORM`, `ent`) are prohibited by default because they obscure query plans and produce subtle runtime bugs in agent-generated code.
-- **Error Contract**: All HTTP error responses serialize as **RFC 9457 Problem Details (`application/problem+json`)**.
-- **Observability**: Structured JSON logging via standard library `log/slog` and OpenTelemetry (`otel`) tracing hooks.
-
-### 2.2 Workload-Driven Database Selection Matrix
-Unlike the backend language, the database engine is **not** one-size-fits-all. At project initialization (`./scripts/init-project.sh --db <choice>`), the primary store is chosen from the matrix below and recorded in `factory.manifest.json`. Because persistence is isolated behind domain repository ports, business logic remains identical regardless of the selected adapter.
-
-| Workload Archetype | Primary Database | Driver / Tooling | Mandatory Operational Profile |
-| :--- | :--- | :--- | :--- |
-| **Multi-User SaaS, Transactional Core, Multi-Tenant APIs, Financial/Inventory Ledgers** | **PostgreSQL 16+** (`--db postgres`) | `pgx/v5` + `sqlc` + `golang-migrate` + `testcontainers-go` | ACID transactions, strict foreign keys, `JSONB` for bounded semi-structured attributes, Transactional Outbox pattern for async events, `pgvector` when semantic search is needed. |
-| **Local-First App, Single-Node Micro-SaaS, Embedded CLI/Desktop Sidecar, Low-Ops Edge** | **SQLite 3** (`--db sqlite`) | `modernc.org/sqlite` (CGO-free) + `sqlc` | Mandatory pragmas on connection init: `PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL; PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000;`. Separate writer connection (`SetMaxOpenConns(1)`) from concurrent reader pool; pair with Litestream for continuous S3 replica backup when hosted. |
-| **High-Ingest Telemetry, Audit Streams, Time-Series Analytics** | **ClickHouse** or **TimescaleDB** (`--db custom`) | Official native client behind append-only port | Requires an explicit project ADR addendum justifying ingest volume (>10k events/sec) over standard PostgreSQL partitioning. |
-| **Ephemeral Cache, Rate Limiting, Distributed Locks, Pub/Sub** | **Redis / Valkey** or **NATS JetStream** (Auxiliary) | `redis/go-redis/v9` or `nats.go` | Auxiliary only—never the sole system of record without a durable primary database. |
+El backend de Pepinillo da soporte a sincronización LWW multi-dispositivo (`Everywhere/AI+`), autenticación email/OAuth (Google y Sign in with Apple), verificación de recibos y webhooks de RevenueCat, notificaciones push (APNs/FCM), WebSockets en tiempo real y endpoints de analítica/IA. Necesitamos un ADR que refleje fielmente el stack que ya opera en producción y evite que los agentes inventen capas o frameworks inexistentes.
 
 ---
 
-## 3. Consequences
+## 2. Decisión
 
-### Positive
-- Go's explicit `if err != nil` handling, small grammar, and sub-second incremental compilation give coding agents immediate, unambiguous feedback (`V1` RED/GREEN cycles run in milliseconds).
-- Repository ports allow starting an MVP on zero-ops SQLite (`--db sqlite`) or full PostgreSQL (`--db postgres`) without changing domain or application services.
-- `sqlc` guarantees that every SQL query is syntax-checked against the migration schema before any code is reviewed.
+### 2.1 Lenguaje y Arquitectura Hexagonal en `backend/`
+- **Lenguaje**: **Go 1.24** (`backend/go.mod`), binario único `cmd/api/main.go`.
+- **Capas hexagonales**:
+  - `internal/domain/`: entidades puras y reglas de negocio (`User`, `EffectiveTierAt`, `Task`, `FocusMode`/`FocusPhase`, `ResolveSyncTimestamp`, `UserPreference`).
+  - `internal/ports/`: interfaces hacia persistencia, almacenamiento de tokens, LLM, push, WebSocket y almacenamiento de archivos.
+  - `internal/services/`: orquestación de casos de uso, rotación/detección de robo de refresh tokens, reconciliación LWW y lógica de créditos IA.
+  - `internal/adapters/`: implementaciones concretas (`handlers/` HTTP Fiber v2, `middleware/`, `repositories/postgres/` con GORM, `stores/redis` y `stores/memory`, `llm/gemini` y `noop`, `push/{apns,fcm,mux,noop}`, `storage/{minio,noop}`, `notifier/sendgrid`, `websocket/`).
+- **Transporte HTTP**: **Fiber v2** (`github.com/gofiber/fiber/v2`) montado bajo `/api/v1` con `recover`, `sentryfiber`, `helmet`, `compress`, `cors` estricto en producción y rate limiters globales + por identidad/IP en `/auth`.
 
-### Negative / Tradeoffs
-- Switching between PostgreSQL and SQLite requires maintaining dialect-specific SQL query files (`queries/postgres/*.sql` vs. `queries/sqlite/*.sql`) if a project actively supports both simultaneously; in practice, each project selects one primary engine in `factory.manifest.json`.
+### 2.2 Persistencia e Infraestructura
+| Rol | Tecnología real | Detalles operativos |
+| :--- | :--- | :--- |
+| **Base principal** | **PostgreSQL 16** (`gorm.io/driver/postgres` + `pgx/v5`) | Migraciones secuenciales `000001`..`000015` ejecutadas al arranque con `golang-migrate/v4`. Todas las consultas parametrizadas vía GORM/SQL parametrizado. |
+| **Estado efímero y refresh tokens** | **Redis 7** (`go-redis/v9`) con fallback `memory` en dev | Almacena hashes HMAC-SHA-256 (`REFRESH_TOKEN_HASH_KEY`) de refresh tokens y códigos temporales; en `APP_ENV=production` exige clave ≥ 32 bytes. |
+| **Almacenamiento de objetos** | **MinIO** (`minio-go/v7`) con fallback `noop` | Avatares de perfil (`POST /api/v1/users/me/image`, máx. 5 MiB; JPEG/PNG/WebP). |
+| **Sidecar ML opcional** | **Python FastAPI** (`backend/ml_service/main.py`, perfil `ml`) | Microservicio ligero en `:8001` (`Dockerfile.ml`); producción en VPS (`docker-compose.prod.yml`) despliega `api`, `db`, `redis` y `caddy` con fallback determinista si Gemini/ML no están activos. |
+| **Observabilidad** | **`log/slog` JSON + Sentry + endpoints `/health*`** | `/health/metrics`, `/health/metrics/prometheus`, `/health/alerts`, `/health/slo`. |
+
+### 2.3 Regla de orden de rutas en Fiber v2
+En `backend/internal/adapters/handlers/routes.go`, los webhooks sin JWT (`POST /api/v1/webhooks/revenuecat`) y rutas públicas `/auth/*` **deben registrarse antes** de `protected := api.Group("", middleware.JWT(...))`, porque Fiber v2 aplica middleware de grupos con prefijo vacío `""` a las rutas subsecuentes del mismo `Router`.
+
+---
+
+## 3. Consecuencias
+
+### Positivas
+- Arquitectura probada en producción (`api.ppn.creapolis.dev`) con tests unitarios y de integración en CI contra PostgreSQL 16 y Redis 7 reales.
+- Separación clara por puertos (`ports/`) que permite probar servicios en memoria (`fakes_test.go`) y sustituir proveedores externos (`Gemini`, `APNs`, `FCM`, `MinIO`, `SendGrid`).
+
+### Restricciones / Deuda conocida
+- No introducir nuevos endpoints ni tablas sin actualizar `contracts/openapi.yaml` y añadir migración numerada (`up` y `down`) en `backend/migrations/`.
+- El perfil de producción (`APP_ENV=production`) es fail-closed si faltan `JWT_SECRET`, `REFRESH_TOKEN_HASH_KEY` (≥32 bytes), `CORS_ALLOWED_ORIGINS` sin `*` o `APPLE_BUNDLE_ID`.
