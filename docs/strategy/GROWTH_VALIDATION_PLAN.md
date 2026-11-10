@@ -1,59 +1,58 @@
-# Pepinillo Growth Validation Plan
+# Plan de validación de crecimiento
 
-## Objective
+## Objetivo
 
-Validate product-market signals before expanding the product surface.
+Validar señales de product-market fit antes de expandir la superficie del
+producto.
 
-## Current phase
+## Fase actual
 
-Pepinillo is entering the Growth Validation Phase.
+Pepinillo está en la fase de **Validación de Crecimiento**.
 
-The main question is no longer:
+La pregunta principal ya no es:
 
-> Can we build it?
+> ¿Podemos construirlo?
 
-The question is:
+La pregunta es:
 
-> Do users return, build habits and pay for it?
+> ¿Los usuarios vuelven, crean hábito y pagan por ello?
 
-## Funnel
+## Embudo
 
-Track the journey:
+Medir el recorrido:
 
-1. Install.
-2. Complete onboarding.
-3. Create or select a task.
-4. Start first focus session.
-5. Complete focus session.
-6. Return next day.
-7. Continue weekly usage.
-8. View premium options.
-9. Convert.
+1. Instalación.
+2. Onboarding completado.
+3. Crear o seleccionar una tarea.
+4. Primera sesión de foco iniciada.
+5. Primera sesión completada.
+6. Retorno al día siguiente (D1).
+7. Uso semanal continuado (D7/D30).
+8. Visualización de las opciones premium.
+9. Conversión.
 
-## Success signals
+## Señales de éxito
 
-Important metrics:
+Métricas clave:
 
-- Activation rate.
-- D1/D7/D30 retention.
-- Completed focus sessions.
-- Favorite focus modes.
-- Review quality.
-- Premium conversion.
+- Tasa de activación.
+- Retención D1/D7/D30.
+- Sesiones de foco completadas.
+- Modos de foco favoritos.
+- Calidad de las reviews.
+- Conversión premium.
 
-## First user goal
+## Meta de primeros usuarios
 
-Prioritize learning from the first 100 real users.
+Priorizar el aprendizaje con los primeros 100 usuarios reales. Foco en:
 
-Focus on:
+- Por qué instalaron.
+- Por qué volvieron.
+- Qué les impide enfocarse.
+- Qué features generan valor.
 
-- Why they installed.
-- Why they returned.
-- What prevents them from focusing.
-- Which features create value.
+## Estrategia de publicidad
 
-## Advertising strategy
-
-Do not scale paid acquisition before understanding retention and conversion.
-
-Marketing should amplify a validated experience, not compensate for unclear positioning.
+No escalar adquisición pagada antes de entender retención y conversión.
+El marketing debe amplificar una experiencia validada, no compensar un
+posicionamiento poco claro.

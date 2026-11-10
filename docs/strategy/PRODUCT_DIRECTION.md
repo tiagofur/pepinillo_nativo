@@ -1,62 +1,54 @@
-# Pepinillo Product Direction
+# Dirección de producto Pepinillo
 
-## Purpose
+## Propósito
 
-This document defines the strategic direction of Pepinillo after production release.
+Define la dirección estratégica de Pepinillo tras el lanzamiento a producción.
+Pepinillo ya no está en fase de discovery/build-only: la prioridad actual es
+validar comportamiento real de usuarios, retención y monetización.
 
-Pepinillo is no longer in a product discovery/build-only phase. The current priority is validating real user behavior, retention and monetization.
+## Identidad de producto
 
-## Product Identity
+Pepinillo es un **compañero nativo de deep work** que ayuda a planificar
+trabajo con sentido, entrar en sesiones de foco y entender los patrones de
+productividad.
 
-Pepinillo is a native deep-work companion that helps people plan meaningful work, enter focus sessions and understand their productivity patterns.
-
-## Core pillars
+## Pilares centrales
 
 ### Focus
-
-The primary experience. Users should reach an active focus session with minimal friction.
-
-Supported methods:
-
-- Pomodoro: structured intervals.
-- Flowtime: flexible deep work without artificial interruption.
-- Time Block: planned duration sessions.
-- Stopwatch: open-ended tracking.
+La experiencia primaria. El usuario debe alcanzar una sesión de foco activa
+con mínima fricción. Métodos soportados: Pomodoro, Flowtime, Time Block,
+Stopwatch (`docs/prd-v2.md` §4).
 
 ### Plan
-
-Tasks exist to support focused execution, not to become a full project management platform.
+Las tareas existen para soportar la ejecución enfocada, no para convertirse en
+una plataforma completa de gestión de proyectos.
 
 ### Reflect
+Las analíticas y reviews ayudan a entender qué métodos de foco funcionan mejor
+para cada usuario.
 
-Analytics and reviews help users understand what focus methods work best.
+## Qué NO es Pepinillo
 
-## What Pepinillo is not
+- Un gestor de tareas genérico.
+- Una plataforma enterprise de gestión de proyectos.
+- Una competición de features contra cada aplicación de productividad.
 
-Pepinillo is not:
+## Prioridad estratégica actual
 
-- A generic task manager.
-- An enterprise project management platform.
-- A feature competition against every productivity application.
+Validación móvil:
+1. Mejorar estabilidad Android/iOS (+ su ecosistema de reloj y Mac).
+2. Adquirir usuarios reales.
+3. Medir activación y retención.
+4. Mejorar conversión.
+5. Escalar solo con evidencia.
 
-## Current strategic priority
+## Estrategia de plataformas
 
-Mobile validation:
+Superficies activas: iOS, watchOS, macOS (`PepinilloMac`), Android, Wear OS y
+backend Go. Windows y Web permanecen en pausa hasta que la tracción móvil
+justifique inversión (`PLATFORM_DECISIONS.md`).
 
-1. Improve Android/iOS stability.
-2. Acquire real users.
-3. Measure activation and retention.
-4. Improve conversion.
-5. Scale only after evidence.
+## Marca
 
-## Platform strategy
-
-Android and iOS are the active product platforms.
-
-Windows and Web explorations remain available but are paused until mobile traction justifies further investment.
-
-## Brand
-
-The official product name is **Pepinillo**.
-
-Avoid alternative names in documentation, stores and marketing materials.
+El nombre oficial del producto es **Pepinillo** (Publicado por Creapolis).
+Evita nombres alternativos en documentación, stores y material de marketing.
