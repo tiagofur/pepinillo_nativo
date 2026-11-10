@@ -1,7 +1,7 @@
 # Sistema de diseño
 
 Fuente ejecutable de tokens: `ios/Shared/Design/` (Apple) y
-`android/app/src/main/java/dev/creapolis/pepinillo/core/theme/` + res (Android).
+`android/app/src/main/java/dev/creapolis/pepinillo/ui/theme/` + res (Android).
 Guía de personalidad: [`../.impeccable.md`](../.impeccable.md). Contrato macOS:
 [`../ios/docs/macos-design-contract.md`](../ios/docs/macos-design-contract.md).
 

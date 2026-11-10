@@ -44,7 +44,7 @@ Estas instrucciones aplican a todo el repositorio y complementan
 ## Sincronización de documentación
 
 - La fuente de verdad de producto vive en `docs/prd-v2.md` y
-  `docs/product-map.md` (no hay forks de PRD bajo `docs/legacy/`).
+  `docs/product-map.md` (`docs/legacy/PRD/` es archivo histórico, no fuente de verdad).
 - Actualiza `docs/product-map.md` y/o `docs/prd-v2.md` para features nuevas y
   cambios significativos; no para bugfixes menores salvo que alteren
   arquitectura o dirección de producto.
