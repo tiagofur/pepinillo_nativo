@@ -1,54 +1,62 @@
-# Skill Registry — Pepinillo Agentic Software Factory
+# Registro de Skills — Software Factory de Pepinillo
 
-This registry maps **cognitive roles**, **stack/contract contexts**, and **global Gentle-AI / ODD skills** to their canonical file paths and activation rules.
+Este registro mapea **roles cognitivos**, **contextos de stack** y skills
+globales G-ODD a sus rutas canónicas y reglas de activación.
 
 ---
 
-## 1. Cognitive Role Skills (Project-Local, Task-Oriented)
+## 1. Skills de rol cognitivo (locales al proyecto, orientados a tarea)
 
-We separate **cognitive task roles** from **technology stack knowledge**. Every execution unit loads exactly one primary cognitive role skill:
+Separamos **roles cognitivos de tarea** del **conocimiento de stack**. Cada
+unidad de ejecución carga exactamente un skill de rol cognitivo primario:
 
-| Skill | Path | Trigger / Activation Rule |
+| Skill | Ruta | Disparador / regla de activación |
 | :--- | :--- | :--- |
-| `leader` | `.agents/skills/leader/SKILL.md` | Orchestrating an issue end-to-end (`C1`–`C5`), choosing ODD `Inline Direct` vs `Delegated Direct`, dispatching bounded workers, generating stateless review bundles (`scripts/factory_handoff.py`), or preparing PR delivery (`scripts/check_pr_metadata.py`). |
-| `explorer` | `.agents/skills/explorer/SKILL.md` | Read-only codebase/context mapping (`<2k` token handoff with `path:line` evidence) OR GitHub Issue Triage converting `status:new` issues into verifiable `status:ready` specifications with DoR and taxonomy labels. |
-| `implementer` | `.agents/skills/implementer/SKILL.md` | Sole-writer implementation on an isolated branch within `## Allowed edit surfaces`, Contract-First OpenAPI workflow, RED → GREEN → Refactor test-first execution, proportional `V0`/`V1`/`V2` verification, and atomic work-unit commits. |
-| `reviewer` | `.agents/skills/reviewer/SKILL.md` | Stateless Clean-Context Independent Review (`C4`) with **zero** access to implementer chat transcripts, evaluating only the deterministic `scripts/factory_handoff.py` bundle against the `P0`–`P3` rubric and `judgment-day` escalation rules. |
-| `ux-brief` | `.agents/skills/ux-brief/SKILL.md` | Issue labeled `ux:shape` without a current brief: unattended UX brief published as an issue comment before implementation (performed by the `explorer` role; never writes code). |
+| `leader` | `.agents/skills/leader/SKILL.md` | Orquestar una issue de extremo a extremo (`C1`–`C5`), elegir G-ODD `Inline Direct` vs `Delegated Direct`, despachar workers acotados, generar paquetes stateless de revisión (`scripts/factory_handoff.py`) o preparar la entrega del PR (`scripts/check_pr_metadata.py`). |
+| `explorer` | `.agents/skills/explorer/SKILL.md` | Mapeo read-only de código/contexto (handoff `<2k` tokens con evidencia `path:line`) O triage de GitHub Issues convirtiendo `status:new` en especificaciones `status:ready` con DoR y etiquetas de taxonomía. |
+| `implementer` | `.agents/skills/implementer/SKILL.md` | Implementación de único escritor en rama aislada dentro de `## Allowed edit surfaces`, flujo Contract-First OpenAPI, ejecución test-first RED → GREEN → Refactor, verificación proporcional `V0`/`V1`/`V2` y commits atómicos de unidad. |
+| `reviewer` | `.agents/skills/reviewer/SKILL.md` | Revisión Independiente Stateless con Contexto Limpio (`C4`) con **cero** acceso al transcript del implementador, evaluando solo el bundle determinista de `scripts/factory_handoff.py` contra la rúbrica `P0`–`P3` y las reglas de escalado `judgment-day`. |
+| `ux-brief` | `.agents/skills/ux-brief/SKILL.md` | Issue etiquetada `ux:shape` sin brief vigente: brief UX publicado como comentario de issue antes de implementar (lo ejecuta el rol `explorer`; nunca escribe código). |
 
 ---
 
-## 2. Stack & Surface Context Skills (Project-Local, On-Demand)
+## 2. Skills de stack y superficie (locales al proyecto, bajo demanda)
 
-Stack skills are loaded **on demand** by `explorer`, `implementer`, or `reviewer` when the task or touched file paths match the surface:
+Los skills de stack se cargan **bajo demanda** por `explorer`, `implementer` o
+`reviewer` cuando la tarea o las rutas tocadas coinciden con la superficie:
 
-| Skill | Path | File / Path Triggers | Task Intent Triggers |
+| Skill | Ruta | Disparadores de rutas | Disparadores de intención |
 | :--- | :--- | :--- | :--- |
-| `go-backend` | `.agents/skills/go-backend/SKILL.md` | `backend/**`, `cmd/**`, `internal/**`, `*.go`, `go.mod`, `contracts/openapi.yaml` | Go clean/hexagonal architecture, OpenAPI server stubs, RFC 9457 Problem Details, `slog`, `go test ./...`. |
-| `ios-native` | `.agents/skills/ios-native/SKILL.md` | `ios/**`, `*.swift`, `*.xcodeproj`, `*.xcworkspace` | Swift 6, The Composable Architecture (TCA), SwiftUI, watchOS companion UI/sync, `xcodebuild test`. |
-| `android-native` | `.agents/skills/android-native/SKILL.md` | `android/**`, `*.kt`, `*.gradle*` | Kotlin, Jetpack Compose, Coroutines/Flow, Wear OS companion UI/sync, `./gradlew :app:testDebugUnitTest :wear:testDebugUnitTest`. |
-| `critique` | `.agents/skills/critique/SKILL.md` | UI/UX reviews | Evaluate design from a UX perspective, visual hierarchy, cognitive load, accessibility. |
-| `frontend-design` | `.agents/skills/frontend-design/SKILL.md` | Web/UI components | Production-grade UI/frontend styling guidelines. |
+| `go-backend` | `.agents/skills/go-backend/SKILL.md` | `backend/**`, `*.go`, `go.mod`, `contracts/openapi.yaml` | Hexagonal Go + Fiber v2 + GORM + PostgreSQL 16/Redis 7, middleware de tiers, sincronización LWW, `go test ./...`. |
+| `ios-native` | `.agents/skills/ios-native/SKILL.md` | `ios/**`, `*.swift`, `*.xcodeproj`, `*.xcworkspace` | Swift 6, TCA, SwiftUI, watchOS companion, `PepinilloMac` (SwiftUI+AppKit), `xcodebuild test` con scheme `Pepinillo Dev`. |
+| `android-native` | `.agents/skills/android-native/SKILL.md` | `android/**`, `*.kt`, `*.gradle*` | Kotlin, Jetpack Compose, Coroutines/Flow, Wear OS companion, `./gradlew :app:testDebugUnitTest :wear:testDebugUnitTest`. |
+| `critique` | `.agents/skills/critique/SKILL.md` | Reviews de UI/UX | Evaluar diseño desde UX, jerarquía visual, carga cognitiva, accesibilidad. |
+| `frontend-design` | `.agents/skills/frontend-design/SKILL.md` | Componentes de UI | Guías de estilado UI/frontend de grado producción. |
 
 ---
 
-## 3. Global Gentle-AI & ODD Workflow Skills
+## 3. Skills globales de workflow G-ODD
 
-When installed in the operator's global `~/.agents/skills/` environment, these skills govern cross-cutting commit, PR slicing, and adversarial review workflows:
+Instalados en el entorno global `~/.agents/skills/` del operador; gobiernan
+workflows transversales de commits, slicing de PRs y revisión adversarial:
 
-| Skill | Global Path | Trigger / Activation Rule |
+| Skill | Ruta global | Disparador / regla de activación |
 | :--- | :--- | :--- |
-| `work-unit-commits` | `~/.agents/skills/work-unit-commits/SKILL.md` | Planning or closing an ODD task with an atomic, self-contained Conventional Commit that pairs code, tests, and docs. |
-| `chained-pr` | `~/.agents/skills/chained-pr/SKILL.md` | Forecast or running changed-line count exceeds **400 lines**, requiring Stacked PRs or Feature Branch Chain slicing. |
-| `branch-pr` | `~/.agents/skills/branch-pr/SKILL.md` | Creating branches, opening pull requests, or validating PR body structure and labels against repository templates. |
-| `judgment-day` | `~/.agents/skills/judgment-day/SKILL.md` | Blind parallel dual review (`jd-judge-a` + `jd-judge-b`) when a trigger from `CHECKPOINTS.md` C4.4 fires (the handoff bundle reports path triggers as `judgment_day_required`). |
-| `go-testing` | `~/.agents/skills/go-testing/SKILL.md` | Writing table-driven Go unit tests, subtests, or race-detector suites. |
-| `issue-creation` | `~/.agents/skills/issue-creation/SKILL.md` | Authoring or refining GitHub Issues with verifiable acceptance criteria (`S1..Sn`), exclusions, and taxonomy labels. |
+| `work-unit-commits` | `~/.agents/skills/work-unit-commits/SKILL.md` | Planificar o cerrar una tarea G-ODD con un Conventional Commit atómico y autocontenido (código + tests + docs). |
+| `chained-pr` | `~/.agents/skills/chained-pr/SKILL.md` | El pronóstico o la ejecución supera **400 líneas** cambiadas, requiriendo PRs apilados o slicing en cadena. |
+| `branch-pr` | `~/.agents/skills/branch-pr/SKILL.md` | Crear ramas, abrir pull requests o validar la estructura del cuerpo y etiquetas del PR contra las plantillas del repo. |
+| `judgment-day` | `~/.agents/skills/judgment-day/SKILL.md` | Revisión dual ciega en paralelo (`jd-judge-a` + `jd-judge-b`) cuando un disparador de `CHECKPOINTS.md` C4.4 se activa (el bundle reporta `judgment_day_required`). |
+| `go-testing` | `~/.agents/skills/go-testing/SKILL.md` | Escribir unit tests table-driven en Go, subtests o suites con race detector. |
+| `issue-creation` | `~/.agents/skills/issue-creation/SKILL.md` | Autorar o refinar GitHub Issues con criterios verificables (`S1..Sn`), exclusiones y etiquetas de taxonomía. |
 
 ---
 
-## 4. Resolution Protocol
+## 4. Protocolo de resolución
 
-1. Before starting any task, identify your **Cognitive Role** (`leader`, `explorer`, `implementer`, or `reviewer`) and read its `SKILL.md`.
-2. Inspect the target file paths (`## Allowed edit surfaces` or diff paths) and load all matching **Stack & Surface Context Skills**.
-3. When delegating to a subagent, inject the resolved skill paths explicitly and require `skill_resolution: paths-injected` in the worker report.
+1. Antes de iniciar cualquier tarea, identifica tu **rol cognitivo**
+   (`leader`, `explorer`, `implementer` o `reviewer`) y lee su `SKILL.md`.
+2. Inspecciona las rutas objetivo (`## Allowed edit surfaces` o rutas del diff)
+   y carga todos los **Skills de Stack y Superficie** que coincidan.
+3. Al delegar a un subagente, inyecta las rutas de skills resueltas
+   explícitamente y exige `skill_resolution: paths-injected` en el reporte del
+   worker.

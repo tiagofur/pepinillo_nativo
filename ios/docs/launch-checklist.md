@@ -5,7 +5,7 @@ This guide ensures you have everything ready for a successful submission to Appl
 ## 1. Technical Readiness (Xcode)
 
 - [x] **Bundle ID**: `com.pepinillo.app` is set in `project.yml`.
-- [x] **Version**: Marketing Version is `1.0.0` (Build `3`).
+- [x] **Version**: Marketing Version is `1.1.0` (Build `5`) — keep in sync with `MARKETING_VERSION` / `CURRENT_PROJECT_VERSION` in `ios/project.yml`.
 - [x] **Signing**: `DEVELOPMENT_TEAM` is set to `T5SKULSP2M` in `Config/Shared.xcconfig`.
 - [x] **Push Notifications**: Dynamic environment switching (Dev/Staging/Production) is configured.
 - [x] **Privacy Info**: `PrivacyInfo.xcprivacy` is included in the project. This file is build metadata, not proof that the live App Store Connect answers are current.

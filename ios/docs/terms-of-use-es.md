@@ -16,7 +16,7 @@ Debes tener al menos 4 años para usar la App, según la clasificación del App 
 
 ## 3. Cuenta de Usuario
 
-Pepinillo no requiere que crees una cuenta ni que proporciones credenciales de inicio de sesión. Tus datos se almacenan localmente en tu dispositivo y, si activas la sincronización con iCloud, en tu cuenta personal de iCloud.
+Pepinillo funciona completamente offline sin cuenta. Crear una cuenta es opcional y solo es necesaria si activas funciones de sincronización o recuperación basadas en cuenta. Los datos de cuenta se almacenan en nuestros servidores únicamente para proveer esas funciones; tus datos de foco se almacenan localmente en tu dispositivo, en tu cuenta personal de iCloud (si activas la sincronización con iCloud) o en tu cuenta sincronizada (si activas Everywhere).
 
 ## 4. Suscripciones y Compras
 
@@ -24,9 +24,9 @@ Pepinillo no requiere que crees una cuenta ni que proporciones credenciales de i
 
 Pepinillo ofrece funciones premium opcionales a través de los siguientes planes:
 
-- **Pro Mensual:** Cobro mensual al precio mostrado en el App Store.
-- **Pro Anual:** Cobro anual al precio mostrado en el App Store.
-- **Pro de por Vida:** Una compra única que desbloquea todas las funciones Pro de forma permanente.
+- **Pepinillo+ (`pro.lifetime`):** Una compra única que desbloquea la experiencia premium local completa de forma permanente. No es una suscripción.
+- **Everywhere/AI+ Mensual (`pro.monthly`):** Cobro mensual al precio mostrado en el App Store. Añade sincronización basada en cuenta e IA en la nube.
+- **Everywhere/AI+ Anual (`pro.annual`):** Cobro anual al precio mostrado en el App Store. Añade sincronización basada en cuenta e IA en la nube.
 
 ### 4.2 Facturación
 

@@ -1,37 +1,72 @@
 ---
 name: ios-native
-description: "Implement and test native iOS and watchOS features using Swift, The Composable Architecture (TCA), SwiftUI, and Contract-First API models."
+description: "Implementar y probar features nativas de iOS, watchOS y macOS (PepinilloMac) con Swift 6, The Composable Architecture (TCA), SwiftUI/AppKit y modelos alineados al contrato OpenAPI."
 ---
 
-# Stack Skill: iOS & watchOS Native (Swift + TCA + SwiftUI)
+# Skill de stack: Apple Nativo (Swift + TCA + SwiftUI/AppKit)
 
-You are the **iOS Native Specialist** for Pepinillo. You implement and verify features across `ios/` (iPhone and watchOS) adhering to The Composable Architecture (TCA) and SwiftUI.
+Eres el **especialista Apple Nativo** de Pepinillo. Implementas y verificas
+features en `ios/` (iPhone/iPad, watchOS y `PepinilloMac`) adheridas a The
+Composable Architecture (TCA) y SwiftUI.
 
----
-
-## 1. Architectural Standards
-
-1. **State Management**:
-   - Use The Composable Architecture (TCA) (`Reducer`, `State`, `Action`).
-   - Keep actions granular and declarative.
-   - Separate domain effects into testable TCA dependencies.
-2. **UI & Accessibility**:
-   - Pure SwiftUI views driven by `StoreOf<Feature>`.
-   - Adhere to Apple Human Interface Guidelines and Dynamic Type.
-   - Maintain watchOS companion UI in sync with phone capabilities where applicable.
-3. **API & Contracts**:
-   - Align network models with `contracts/openapi.yaml`.
-   - Ensure RFC 9457 error handling in API clients.
-4. **File Size Budget**:
-   - Keep individual `.swift` files under ~500 lines (`docs/agent-first-methodology.md`).
+**Referencias**: [`ios/AGENTS.md`](../../../ios/AGENTS.md),
+[`docs/macos-design-contract.md`](../../../ios/docs/macos-design-contract.md),
+[`docs/architecture.md`](../../../docs/architecture.md) §3.
 
 ---
 
-## 2. Verification Protocol (V1)
+## 1. Estándares arquitectónicos
 
-Run tests using the project's test schemes:
+1. **Gestión de estado**:
+   - Usa The Composable Architecture (TCA) (`Reducer`, `State`, `Action`).
+   - Mantén las acciones granulares y declarativas.
+   - Separa efectos de dominio en dependencias TCA testeables (`TestStore`).
+2. **UI y accesibilidad**:
+   - Vistas SwiftUI puras guiadas por `StoreOf<Feature>`; AppKit solo para
+     presencia macOS (`NSStatusItem`, `NSPopover`, `NSDockTile`, `NSPanel`).
+   - Adhiere a Apple HIG, Dynamic Type y Reduce Motion/Transparency.
+   - Mantén el companion watchOS en sync con las capacidades del phone.
+3. **API y contratos**:
+   - Alinea los modelos de red con `contracts/openapi.yaml`.
+   - Maneja los errores según las envolventes documentadas en el contrato.
+4. **Presupuesto de archivo**:
+   - `.swift` bajo ~500 líneas (`docs/agent-first-methodology.md`).
+5. **Persistencia**:
+   - SwiftData vía `PepinilloMigrationPlan` (`SchemaV1..V6`); nunca mutar
+     schemas previos — nueva versión numerada + stage `.lightweight`.
+   - `@ModelActor` (`BackgroundPersistenceActor`) para I/O off-main; leer el
+     store correcto según `activeSyncMode` (`PersistenceStoreRouter`).
+
+---
+
+## 2. Proyecto (XcodeGen)
+
+- `Pepinillo.xcodeproj` se **genera** con `xcodegen generate` desde
+  `project.yml`; nunca editar ni commitear el proyecto generado.
+- 8 targets y 6 schemes: `Pepinillo Dev/Staging/Production` (con
+  `PepinilloTests`) y `PepinilloMac Dev/Staging/Production` (sin test target;
+  la lógica Mac se prueba en simulador iOS).
+- Configs por `Config/*.xcconfig`; `Secrets.xcconfig` local (gitignored).
+
+---
+
+## 3. Protocolo de verificación (`V1`)
+
 ```bash
-# Focused unit / feature reducer tests
-xcodebuild test -workspace ios/Pepinillo.xcworkspace -scheme Pepinillo -destination 'platform=iOS Simulator,name=iPhone 16'
+cd ios && xcodegen generate
+
+# Unit tests iPhone/iPad (scheme con PepinilloTests)
+xcodebuild test -scheme "Pepinillo Dev" \
+  -destination 'platform=iOS Simulator,name=iPhone 17 Pro'
+
+# Build macOS (sin test target)
+xcodebuild build -scheme "PepinilloMac Dev" -destination 'platform=macOS'
 ```
-Always verify Reducer state transitions and effects using `TestStore`.
+
+- Verifica siempre las transiciones de estado del reducer y sus efectos con
+  `TestStore`.
+- Suites que tocan `AppGroupDefaults` se marcan `.serialized`
+  (`AppGroupDefaultsSerialTrait`); en CI los subconjuntos corren con
+  `-parallel-testing-enabled NO`.
+- Cuarentena conocida: `spotlightTaskDeepLinkOpensTaskDetail`
+  (`@Test(.disabled())`, issue #634).
