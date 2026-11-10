@@ -1,39 +1,57 @@
 ---
 name: ux-brief
-description: "Trigger: issues labeled `ux:shape`, or a request for the UX brief of a screen or flow. Unattended factory handoff that produces a UX brief and publishes it as an issue comment BEFORE implementation. Never writes product code."
-metadata:
-  version: "1.0"
+description: "Disparador: issues etiquetadas `ux:shape`, o una petición del brief UX de una pantalla o flujo. Handoff de factoría unattended que produce un brief UX y lo publica como comentario de issue ANTES de implementar. Nunca escribe código de producto."
 ---
 
-## Activation Contract
+## Contrato de activación
 
-Load this skill when an issue carries the `ux:shape` label and has no current brief, or when asked for the UX brief of a screen/flow. It is a cognitive step performed by the `explorer` role (not a separate agent). The design method itself is project/user-level (for example a design skill); this skill defines the factory handoff contract around it.
+Carga este skill cuando una issue lleva la etiqueta `ux:shape` y no tiene brief
+vigente, o cuando se pide el brief UX de una pantalla/flujo. Es un paso
+cognitivo ejecutado por el rol `explorer` (no un agente separado). El método de
+diseño en sí es de nivel proyecto/usuario (por ejemplo un skill de diseño);
+este skill define el contrato de handoff de la factoría alrededor.
 
-## Hard Rules
+## Reglas duras
 
-- Unattended: never ask the user questions. Every assumption is written as an explicit assumption.
-- Zero code: no implementation, no mockup files. The single deliverable is one issue comment.
-- Publish with `gh issue comment N --body-file <file>`; a brief that lives only in chat does not exist.
-- Respect the project's design docs when present (`docs/design/*`, `docs/stack/*`) and the Hierarchy of Truth in `AGENTS.md`.
-- If the issue contradicts an ADR, a domain invariant (`AGENTS.md` §5), or the design docs: do NOT design. Comment the contradiction and set `status:blocked` + `needs-human`.
+- **Unattended**: nunca preguntes al usuario. Toda suposición se escribe como
+  suposición explícita.
+- **Cero código**: sin implementación ni archivos de mockup. El único
+  entregable es un comentario de issue.
+- Publica con `gh issue comment N --body-file <file>`; un brief que solo vive
+  en chat no existe.
+- Respeta los docs de diseño del proyecto (`docs/design.md`,
+  `.impeccable.md`, `ios/docs/macos-design-contract.md`) y la Jerarquía de
+  Verdad en `AGENTS.md`.
+- Si la issue contradice un ADR, una invariante de dominio (`AGENTS.md` §3) o
+  los docs de diseño: NO diseñes. Comenta la contradicción y marca
+  `status:blocked` + `needs-human`.
 
-## Decision Gates
+## Compuertas de decisión
 
-| Condition | Action |
+| Condición | Acción |
 | :--- | :--- |
-| A current surface brief already exists | Extend it; the addition inherits its visual world |
-| New surface inside an established visual world | Full shape; the world is inherited and fixed |
-| No visual world exists yet (new product or identity) | Deliver the brief with assumptions and flag that an attended design session is required |
-| Missing context for a material decision | Marked assumption, never silent invention |
+| Ya existe un brief vigente para la superficie | Extiéndelo; la adición hereda su mundo visual |
+| Superficie nueva dentro de un mundo visual establecido | Shape completo; el mundo se hereda y queda fijo |
+| No existe mundo visual aún (producto o identidad nueva) | Entrega el brief con suposiciones y señala que se requiere una sesión de diseño atendida |
+| Falta contexto para una decisión material | Suposición marcada, nunca invención silenciosa |
 
-## Execution Steps
+## Pasos de ejecución
 
-1. Read the issue and its comments, the relevant product docs, the design docs, any existing brief, and the current screen code.
-2. Produce a minimal brief: visitor mode/goal, composition thesis, states (empty/loading/error/offline), key interactions, accessibility notes, and the memorable moment.
-3. Publish it as an issue comment with heading `## UX Brief` and a final `### Assumptions` list.
-4. Return to the orchestrator: comment URL, a 3-line summary, the assumption list, and whether an attended design session is required.
+1. Lee la issue y sus comentarios, los docs de producto relevantes
+   (`docs/prd-v2.md`, `docs/product-map.md`), los docs de diseño, cualquier
+   brief previo y el código actual de la pantalla.
+2. Produce un brief mínimo: modo/meta del visitante, tesis de composición,
+   estados (empty/loading/error/offline), interacciones clave, notas de
+   accesibilidad y el momento memorable.
+3. Publícalo como comentario de issue con encabezado `## UX Brief` y una lista
+   final `### Assumptions`.
+4. Retorna al orquestador: URL del comentario, resumen de 3 líneas, lista de
+   suposiciones y si se requiere sesión de diseño atendida.
 
-## Downstream Contract
+## Contrato downstream
 
-- `implementer` honors the brief and attaches **Visual Evidence** in the PR (`## Visual Evidence`): screenshots per device class, naming which file proves what and linking the brief.
-- `reviewer` checks fidelity to the brief and the presence of visual evidence; missing evidence on a `ux:shape` PR is a P1.
+- `implementer` honra el brief y adjunta **Visual Evidence** en el PR
+  (`## Visual Evidence`): screenshots por clase de dispositivo, nombrando qué
+  archivo prueba qué y enlazando el brief.
+- `reviewer` verifica la fidelidad al brief y la presencia de evidencia visual;
+  la falta de evidencia en un PR `ux:shape` es un `P1`.

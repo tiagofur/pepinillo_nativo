@@ -1,115 +1,110 @@
-# Human & Agent Operational Guide (`human-start.md`)
+# Guía operativa para humanos y agentes (`human-start.md`)
 
-This document defines how human operators and autonomous agents collaborate inside the Software Factory from **Day 0 project initialization** to **merged Pull Requests**.
-
----
-
-## 1. Day-0 Project Bootstrap (`init-project.sh`)
-
-When starting a new repository from this template, initialize its topology and manifest before creating feature issues:
-
-```bash
-./scripts/init-project.sh \
-  --name my-product \
-  --db postgres \
-  --surfaces backend,web,desktop-tauri
-```
-
-### Supported Flags
-- `--name <slug>`: Project identifier written to `factory.manifest.json`.
-- `--db <postgres|sqlite|custom>`: Selects the primary persistence strategy under [`ADR-0001`](../architecture/adr/ADR-0001-go-backend-and-db-matrix.md).
-- `--surfaces <csv>`: Comma-separated list of active surfaces (`backend`, `web`, `desktop-tauri`, `mobile-tauri`, `ios-native`, `android-native`) governed by [`ADR-0002`](../architecture/adr/ADR-0002-client-surfaces-and-mobile-matrix.md).
-- `--non-interactive`: Runs without prompts (required for CI and automated tests).
-
-After initialization, synchronize GitHub labels once:
-```bash
-./scripts/setup-labels.sh
-```
+Define cómo colaboran operadores humanos y agentes autónomos dentro de la
+Software Factory, desde la inicialización hasta PRs mergeados.
 
 ---
 
-## 2. GitHub Issues as the Single Work Queue
+## 1. Issues de GitHub como única cola de trabajo
 
-GitHub Issues is the **only** operational backlog. Agents never invent tasks from `TODO` comments or `feature_list.json` (`feature_list.json` is capability context only).
+GitHub Issues es el **único** backlog operativo. Los agentes nunca inventan
+tareas desde comentarios `TODO` ni de `feature_list.json` (que es solo contexto
+de capacidades).
 
-### Issue Lifecycle State Machine
+### Máquina de estados de issue
 
 ```text
-[status:new] ──(explorer triage + DoR check)──► [status:ready]
+[status:new] ──(explorer triage + DoR)──► [status:ready]
                                                        │
-                                      (leader assigns implementer)
+                                      (leader asigna implementer)
                                                        ▼
-[status:blocked] ◄──(missing external input)── [status:in-progress]
+[status:blocked] ◄──(falta input externo)── [status:in-progress]
                                                        │
-                                    (C1-C3 pass + C4 clean-context review)
+                                    (C1-C3 pasan + C4 revisión con contexto limpio)
                                                        ▼
-                                          [status:in-review / PR open]
+                                          [status:in-review / PR abierto]
                                                        │
-                                        (C5 metadata + CI + human merge)
+                                        (C5 metadatos + CI + merge humano)
                                                        ▼
                                                    [Closed]
 ```
 
-### Definition of Ready (DoR) Checklist
-Before an issue transitions from `status:new` to `status:ready`, `explorer` verifies:
-1. Clear problem statement and user/system outcome.
-2. Numbered, testable acceptance criteria (`S1`, `S2`, ...).
-3. Explicit **Out of Scope / Exclusions** section.
-4. Required labels: one `type:*`, one `priority:p0..p2`, one `size:xs..l`, and `ux:shape` when user-facing flows change.
+### Definition of Ready (DoR) — checklist antes de pasar a `status:ready`
+1. Problema y outcome (usuario/sistema) claros.
+2. Criterios de aceptación numerados y testeables (`S1`, `S2`, ...).
+3. Sección explícita de **Out of Scope / Exclusiones**.
+4. Etiquetas requeridas: una `type:*`, una `priority:p0..p2`, una `size:xs..l`,
+   y `ux:shape` cuando cambien flujos user-facing.
 
 ---
 
-## 3. Portable ODD Execution Topologies
+## 2. Topologías de ejecución G-ODD
 
-Once an issue is authorized, the `leader` selects the lightest ODD topology that preserves safety:
+Con la issue autorizada, el `leader` elige la topología más ligera que
+preserve seguridad:
 
-| Topology | Selection Criteria | State Artifact | Commit Strategy |
+| Topología | Criterio de selección | Artefacto de estado | Estrategia de commits |
 | :--- | :--- | :--- | :--- |
-| **Inline Direct** | Small, understood change with contained risk (no High-Risk Item from `CHECKPOINTS.md` C3), resumable from the request + `git diff` alone. File count never decides topology. | None (`git diff` + Issue are sufficient) | Single atomic Conventional Commit |
-| **Delegated Direct** | Multi-unit feature, parallel disjoint edit surfaces (`backend` + `web`), or cross-session work | `odd/tasks/<issue>-<slug>.md` (mirrored to Engram when available) | One atomic work-unit commit per completed task (`T1..Tn`) |
+| **Inline Direct** | Cambio pequeño y comprendido, riesgo contenido (ningún Ítem de Alto Riesgo de `CHECKPOINTS.md` C3), recuperable desde la petición + `git diff`. El número de archivos nunca decide la topología. | Ninguno (`git diff` + Issue bastan) | Un Conventional Commit atómico |
+| **Delegated Direct** | Feature multi-unidad, superficies disjuntas en paralelo, área desconocida que requiere `explorer`, o trabajo entre sesiones | `odd/tasks/<issue>-<slug>.md` | Un commit por tarea completada (`T1..Tn`) |
 
-### `odd/tasks/<issue>-<slug>.md` Contract
-When **Delegated Direct** is active, the task file contains:
-- **`## Specs (`S1..Sn`)`**: Mapped directly from the GitHub Issue acceptance criteria, with concrete verification commands.
-- **`## Allowed edit surfaces`**: Exact directory/file whitelist for each delegated writer. Writers refuse to touch any path outside this list.
-- **`## Tasks (`T1..Tn`)`**: Bounded work units linking `S#`, execution route (`inline` or `delegated`), verification result, `Risk:` note, and commit SHA.
-- **`## Log`**: Chronological audit trail of user decisions and architectural milestones.
+### Contrato de `odd/tasks/<issue>-<slug>.md`
+Cuando **Delegated Direct** está activo, el archivo contiene:
+- **`## Specs (S1..Sn)`**: mapeados 1:1 de los criterios de la issue, con
+  comandos de verificación concretos.
+- **`## Allowed edit surfaces`**: whitelist exacta de archivos/directorios por
+  escritor delegado. Los escritores se niegan a tocar rutas fuera de la lista.
+- **`## Tasks (T1..Tn)`**: unidades acotadas enlazando `S#`, ruta de ejecución
+  (`inline`/`delegated`), resultado de verificación, `Risk:` y SHA de commit.
+- **`## Log`**: bitácora cronológica de decisiones del usuario e hitos
+  arquitectónicos.
 
 ---
 
-## 4. Proportional Verification Matrix (`V0` / `V1` / `V2`)
+## 3. Matriz de verificación proporcional (`V0` / `V1` / `V2`)
 
-Every work unit must prove correctness in the foreground before committing:
+Cada unidad de trabajo debe probar corrección en primer plano antes de
+commitear (comandos exactos por superficie en `docs/verification.md`):
 
-| Verification Tier | When Required | Mandatory Commands |
+| Tier | Cuándo es requerido | Comandos obligatorios |
 | :--- | :--- | :--- |
-| **V0 — Structural** | Docs, ADRs, markdown templates, non-executable config | `python3 scripts/factory_preflight.py` + file/link checks |
-| **V1 — Focused RED/GREEN** | Standard application logic, UI components, bug fixes | Observe deterministic failing test (**RED**) → implement minimal fix (**GREEN**) → run module tests + linter |
-| **V2 — Contract & Integration** | OpenAPI changes, DB schema/queries, auth, concurrency, CI/factory scripts | V1 + `make contracts-lint contracts-diff` + container/SQLite integration suite + `make test` |
+| **V0 — Estructural** | Docs, ADRs, plantillas markdown, config no ejecutable | `python3 scripts/factory_preflight.py` + checks de enlaces/estructura |
+| **V1 — RED/GREEN focalizado** | Lógica estándar, componentes UI, bugfixes | Test determinista en **RED** → fix mínimo en **GREEN** → tests de módulo + linter |
+| **V2 — Contratos e integración** | Cambios OpenAPI, esquema/queries DB, auth, concurrencia, CI/scripts de factoría | V1 + `make contracts-lint` + `make contracts-diff` + suite completa (`make test`) |
 
 ---
 
-## 5. Assertiveness Contract ("Process Default Beats Asking")
+## 4. Contrato de asertividad ("el default de proceso gana a preguntar")
 
-Agents are engineered to maximize autonomous flow without reckless guessing:
-
-1. **Resolve Technical Choices via Stack Defaults**:
-   - If an issue does not specify a router, validation library, error format, or folder layout, follow `docs/architecture/adr/` and `docs/stack/` defaults immediately.
-   - Document every autonomous technical choice under `## Decisions Made Without Asking` in the PR body.
-2. **When to Pause (`status:blocked` + `needs-human`)**: only for the closed list in [`CHECKPOINTS.md`](../../CHECKPOINTS.md) § Escalation Contract.
+1. **Resuelve decisiones técnicas con los defaults del stack**:
+   - Si la issue no especifica librería, formato de error o layout, sigue
+     `docs/architecture/adr/` y `docs/conventions.md` de inmediato.
+   - Documenta toda decisión autónoma en `## Decisions Made Without Asking`
+     del cuerpo del PR.
+2. **Cuándo pausar (`status:blocked` + `needs-human`)**: solo por la lista
+   cerrada de `CHECKPOINTS.md` (credenciales, coste externo, legal/privacidad,
+   contradicción de ADR o invariante de dominio, alcance de producto
+   contradictorio).
 
 ---
 
-## 6. Clean-Context Review & Human Merge (`C4`–`C5`)
+## 5. Revisión con contexto limpio y merge humano (`C4`–`C5`)
 
-1. When implementation and `V0`/`V1`/`V2` checks complete, save their output to a file and generate the deterministic review bundle (fails closed with `HANDOFF_BLOCKED` if acceptance criteria or evidence are missing):
+1. Al terminar implementación y checks `V0`/`V1`/`V2`, guarda la salida en un
+   archivo y genera el paquete determinista (falla cerrado con
+   `HANDOFF_BLOCKED` si faltan criterios o evidencia):
    ```bash
-   python3 scripts/factory_handoff.py --base origin/main --head HEAD --issue <ISSUE_NUMBER> --verification-file /tmp/verification.txt --out /tmp/handoff.md
+   python3 scripts/factory_handoff.py --base origin/main --head HEAD --issue <N> \
+     --verification-file /tmp/verification.txt --out /tmp/handoff.md
    ```
-2. Invoke the independent `reviewer` with **only** `/tmp/handoff.md` (zero implementer chat history).
-3. If the bundle reports `judgment_day_required: True`, or the diff semantically hits a trigger in [`CHECKPOINTS.md`](../../CHECKPOINTS.md) C4.4, run blind dual review (`judgment-day`).
-4. Validate PR metadata before opening or updating the PR (requires real SHAs, scope digest, and an `APPROVED` verdict):
+2. Invoca al `reviewer` independiente con **solo** `/tmp/handoff.md`
+   (cero historial de chat del implementador).
+3. Si el bundle reporta `judgment_day_required: true`, o el diff toca
+   semánticamente un disparador de `CHECKPOINTS.md` C4.4, ejecuta revisión
+   dual ciega (`judgment-day`).
+4. Valida los metadatos del PR antes de abrirlo o actualizarlo (requiere SHAs
+   reales, scope digest y veredicto `APPROVED`):
    ```bash
    python3 scripts/check_pr_metadata.py --body-file /tmp/pr_body.md
    ```
-5. Report `PR_READY_FOR_HUMAN_MERGE` once `C1`–`C5` and CI checks are green.
+5. Reporta `PR_READY_FOR_HUMAN_MERGE` cuando `C1`–`C5` y CI estén verdes.

@@ -1,39 +1,33 @@
-# ADR-0003: Contract-First OpenAPI 3.1 and RFC 9457 Error Standard
+# ADR-0003: Contratos OpenAPI 3.1 (`contracts/openapi.yaml`) y Envolventes de Error
 
-- **Status**: Accepted
-- **Date**: 2026-10-29
-- **Deciders**: Software Factory Architecture Core
-
----
-
-## 1. Context
-
-In an Agentic Software Factory where parallel bounded writers (`implementer` subagents) work simultaneously on the Go backend (`backend/`) and client surfaces (`apps/web`, `apps/desktop-tauri`, `apps/ios-native`, `apps/android-native`), ad-hoc JSON payloads are the #1 source of integration bugs and wasted rework tokens.
-
-If the backend agent invents response fields in Go structs while the frontend agent guesses TypeScript interfaces, their work units fail at integration time.
+- **Estado**: Accepted (alineado con implementación HTTP real y hoja de ruta de errores)
+- **Fecha**: 2026-11-10 (original de plantilla: 2026-10-29)
+- **Decisores**: Pepinillo Architecture Core
 
 ---
 
-## 2. Decision
+## 1. Contexto
 
-1. **Single Source of Truth (`contracts/openapi.yaml`)**:
-   - Every HTTP endpoint, request body, query parameter, header, and response schema MUST be declared in `contracts/openapi.yaml` (**OpenAPI 3.1.0**) **before** or **in the same atomic work unit as** backend/client implementation (`Checkpoint C2`).
-2. **Standardized Error Format (RFC 9457 Problem Details)**:
-   - Every non-2xx HTTP response across all services MUST return `Content-Type: application/problem+json` conforming to the reusable `#/components/schemas/ProblemDetails` schema (`type`, `title`, `status`, `detail`, `instance`, plus optional `errors[]` field validation items).
-3. **Automated Contract Quality Gates (`contracts/Makefile`)**:
-   - **Linting (`make contracts-lint`)**: Enforced via **Stoplight Spectral** (`contracts/.spectral.yaml`) plus structural schema validation. Every operation requires a unique `operationId`, `summary`, `tags`, and explicit error responses.
-   - **Breaking-Change Detection (`make contracts-diff`)**: Enforced via **`oasdiff`**. Removing a field, narrowing a type, or adding a required request property without a version bump or an explicit human-approved `contract-break` PR label fails `Checkpoint C2` and CI.
-4. **Deterministic Code Generation**:
-   - Go server stubs/models (`oapi-codegen`), TypeScript types (`openapi-typescript`), Swift models (`swift-openapi-generator`), and Kotlin models (`openapi-generator`) derive directly from `contracts/openapi.yaml`. Hand-editing generated contract files is forbidden.
+El backend Go de Pepinillo sirve ~90 rutas HTTP bajo `/api/v1` consumidas por Swift (`NetworkClient.swift`) y Kotlin (`PepinilloApiClient.kt`), además de un endpoint WebSocket (`/api/v1/ws`). Para evitar deriva entre el servidor y los clientes nativos, la especificación `contracts/openapi.yaml` debe reflejar con exactitud el contrato HTTP en producción y someterse a compuertas automáticas (`Checkpoint C2`).
 
 ---
 
-## 3. Consequences
+## 2. Decisión
 
-### Positive
-- Enables true **Parallel Writer Delegation**: Once `contracts/openapi.yaml` is updated and passes `make contracts-lint`, one `implementer` can build the Go handler while a second `implementer` builds the React/Tauri/Native UI against the exact same schema with zero coordination drift.
-- Native iOS (SwiftUI) and Android (Jetpack Compose) clients (`ADR-0002` Tier 3) consume generated models and API clients directly, drastically reducing token expenditure on boilerplate networking code.
-- Clients only need a single unified error interceptor for RFC 9457 `ProblemDetails`.
+1. **Única fuente de verdad HTTP (`contracts/openapi.yaml`)**:
+   - Toda ruta HTTP nueva o cambio en payloads, query params, cabeceras (`Authorization`, `X-Device-ID`) o códigos de estado bajo `/api/v1` se declara primero en `contracts/openapi.yaml` (OpenAPI 3.1.0).
+   - El canal WebSocket `/api/v1/ws` y sus eventos (`WSMessage`) se documentan en `info.description` del contrato y en `docs/architecture.md`.
+2. **Envolventes de error reales y transición a RFC 9457**:
+   - **Comportamiento vigente (no romper clientes actuales)**: el `ErrorHandler` global de Fiber retorna `ErrorEnvelope` (`{"error": "<codigo_o_mensaje>"}`), y `RequireBackendSync` devuelve HTTP `402` con `BackendSyncRequiredError` (`{"error":"subscription_required","code":"ERR_TIER_INSUFFICIENT","message":...,"upgrade_url":...}`).
+   - **Política para cambios futuros**: no alterar en caliente el formato de rutas ya consumidas por apps publicadas en App Store / Play Store sin coordinar clientes o versionar. Para nuevas superficies/versiones (`/api/v2` o endpoints nuevos opt-in), RFC 9457 `ProblemDetails` (`application/problem+json`) es el formato objetivo a declarar en `contracts/openapi.yaml`.
+3. **Compuertas automáticas (`contracts/Makefile`)**:
+   - `make contracts-lint`: ejecuta Spectral (`@stoplight/spectral-cli@6.17.0` con `contracts/.spectral.yaml`). Exige `operationId` único, `tags` y esquema válido (fail-closed si falta el runner).
+   - `make contracts-diff`: ejecuta `oasdiff breaking --fail-on ERR` contra `origin/main` (fail-closed salvo etiqueta `contract-break` aprobada por humano).
+   - El target `generate` en `contracts/Makefile` conserva referencias de compatibilidad para los tests de la factoría (`tests/test_factory_scripts.py`); hoy los DTOs nativos en Swift y Kotlin se validan contra `contracts/openapi.yaml` hasta introducir codegen automatizado en una issue dedicada.
 
-### Negative / Tradeoffs
-- Every API change requires editing `contracts/openapi.yaml` first and running `make contracts-lint` before writing handler code.
+---
+
+## 3. Consecuencias
+
+- Los agentes `explorer`, `implementer` y `reviewer` pueden verificar cualquier endpoint, payload o header en `contracts/openapi.yaml` sin adivinar structs Go.
+- Cualquier modificación bajo `contracts/**` dispara automáticamente revisión dual ciega (`judgment-day`) en `scripts/factory_handoff.py`.

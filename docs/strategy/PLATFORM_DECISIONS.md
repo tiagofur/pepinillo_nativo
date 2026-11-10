@@ -1,36 +1,39 @@
-# Platform Decisions
+# Decisiones de plataformas
 
-## Active platforms
+## Plataformas activas
 
-The active product focus is:
+El foco de producto activo es:
 
-- Android.
-- iOS.
+- iOS + watchOS + macOS (`PepinilloMac`) — ecosistema Apple.
+- Android + Wear OS — ecosistema Google.
+- Backend Go — infraestructura requerida por la funcionalidad actual
+  (sync Everywhere+, IA cloud, push).
 
-These platforms have the highest probability of validating the business.
+Estas superficies concentran la mayor probabilidad de validar el negocio.
 
 ## Windows
 
-Status: paused exploration.
+Estado: exploración en pausa.
 
-The Windows implementation proved technical feasibility and remains valuable as future research.
-
-It is not part of the current execution roadmap because mobile adoption must be validated first.
+La implementación (`windows/`) probó viabilidad técnica (W0–W15 mergeados) y
+sigue siendo valiosa como referencia futura. No forma parte del roadmap de
+ejecución actual porque la adopción móvil debe validarse primero. Pendientes
+históricas si se reanuda: smoke WinUI (#575) y Partner Center (#568).
 
 ## Web
 
-Status: paused exploration.
+Estado: exploración en pausa.
 
-The Web companion idea remains documented for future evaluation.
+El companion web (`web/`) permanece documentado (shell offline W1, auth/sync
+W2 explorados). Debe regresar solo cuando haya una necesidad de usuario clara
+o justificación de negocio.
 
-It should only return when there is a clear user need or business justification.
+## Principio de decisión
 
-## Decision principle
+Toda inversión futura en plataformas debe responder:
 
-Future platform investments should answer:
+- ¿Aumenta adquisición?
+- ¿Aumenta retención?
+- ¿Aumenta ingresos?
 
-- Does this increase acquisition?
-- Does this increase retention?
-- Does this increase revenue?
-
-If not, the platform remains experimental.
+Si la respuesta es no, la plataforma permanece experimental.

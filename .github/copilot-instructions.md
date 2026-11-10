@@ -1,105 +1,66 @@
-# Pepinillo Project Instructions
+# Pepinillo Project Instructions (Copilot)
 
-## Scope
+## Alcance
 
-These instructions apply to the entire repository.
+Estas instrucciones aplican a todo el repositorio y complementan
+[`AGENTS.md`](../AGENTS.md) (mapa de navegación) y
+[`CHECKPOINTS.md`](../CHECKPOINTS.md) (compuertas `C1`–`C5`).
 
-## Communication
+## Comunicación
 
-- Default language: English for responses, documentation updates, and collaboration artifacts unless the user explicitly asks for another language.
-- Be direct, practical, and explain technical reasoning when proposing changes.
+- Idioma por defecto: inglés para respuestas, commits y artefactos de
+  colaboración, salvo que se pida otro idioma explícitamente.
+- Sé directo, práctico y explica el razonamiento técnico al proponer cambios.
 
-## Engineering Priorities
+## Prioridades de ingeniería
 
-- Preserve cross-platform parity across Android, Wear OS, iOS, and watchOS.
-- For any feature or bug fix on one platform, verify equivalent functional behavior on the other platforms.
-- Enforce functional parity as a strict rule; platform-specific UI can follow native Apple/Google patterns but must remain behaviorally aligned.
-- Prefer native-first UX conventions so each app feels OS-integrated instead of a generic cross-platform UI.
-- Prefer architecture clarity over quick patches.
+- Mantén paridad funcional entre iOS, watchOS, macOS, Android y Wear OS en el
+  motor de foco, sesiones y tareas. `web/` y `windows/` están en pausa.
+- UI nativa por plataforma: HIG-first en Apple, Material 3 Expressive en
+  Android/Wear OS (`docs/design.md`). Paridad funcional obligatoria; paridad
+  visual no.
+- Prefiere claridad de arquitectura sobre parches rápidos.
 
-## Change Management
+## Gestión de cambios
 
-- Keep diffs minimal and avoid unrelated refactors.
-- Do not revert unrelated user changes.
-- Do not add AI attribution lines in commits.
+- Mantén los diffs mínimos y evita refactors no relacionados.
+- No reviertas cambios no relacionados del usuario.
+- No añadas líneas de atribución IA en los commits.
 
-## Validation
+## Validación
 
-- Build validation is allowed and encouraged when it helps detect integration issues early.
-- Run focused checks first (lint, targeted tests, static checks), then run builds for touched platforms before handoff when practical.
-- For expensive full-repo validation, confirm first unless the user explicitly requested comprehensive validation.
+- Ejecuta primero los checks focalizados (lint, tests específicos), luego
+  builds de las plataformas tocadas antes del handoff cuando sea práctico.
 
-## Platform Validation Matrix
+| Área tocada | Checks focalizados | Build/handoff |
+| :--- | :--- | :--- |
+| `backend/` | `cd backend && go test ./...` | ídem |
+| `android/app` | `cd android && ./gradlew :app:testDebugUnitTest` | `./gradlew :app:assembleDebug` |
+| `android/wear` | `cd android && ./gradlew :wear:testDebugUnitTest` | `./gradlew :wear:assembleDebug` |
+| `ios/` (iPhone/iPad) | `xcodegen generate` + `xcodebuild test -scheme "Pepinillo Dev"` (ver `docs/verification.md`) | `xcodebuild build -scheme "Pepinillo Dev"` |
+| `ios/` (macOS) | `xcodebuild build -scheme "PepinilloMac Dev"` | ídem |
+| `contracts/` | `make contracts-lint` | `make contracts-diff` |
 
-- Always validate only what was touched first, then expand if integration risk is high.
-- If a change touches multiple platforms, run the matching checks for each touched platform.
+## Sincronización de documentación
 
-| Touched area        | Focused checks first                                                                                   | Build check before handoff                                                                              |
-| ------------------- | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------- |
-| `backend/`          | `cd backend && go test ./...` (or package-scoped tests when possible)                                  | `cd backend && go test ./...`                                                                           |
-| `android/app`       | `cd android && .\\gradlew :app:testDebugUnitTest --console=plain`                                      | `cd android && .\\gradlew :app:assembleDebug --console=plain`                                           |
-| `android/wear`      | `cd android && .\\gradlew :wear:testDebugUnitTest --console=plain`                                     | `cd android && .\\gradlew :wear:assembleDebug --console=plain`                                          |
-| Android + Wear sync | `powershell -ExecutionPolicy Bypass -File scripts/validate_wear_sync.ps1`                              | `cd android && .\\gradlew :wear:assembleDebug :app:assembleDebug --console=plain`                       |
-| `ios/` iOS app      | `cd ios && xcodebuild -scheme Pepinillo -destination 'platform=iOS Simulator,name=iPhone 17 Pro' test` | `cd ios && xcodebuild -scheme Pepinillo -destination 'platform=iOS Simulator,name=iPhone 17 Pro' build` |
-| `ios/` watch app    | `cd ios && xcodebuild -scheme PepinilloWatch -destination 'generic/platform=watchOS Simulator' build`  | `cd ios && xcodebuild -scheme PepinilloWatch -destination 'generic/platform=watchOS Simulator' build`   |
+- La fuente de verdad de producto vive en `docs/prd-v2.md` y
+  `docs/product-map.md` (`docs/legacy/PRD/` es archivo histórico, no fuente de verdad).
+- Actualiza `docs/product-map.md` y/o `docs/prd-v2.md` para features nuevas y
+  cambios significativos; no para bugfixes menores salvo que alteren
+  arquitectura o dirección de producto.
 
-- If simulator/device-specific commands fail because of environment constraints, run the closest equivalent command and report the limitation clearly.
+## Flujo Git
 
-## Product Documentation Sync
+- Conventional Commits en inglés, commits atómicos, sin trailers de co-autoría
+  IA. Nunca uses `git stash` como depósito entre sesiones.
+- Tras checkpoints locales, haz push para preservar puntos de rollback.
 
-- Update PRD/ for new features and meaningful changes to existing features.
-- Do not update PRD/ for minor bug-fix-only changes unless they alter architecture, functionality scope, or product design direction.
-- Keep feature parity tables and current-status notes aligned with implemented functionality and structural decisions.
+## Checklist de Pull Request
 
-## Git Workflow
-
-- Create automatic commits at logical checkpoints, grouping related changes by intent and impact.
-- Use commit granularity at agent discretion, prioritizing recoverability and traceability over arbitrary micro-commits.
-- After local commit checkpoints, ensure changes are pushed so GitHub reflects progress and rollback points are preserved.
-- Never add AI attribution lines in commits.
-
-## Pull Request Checklist
-
-- Every pull request must include explicit parity impact: Android, Wear OS, iOS, watchOS.
-- If a platform is marked as not impacted, include a short justification.
-- Every pull request must include validation evidence for touched areas using the Platform Validation Matrix.
-- Every pull request must include PRD impact classification: `No PRD update required` or `PRD update required`.
-- If PRD update is required, list the exact PRD files changed.
-- Every pull request must include a short risk assessment and rollback note.
-
-Use this minimum PR structure:
-
-```md
-## Summary
-
-## Platform Parity
-
-- Android:
-- Wear OS:
-- iOS:
-- watchOS:
-
-## Validation Evidence
-
-- Command:
-- Result:
-
-## PRD Impact
-
-- Classification: No PRD update required | PRD update required
-- Files:
-
-## Risk and Rollback
-
-- Risk:
-- Rollback:
-```
-
-## Review Mode
-
-- If the user asks for a review, report findings first (severity-ordered), then risks/gaps, then summary.
-
-## Mobile Conventions
-
-- iOS/watchOS: follow TCA patterns and strict concurrency expectations documented in ios/CLAUDE.md.
-- Android/Wear: keep shared behavior and sync flows consistent between phone and watch modules.
+- Todo PR declara paridad por plataforma (o justifica "not impacted").
+- Todo PR incluye evidencia de validación según la matriz de arriba.
+- Todo PR clasifica impacto en PRD: `No PRD update required` o
+  `PRD update required` con los archivos exactos.
+- Todo PR incluye evaluación de riesgo y nota de rollback
+  (plantilla `.github/PULL_REQUEST_TEMPLATE.md`, validada por
+  `scripts/check_pr_metadata.py`).

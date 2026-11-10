@@ -1,107 +1,148 @@
-# CHECKPOINTS.md — Fail-Closed Software Factory Gates
+# CHECKPOINTS.md — Compuertas Fail-Closed de la Software Factory
 
-Every change in Pepinillo passes through five deterministic checkpoints (`C1`–`C5`). Checkpoints are enforced by executable scripts, tests, and CI, not prose promises.
+Todo cambio en Pepinillo atraviesa cinco checkpoints deterministas (`C1`–`C5`).
+Los checkpoints los aplican scripts, tests y CI ejecutables, no promesas en prosa.
 
 ---
 
-## C1 — Authority, DoR & Clean Workspace
+## C1 — Autoridad, DoR y Workspace Limpio
 
-**Actor**: `leader`, `explorer`, `implementer`  
+**Actor**: `leader`, `explorer`, `implementer`
 **Script**: `python3 scripts/factory_preflight.py`
 
-1. **Issue Authority**: Work links to an open GitHub Issue in `status:ready` or `status:approved`.
+1. **Autoridad de issue**: el trabajo enlaza a una issue abierta en
+   `status:ready` o `status:approved`.
 2. **Definition of Ready (DoR)**:
-   - Objective, user/system value, and explicit exclusions are stated.
-   - Verifiable acceptance criteria exist (`S1..Sn`).
-   - Labels assigned: exactly one `type:*`, one `priority:p0..p2`, one `size:xs..l`, and `ux:shape` if UI flows change.
-   - If `ux:shape` is present, a UX brief (`.agents/skills/ux-brief/SKILL.md`) is published as an issue comment **before** implementation starts.
-3. **Topology & Edit Surface**:
-   - Task is classified as **Inline Direct** or **Delegated Direct** (`odd/tasks/<issue>-<slug>.md`).
-   - Allowed edit surfaces (`## Allowed edit surfaces`) are explicitly enumerated before any writer runs.
+   - Objetivo, valor para usuario/sistema y exclusiones explícitas declarados.
+   - Criterios de aceptación verificables (`S1..Sn`).
+   - Etiquetas asignadas: exactamente una `type:*`, una `priority:p0..p2`, una
+     `size:xs..l`, y `ux:shape` si cambian flujos de UI.
+   - Si hay `ux:shape`, el brief UX (`.agents/skills/ux-brief/SKILL.md`) se
+     publica como comentario de la issue **antes** de iniciar implementación.
+3. **Topología y superficie de edición**:
+   - Clasificar como **Inline Direct** o **Delegated Direct**
+     (`odd/tasks/<issue>-<slug>.md`).
+   - Las `## Allowed edit surfaces` se enumeran explícitamente antes de que
+     cualquier escritor ejecute.
 
 ---
 
-## C2 — Architecture, Hierarchy of Truth & Contract Gate
+## C2 — Arquitectura, Jerarquía de Verdad y Compuerta de Contratos
 
-**Actor**: `implementer`  
-**Script**: `make -C contracts lint diff`
+**Actor**: `implementer`
+**Script**: `make contracts-lint` y `make contracts-diff`
 
-1. **Hierarchy of Truth (Strict Order)**:
-   1. **Architecture Decision Records (`docs/architecture/adr/`)** — Active ADRs are binding.
-   2. **Product Source of Truth (`PRD/`) & Executable Contracts (`contracts/openapi.yaml`)** — Feature scope and RFC 9457 API schemas.
-   3. **Strategy & Operational Docs (`docs/strategy/`, `docs/`)** — Product direction and platform decisions.
-   4. **Existing Code** — Follow established architecture, never overriding tiers 1–3.
+1. **Jerarquía de verdad (orden estricto)**:
+   1. **ADRs activos (`docs/architecture/adr/`)** — vinculantes.
+   2. **Fuente de verdad de producto (`docs/prd-v2.md`) y contratos ejecutables
+      (`contracts/openapi.yaml`)** — alcance de features y contratos HTTP.
+   3. **Estrategia y docs operativos (`docs/strategy/`, `docs/`)** — dirección
+      de producto y decisiones de plataforma.
+   4. **Código existente** — sigue la arquitectura establecida; nunca anula los
+      niveles 1–3.
 2. **Contract-First OpenAPI**:
-   - Any backend HTTP API change updates `contracts/openapi.yaml` **first**.
-   - `Spectral` lint passes with zero errors.
-   - `oasdiff` detects zero breaking changes against `origin/main` (unless labeled with `contract-break`).
-3. **Agent-First Structural Hygiene**:
-   - Source files respect the soft ~500-line cognitive budget (`docs/agent-first-methodology.md`).
-   - Public symbols are descriptive and greppable.
+   - Cualquier cambio en la API HTTP actualiza `contracts/openapi.yaml` **primero**.
+   - `Spectral` pasa sin errores (`make contracts-lint`).
+   - `oasdiff` no detecta breaking changes contra `origin/main`
+     (`make contracts-diff`), salvo etiqueta `contract-break` autorizada por humano.
+3. **Higiene estructural Agent-First**:
+   - Archivos fuente respetan el presupuesto blando de ~500 líneas
+     (`docs/agent-first-methodology.md`).
+   - Símbolos públicos descriptivos y greppables.
 
 ---
 
-## C3 — Proportional Test-First Verification (`V0` / `V1` / `V2`)
+## C3 — Verificación Proporcional Test-First (`V0` / `V1` / `V2`)
 
-**Actor**: `implementer`  
-**Script**: `make test` and per-surface test commands
+**Actor**: `implementer`
+**Script**: `make test` y comandos por superficie
 
-Verification scales with the risk tier of the diff:
+La verificación escala con el nivel de riesgo del diff:
 
-| Level | Risk Profile | Required Evidence |
+| Nivel | Perfil de riesgo | Evidencia requerida |
 | :--- | :--- | :--- |
-| **V0 — Structural & Static** | Passive docs, comments, or non-executable config | Structural readback, `python3 scripts/factory_preflight.py`, markdown/schema lint |
-| **V1 — Focused RED/GREEN & Affected Suite** | Standard behavior change within a single platform/module | Observe deterministic **RED** test per rule → implement **GREEN** → run platform unit tests: <br>• Backend: `cd backend && go test ./...`<br>• Android/Wear: `cd android && ./gradlew :app:testDebugUnitTest :wear:testDebugUnitTest`<br>• iOS/watchOS: `xcodebuild test` |
-| **V2 — Integration, Contract & Boundary Suite** | High-risk change: DB migrations, auth/security, sync protocol, contracts, CI/scripts | V1 + full cross-platform regression checks, `make contracts-lint`, `make test-factory` |
+| **V0 — Estructural y estático** | Docs pasivos, comentarios o config no ejecutable | Lectura estructural, `python3 scripts/factory_preflight.py`, lint de markdown/schema |
+| **V1 — RED/GREEN focalizado y suite afectada** | Cambio de comportamiento estándar en un módulo/plataforma | Observar test **RED** determinista → implementar **GREEN** → tests de plataforma: <br>• Backend: `cd backend && go test ./...`<br>• Android/Wear: `cd android && ./gradlew :app:testDebugUnitTest :wear:testDebugUnitTest`<br>• iOS/watchOS/macOS: `xcodebuild test` (ver `docs/verification.md`) |
+| **V2 — Integración, contratos y límites** | Alto riesgo: migraciones DB, auth/seguridad, protocolo de sync, contratos, CI/scripts de factoría | V1 + regresión cross-platform, `make contracts-lint`, `make test-factory` |
 
-- Every work unit closes with an atomic Conventional Commit (`feat:`, `fix:`, `refactor:`, `test:`, `docs:`, `chore:`) without AI attribution trailers.
-- Close every code delivery with an explicit `Risk:` line (`Risk: none` or `Risk: item N (<reason>)`), where `N` is an item of the canonical list below.
+- Cada unidad de trabajo cierra con un Conventional Commit atómico
+  (`feat:`, `fix:`, `refactor:`, `test:`, `docs:`, `chore:`) sin trailers de
+  atribución IA.
+- Cierra toda entrega de código con una línea explícita `Risk:`
+  (`Risk: none` o `Risk: item N (<reason>)`), donde `N` es un elemento de la
+  lista canónica siguiente.
 
-### High-Risk Items (canonical — referenced by `Risk: item N`)
+### Ítems de Alto Riesgo (canónicos — referenciados por `Risk: item N`)
 
-A change is high risk when a mistake would be hard to detect, hard to undo, or reaches beyond the change. It touches:
+Un cambio es de alto riesgo cuando un error sería difícil de detectar, difícil
+de deshacer o alcanza más allá del cambio. Toca:
 
-1. **Data / irreversible effects**: migrations, changing or deleting existing stored focus/task data, persisted format changes.
-2. **Security**: auth, permissions, credentials, secrets, revenue/billing keys.
-3. **Contracts others consume**: changing or removing public API, companion sync protocol, config formats, or shared code that unmentioned existing behavior also uses.
-4. **Concurrency**: locks, races, async ordering, timer dispatch, wear/watch background sync.
-5. **Delivery / environment**: store configurations, release CI, deploy scripts, factory guardrail scripts.
-6. **No test would catch a regression** in what changes.
+1. **Datos / efectos irreversibles**: migraciones, cambiar o borrar datos
+   existentes de foco/tareas, cambios de formato persistido.
+2. **Seguridad**: auth, permisos, credenciales, secretos, claves de billing.
+3. **Contratos que otros consumen**: cambiar o eliminar API pública, protocolo
+   de sync de companion, formatos de config, o código compartido del que
+   depende comportamiento existente no mencionado.
+4. **Concurrencia**: locks, races, orden async, dispatch de timers, sync en
+   background de wear/watch.
+5. **Entrega / entorno**: configuraciones de stores, CI de release, scripts de
+   deploy, guardrails de la factoría.
+6. **Ningún test detectaría una regresión** en lo que cambia.
 
-Before writing `Risk: none`, check whether the diff changes code that existing behavior the request did not mention also uses; if so, that is item 3.
+Antes de escribir `Risk: none`, verifica si el diff cambia código del que
+depende comportamiento existente no mencionado en la petición; si es así, es el
+ítem 3.
 
 ---
 
-## C4 — Stateless Clean-Context Independent Review
+## C4 — Revisión Independiente Stateless con Contexto Limpio
 
-**Actor**: `reviewer` (fresh subagent or session with **zero** implementer chat context)  
+**Actor**: `reviewer` (subagente o sesión fresca con **cero** contexto de chat del implementador)
 **Script**: `python3 scripts/factory_handoff.py --base <base> --head <head> --issue <N> --verification-file <evidence.txt> --out <bundle.md>`
 
-1. **Zero Rationale Contamination**: The reviewer never reads the implementer's conversation log. It consumes only the deterministic handoff packet generated by `scripts/factory_handoff.py`:
-   - Pinned `base_sha` and `head_sha` + SHA-256 scope digest
-   - Issue acceptance criteria & explicit exclusions
-   - Declared `## Allowed edit surfaces` and touched files outside them
-   - Full `git diff <base_sha>...<head_sha>`
-   - Recorded `V0`/`V1`/`V2` command outputs
-   - Fails closed (`HANDOFF_BLOCKED`, exit 3) if acceptance criteria or verification evidence are missing.
-2. **Severity Rubric (`P0`–`P3`)**: canonical in [`reviewer/SKILL.md` §3](.agents/skills/reviewer/SKILL.md). Any `P0`/`P1` blocks approval. Verdict: `APPROVED` | `CHANGES_REQUESTED` | `BLOCKED`.
-3. **Correction Bound**: At most **one** consolidated correction batch for reported P0/P1 blockers, followed by one scoped re-review on a regenerated bundle. If any P0/P1 remains, stop automated iteration, label `needs-human`, and escalate as `Needs your decision`.
-4. **Judgment-Day Triggers (canonical)**: Blind dual review (`judgment-day`: `jd-judge-a` + `jd-judge-b`, same frozen bundle, no shared output) is required when the diff touches:
-   - **Path-detected** by `scripts/factory_handoff.py` (`judgment_day_required: true`):
-     - `contracts/**`, `scripts/**`, `.github/workflows/**`, `docs/architecture/adr/**`, `CHECKPOINTS.md`
-     - Path tokens for auth/security/secrets/crypto/permissions/migrations
-     - More than **400** changed lines (size exception / chained-PR slice that was not split)
+1. **Cero contaminación de racional**: el reviewer nunca lee el transcript del
+   implementador. Consume solo el paquete determinista de
+   `scripts/factory_handoff.py`:
+   - `base_sha` y `head_sha` fijados + digest de alcance SHA-256
+   - Criterios de aceptación y exclusiones explícitas de la issue
+   - `## Allowed edit surfaces` declaradas y archivos tocados fuera de ellas
+   - `git diff <base_sha>...<head_sha>` completo
+   - Salidas registradas de `V0`/`V1`/`V2`
+   - Falla cerrada (`HANDOFF_BLOCKED`, exit 3) si faltan criterios de aceptación
+     o evidencia de verificación.
+2. **Rúbrica de severidad (`P0`–`P3`)**: canónica en
+   [`reviewer/SKILL.md` §3](.agents/skills/reviewer/SKILL.md). Cualquier
+   `P0`/`P1` bloquea la aprobación. Veredictos: `APPROVED` |
+   `CHANGES_REQUESTED` | `BLOCKED`.
+3. **Límite de corrección**: como máximo **un** lote consolidado de
+   correcciones para los bloqueantes `P0`/`P1` reportados, seguido de una
+   re-revisión acotada sobre un bundle regenerado. Si persiste algún `P0`/`P1`,
+   detén la iteración automatizada, etiqueta `needs-human` y escala como
+   `Needs your decision`.
+4. **Disparadores de Judgment-Day (canónicos)**: revisión dual ciega
+   (`judgment-day`: `jd-judge-a` + `jd-judge-b`, mismo bundle congelado, sin
+   salida compartida) requerida cuando el diff toca:
+   - **Detectado por rutas** en `scripts/factory_handoff.py`
+     (`judgment_day_required: true`):
+     - `contracts/**`, `scripts/**`, `.github/workflows/**`,
+       `docs/architecture/adr/**`, `CHECKPOINTS.md`
+     - Tokens de ruta de auth/seguridad/secrets/crypto/permissions/migrations
+     - Más de **400** líneas modificadas (excepción de tamaño / slice de
+       chained-PR que no se dividió)
 
 ---
 
-## C5 — Fail-Closed PR Delivery Contract
+## C5 — Contrato de Entrega de PR Fail-Closed
 
-**Actor**: `leader`  
+**Actor**: `leader`
 **Script**: `python3 scripts/check_pr_metadata.py`
 
-Every PR body must conform to `.github/PULL_REQUEST_TEMPLATE.md`:
-1. Line 1: `Closes #N`, `Fixes #N`, `Resolves #N` (if `complete`) or `Refs #N` (if `partial`).
-2. Line 2: `Delivery: complete` or `Delivery: partial`.
-3. Required headings: `## Summary`, `## Decisions Made Without Asking`, `## Verification Evidence`, `## Clean-Context Review Handoff`, `## Risk`.
-4. Valid risk declaration line matching `Risk: none` or `Risk: item <1-6> (<reason>)`.
-5. Mechanical proof of C4 approval in `## Clean-Context Review Handoff`.
+Todo cuerpo de PR debe ajustarse a `.github/PULL_REQUEST_TEMPLATE.md`:
+1. Línea 1: `Closes #N`, `Fixes #N`, `Resolves #N` (si `complete`) o `Refs #N`
+   (si `partial`).
+2. Línea 2: `Delivery: complete` o `Delivery: partial`.
+3. Secciones requeridas: `## Summary`, `## Decisions Made Without Asking`,
+   `## Verification Evidence`, `## Clean-Context Review Handoff`, `## Risk`.
+4. Línea de riesgo válida que coincida con `Risk: none` o
+   `Risk: item <1-6> (<reason>)`.
+5. Prueba mecánica de aprobación `C4` en `## Clean-Context Review Handoff`.

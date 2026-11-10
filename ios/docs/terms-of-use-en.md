@@ -16,7 +16,7 @@ You must be at least 4 years old to use the App, as rated on the App Store. If y
 
 ## 3. User Account
 
-Pepinillo does not require you to create an account or provide login credentials. Your data is stored locally on your device and, if you enable iCloud sync, in your personal iCloud account.
+Pepinillo works fully offline without an account. Creating an account is optional and only needed if you enable account-based sync or recovery features. Account data is stored on our servers only to provide those features; your focus data is stored locally on your device, in your personal iCloud account (if you enable iCloud sync), or in your synced account (if you enable Everywhere sync).
 
 ## 4. Subscriptions and Purchases
 
@@ -24,9 +24,9 @@ Pepinillo does not require you to create an account or provide login credentials
 
 Pepinillo offers optional paid features through the following plans:
 
-- **Pro Monthly:** Billed monthly at the price displayed in the App Store.
-- **Pro Annual:** Billed annually at the price displayed in the App Store.
-- **Pro Lifetime:** A one-time purchase that unlocks all Pro features permanently.
+- **Pepinillo+ (`pro.lifetime`):** A one-time purchase that unlocks the full local premium experience permanently. Not a subscription.
+- **Everywhere/AI+ Monthly (`pro.monthly`):** Billed monthly at the price displayed in the App Store. Adds account-based sync and cloud AI.
+- **Everywhere/AI+ Annual (`pro.annual`):** Billed annually at the price displayed in the App Store. Adds account-based sync and cloud AI.
 
 ### 4.2 Billing
 

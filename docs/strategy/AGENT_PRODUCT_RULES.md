@@ -1,93 +1,94 @@
-# Pepinillo Product Rules for Future Agents
+# Reglas de producto para agentes futuros
 
-These rules define strategic boundaries when making changes to Pepinillo.
+Estas reglas definen los límites estratégicos al hacer cambios en Pepinillo.
 
-## Current Product Phase
+## Fase actual del producto
 
-Pepinillo is in the **growth validation phase**.
+Pepinillo está en la fase de **validación de crecimiento**.
 
-The main objective is not maximum feature count. The objective is proving that real users:
+El objetivo no es maximizar el número de features. El objetivo es probar que
+usuarios reales:
 
-1. discover Pepinillo;
-2. understand the value;
-3. complete focus sessions;
-4. return regularly;
-5. are willing to pay.
-
----
-
-# Active Priorities
-
-Prioritize:
-
-- Android stability and growth;
-- iOS stability and growth;
-- onboarding improvements;
-- retention improvements;
-- store conversion;
-- analytics and user feedback;
-- reliability and security.
+1. descubren Pepinillo;
+2. entienden el valor;
+3. completan sesiones de foco;
+4. vuelven regularmente;
+5. están dispuestos a pagar.
 
 ---
 
-# Avoid Without Explicit Approval
+# Prioridades activas
 
-Do not start large initiatives involving:
+Priorizar:
 
-- new platforms;
-- major AI expansions;
-- collaboration features;
-- complex productivity systems;
-- enterprise features.
-
-These may be valuable later but are not current priorities.
+- estabilidad y crecimiento de Android (+ Wear OS);
+- estabilidad y crecimiento de iOS (+ watchOS, macOS);
+- mejoras de onboarding;
+- mejoras de retención;
+- conversión en stores;
+- analíticas y feedback de usuarios;
+- confiabilidad y seguridad.
 
 ---
 
-# Platform Decisions
+# Evitar sin aprobación explícita
 
-## Active
+No iniciar grandes iniciativas de:
 
-- Android
-- iOS
-- watchOS
-- Wear OS
-- Backend required for current functionality
+- nuevas plataformas;
+- grandes expansiones de IA;
+- features de colaboración;
+- sistemas de productividad complejos;
+- features enterprise.
 
-## Paused Experiments
+Pueden ser valiosas más adelante, pero no son la prioridad actual.
+
+---
+
+# Decisiones de plataformas
+
+## Activas
+
+- iOS, watchOS, macOS (`PepinilloMac`)
+- Android, Wear OS
+- Backend requerido por la funcionalidad actual
+
+## Experimentos en pausa
 
 - Windows
 - Web companion
 
-The existence of code does not mean active roadmap commitment.
+La existencia de código no implica compromiso activo de roadmap.
 
 ---
 
-# Feature Decision Framework
+# Framework de decisión de features
 
-Before implementing a feature, answer:
+Antes de implementar una feature, responder:
 
-- How does this improve focus?
-- How does this improve retention?
-- How does this improve monetization?
-- Is there evidence users need this?
+- ¿Cómo mejora el foco?
+- ¿Cómo mejora la retención?
+- ¿Cómo mejora la monetización?
+- ¿Hay evidencia de que los usuarios la necesitan?
 
-If these answers are unclear, document the idea but do not prioritize implementation.
+Si las respuestas no son claras, documenta la idea pero no priorices su
+implementación.
 
 ---
 
-# Brand
+# Marca
 
-The official product name is:
+El nombre oficial del producto es:
 
 **Pepinillo**
 
-Do not introduce alternative product names.
+No introducir nombres alternativos de producto.
 
 ---
 
-# Core Product Principle
+# Principio core del producto
 
-Pepinillo is not a collection of productivity features.
+Pepinillo no es una colección de features de productividad.
 
-Pepinillo is a system that helps people enter, maintain, and understand focused work.
+Pepinillo es un sistema que ayuda a la gente a entrar, mantener y entender el
+trabajo enfocado.

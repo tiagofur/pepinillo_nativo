@@ -1,113 +1,3617 @@
 openapi: 3.1.0
 info:
-  title: Software Factory Base API Contract
-  version: 0.1.0
-  summary: Canonical Contract-First OpenAPI 3.1 specification (ADR-0003).
+  title: Pepinillo API
+  version: 1.1.0
+  summary: Contrato OpenAPI 3.1 canónico del backend Go de Pepinillo (`/api/v1`).
   description: |
-    Single source of truth for HTTP routes, request/response payloads, and RFC 9457 Problem Details error shapes across Go backend, React+Vite web, Tauri v2, and native mobile surfaces.
-  contact:
-    name: Software Factory Architecture Team
-  license:
-    name: MIT
-    identifier: MIT
+    Fuente de verdad HTTP del backend Go (Fiber v2 + GORM + PostgreSQL 16 + Redis 7) en `backend/internal/adapters/handlers/routes.go`.
 
+    ### Autenticación y compuertas de middleware
+    - **Público**: `/health*`, `/auth/{register,login,google,apple,refresh,forgot-password,reset-password,verify-email,resend-verification}`
+    - **Webhook Token**: `POST /webhooks/revenuecat` valida `Authorization` contra `REVENUECAT_WEBHOOK_AUTH_TOKEN`.
+    - **JWT (`BearerAuth`)**: requiere access token (`tokenType == "access"`). Da acceso a `/auth/*` protegidas, `/users/me*` y `/billing/verify-receipt`.
+    - **JWT + Email verificado**: todas las rutas de datos (`/tasks`, `/pomodoro`, `/focus`, `/ai`, `/push`, `/analytics`, `/preferences`, `/sync`).
+    - **Pepinillo+ / Everywhere+**: `/analytics/*` exige `advanced_analytics`.
+    - **Everywhere+ (`everywhere_monthly` | `everywhere_annual`)**: `/sync/*`, `/tasks/sync`, `PUT /preferences` (requieren `RequireBackendSync` → `402 ERR_TIER_INSUFFICIENT`) y `/ai/*` (requieren `predictions` + créditos mensuales).
+
+    ### WebSocket (`/api/v1/ws`)
+    El canal en tiempo real usa `GET /api/v1/ws` (upgrade WebSocket, auth vía `Authorization: Bearer <jwt>` o `Sec-WebSocket-Protocol: bearer, <jwt>`, parámetro opcional `deviceId`) con sobres `WSMessage { type, data, timestamp, channels }` y eventos `task_updated`, `task_deleted`, `focus_config_updated`, `focus_session_created`, `focus_session_updated`, `pomodoro_*`, `settings_updated`, `sessions_synced`, `initial_upload_completed`, `user_updated`, `pong`.
+
+    ### Contrato de errores
+    El handler global actual serializa `ErrorEnvelope` (`{"error": "<code|message>"}`), y `RequireBackendSync` devuelve `BackendSyncRequiredError` (`402 ERR_TIER_INSUFFICIENT`). Para nuevos endpoints se adopta gradualmente RFC 9457 (`ProblemDetails`, `ADR-0003`).
+  contact:
+    name: Pepinillo Engineering (Creapolis)
+    email: hola@creapolis.dev
 servers:
-  - url: http://localhost:8080
-    description: Local development Go API server
+  - url: https://api.ppn.creapolis.dev/api/v1
+    description: Producción (IONOS VPS + Caddy)
+  - url: https://staging.api.ppn.creapolis.dev/api/v1
+    description: Staging
+  - url: http://localhost:8080/api/v1
+    description: Desarrollo local
 
 tags:
   - name: system
-    description: Operational health, readiness, and metadata endpoints.
+    description: Salud, dependencias, métricas Prometheus, alertas y SLOs.
+  - name: webhooks
+    description: Webhooks externos autenticados por token (RevenueCat).
+  - name: auth
+    description: Registro, login, JWT refresh rotation, recuperación y verificación de email.
+  - name: oauth
+    description: Login y vinculación con Google y Sign in with Apple.
+  - name: users
+    description: Perfil de usuario autenticado e imagen de avatar.
+  - name: billing
+    description: Verificación server-side de recibos App Store y Google Play.
+  - name: tasks
+    description: Tareas, recurrencias, seguimiento por modo de foco y sincronización LWW.
+  - name: subtasks
+    description: Subtareas asociadas a una tarea.
+  - name: focus
+    description: Motor unificado multi-modo (Pomodoro, Flowtime, TimeBlock, Stopwatch).
+  - name: pomodoro
+    description: Endpoints legacy de Pomodoro mantenidos por retrocompatibilidad.
+  - name: ai
+    description: Insights, análisis, reportes y predicciones en la nube (Everywhere+ y créditos IA).
+  - name: analytics
+    description: Reportes semanales/mensuales, tasa de completado y rachas (Pepinillo+ / Everywhere+).
+  - name: push
+    description: Registro y envío de notificaciones push APNs/FCM.
+  - name: preferences
+    description: Preferencias sincronizables de usuario.
+  - name: sync
+    description: Sincronización multi-dispositivo paginada con reloj LWW (Everywhere+).
 
 paths:
-  /healthz:
+  /health:
     get:
       operationId: getHealth
-      tags:
-        - system
-      summary: Liveness and readiness probe
-      description: Returns the current operational status of the backend service and its primary persistence adapter.
+      tags: [system]
+      summary: Probe básico de vida del servicio API
       responses:
         "200":
-          description: Service is healthy and ready to accept traffic.
+          description: Servicio operativo.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
-        "503":
-          description: Service or backing store is unavailable.
+
+  /health/deps:
+    get:
+      operationId: getHealthDependencies
+      tags: [system]
+      summary: Estado de dependencias (PostgreSQL, Redis, MinIO, ML)
+      responses:
+        "200":
+          description: Estado agregado y por dependencia.
           content:
-            application/problem+json:
+            application/json:
               schema:
-                $ref: "#/components/schemas/ProblemDetails"
+                $ref: "#/components/schemas/HealthDepsResponse"
+
+  /health/metrics:
+    get:
+      operationId: getHealthMetrics
+      tags: [system]
+      summary: Métricas operativas JSON (billing, push, recurrence)
+      responses:
+        "200":
+          description: Contadores y latencias agregadas.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthMetricsResponse"
+
+  /health/metrics/prometheus:
+    get:
+      operationId: getHealthPrometheusMetrics
+      tags: [system]
+      summary: Métricas en formato de texto Prometheus
+      responses:
+        "200":
+          description: Exposición Prometheus 0.0.4.
+          content:
+            text/plain:
+              schema:
+                type: string
+
+  /health/alerts:
+    get:
+      operationId: getHealthAlerts
+      tags: [system]
+      summary: Alertas activas y suprimidas por ventana de enfriamiento
+      responses:
+        "200":
+          description: Estado actual de alertas.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthAlertsResponse"
+
+  /health/alerts/rules:
+    get:
+      operationId: getHealthAlertRules
+      tags: [system]
+      summary: Reglas y umbrales configurados para alertas
+      responses:
+        "200":
+          description: Configuración activa de umbrales y mute window.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthAlertRulesResponse"
+
+  /health/alerts/alertmanager:
+    get:
+      operationId: getHealthAlertmanager
+      tags: [system]
+      summary: Alertas en formato compatible con Alertmanager
+      responses:
+        "200":
+          description: Lista de alertas activas en formato Alertmanager.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthAlertmanagerResponse"
+
+  /health/slo:
+    get:
+      operationId: getHealthSLO
+      tags: [system]
+      summary: Estado de SLOs de billing, push y recurrencias
+      responses:
+        "200":
+          description: Evaluación actual de SLOs.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthSLOResponse"
+
+  /webhooks/revenuecat:
+    post:
+      operationId: handleRevenueCatWebhook
+      tags: [webhooks]
+      summary: Webhook de eventos de suscripción/compra desde RevenueCat
+      security:
+        - WebhookToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RevenueCatWebhookPayload"
+      responses:
+        "200":
+          description: Evento procesado, deduplicado o ignorado por ID anónimo.
+        "400":
+          $ref: "#/components/responses/BadRequestError"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "502":
+          $ref: "#/components/responses/BadGatewayError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailableError"
+
+  /auth/register:
+    post:
+      operationId: registerUser
+      tags: [auth]
+      summary: Registrar nueva cuenta con email y contraseña
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+      responses:
+        "201":
+          description: Cuenta creada con tokens JWT iniciales.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthSessionResponse"
+        "400":
+          $ref: "#/components/responses/BadRequestError"
+        "409":
+          $ref: "#/components/responses/ConflictError"
+        "429":
+          $ref: "#/components/responses/TooManyRequestsError"
+
+  /auth/login:
+    post:
+      operationId: loginUser
+      tags: [auth]
+      summary: Iniciar sesión con email y contraseña
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Sesión iniciada correctamente.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthSessionResponse"
+        "400":
+          $ref: "#/components/responses/BadRequestError"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "429":
+          $ref: "#/components/responses/TooManyRequestsError"
+
+  /auth/google:
+    post:
+      operationId: loginWithGoogle
+      tags: [oauth]
+      summary: Iniciar sesión o crear cuenta con Google ID token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GoogleOAuthRequest"
+      responses:
+        "200":
+          description: Sesión autenticada con Google.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthSessionResponse"
+        "400":
+          $ref: "#/components/responses/BadRequestError"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "403":
+          $ref: "#/components/responses/ForbiddenError"
+        "409":
+          $ref: "#/components/responses/ConflictError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailableError"
+
+  /auth/apple:
+    post:
+      operationId: loginWithApple
+      tags: [oauth]
+      summary: Iniciar sesión o crear cuenta con Sign in with Apple
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AppleOAuthRequest"
+      responses:
+        "200":
+          description: Sesión autenticada con Apple.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthSessionResponse"
+        "400":
+          $ref: "#/components/responses/BadRequestError"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "403":
+          $ref: "#/components/responses/ForbiddenError"
+        "409":
+          $ref: "#/components/responses/ConflictError"
+
+  /auth/refresh:
+    post:
+      operationId: refreshTokens
+      tags: [auth]
+      summary: Rotar refresh token y emitir nuevo par de tokens
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RefreshTokenRequest"
+      responses:
+        "200":
+          description: Nuevo par de access y refresh tokens.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokensEnvelope"
+        "400":
+          $ref: "#/components/responses/BadRequestError"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
+        "429":
+          $ref: "#/components/responses/TooManyRequestsError"
+
+  /auth/forgot-password:
+    post:
+      operationId: forgotPassword
+      tags: [auth]
+      summary: Solicitar código de recuperación de contraseña por email
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EmailOnlyRequest"
+      responses:
+        "204":
+          description: Solicitud aceptada (no revela existencia de la cuenta).
+        "400":
+          $ref: "#/components/responses/BadRequestError"
+        "429":
+          $ref: "#/components/responses/TooManyRequestsError"
+
+  /auth/reset-password:
+    post:
+      operationId: resetPassword
+      tags: [auth]
+      summary: Restablecer contraseña usando código recibido por email
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResetPasswordRequest"
+      responses:
+        "204":
+          description: Contraseña actualizada.
+        "400":
+          $ref: "#/components/responses/BadRequestError"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
+        "429":
+          $ref: "#/components/responses/TooManyRequestsError"
+
+  /auth/verify-email:
+    post:
+      operationId: verifyEmail
+      tags: [auth]
+      summary: Verificar email con código de un solo uso
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VerifyEmailRequest"
+      responses:
+        "200":
+          description: Email verificado y tokens actualizados con claim `emailVerified=true`.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageAuthSessionResponse"
+        "400":
+          $ref: "#/components/responses/BadRequestError"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
+
+  /auth/resend-verification:
+    post:
+      operationId: resendVerificationEmail
+      tags: [auth]
+      summary: Reenviar código de verificación de email
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EmailOnlyRequest"
+      responses:
+        "200":
+          description: Código reenviado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+        "400":
+          $ref: "#/components/responses/BadRequestError"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
+
+  /auth/account:
+    delete:
+      operationId: deleteAccount
+      tags: [auth]
+      summary: Eliminar cuenta del usuario autenticado (y revocar Apple token si aplica)
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeleteAccountRequest"
+      responses:
+        "204":
+          description: Cuenta eliminada.
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+
+  /auth/logout:
+    post:
+      operationId: logoutUser
+      tags: [auth]
+      summary: Cerrar sesión revocando uno o todos los refresh tokens
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LogoutRequest"
+      responses:
+        "204":
+          description: Sesión cerrada.
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+
+  /auth/change-password:
+    post:
+      operationId: changePassword
+      tags: [auth]
+      summary: Cambiar contraseña del usuario autenticado
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChangePasswordRequest"
+      responses:
+        "204":
+          description: Contraseña cambiada.
+        "400":
+          $ref: "#/components/responses/BadRequestError"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
+
+  /auth/request-email-change:
+    post:
+      operationId: requestEmailChange
+      tags: [auth]
+      summary: Solicitar cambio de email con verificación al nuevo correo
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RequestEmailChangeRequest"
+      responses:
+        "200":
+          description: Código enviado al nuevo correo.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EmailChangePendingResponse"
+        "400":
+          $ref: "#/components/responses/BadRequestError"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "409":
+          $ref: "#/components/responses/ConflictError"
+
+  /auth/confirm-email-change:
+    post:
+      operationId: confirmEmailChange
+      tags: [auth]
+      summary: Confirmar cambio de email con el código enviado
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CodeOnlyRequest"
+      responses:
+        "200":
+          description: Email actualizado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageUserResponse"
+        "400":
+          $ref: "#/components/responses/BadRequestError"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+
+  /auth/cancel-email-change:
+    post:
+      operationId: cancelEmailChange
+      tags: [auth]
+      summary: Cancelar cambio de email pendiente
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Cambio pendiente cancelado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+        "400":
+          $ref: "#/components/responses/BadRequestError"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+
+  /auth/link/google:
+    post:
+      operationId: linkGoogleAccount
+      tags: [oauth]
+      summary: Vincular cuenta de Google al usuario autenticado
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GoogleOAuthRequest"
+      responses:
+        "200":
+          description: Proveedor Google vinculado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageUserResponse"
+        "400":
+          $ref: "#/components/responses/BadRequestError"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "403":
+          $ref: "#/components/responses/ForbiddenError"
+        "409":
+          $ref: "#/components/responses/ConflictError"
+
+  /auth/link/apple:
+    post:
+      operationId: linkAppleAccount
+      tags: [oauth]
+      summary: Vincular Sign in with Apple al usuario autenticado
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AppleOAuthRequest"
+      responses:
+        "200":
+          description: Proveedor Apple vinculado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageUserResponse"
+        "400":
+          $ref: "#/components/responses/BadRequestError"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "403":
+          $ref: "#/components/responses/ForbiddenError"
+        "409":
+          $ref: "#/components/responses/ConflictError"
+
+  /auth/unlink/google:
+    delete:
+      operationId: unlinkGoogleAccount
+      tags: [oauth]
+      summary: Desvincular Google (falla si es el último método de autenticación)
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Google desvinculado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+        "400":
+          $ref: "#/components/responses/BadRequestError"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+
+  /auth/unlink/apple:
+    delete:
+      operationId: unlinkAppleAccount
+      tags: [oauth]
+      summary: Desvincular Apple (falla si es el último método de autenticación)
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Apple desvinculado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+        "400":
+          $ref: "#/components/responses/BadRequestError"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+
+  /auth/providers:
+    get:
+      operationId: getLinkedProviders
+      tags: [oauth]
+      summary: Listar métodos de autenticación vinculados del usuario actual
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Proveedores vinculados y presencia de contraseña.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LinkedProviders"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+
+  /users/me:
+    get:
+      operationId: getCurrentUser
+      tags: [users]
+      summary: Obtener perfil del usuario autenticado
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Perfil actual incluyendo tier efectivo y créditos IA.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
+    put:
+      operationId: updateCurrentUser
+      tags: [users]
+      summary: Actualizar nombre o imageUrl del perfil (el email requiere flujo de verificación)
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateUserRequest"
+      responses:
+        "200":
+          description: Perfil actualizado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "400":
+          $ref: "#/components/responses/BadRequestError"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+
+  /users/me/image:
+    post:
+      operationId: uploadProfileImage
+      tags: [users]
+      summary: Subir imagen de avatar (JPEG, PNG o WebP, máximo 5 MiB)
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [image]
+              properties:
+                image:
+                  type: string
+                  format: binary
+      responses:
+        "200":
+          description: URL pública/firmada de la imagen subida.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [imageUrl]
+                properties:
+                  imageUrl:
+                    type: string
+                    format: uri-reference
+        "400":
+          $ref: "#/components/responses/BadRequestError"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+
+  /billing/verify-receipt:
+    post:
+      operationId: verifyReceipt
+      tags: [billing]
+      summary: Verificar recibo de compra Apple App Store o Google Play
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VerifyReceiptInput"
+      responses:
+        "200":
+          description: Resultado de verificación y tier actualizado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VerifyReceiptResult"
+        "400":
+          $ref: "#/components/responses/BadRequestError"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "409":
+          $ref: "#/components/responses/ConflictError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailableError"
+
+  /tasks:
+    get:
+      operationId: listTasks
+      tags: [tasks]
+      summary: Listar tareas del usuario (opcionalmente filtradas por fecha)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: finishDate
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: Lista de tareas.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Task"
+        "400":
+          $ref: "#/components/responses/BadRequestError"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "403":
+          $ref: "#/components/responses/ForbiddenError"
+    post:
+      operationId: upsertTask
+      tags: [tasks]
+      summary: Crear o actualizar una tarea
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Task"
+      responses:
+        "200":
+          description: Tarea guardada.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+        "400":
+          $ref: "#/components/responses/BadRequestError"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "403":
+          $ref: "#/components/responses/ForbiddenError"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
+
+  /tasks/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+    put:
+      operationId: updateTaskById
+      tags: [tasks]
+      summary: Actualizar una tarea existente
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Task"
+      responses:
+        "200":
+          description: Tarea actualizada.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+        "400":
+          $ref: "#/components/responses/BadRequestError"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "403":
+          $ref: "#/components/responses/ForbiddenError"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
+    delete:
+      operationId: deleteTaskById
+      tags: [tasks]
+      summary: Eliminar lógicamente una tarea
+      security:
+        - BearerAuth: []
+      responses:
+        "204":
+          description: Tarea eliminada.
+        "400":
+          $ref: "#/components/responses/BadRequestError"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "403":
+          $ref: "#/components/responses/ForbiddenError"
+
+  /tasks/sync:
+    post:
+      operationId: syncTasks
+      tags: [tasks]
+      summary: Sincronización incremental LWW de tareas (requiere Everywhere+)
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TaskSyncRequest"
+      responses:
+        "200":
+          description: Resultado delta LWW con aplicadas, rechazadas y timestamp de servidor.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskSyncResponse"
+        "400":
+          $ref: "#/components/responses/BadRequestError"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "402":
+          $ref: "#/components/responses/SubscriptionRequiredError"
+        "403":
+          $ref: "#/components/responses/ForbiddenError"
+
+  /tasks/recurrences:
+    get:
+      operationId: listTaskRecurrences
+      tags: [tasks]
+      summary: Listar instancias recurrentes de tareas en una ventana de fechas
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: from
+          in: query
+          schema:
+            type: string
+        - name: to
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Instancias recurrentes.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Task"
+        "400":
+          $ref: "#/components/responses/BadRequestError"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "403":
+          $ref: "#/components/responses/ForbiddenError"
+
+  /tasks/recurrences/generate:
+    post:
+      operationId: generateTaskRecurrences
+      tags: [tasks]
+      summary: Generar instancias recurrentes en una ventana (máx. 370 días)
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenerateRecurrencesRequest"
+      responses:
+        "200":
+          description: Instancias creadas.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenerateRecurrencesResponse"
+        "400":
+          $ref: "#/components/responses/BadRequestError"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "403":
+          $ref: "#/components/responses/ForbiddenError"
+        "409":
+          $ref: "#/components/responses/ConflictError"
+
+  /tasks/{id}/tracking-mode:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+    put:
+      operationId: updateTaskTrackingMode
+      tags: [tasks]
+      summary: Definir el modo de foco asociado a la tarea
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [mode]
+              properties:
+                mode:
+                  $ref: "#/components/schemas/FocusMode"
+      responses:
+        "204":
+          description: Modo actualizado.
+        "400":
+          $ref: "#/components/responses/BadRequestError"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
+
+  /tasks/{id}/completion:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+    post:
+      operationId: incrementTaskCompletion
+      tags: [tasks]
+      summary: Incrementar contador de sesiones completadas para un modo en la tarea
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [mode]
+              properties:
+                mode:
+                  $ref: "#/components/schemas/FocusMode"
+      responses:
+        "204":
+          description: Contador incrementado.
+        "400":
+          $ref: "#/components/responses/BadRequestError"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
+
+  /tasks/{id}/focus-time:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+    post:
+      operationId: incrementTaskFocusTime
+      tags: [tasks]
+      summary: Acumular segundos enfocados por modo en la tarea (1..86400)
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [mode, seconds]
+              properties:
+                mode:
+                  $ref: "#/components/schemas/FocusMode"
+                seconds:
+                  type: integer
+                  minimum: 1
+                  maximum: 86400
+      responses:
+        "204":
+          description: Tiempo acumulado.
+        "400":
+          $ref: "#/components/responses/BadRequestError"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
+
+  /tasks/{id}/active-session:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+    put:
+      operationId: setTaskActiveSession
+      tags: [tasks]
+      summary: Asociar o limpiar la sesión activa de la tarea
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                sessionId:
+                  type: ["string", "null"]
+      responses:
+        "204":
+          description: Sesión activa actualizada.
+        "400":
+          $ref: "#/components/responses/BadRequestError"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
+
+  /tasks/{taskId}/subtasks:
+    parameters:
+      - name: taskId
+        in: path
+        required: true
+        schema:
+          type: integer
+    get:
+      operationId: listSubtasks
+      tags: [subtasks]
+      summary: Listar subtareas de una tarea
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Lista de subtareas.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SubTask"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
+    post:
+      operationId: createSubtask
+      tags: [subtasks]
+      summary: Crear subtarea dentro de una tarea
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubTask"
+      responses:
+        "201":
+          description: Subtarea creada.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubTask"
+        "400":
+          $ref: "#/components/responses/BadRequestError"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
+
+  /tasks/{taskId}/subtasks/{subtaskId}:
+    parameters:
+      - name: taskId
+        in: path
+        required: true
+        schema:
+          type: integer
+      - name: subtaskId
+        in: path
+        required: true
+        schema:
+          type: integer
+    put:
+      operationId: updateSubtask
+      tags: [subtasks]
+      summary: Actualizar subtarea existente
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubTask"
+      responses:
+        "200":
+          description: Subtarea actualizada.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubTask"
+        "400":
+          $ref: "#/components/responses/BadRequestError"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
+    delete:
+      operationId: deleteSubtask
+      tags: [subtasks]
+      summary: Eliminar subtarea
+      security:
+        - BearerAuth: []
+      responses:
+        "204":
+          description: Subtarea eliminada.
+        "404":
+          $ref: "#/components/responses/NotFoundError"
+
+  /focus/config:
+    get:
+      operationId: getFocusConfig
+      tags: [focus]
+      summary: Obtener configuración multi-modo de foco del usuario
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Configuración activa (o `{}` si aún no se guarda).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FocusConfig"
+    put:
+      operationId: upsertFocusConfig
+      tags: [focus]
+      summary: Guardar configuración multi-modo de foco
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FocusConfig"
+      responses:
+        "200":
+          description: Configuración persistida.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FocusConfig"
+
+  /focus/stats:
+    get:
+      operationId: listFocusStats
+      tags: [focus]
+      summary: Consultar estadísticas diarias de foco (por fecha exacta o rango from+to)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: date
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: Estadística del día (`FocusStats`) o arreglo en rango (`[]FocusStats`).
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/FocusStats"
+                  - type: array
+                    items:
+                      $ref: "#/components/schemas/FocusStats"
+        "400":
+          $ref: "#/components/responses/BadRequestError"
+    post:
+      operationId: upsertFocusStats
+      tags: [focus]
+      summary: Crear o actualizar estadísticas diarias de foco
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FocusStats"
+      responses:
+        "200":
+          description: Estadísticas guardadas.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FocusStats"
+
+  /focus/sessions/all:
+    get:
+      operationId: listAllFocusSessions
+      tags: [focus]
+      summary: Listar todas las sesiones de foco del usuario
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Historial completo de sesiones de foco.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FocusSession"
+
+  /focus/sessions/range:
+    get:
+      operationId: listFocusSessionsByRange
+      tags: [focus]
+      summary: Listar sesiones de foco por rango RFC3339
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: from
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date-time
+      responses:
+        "200":
+          description: Sesiones dentro del rango.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FocusSession"
+
+  /focus/sessions/task-stats/{taskId}:
+    get:
+      operationId: getFocusTaskStats
+      tags: [focus]
+      summary: Resumen de sesiones multi-modo asociadas a una tarea
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Métricas agregadas de la tarea.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskFocusStats"
+
+  /focus/sessions:
+    get:
+      operationId: listFocusSessionsByTask
+      tags: [focus]
+      summary: Listar sesiones de foco filtradas por `taskId`
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: taskId
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Sesiones asociadas a la tarea.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FocusSession"
+    post:
+      operationId: createFocusSession
+      tags: [focus]
+      summary: Registrar una sesión de foco
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FocusSession"
+      responses:
+        "200":
+          description: Sesión registrada.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FocusSession"
+
+  /focus/sessions/{id}:
+    put:
+      operationId: updateFocusSession
+      tags: [focus]
+      summary: Actualizar una sesión de foco existente
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FocusSession"
+      responses:
+        "200":
+          description: Sesión actualizada.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FocusSession"
+
+  /pomodoro/config:
+    get:
+      operationId: getPomodoroConfig
+      tags: [pomodoro]
+      summary: Obtener configuración Pomodoro (legacy)
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Configuración Pomodoro.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PomodoroConfig"
+    put:
+      operationId: upsertPomodoroConfig
+      tags: [pomodoro]
+      summary: Guardar configuración Pomodoro (legacy)
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PomodoroConfig"
+      responses:
+        "200":
+          description: Configuración guardada.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PomodoroConfig"
+
+  /pomodoro/stats:
+    get:
+      operationId: listPomodoroStats
+      tags: [pomodoro]
+      summary: Consultar estadísticas Pomodoro por fecha o rango (legacy)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: date
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: Estadística o arreglo Pomodoro.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/PomodoroStats"
+                  - type: array
+                    items:
+                      $ref: "#/components/schemas/PomodoroStats"
+    post:
+      operationId: upsertPomodoroStats
+      tags: [pomodoro]
+      summary: Guardar estadística diaria Pomodoro (legacy)
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PomodoroStats"
+      responses:
+        "200":
+          description: Estadística persistida.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PomodoroStats"
+
+  /pomodoro/sessions/all:
+    get:
+      operationId: listAllPomodoroSessions
+      tags: [pomodoro]
+      summary: Listar todas las sesiones Pomodoro (legacy)
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Lista de sesiones Pomodoro.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PomodoroSession"
+
+  /pomodoro/sessions/range:
+    get:
+      operationId: listPomodoroSessionsByRange
+      tags: [pomodoro]
+      summary: Listar sesiones Pomodoro en rango RFC3339 (legacy)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: from
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date-time
+      responses:
+        "200":
+          description: Lista de sesiones Pomodoro.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PomodoroSession"
+
+  /pomodoro/sessions/task-stats/{taskId}:
+    get:
+      operationId: getPomodoroTaskStats
+      tags: [pomodoro]
+      summary: Estadísticas Pomodoro de una tarea (legacy)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Estadísticas Pomodoro de tarea.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskPomodoroStats"
+
+  /pomodoro/sessions:
+    get:
+      operationId: listPomodoroSessionsByTask
+      tags: [pomodoro]
+      summary: Listar sesiones Pomodoro de una tarea (legacy)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: taskId
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Lista de sesiones Pomodoro.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PomodoroSession"
+    post:
+      operationId: createPomodoroSession
+      tags: [pomodoro]
+      summary: Registrar sesión Pomodoro (legacy)
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PomodoroSession"
+      responses:
+        "200":
+          description: Sesión Pomodoro creada.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PomodoroSession"
+
+  /pomodoro/sessions/{id}:
+    put:
+      operationId: updatePomodoroSession
+      tags: [pomodoro]
+      summary: Actualizar sesión Pomodoro (legacy)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PomodoroSession"
+      responses:
+        "200":
+          description: Sesión Pomodoro actualizada.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PomodoroSession"
+
+  /ai/daily-tip:
+    get:
+      operationId: getAIDailyTip
+      tags: [ai]
+      summary: Consejo diario generado con IA en la nube (Everywhere+ + 1 crédito)
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Insight diario.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AIInsight"
+        "402":
+          $ref: "#/components/responses/PaymentRequiredError"
+        "403":
+          $ref: "#/components/responses/ForbiddenError"
+        "429":
+          $ref: "#/components/responses/TooManyRequestsError"
+
+  /ai/insights:
+    get:
+      operationId: listAIInsights
+      tags: [ai]
+      summary: Historial paginado de insights generados
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+      responses:
+        "200":
+          description: Lista de insights.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AIInsight"
+
+  /ai/weekly-report:
+    get:
+      operationId: getAIWeeklyReport
+      tags: [ai]
+      summary: Reporte semanal narrativo generado por IA (Everywhere+)
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Insight semanal.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AIInsight"
+
+  /ai/analyze:
+    post:
+      operationId: analyzeProductivityWithAI
+      tags: [ai]
+      summary: Análisis personalizado sobre ventana de días y contexto
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AIAnalyzeRequest"
+      responses:
+        "200":
+          description: Resultado del análisis.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AIInsight"
+
+  /ai/report:
+    post:
+      operationId: generateAIReport
+      tags: [ai]
+      summary: Generar reporte estructurado con Gemini / fallback de plantilla
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AIReportRequest"
+      responses:
+        "200":
+          description: Reporte estructurado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AIReportResponse"
+
+  /ai/predictions/productivity:
+    get:
+      operationId: getProductivityPrediction
+      tags: [ai]
+      summary: Predicción de productividad para el usuario
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Nivel y minutos estimados de foco.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductivityPrediction"
+
+  /ai/predictions/burnout-risk:
+    get:
+      operationId: getBurnoutRiskPrediction
+      tags: [ai]
+      summary: Evaluación de riesgo de burnout
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Nivel de riesgo, score y factores.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BurnoutRiskPrediction"
+
+  /ai/optimal-hours:
+    get:
+      operationId: getOptimalHours
+      tags: [ai]
+      summary: Ventanas horarias óptimas de concentración
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Horas recomendadas y confianza.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OptimalHoursPrediction"
+
+  /push/devices:
+    post:
+      operationId: registerPushDevice
+      tags: [push]
+      summary: Registrar token APNs o FCM de dispositivo
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterPushDeviceRequest"
+      responses:
+        "201":
+          description: Dispositivo registrado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+        "400":
+          $ref: "#/components/responses/BadRequestError"
+    get:
+      operationId: listPushDevices
+      tags: [push]
+      summary: Listar dispositivos push activos del usuario
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Lista de tokens registrados.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DeviceToken"
+
+  /push/devices/{token}:
+    delete:
+      operationId: unregisterPushDevice
+      tags: [push]
+      summary: Desregistrar token push
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Dispositivo desregistrado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /push/test:
+    post:
+      operationId: sendTestPush
+      tags: [push]
+      summary: Enviar notificación push de prueba a los dispositivos del usuario
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, body]
+              properties:
+                title:
+                  type: string
+                body:
+                  type: string
+      responses:
+        "200":
+          description: Push enviado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /analytics/weekly-report:
+    get:
+      operationId: getAnalyticsWeeklyReport
+      tags: [analytics]
+      summary: Reporte semanal agregado (Pepinillo+ / Everywhere+)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: date
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: Métricas semanales por modo, top tareas y racha.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WeeklyReport"
+        "403":
+          $ref: "#/components/responses/ForbiddenError"
+
+  /analytics/monthly-report:
+    get:
+      operationId: getAnalyticsMonthlyReport
+      tags: [analytics]
+      summary: Reporte mensual agregado (Pepinillo+ / Everywhere+)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: month
+          in: query
+          description: Formato YYYY-MM
+          schema:
+            type: string
+            pattern: "^\\d{4}-\\d{2}$"
+      responses:
+        "200":
+          description: Métricas mensuales por modo.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MonthlyReport"
+        "403":
+          $ref: "#/components/responses/ForbiddenError"
+
+  /analytics/completion-rate:
+    get:
+      operationId: getAnalyticsCompletionRate
+      tags: [analytics]
+      summary: Tasa de completado por modo en rango de fechas
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: from
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: Tasas de completado y sesiones abandonadas.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CompletionRateStats"
+
+  /analytics/streak:
+    get:
+      operationId: getAnalyticsStreak
+      tags: [analytics]
+      summary: Racha actual, máxima y por modo de foco
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Estadísticas de racha.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StreakStats"
+
+  /preferences:
+    get:
+      operationId: listPreferences
+      tags: [preferences]
+      summary: Listar preferencias guardadas del usuario
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Preferencias clave-valor.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/UserPreference"
+    put:
+      operationId: upsertPreferences
+      tags: [preferences]
+      summary: Guardar preferencias sincronizables (requiere Everywhere+)
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/DeviceIdHeader"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [preferences]
+              properties:
+                preferences:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/UserPreference"
+      responses:
+        "200":
+          description: Preferencias actualizadas con timestamp de servidor.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [preferences, serverTimestamp]
+                properties:
+                  preferences:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/UserPreference"
+                  serverTimestamp:
+                    type: string
+                    format: date-time
+        "402":
+          $ref: "#/components/responses/SubscriptionRequiredError"
+
+  /sync/full:
+    get:
+      operationId: getFullSync
+      tags: [sync]
+      summary: Pull paginado de tareas, sesiones y preferencias (requiere Everywhere+)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: taskCursor
+          in: query
+          schema:
+            type: string
+        - name: sessionCursor
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 100
+            minimum: 1
+            maximum: 500
+      responses:
+        "200":
+          description: Snapshot paginado y timestamp del servidor.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FullSyncResponse"
+        "402":
+          $ref: "#/components/responses/SubscriptionRequiredError"
+
+  /sync/has-data:
+    get:
+      operationId: getSyncHasData
+      tags: [sync]
+      summary: Consultar si la cuenta ya tiene datos sincronizados en el servidor
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Indicador booleano.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [hasData]
+                properties:
+                  hasData:
+                    type: boolean
+        "402":
+          $ref: "#/components/responses/SubscriptionRequiredError"
+
+  /sync/sessions:
+    post:
+      operationId: syncSessions
+      tags: [sync]
+      summary: Sincronización LWW en lote de sesiones de foco (requiere Everywhere+)
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/DeviceIdHeader"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SessionSyncRequest"
+      responses:
+        "200":
+          description: Sesiones fusionadas y `serverTimestamp`.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionSyncResponse"
+        "402":
+          $ref: "#/components/responses/SubscriptionRequiredError"
+
+  /sync/initial-upload:
+    post:
+      operationId: initialUploadSync
+      tags: [sync]
+      summary: Fusión inicial completa de datos locales con el servidor (requiere Everywhere+)
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/DeviceIdHeader"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InitialUploadRequest"
+      responses:
+        "200":
+          description: Estado fusionado devuelto al cliente.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InitialUploadResponse"
+        "402":
+          $ref: "#/components/responses/SubscriptionRequiredError"
 
 components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    WebhookToken:
+      type: http
+      scheme: bearer
+      description: Token configurado en `REVENUECAT_WEBHOOK_AUTH_TOKEN`.
+
+  parameters:
+    DeviceIdHeader:
+      name: X-Device-ID
+      in: header
+      required: false
+      description: Identificador de dispositivo excluido del broadcast WebSocket de origen.
+      schema:
+        type: string
+
+  responses:
+    BadRequestError:
+      description: Petición inválida o error de validación de dominio.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorEnvelope"
+    UnauthorizedError:
+      description: Token ausente, expirado o inválido.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorEnvelope"
+    PaymentRequiredError:
+      description: Nivel de suscripción insuficiente para funciones cloud.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorEnvelope"
+    SubscriptionRequiredError:
+      description: Requiere suscripción activa Everywhere+ (`ERR_TIER_INSUFFICIENT`).
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/BackendSyncRequiredError"
+    ForbiddenError:
+      description: Email no verificado o feature fuera del entitlement activo.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorEnvelope"
+    NotFoundError:
+      description: Recurso no encontrado.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorEnvelope"
+    ConflictError:
+      description: Conflicto de estado o recurso ya reclamado.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorEnvelope"
+    TooManyRequestsError:
+      description: Límite de peticiones o créditos IA agotado.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorEnvelope"
+    BadGatewayError:
+      description: Fallo transitorio procesando webhook/proveedor externo.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorEnvelope"
+    ServiceUnavailableError:
+      description: Proveedor o secreto no configurado en el servidor.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorEnvelope"
+
   schemas:
+    ErrorEnvelope:
+      type: object
+      additionalProperties: false
+      required: [error]
+      properties:
+        error:
+          type: string
+          description: Código o mensaje de error devuelto por Fiber `ErrorHandler`.
+
+    BackendSyncRequiredError:
+      type: object
+      additionalProperties: false
+      required: [error, code, message, upgrade_url]
+      properties:
+        error:
+          type: string
+          example: subscription_required
+        code:
+          type: string
+          example: ERR_TIER_INSUFFICIENT
+        message:
+          type: string
+        upgrade_url:
+          type: string
+          format: uri
+
+    MessageResponse:
+      type: object
+      required: [message]
+      properties:
+        message:
+          type: string
+
+    SubscriptionTier:
+      type: string
+      enum: [free, pepinillo_plus, everywhere_monthly, everywhere_annual]
+
+    FocusMode:
+      type: string
+      enum: [pomodoro, flowtime, timeblock, stopwatch]
+
+    FocusPhase:
+      type: string
+      enum: [work, short_break, long_break, flow, break, check_in, freeform]
+
     HealthStatus:
       type: object
-      additionalProperties: false
-      required:
-        - status
-        - service
-        - version
+      required: [status, service, timestamp]
       properties:
         status:
           type: string
-          enum:
-            - ok
-            - degraded
-          description: Aggregate service status indicator.
+          enum: [ok, degraded]
         service:
           type: string
-          description: Canonical project name from factory.manifest.json.
-        version:
+        timestamp:
           type: string
-          description: Semantic version or build commit identifier.
+          format: date-time
 
-    ProblemDetails:
+    DependencyStatus:
       type: object
-      description: RFC 9457 Problem Details for HTTP APIs (application/problem+json).
-      required:
-        - type
-        - title
-        - status
+      required: [status]
       properties:
+        status:
+          type: string
+          enum: [ok, error, disabled, unknown]
+        error:
+          type: string
+
+    HealthDepsResponse:
+      type: object
+      required: [status, service, timestamp, dependencies]
+      properties:
+        status:
+          type: string
+          enum: [ok, degraded]
+        service:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        dependencies:
+          type: object
+          required: [database, redis, minio, ml]
+          properties:
+            database:
+              $ref: "#/components/schemas/DependencyStatus"
+            redis:
+              $ref: "#/components/schemas/DependencyStatus"
+            minio:
+              $ref: "#/components/schemas/DependencyStatus"
+            ml:
+              $ref: "#/components/schemas/DependencyStatus"
+
+    HealthMetricsResponse:
+      type: object
+      required: [status, service, timestamp, metrics]
+      properties:
+        status:
+          type: string
+        service:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        metrics:
+          type: object
+          additionalProperties: true
+
+    HealthAlertsResponse:
+      type: object
+      required: [status, service, timestamp, alerts, suppressed, remediation]
+      properties:
+        status:
+          type: string
+          enum: [ok, degraded, suppressed]
+        service:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        alerts:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        suppressed:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        remediation:
+          type: object
+          additionalProperties: true
+
+    HealthAlertRulesResponse:
+      type: object
+      required: [status, service, timestamp, rules]
+      properties:
+        status:
+          type: string
+        service:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        rules:
+          type: object
+          additionalProperties: true
+
+    HealthAlertmanagerResponse:
+      type: object
+      required: [status, service, timestamp, alerts, suppressedCount]
+      properties:
+        status:
+          type: string
+        service:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        alerts:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        suppressedCount:
+          type: integer
+
+    HealthSLOResponse:
+      type: object
+      required: [status, service, timestamp, slo]
+      properties:
+        status:
+          type: string
+          enum: [ok, degraded]
+        service:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        slo:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+
+    RevenueCatWebhookPayload:
+      type: object
+      required: [api_version, event]
+      properties:
+        api_version:
+          type: string
+        event:
+          type: object
+          required: [type, id, app_user_id]
+          properties:
+            type:
+              type: string
+            id:
+              type: string
+            app_user_id:
+              type: string
+            aliases:
+              type: array
+              items:
+                type: string
+            product_id:
+              type: string
+            entitlement_ids:
+              type: array
+              items:
+                type: string
+            period_type:
+              type: string
+            purchased_at_ms:
+              type: integer
+              format: int64
+            expiration_at_ms:
+              type: integer
+              format: int64
+            store:
+              type: string
+            environment:
+              type: string
+            is_family_share:
+              type: boolean
+            currency:
+              type: string
+            price:
+              type: number
+
+    AuthTokens:
+      type: object
+      required: [accessToken, refreshToken, expiresIn]
+      properties:
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
+        expiresIn:
+          type: integer
+          format: int64
+
+    User:
+      type: object
+      required: [id, email, name, subscriptionTier, emailVerified, aiCreditsBalance, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+        imageUrl:
+          type: ["string", "null"]
+        subscriptionTier:
+          $ref: "#/components/schemas/SubscriptionTier"
+        subscriptionExpiresAt:
+          type: ["string", "null"]
+          format: date-time
+        emailVerified:
+          type: boolean
+        emailVerifiedAt:
+          type: ["string", "null"]
+          format: date-time
+        pendingEmail:
+          type: ["string", "null"]
+        emailChangedAt:
+          type: ["string", "null"]
+          format: date-time
+        aiCreditsBalance:
+          type: integer
+        aiCreditsLastRefreshedAt:
+          type: ["string", "null"]
+          format: date-time
+        pepinilloPlusEntitlementAt:
+          type: ["string", "null"]
+          format: date-time
+        googleId:
+          type: ["string", "null"]
+        googleEmail:
+          type: ["string", "null"]
+        googleName:
+          type: ["string", "null"]
+        googlePicture:
+          type: ["string", "null"]
+        appleId:
+          type: ["string", "null"]
+        appleEmail:
+          type: ["string", "null"]
+        appleName:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    AuthSessionResponse:
+      type: object
+      required: [user, tokens]
+      properties:
+        user:
+          $ref: "#/components/schemas/User"
+        tokens:
+          $ref: "#/components/schemas/AuthTokens"
+
+    MessageAuthSessionResponse:
+      type: object
+      required: [message, user, tokens]
+      properties:
+        message:
+          type: string
+        user:
+          $ref: "#/components/schemas/User"
+        tokens:
+          $ref: "#/components/schemas/AuthTokens"
+
+    MessageUserResponse:
+      type: object
+      required: [message, user]
+      properties:
+        message:
+          type: string
+        user:
+          $ref: "#/components/schemas/User"
+
+    TokensEnvelope:
+      type: object
+      required: [tokens]
+      properties:
+        tokens:
+          $ref: "#/components/schemas/AuthTokens"
+
+    RegisterRequest:
+      type: object
+      required: [email, name, password]
+      properties:
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+        password:
+          type: string
+          minLength: 8
+          maxLength: 72
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+
+    GoogleOAuthRequest:
+      type: object
+      required: [idToken]
+      properties:
+        idToken:
+          type: string
+
+    AppleOAuthRequest:
+      type: object
+      required: [idToken, nonce]
+      properties:
+        idToken:
+          type: string
+        nonce:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+
+    RefreshTokenRequest:
+      type: object
+      required: [refreshToken]
+      properties:
+        refreshToken:
+          type: string
+
+    EmailOnlyRequest:
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+          format: email
+
+    CodeOnlyRequest:
+      type: object
+      required: [code]
+      properties:
+        code:
+          type: string
+
+    ResetPasswordRequest:
+      type: object
+      required: [email, code, newPassword]
+      properties:
+        email:
+          type: string
+          format: email
+        code:
+          type: string
+        newPassword:
+          type: string
+          minLength: 8
+          maxLength: 72
+
+    VerifyEmailRequest:
+      type: object
+      required: [email, code]
+      properties:
+        email:
+          type: string
+          format: email
+        code:
+          type: string
+
+    DeleteAccountRequest:
+      type: object
+      properties:
+        refreshToken:
+          type: string
+        appleAuthorizationCode:
+          type: ["string", "null"]
+
+    LogoutRequest:
+      type: object
+      properties:
+        refreshToken:
+          type: string
+
+    ChangePasswordRequest:
+      type: object
+      required: [currentPassword, newPassword]
+      properties:
+        currentPassword:
+          type: string
+        newPassword:
+          type: string
+          minLength: 8
+          maxLength: 72
+
+    RequestEmailChangeRequest:
+      type: object
+      required: [newEmail]
+      properties:
+        newEmail:
+          type: string
+          format: email
+
+    EmailChangePendingResponse:
+      type: object
+      required: [message, user]
+      properties:
+        message:
+          type: string
+        pendingEmail:
+          type: ["string", "null"]
+        user:
+          $ref: "#/components/schemas/User"
+
+    OAuthProvider:
+      type: object
+      required: [id, email, name, linkedAt]
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        name:
+          type: string
+        picture:
+          type: string
+        linkedAt:
+          type: string
+
+    LinkedProviders:
+      type: object
+      required: [hasPassword]
+      properties:
+        hasPassword:
+          type: boolean
+        google:
+          $ref: "#/components/schemas/OAuthProvider"
+        apple:
+          $ref: "#/components/schemas/OAuthProvider"
+
+    UpdateUserRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 100
+        imageUrl:
+          type: string
+          maxLength: 2048
+
+    VerifyReceiptInput:
+      type: object
+      required: [platform, productId]
+      properties:
+        platform:
+          type: string
+          enum: [android, ios]
+        productId:
+          type: string
+        purchaseToken:
+          type: string
+        transactionId:
+          type: string
+        receiptData:
+          type: string
+
+    VerifyReceiptResult:
+      type: object
+      required: [valid, subscriptionTier, source]
+      properties:
+        valid:
+          type: boolean
+        subscriptionTier:
+          $ref: "#/components/schemas/SubscriptionTier"
+        subscriptionExpiresAt:
+          type: ["string", "null"]
+          format: date-time
+        source:
+          type: string
+
+    SubTask:
+      type: object
+      properties:
+        id:
+          type: integer
+        taskId:
+          type: integer
+        title:
+          type: ["string", "null"]
+        isFinished:
+          type: boolean
+
+    Task:
+      type: object
+      properties:
+        id:
+          type: integer
+        syncId:
+          type: string
+        userId:
+          type: string
+        title:
+          type: ["string", "null"]
+        description:
+          type: ["string", "null"]
+        energyLevel:
+          type: ["string", "null"]
+        recurrenceRule:
+          type: ["string", "null"]
+        recurringTemplateId:
+          type: ["string", "null"]
+        createdDate:
+          type: ["string", "null"]
+          format: date-time
+        finishDate:
+          type: ["string", "null"]
+          format: date-time
+        isFinished:
+          type: boolean
+        priority:
+          type: integer
+        category:
+          type: ["string", "null"]
+        estimatedPomodoros:
+          type: integer
+        completedPomodoros:
+          type: integer
+        focusedSeconds:
+          type: integer
+        trackingMode:
+          $ref: "#/components/schemas/FocusMode"
+        completedFlowtimeSessions:
+          type: integer
+        completedTimeblockSessions:
+          type: integer
+        completedStopwatchSeconds:
+          type: integer
+        focusedSecondsPomodoro:
+          type: integer
+        focusedSecondsFlowtime:
+          type: integer
+        focusedSecondsTimeblock:
+          type: integer
+        focusedSecondsStopwatch:
+          type: integer
+        activeSessionId:
+          type: ["string", "null"]
+        isDeleted:
+          type: boolean
+        updatedAt:
+          type: string
+          format: date-time
+        subTasks:
+          type: array
+          items:
+            $ref: "#/components/schemas/SubTask"
+
+    TaskSyncRequest:
+      type: object
+      required: [tasks]
+      properties:
+        tasks:
+          type: array
+          items:
+            $ref: "#/components/schemas/Task"
+        deletedSyncIds:
+          type: array
+          items:
+            type: string
+        lastSyncAt:
+          type: ["string", "null"]
+          format: date-time
+
+    TaskSyncResponse:
+      type: object
+      required: [tasks, deletedSyncIds, appliedSyncIds, rejectedSyncIds, syncTimestamp]
+      properties:
+        tasks:
+          type: array
+          items:
+            $ref: "#/components/schemas/Task"
+        deletedSyncIds:
+          type: array
+          items:
+            type: string
+        appliedSyncIds:
+          type: array
+          items:
+            type: string
+        rejectedSyncIds:
+          type: array
+          items:
+            type: string
+        syncTimestamp:
+          type: string
+          format: date-time
+
+    GenerateRecurrencesRequest:
+      type: object
+      required: [from, to]
+      properties:
+        from:
+          type: string
+        to:
+          type: string
+
+    GenerateRecurrencesResponse:
+      type: object
+      required: [created, count]
+      properties:
+        created:
+          type: array
+          items:
+            $ref: "#/components/schemas/Task"
+        count:
+          type: integer
+
+    FocusConfig:
+      type: object
+      properties:
+        userId:
+          type: string
+        defaultMode:
+          $ref: "#/components/schemas/FocusMode"
+        pomodoroMinutes:
+          type: integer
+        shortBreakMinutes:
+          type: integer
+        longBreakMinutes:
+          type: integer
+        pomodorosUntilLong:
+          type: integer
+        flowtimeCheckInMinutes:
+          type: integer
+        timeblockMinutes:
+          type: integer
+        dailyGoal:
+          type: integer
+        notifications:
+          type: boolean
+        autoStart:
+          type: boolean
+        autoBreak:
+          type: boolean
+        lastUpdate:
+          type: ["string", "null"]
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    FocusSession:
+      type: object
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+        taskId:
+          type: ["integer", "null"]
+        taskSyncId:
+          type: ["string", "null"]
+        startedAt:
+          type: string
+          format: date-time
+        endedAt:
+          type: ["string", "null"]
+          format: date-time
+        mode:
+          $ref: "#/components/schemas/FocusMode"
+        phase:
+          $ref: "#/components/schemas/FocusPhase"
+        durationSeconds:
+          type: integer
+        elapsedSeconds:
+          type: integer
+        pauseCount:
+          type: integer
+        totalPauseSeconds:
+          type: integer
+        wasCompleted:
+          type: boolean
+        sharedWithTaskIds:
+          type: ["string", "null"]
+        interruptions:
+          type: integer
+        pomodoroNumber:
+          type: integer
+        satisfactionRating:
+          type: integer
+        journalNote:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    FocusStats:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: string
+        date:
+          type: string
+          format: date-time
+        pomodoros:
+          type: integer
+        pomodoroDuration:
+          type: integer
+        breaks:
+          type: integer
+        breakDuration:
+          type: integer
+        rests:
+          type: integer
+        restDuration:
+          type: integer
+        flowtimeSeconds:
+          type: integer
+        timeblockSeconds:
+          type: integer
+        stopwatchSeconds:
+          type: integer
+        flowtimeCount:
+          type: integer
+        timeblockCount:
+          type: integer
+        stopwatchCount:
+          type: integer
+        dailyGoal:
+          type: integer
+        dailyCompleted:
+          type: boolean
+        count:
+          type: integer
+        tasksCompleted:
+          type: integer
+        longestSessionSeconds:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    TaskFocusStats:
+      type: object
+      properties:
+        taskId:
+          type: integer
+        totalSessions:
+          type: integer
+        completedCount:
+          type: integer
+        totalFocusSeconds:
+          type: integer
+        totalPauseSeconds:
+          type: integer
+        averageFocus:
+          type: number
+        pomodoroSessions:
+          type: integer
+        flowtimeSessions:
+          type: integer
+        timeblockSessions:
+          type: integer
+        stopwatchSessions:
+          type: integer
+
+    PomodoroConfig:
+      type: object
+      properties:
+        userId:
+          type: string
+        pomodoroTime:
+          type: integer
+        breakTime:
+          type: integer
+        restTime:
+          type: integer
+        qtyPomodoros:
+          type: integer
+        dailyGoal:
+          type: integer
+        notifications:
+          type: boolean
+        autoPomodoro:
+          type: boolean
+        autoBreak:
+          type: boolean
+        lastUpdate:
+          type: ["string", "null"]
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    PomodoroSession:
+      type: object
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+        taskId:
+          type: ["integer", "null"]
+        startedAt:
+          type: string
+          format: date-time
+        endedAt:
+          type: ["string", "null"]
+          format: date-time
+        phase:
+          type: string
+        durationSeconds:
+          type: integer
+        elapsedSeconds:
+          type: integer
+        pauseCount:
+          type: integer
+        totalPauseSeconds:
+          type: integer
+        wasCompleted:
+          type: boolean
+        sharedWithTaskIds:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    PomodoroStats:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: string
+        date:
+          type: string
+          format: date-time
+        pomodoros:
+          type: integer
+        pomodoroDuration:
+          type: integer
+        breaks:
+          type: integer
+        breakDuration:
+          type: integer
+        rests:
+          type: integer
+        restDuration:
+          type: integer
+        dailyGoal:
+          type: integer
+        dailyCompleted:
+          type: boolean
+        count:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    TaskPomodoroStats:
+      type: object
+      properties:
+        taskId:
+          type: integer
+        totalSessions:
+          type: integer
+        completedCount:
+          type: integer
+        totalFocusSeconds:
+          type: integer
+        totalPauseSeconds:
+          type: integer
+        averageFocusSeconds:
+          type: integer
+
+    AIInsight:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: string
         type:
           type: string
-          format: uri-reference
-          default: about:blank
-          description: URI reference that identifies the problem type.
+          enum: [tip, weekly_report, analysis]
         title:
           type: string
-          description: Short, human-readable summary of the problem type.
-        status:
-          type: integer
-          minimum: 100
-          maximum: 599
-          description: HTTP status code generated by the origin server for this occurrence of the problem.
-        detail:
+        content:
           type: string
-          description: Human-readable explanation specific to this occurrence of the problem.
-        instance:
+        dataJson:
           type: string
-          format: uri-reference
-          description: URI reference that identifies the specific occurrence of the problem.
-        errors:
-          type: array
-          description: Optional field-level validation issues.
-          items:
-            $ref: "#/components/schemas/FieldValidationError"
+        generatedAt:
+          type: string
+          format: date-time
+        expiresAt:
+          type: ["string", "null"]
+          format: date-time
+        isRead:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
 
-    FieldValidationError:
+    AIAnalyzeRequest:
       type: object
-      additionalProperties: false
-      required:
-        - field
-        - reason
       properties:
-        field:
+        days:
+          type: integer
+          default: 30
+          maximum: 365
+        context:
           type: string
-          description: JSON pointer or field path that failed validation.
-        reason:
+          maxLength: 2000
+
+    AIReportRequest:
+      type: object
+      required: [period, periodStart, periodEnd, summary, trends, patterns]
+      properties:
+        period:
           type: string
-          description: Machine- or human-readable explanation of the validation rule violation.
+        periodStart:
+          type: string
+        periodEnd:
+          type: string
+        summary:
+          type: object
+          additionalProperties: true
+        trends:
+          type: object
+          additionalProperties: true
+        patterns:
+          type: object
+          additionalProperties: true
+        taskBreakdown:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        dailyDistribution:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+
+    AIReportResponse:
+      type: object
+      required: [title, highlights, insights, recommendations]
+      properties:
+        title:
+          type: string
+        highlights:
+          type: array
+          items:
+            type: string
+        insights:
+          type: array
+          items:
+            type: object
+            required: [category, text]
+            properties:
+              category:
+                type: string
+              text:
+                type: string
+        recommendations:
+          type: array
+          items:
+            type: string
+
+    ProductivityPrediction:
+      type: object
+      required: [level, focusMinutes, confidence, reasoning, source]
+      properties:
+        level:
+          type: string
+          enum: [low, medium, high]
+        focusMinutes:
+          type: integer
+        confidence:
+          type: number
+        reasoning:
+          type: string
+        source:
+          type: string
+          enum: [gemini, fallback]
+
+    BurnoutRiskPrediction:
+      type: object
+      required: [risk, score, factors, recommendation, source]
+      properties:
+        risk:
+          type: string
+          enum: [low, medium, high, unknown]
+        score:
+          type: number
+        factors:
+          type: array
+          items:
+            type: string
+        recommendation:
+          type: string
+        source:
+          type: string
+          enum: [gemini, fallback]
+
+    OptimalHoursPrediction:
+      type: object
+      required: [hours, confidence, reasoning, source]
+      properties:
+        hours:
+          type: array
+          items:
+            type: string
+        confidence:
+          type: number
+        reasoning:
+          type: string
+        source:
+          type: string
+          enum: [gemini, fallback]
+
+    RegisterPushDeviceRequest:
+      type: object
+      required: [platform, token]
+      properties:
+        platform:
+          type: string
+          enum: [ios, android]
+        token:
+          type: string
+        deviceId:
+          type: ["string", "null"]
+        appVersion:
+          type: ["string", "null"]
+
+    DeviceToken:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: string
+        platform:
+          type: string
+          enum: [ios, android]
+        token:
+          type: string
+        deviceId:
+          type: ["string", "null"]
+        appVersion:
+          type: ["string", "null"]
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    ModeStats:
+      type: object
+      properties:
+        totalTime:
+          type: integer
+        sessionCount:
+          type: integer
+        completed:
+          type: integer
+        avgDuration:
+          type: integer
+
+    TaskStat:
+      type: object
+      properties:
+        taskId:
+          type: integer
+        taskTitle:
+          type: string
+        focusTime:
+          type: integer
+        sessionCount:
+          type: integer
+        completed:
+          type: boolean
+
+    WeeklyReport:
+      type: object
+      properties:
+        userId:
+          type: string
+        weekStart:
+          type: string
+          format: date-time
+        weekEnd:
+          type: string
+          format: date-time
+        totalFocusTime:
+          type: integer
+        totalSessions:
+          type: integer
+        pomodoroStats:
+          $ref: "#/components/schemas/ModeStats"
+        flowtimeStats:
+          $ref: "#/components/schemas/ModeStats"
+        timeblockStats:
+          $ref: "#/components/schemas/ModeStats"
+        stopwatchStats:
+          $ref: "#/components/schemas/ModeStats"
+        tasksCompleted:
+          type: integer
+        tasksCreated:
+          type: integer
+        topTasks:
+          type: array
+          items:
+            $ref: "#/components/schemas/TaskStat"
+        bestDayOfWeek:
+          type: string
+        averageFocusTime:
+          type: integer
+        streak:
+          type: integer
+
+    MonthlyReport:
+      type: object
+      properties:
+        userId:
+          type: string
+        monthStart:
+          type: string
+          format: date-time
+        monthEnd:
+          type: string
+          format: date-time
+        totalFocusTime:
+          type: integer
+        totalSessions:
+          type: integer
+        pomodoroStats:
+          $ref: "#/components/schemas/ModeStats"
+        flowtimeStats:
+          $ref: "#/components/schemas/ModeStats"
+        timeblockStats:
+          $ref: "#/components/schemas/ModeStats"
+        stopwatchStats:
+          $ref: "#/components/schemas/ModeStats"
+        tasksCompleted:
+          type: integer
+        tasksCreated:
+          type: integer
+        topTasks:
+          type: array
+          items:
+            $ref: "#/components/schemas/TaskStat"
+        bestDayOfMonth:
+          type: string
+        averageFocusTime:
+          type: integer
+        longestStreak:
+          type: integer
+
+    CompletionRateStats:
+      type: object
+      properties:
+        userId:
+          type: string
+        periodStart:
+          type: string
+          format: date-time
+        periodEnd:
+          type: string
+          format: date-time
+        completionRate:
+          type: number
+        pomodoroRate:
+          type: number
+        flowtimeRate:
+          type: number
+        timeblockRate:
+          type: number
+        totalSessions:
+          type: integer
+        completedSessions:
+          type: integer
+        abandonedSessions:
+          type: integer
+        abandonedByMode:
+          type: object
+          additionalProperties:
+            type: integer
+
+    StreakStats:
+      type: object
+      properties:
+        userId:
+          type: string
+        currentStreak:
+          type: integer
+        longestStreak:
+          type: integer
+        lastActivityDate:
+          type: string
+          format: date-time
+        streakStartDate:
+          type: string
+          format: date-time
+        pomodoroStreak:
+          type: integer
+        flowtimeStreak:
+          type: integer
+        timeblockStreak:
+          type: integer
+        stopwatchStreak:
+          type: integer
+
+    UserPreference:
+      type: object
+      required: [key, value]
+      properties:
+        userId:
+          type: string
+        key:
+          type: string
+        value:
+          type: string
+        updatedAt:
+          type: string
+          format: date-time
+
+    FullSyncResponse:
+      type: object
+      required: [tasks, sessions, settings, serverTimestamp]
+      properties:
+        tasks:
+          type: object
+          required: [items, hasMore]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/Task"
+            nextCursor:
+              type: string
+            hasMore:
+              type: boolean
+        sessions:
+          type: object
+          required: [items, hasMore]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/FocusSession"
+            nextCursor:
+              type: string
+            hasMore:
+              type: boolean
+        settings:
+          type: array
+          items:
+            $ref: "#/components/schemas/UserPreference"
+        serverTimestamp:
+          type: string
+          format: date-time
+
+    SessionSyncRequest:
+      type: object
+      required: [sessions]
+      properties:
+        sessions:
+          type: array
+          items:
+            $ref: "#/components/schemas/FocusSession"
+        lastSyncAt:
+          type: ["string", "null"]
+          format: date-time
+
+    SessionSyncResponse:
+      type: object
+      required: [sessions, serverTimestamp]
+      properties:
+        sessions:
+          type: array
+          items:
+            $ref: "#/components/schemas/FocusSession"
+        serverTimestamp:
+          type: string
+          format: date-time
+
+    InitialUploadRequest:
+      type: object
+      required: [deviceId, tasks, sessions, settings]
+      properties:
+        deviceId:
+          type: string
+        tasks:
+          type: array
+          items:
+            $ref: "#/components/schemas/Task"
+        sessions:
+          type: array
+          items:
+            $ref: "#/components/schemas/FocusSession"
+        settings:
+          type: array
+          items:
+            $ref: "#/components/schemas/UserPreference"
+
+    InitialUploadResponse:
+      type: object
+      required: [tasks, sessions, settings, serverTimestamp, hasExistingData]
+      properties:
+        tasks:
+          type: array
+          items:
+            $ref: "#/components/schemas/Task"
+        sessions:
+          type: array
+          items:
+            $ref: "#/components/schemas/FocusSession"
+        settings:
+          type: array
+          items:
+            $ref: "#/components/schemas/UserPreference"
+        serverTimestamp:
+          type: string
+          format: date-time
+        hasExistingData:
+          type: boolean

@@ -1,56 +1,42 @@
-# ADR-0002: Client Surfaces Architecture (React+Vite, Tauri v2 Desktop) and 3-Tier Mobile Decision Matrix
+# ADR-0002: Superficies Cliente Nativas (Apple / Android) y Clientes en Pausa
 
-- **Status**: Accepted
-- **Date**: 2026-10-29
-- **Deciders**: Software Factory Architecture Core
-
----
-
-## 1. Context
-
-Modern software products span Web browsers, Desktop operating systems (macOS, Windows, Linux), and Mobile devices (iOS, Android).
-In an Agentic Software Factory, client architecture choices directly determine **token consumption**, **maintenance surface**, and **user experience quality**:
-- Rebuilding identical CRUD screens three times (Web, iOS, Android) for an unvalidated MVP wastes substantial engineering time and LLM tokens.
-- Conversely, shipping a flagship consumer mobile app or hardware-intensive mobile workflow inside a hybrid WebView wrapper creates jarring keyboard/scroll behavior, poor battery life, and restricted access to native OS APIs (Widgets, Live Activities, HealthKit, NFC, Bluetooth, background location).
-
-We need a clear, deterministic architectural standard for Web and Desktop, paired with an objective **Mobile Decision Matrix** evaluated on Day 0 (`./scripts/init-project.sh`).
+- **Estado**: Accepted (reconciliado con el producto activo)
+- **Fecha**: 2026-11-10 (original de plantilla: 2026-10-29)
+- **Decisores**: Pepinillo Architecture Core
 
 ---
 
-## 2. Decision
+## 1. Contexto
 
-### 2.1 Web Frontend Standard: React + Vite + TypeScript (Strict)
-For all browser-based applications (`apps/web`), we standardize on **React 19 + Vite + TypeScript (`strict: true`)**:
-- **Routing**: **TanStack Router** (100% type-safe file/code routing and search-param validation).
-- **Server State & Caching**: **TanStack Query v5** coupled with an OpenAPI-generated fetch client (`openapi-typescript` / `openapi-fetch`).
-- **Styling & Primitives**: **Tailwind CSS** + accessible headless primitives (**Radix UI** / `shadcn/ui`).
-- **Why Vite over Next.js/SSR by default**: Because our backend is already a high-performance **Go API (`ADR-0001`)**, introducing a Node.js SSR middle tier (Next.js App Router) duplicates backend routing, splits business logic across two runtimes, and increases agent context confusion. If a public marketing site requires SEO/SSR, it is deployed as a separate static/Astro surface without polluting the core web application.
-
-### 2.2 Desktop Standard: Tauri v2 (`apps/desktop-tauri`)
-For cross-platform desktop applications, we standardize on **Tauri v2**:
-- Reuses the `apps/web` React + Vite frontend inside the native OS WebView (`WKWebView` on macOS, `WebView2` on Windows, `WebKitGTK` on Linux), producing **<15 MB binaries** with minimal RAM overhead compared to Electron (>150 MB).
-- Native OS integrations, file-system access, local SQLite sidecars, and hardware bridges are implemented as explicit, typed **Rust `#[tauri::command]` functions** secured by fine-grained **Tauri v2 Capability files (`src-tauri/capabilities/*.json`)**.
-
-### 2.3 The 3-Tier Mobile Decision Matrix
-Before writing mobile code, the project selects its mobile tier based on **product maturity**, **UX requirements**, and **token/cost budget**:
-
-| Tier | Surface Option | `./scripts/init-project.sh` Surface | When to Choose | Explicit Tradeoffs & Limitations |
-| :--- | :--- | :--- | :--- | :--- |
-| **Tier 1: Rapid MVP & Internal/B2B CRUD Validation** | **Tauri v2 Mobile** (iOS & Android targets sharing `apps/web`) | `mobile-tauri` | Validating product-market fit, internal operations tools, or B2B companion apps that reuse 95% of existing React + Vite screens and need basic camera/notification plugins. | **Lowest token & time cost** (single UI codebase). **Known WebView limitations**: virtual keyboard viewport resizing quirks, non-native scroll physics, no App Extensions (Widgets/Watch/Siri), and strict OS background task suspension. |
-| **Tier 2: Cross-Platform Commercial App (Non-Native Bridge)** | **PWA** or dedicated cross-platform shell | Custom ADR required | Content/catalog apps that do not need native OS extensions but outgrow WebView forms. | Requires separate justification; rarely preferred over Tier 1 (for speed) or Tier 3 (for flagship quality). |
-| **Tier 3: Flagship Consumer UX, Deep OS Integration & Long-Term Scale** | **Native iOS (`SwiftUI`) + Native Android (`Jetpack Compose`)** | `ios-native`, `android-native` | Products where tactile 120Hz fluidity, offline-first reliability, background sync, Widgets/Live Activities, Apple Pay/Google Pay, biometrics, BLE/NFC, or camera/audio pipelines are core differentiators. | **Highest UX ceiling and OS longevity**, at a higher initial token cost (~1.8x–2.2x UI tokens). We mitigate this token cost via **OpenAPI 3.1 code generation (`ADR-0003`)** and symmetrical `ViewModel` + Repository architecture across Swift and Kotlin. |
-
-### 2.4 Graduation Path (Tier 1 -> Tier 3)
-Because all business rules reside in the **Go Backend (`ADR-0001`)** and all network DTOs are defined in **`contracts/openapi.yaml` (`ADR-0003`)**, a product can launch its 2-week MVP on **Tier 1 (`mobile-tauri`)** and later graduate to **Tier 3 (`ios-native` + `android-native`)** with **zero backend rewrites**.
+Pepinillo nació en Flutter y evolucionó a implementaciones **100% nativas** para exprimir capacidades profundas de cada sistema operativo (Widgets, Live Activities, Dynamic Island, Control Center, App Intents/Siri, Apple Watch, Wear OS Tiles/Complications, `NSStatusItem` y panel de Notch en macOS). Además, existen dos experimentos previos (`web/` y `windows/`) que validaron viabilidad técnica pero quedaron pausados durante la fase de **Validación de Crecimiento**.
 
 ---
 
-## 3. Consequences
+## 2. Decisión
 
-### Positive
-- Eliminates architectural debates at project start: Web is always React+Vite, Desktop is always Tauri v2, and Mobile is chosen consciously between Tier 1 (speed/token efficiency) and Tier 3 (native SwiftUI/Compose excellence).
-- Contract-first codegen (`openapi.yaml` -> TypeScript, Swift, Kotlin) eliminates manual DTO translation across surfaces, cutting native mobile token overhead by ~40%.
+### 2.1 Superficies Activas (Tier Nativo OS-First)
+1. **Ecosistema Apple (`ios/`, XcodeGen `project.yml`)**:
+   - **Plataformas**: **iOS 17+ / iPadOS 17+** (`Pepinillo`), **macOS 15+** (`PepinilloMac`), **watchOS 10+** (`PepinilloWatch`), **Widgets iOS/macOS**, **Control Center** (`iOS 18+`) y **Live Activities**.
+   - **Stack**: Swift 6 (strict concurrency), SwiftUI (+ AppKit para `NSStatusItem`, `NSPopover`, `NSDockTile`, `NSPanel` de Quick Capture y Notch en `PepinilloMac`), **The Composable Architecture (TCA)**, **SwiftData (`SchemaV6`)**, StoreKit 2 + RevenueCat, Sentry.
+   - **Almacenamiento**: Dual-store router (`PepinilloLocal.sqlite` / `PepinilloAppleCloud.sqlite`) + App Group `group.com.pepinillo.app`.
+2. **Ecosistema Android (`android/`, Gradle `:app` + `:wear`)**:
+   - **Plataformas**: **Android teléfono/tablet/foldable** (`minSdk 29`, `targetSdk 36`, `compileSdk 37`) y **Wear OS** (`minSdk 26`, `targetSdk 36`).
+   - **Stack**: Kotlin, Jetpack Compose + Material 3 Expressive (`ListDetailPaneScaffold` adaptativo), Hilt DI, Coroutines/StateFlow, **Room (v14, 7 entidades)**, DataStore, WorkManager, **Jetpack Glance**, Wear Compose + Tiles + ProtoLayout + Complications, Ktor (OkHttp), RevenueCat, Google Play In-App Review.
+   - **Comunicación reloj**: Wearable Data Layer (`WearDataLayerHelper` ↔ `WearSyncListenerService`) con cola offline de comandos y watchdog de 5 s.
 
-### Negative / Tradeoffs
-- Teams choosing Tier 1 (`mobile-tauri`) must respect WebView boundaries and avoid custom gesture-heavy animations that fight the mobile browser viewport.
-- Teams choosing Tier 3 (`ios-native`, `android-native`) must run platform-specific verification (`xcodebuild test` / `./gradlew testDebugUnitTest`) in `V1`/`V2` checkpoints.
+### 2.2 Superficies en Pausa (No expandir sin autorización explícita)
+- **`web/` (Web Companion)**: SvelteKit 2 + Svelte 5 + TypeScript + IndexedDB (`idb`) + Vitest + Playwright.
+- **`windows/` (Windows Desktop)**: C# / .NET 9 / WinUI 3 (`Pepinillo.Core`, `Pepinillo.WinUI`).
+- Ambos directorios permanecen como referencia técnica validada; **no forman parte de las entregas ni de la matriz obligatoria de paridad diaria** salvo autorización explícita en una issue.
+
+### 2.3 Principio de Paridad
+- **Paridad funcional obligatoria** entre superficies activas (iOS, iPadOS, watchOS, macOS, Android, Wear OS) en el motor de foco (4 modos: `Pomodoro`, `Flowtime`, `Time Block`, `Stopwatch`), reglas de negocio, estados de sesión y modelo de entitlements (`pepinillo_plus` / `everywhere_plus`).
+- **Gramática visual nativa, nunca híbrida**: HIG-first en Apple (incluyendo arquitectura sidebar/tabla/inspector en macOS según `ios/docs/macos-design-contract.md`) y Material 3 Expressive en Android.
+
+---
+
+## 3. Consecuencias
+
+- Cada superficie activa conserva su propio `AGENTS.md` (`ios/AGENTS.md`, `android/AGENTS.md`) con comandos exactos de compilación y prueba.
+- Los clientes evitan lógica duplicada de sincronización LWW delegando la resolución autoritativa al backend Go (`contracts/openapi.yaml`) cuando el usuario tiene `everywhere_plus`.
+- Las plantillas heredadas de `software-factory-base` que mencionaban Tauri o React+Vite no aplican a Pepinillo.

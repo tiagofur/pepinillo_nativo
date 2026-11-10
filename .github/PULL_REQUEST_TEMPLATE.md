@@ -5,10 +5,12 @@ Delivery: complete
 - Explain what was implemented and why.
 
 ## Platform Parity
-- Android: Impacted | Not impacted (why)
-- Wear OS: Impacted | Not impacted (why)
 - iOS: Impacted | Not impacted (why)
 - watchOS: Impacted | Not impacted (why)
+- macOS: Impacted | Not impacted (why)
+- Android: Impacted | Not impacted (why)
+- Wear OS: Impacted | Not impacted (why)
+- Backend: Impacted | Not impacted (why)
 
 ## Decisions Made Without Asking
 - Document autonomous technical defaults chosen under `docs/` and `AGENTS.md` without blocking on human input.
@@ -35,7 +37,7 @@ N/A
 ## PRD Impact
 - Classification: No PRD update required | PRD update required
 - Files changed:
-  - PRD/..
+  - docs/prd-v2.md / docs/product-map.md
 
 ## Rollback
 <!-- Files or behavior that can be reverted without touching other work. -->
@@ -50,6 +52,6 @@ Risk: none
 - [ ] Docs updated in the same PR
 - [ ] ≤ 400 changed lines (or `chained-pr` / justified `size:exception`)
 - [ ] Scope = this issue only (follow-ups go to new issues)
-- [ ] Domain invariants in `AGENTS.md` §5 respected (a violation is P0)
+- [ ] Domain invariants in `AGENTS.md` §3 respected (a violation is P0)
 - [ ] No breaking OpenAPI change (or human-authorized `contract-break` label)
 - [ ] Self-review of the full diff done

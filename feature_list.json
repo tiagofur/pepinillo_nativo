@@ -1,12 +1,12 @@
 {
   "schema_version": 2,
-  "notice": "CAPABILITY CONTEXT ONLY. Never use this file as a work queue or authorization source. GitHub Issues with status:ready / status:approved are the sole operational queue.",
+  "notice": "SOLO CONTEXTO DE CAPACIDADES. Nunca uses este archivo como cola de trabajo ni fuente de autorización. Las GitHub Issues con status:ready / status:approved son la única cola operativa.",
   "factory_version": "1.0.0",
   "capabilities": [
     {
       "id": "CAP-FACTORY-001",
       "domain": "governance",
-      "title": "Portable ODD Orchestration & Checkpoints C1-C5",
+      "title": "Orquestación G-ODD portable y checkpoints C1-C5",
       "status": "active",
       "entrypoints": [
         "AGENTS.md",
@@ -17,18 +17,19 @@
     {
       "id": "CAP-FACTORY-002",
       "domain": "verification",
-      "title": "Fail-Closed Preflight, PR Metadata Validator & Clean-Context Handoff",
+      "title": "Preflight fail-closed, validador de metadatos de PR y handoff con contexto limpio",
       "status": "active",
       "entrypoints": [
         "scripts/factory_preflight.py",
         "scripts/check_pr_metadata.py",
-        "scripts/factory_handoff.py"
+        "scripts/factory_handoff.py",
+        "scripts/check_secrets.py"
       ]
     },
     {
       "id": "CAP-FACTORY-003",
       "domain": "contracts",
-      "title": "Contract-First OpenAPI 3.1 Governance (Spectral + oasdiff)",
+      "title": "Gobernanza Contract-First OpenAPI 3.1 (Spectral + oasdiff)",
       "status": "active",
       "entrypoints": [
         "contracts/openapi.yaml",
@@ -38,23 +39,66 @@
     {
       "id": "CAP-FOCUS-001",
       "domain": "core-product",
-      "title": "Deep Work & Focus Timer Engine",
+      "title": "Motor de foco multi-modo (Pomodoro, Flowtime, TimeBlock, Stopwatch)",
       "status": "active",
       "entrypoints": [
-        "android/app/src/main/java/",
-        "ios/Sources/",
-        "backend/internal/"
+        "ios/Features/Focus",
+        "ios/Shared/Persistence",
+        "android/app/src/main/java/dev/creapolis/pepinillo/domain/timer",
+        "backend/internal/domain/focus_mode.go",
+        "backend/internal/services/focus_service.go"
       ]
     },
     {
       "id": "CAP-SYNC-001",
       "domain": "cross-platform",
-      "title": "Multi-Device Focus & Companion Sync (Wear OS / watchOS)",
+      "title": "Sincronización multi-dispositivo (LWW cloud, CloudKit dual-store, Wear/watch companion)",
       "status": "active",
       "entrypoints": [
-        "android/wear/",
-        "ios/watchOS/",
-        "backend/cmd/api/"
+        "android/app/src/main/java/dev/creapolis/pepinillo/data/sync",
+        "android/wear/src/main/java/dev/creapolis/pepinillo",
+        "ios/Shared/Persistence/PersistenceStoreRouter.swift",
+        "backend/internal/services/sync_service.go",
+        "backend/internal/adapters/handlers/sync_handler.go"
+      ]
+    },
+    {
+      "id": "CAP-TASKS-001",
+      "domain": "core-product",
+      "title": "Tareas, subtareas, recurrencias y energía con import de Reminders/Calendar",
+      "status": "active",
+      "entrypoints": [
+        "ios/Features/Plan",
+        "android/app/src/main/java/dev/creapolis/pepinillo/feature/tasks",
+        "backend/internal/services/task_service.go"
+      ]
+    },
+    {
+      "id": "CAP-BILLING-001",
+      "domain": "monetization",
+      "title": "Monetización v3.1 (pepinillo_plus lifetime + everywhere_plus suscripción) y créditos IA",
+      "status": "active",
+      "entrypoints": [
+        "ios/Features/Paywall",
+        "ios/Domain/Clients/SubscriptionClient.swift",
+        "android/app/src/main/java/dev/creapolis/pepinillo/core/billing",
+        "backend/internal/services/billing_service.go",
+        "backend/internal/services/revenuecat_service.go"
+      ]
+    },
+    {
+      "id": "CAP-ECOSYSTEM-001",
+      "domain": "ecosystem",
+      "title": "Surfaces del ecosistema: Widgets, Live Activities, Control Center, App Intents, Tiles, Complications, menu bar macOS",
+      "status": "active",
+      "entrypoints": [
+        "ios/PepinilloWidget",
+        "ios/PepinilloLiveActivity",
+        "ios/ControlCenterExtension",
+        "ios/PepinilloIntents",
+        "ios/Mac",
+        "android/app/src/main/java/dev/creapolis/pepinillo/widget",
+        "android/wear/src/main/java/dev/creapolis/pepinillo/tile"
       ]
     }
   ]

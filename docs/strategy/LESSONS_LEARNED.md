@@ -1,125 +1,118 @@
-# Pepinillo — Product Lessons Learned
+# Pepinillo — Lecciones aprendidas de producto
 
-## Purpose
+## Propósito
 
-This document captures the strategic lessons learned during Pepinillo's evolution. It is not a technical specification. Its goal is to preserve product context and decision reasoning for future contributors and AI agents.
+Captura las lecciones estratégicas de la evolución de Pepinillo. No es una
+especificación técnica: preserva el contexto de producto y el razonamiento de
+decisiones para contribuidores y agentes de IA futuros.
 
 ---
 
-# Origin
+# Origen
 
-Pepinillo started as an early Flutter application and became an important personal project. The decision to rebuild it natively was not made because Flutter was insufficient, but because the product direction evolved toward deep operating-system integration.
+Pepinillo empezó como una app Flutter temprana y se convirtió en un proyecto
+personal importante. La decisión de reconstruirlo nativo no se tomó porque
+Flutter fuera insuficiente, sino porque la dirección del producto evolucionó
+hacia integración profunda con el sistema operativo.
 
-Native implementations allow Pepinillo to better integrate with:
-
-- iOS widgets
+Las implementaciones nativas permiten a Pepinillo integrarse mejor con:
+- Widgets de iOS
 - Live Activities
 - Dynamic Island
 - Apple Watch
 - Siri/App Intents
-- Android widgets
+- Widgets de Android
 - Wear OS
-- platform-specific lifecycle behavior
+- Comportamiento de ciclo de vida por plataforma
 
-The objective was not technology migration. The objective was a better product experience.
+El objetivo no era una migración de tecnología. El objetivo era una mejor
+experiencia de producto.
 
 ---
 
-# What Worked Well
+# Qué funcionó bien
 
-## Building a strong technical foundation
+## Construir una base técnica sólida
 
-Pepinillo was built with production quality in mind:
+Pepinillo se construyó con calidad de producción en mente:
+- arquitectura nativa móvil;
+- testing automatizado;
+- pipelines CI/CD;
+- separación del backend;
+- arquitectura de billing;
+- desarrollo documentado primero.
 
-- native mobile architecture;
-- automated testing;
-- CI/CD pipelines;
-- backend separation;
-- billing architecture;
-- documentation-first development.
+Esta base reduce el riesgo futuro del producto.
 
-This foundation reduces future product risk.
+## Enfocarse en la experiencia core
 
-## Focusing on the core experience
+Lo más valioso de Pepinillo no es el gestor de tareas ni la pantalla de
+analíticas. Es ayudar a la gente a entrar y mantener trabajo enfocado.
 
-The most valuable part of Pepinillo is not the task manager or analytics screen. It is helping people enter and maintain focused work.
-
-The core loop is:
+El bucle core es:
 
 ```
 Plan → Focus → Complete → Reflect
 ```
 
-Future decisions should protect this loop.
+Las decisiones futuras deben proteger este bucle.
 
 ---
 
-# What Could Have Been Better
+# Qué podría haber sido mejor
 
-## Product validation should happen earlier
+## Validar el producto antes
 
-A common trap in software development is improving the product before validating whether users need it.
-
-Pepinillo now has enough functionality to validate the market. The next phase should prioritize:
-
-- users;
-- retention;
-- feedback;
-- monetization signals.
-
-Not simply more features.
+Una trampa común es mejorar el producto antes de validar si los usuarios lo
+necesitan. Pepinillo ya tiene funcionalidad suficiente para validar el
+mercado. La siguiente fase debe priorizar usuarios, retención, feedback y
+señales de monetización — no simplemente más features.
 
 ---
 
-# Platform Expansion Lessons
+# Lecciones de expansión de plataformas
 
-Windows and Web experiments were valuable because they answered technical questions.
+Los experimentos de Windows y Web valieron la pena porque respondieron
+preguntas técnicas: probaron viabilidad. Pero la expansión de plataformas debe
+seguir la demanda de usuarios, no solo la posibilidad técnica.
 
-They proved feasibility.
-
-However, platform expansion should follow user demand, not only technical possibility.
-
-Current priority:
+Prioridad actual:
 
 ```
-Android + iOS growth
+crecimiento Android + iOS
 
-before
+antes que
 
-additional platforms
+plataformas adicionales
 ```
 
 ---
 
-# AI Strategy Lesson
+# Lección de estrategia IA
 
-AI should enhance Pepinillo's mission, not replace it.
-
-Pepinillo is not an AI application.
-
-Pepinillo is a focus application that can use AI where it creates meaningful value:
-
-- reflection;
-- insights;
-- planning assistance;
-- coaching.
+La IA debe potenciar la misión de Pepinillo, no reemplazarla. Pepinillo no es
+una aplicación de IA: es una aplicación de foco que usa IA donde genera valor
+real (reflection, insights, planificación, coaching). La IA on-device
+(Foundation Models con fallback de plantilla) pertenece a Pepinillo+; la IA
+cloud (créditos) a Everywhere/AI+ (`docs/prd-v2.md` §6).
 
 ---
 
-# Strategic Rule Going Forward
+# Regla estratégica de aquí adelante
 
-Before adding a major feature ask:
+Antes de añadir una feature mayor, preguntar:
 
-> Does this improve activation, retention, or revenue?
+> ¿Esto mejora activación, retención o ingresos?
 
-If the answer is unclear, the feature should probably wait.
+Si la respuesta no es clara, la feature probablemente deba esperar.
 
 ---
 
-# Product Mission
+# Misión del producto
 
-Pepinillo exists to help people do meaningful work with less distraction.
+Pepinillo existe para ayudar a la gente a hacer trabajo significativo con
+menos distracción.
 
-Technology is the tool.
+La tecnología es la herramienta.
 
-Focus is the product.
+El foco es el producto.
