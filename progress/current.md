@@ -11,17 +11,15 @@
 - **Alcance autorizado**: reconciliación documental Agent-First (limpieza Git,
   archivo `docs/legacy/`, contratos OpenAPI, ADRs, gobernanza raíz y docs
   canónicos en español).
-- **Estado**: en progreso — bloque de gobernanza raíz.
+- **Estado**: implementación completa; verificación end-to-end en verde
+  (`preflight` OK, `make test-factory` 21/21, `make contracts-lint` 0 errores,
+  `check_secrets` limpio, `make test-backend` verde, integridad de paths OK).
 
-## Próximos pasos inmediatos
+## Pendiente (requiere humano)
 
-1. Completar docs canónicos (`docs/README.md`, `product-map.md`, `prd-v2.md`,
-   `architecture.md`, `conventions.md`, `design.md`, `verification.md`,
-   `deployment.md`, `git-workflow.md`).
-2. Crear guías por plataforma (`backend/AGENTS.md`, `ios/AGENTS.md`,
-   `android/AGENTS.md`) y actualizar skills.
-3. Verificación end-to-end (`make test-factory`, `make contracts-lint`,
-   `python3 scripts/check_secrets.py`, `make test-backend`).
+- Push de la rama, apertura de PR (referencia issue #706) y merge a `main`.
+- Tras el merge, `make contracts-diff` queda limpio (el `GET /healthz` de la
+  plantilla desaparece de la comparación contra `origin/main`).
 
 ## Cambios locales apartados (fuera de este alcance)
 
