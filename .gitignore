@@ -91,7 +91,7 @@ android/*.xml
 emulator_start.log
 .zcode/
 .kilo/
-.atl/
+.atl/*
 !.atl/skill-registry.md
 
 # Impeccable skill workspace (session-local critique reports)
