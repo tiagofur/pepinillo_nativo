@@ -24,17 +24,17 @@ android/.kotlin/
 android/**/build/
 
 # === iOS / Xcode ===
-pepinillo_ios/build/
-pepinillo_ios/DerivedData/
-pepinillo_ios/*.xcodeproj/xcuserdata/
-pepinillo_ios/*.xcodeproj/project.xcworkspace/xcuserdata/
-pepinillo_ios/*.xcworkspace/xcuserdata/
-pepinillo_ios/*.xcodeproj/project.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist
-pepinillo_ios/.build/
-pepinillo_ios/.swiftpm/
+ios/build/
+ios/DerivedData/
+ios/*.xcodeproj/xcuserdata/
+ios/*.xcodeproj/project.xcworkspace/xcuserdata/
+ios/*.xcworkspace/xcuserdata/
+ios/*.xcodeproj/project.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist
+ios/.build/
+ios/.swiftpm/
 
 # XcodeGen (regenerated from project.yml)
-pepinillo_ios/Pepinillo.xcodeproj
+ios/Pepinillo.xcodeproj
 
 # App Store credentials / secrets
 *.cer
@@ -84,10 +84,15 @@ backend/api.exe
 # === Scratch & Temporary Build Artifacts ===
 scratch/
 .artifacts/
+.context/
 android/.artifacts/
+android/emulator.log
+android/*.xml
+emulator_start.log
 .zcode/
 .kilo/
 .atl/
+!.atl/skill-registry.md
 
 # Impeccable skill workspace (session-local critique reports)
 .impeccable/
