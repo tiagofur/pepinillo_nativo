@@ -24,6 +24,8 @@ type updateProfileRequest struct {
 	Name     string `json:"name"`
 	Email    string `json:"email"`
 	ImageURL string `json:"imageUrl"`
+	// MetricsOptIn is a pointer so omitting it leaves consent unchanged.
+	MetricsOptIn *bool `json:"metricsOptIn"`
 }
 
 func NewUserHandler(users ports.UserRepository, storage ports.FileStorage) *UserHandler {
@@ -82,6 +84,9 @@ func (h *UserHandler) UpdateMe(c *fiber.Ctx) error {
 	}
 	if req.ImageURL != "" {
 		user.ImageURL = &req.ImageURL
+	}
+	if req.MetricsOptIn != nil {
+		user.MetricsOptIn = *req.MetricsOptIn
 	}
 
 	if err := h.users.Update(c.Context(), user); err != nil {

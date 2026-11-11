@@ -163,3 +163,9 @@ type PreferenceRepository interface {
 	GetByUser(ctx context.Context, userID string) ([]domain.UserPreference, error)
 	UpsertBatch(ctx context.Context, prefs []domain.UserPreference) ([]domain.UserPreference, error)
 }
+
+// InternalStatsRepository computes consent-filtered, PII-free aggregates for
+// the CRM metrics collector.
+type InternalStatsRepository interface {
+	Compute(ctx context.Context, now time.Time) (*domain.InternalStats, error)
+}

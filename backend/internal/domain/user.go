@@ -52,6 +52,10 @@ type User struct {
 	// confirmed, never cleared by Everywhere+ activation/cancellation).
 	PepinilloPlusEntitlementAt *time.Time `json:"pepinilloPlusEntitlementAt,omitempty"`
 
+	// MetricsOptIn is explicit consent to include this user in the aggregated,
+	// PII-free usage metrics served by /internal/stats. Defaults to false.
+	MetricsOptIn bool `json:"metricsOptIn" gorm:"default:false;not null"`
+
 	// Google OAuth
 	GoogleID      *string `json:"googleId,omitempty" gorm:"uniqueIndex"`
 	GoogleEmail   *string `json:"googleEmail,omitempty"`

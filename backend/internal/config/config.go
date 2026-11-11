@@ -78,6 +78,7 @@ type Config struct {
 	AlertMuteStartHourUTC                  int64
 	AlertMuteEndHourUTC                    int64
 	GoogleClientIDs                        string
+	MetricsPepinilloToken                  string
 	AppleBundleID                          string
 	// Sign in with Apple server-to-server token revocation (#196). All optional:
 	// when unset, RevokeAppleToken logs and skips, so account deletion still works.
@@ -172,6 +173,7 @@ func Load() (*Config, error) {
 		AlertMuteStartHourUTC:                  getEnvInt64("ALERT_MUTE_START_HOUR_UTC", 0),
 		AlertMuteEndHourUTC:                    getEnvInt64("ALERT_MUTE_END_HOUR_UTC", 0),
 		GoogleClientIDs:                        getEnv("GOOGLE_CLIENT_IDS", ""),
+		MetricsPepinilloToken:                  strings.TrimSpace(getEnv("METRICS_PEPINILLO_TOKEN", "")),
 		AppleBundleID:                          getEnv("APPLE_BUNDLE_ID", ""),
 		AppleTeamID:                            getEnv("APPLE_TEAM_ID", ""),
 		AppleKeyID:                             getEnv("APPLE_KEY_ID", ""),
