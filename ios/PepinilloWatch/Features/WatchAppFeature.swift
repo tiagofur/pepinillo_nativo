@@ -33,6 +33,11 @@ struct WatchAppFeature {
         /// Unknown / missing → `AppTheme.named(_:)` falls back to `.classic`. Injected
         /// into the view tree via `.environment(\.appTheme, …)` in `WatchRootView`.
         var themeName: String = AppTheme.classic.name
+
+        // Privacy / Aggregate Metrics Opt-in (#725)
+        public var hasBackendAccount: Bool = false
+        public var metricsOptIn: Bool = false
+        public var metricsOptInError: String? = nil
     }
 
     enum WatchTab: Int, Equatable {
@@ -56,6 +61,9 @@ struct WatchAppFeature {
         case tasksReceived([WatchTaskItem], sentAt: TimeInterval)
         case dashboardStatsReceived(WatchDashboardStats)
         case themeReceived(String)
+        case metricsOptInStateReceived(hasBackendAccount: Bool, metricsOptIn: Bool, metricsOptInError: String?)
+        case setMetricsOptIn(Bool)
+        case metricsOptInCommandFailed(previousValue: Bool)
         case connectivityChanged(Bool)
     }
 
@@ -93,6 +101,12 @@ struct WatchAppFeature {
                             await send(.dashboardStatsReceived(stats))
                         case .theme(let themeName):
                             await send(.themeReceived(themeName))
+                        case .metricsOptInState(let hasAccount, let optIn, let err):
+                            await send(.metricsOptInStateReceived(
+                                hasBackendAccount: hasAccount,
+                                metricsOptIn: optIn,
+                                metricsOptInError: err
+                            ))
                         case .connectivityStatus(let connected):
                             await send(.connectivityChanged(connected))
                         case .command:
@@ -142,6 +156,29 @@ struct WatchAppFeature {
             case .themeReceived(let themeName):
                 // Unknown / missing themes fall back to classic via AppTheme.named(_:).
                 state.themeName = themeName
+                return .none
+
+            case .metricsOptInStateReceived(let hasAccount, let optIn, let err):
+                state.hasBackendAccount = hasAccount
+                state.metricsOptIn = hasAccount ? optIn : false
+                state.metricsOptInError = err
+                return .none
+
+            case .setMetricsOptIn(let enabled):
+                guard state.hasBackendAccount else { return .none }
+                let previousValue = state.metricsOptIn
+                state.metricsOptIn = enabled
+                state.metricsOptInError = nil
+                return .run { [watchClient] send in
+                    let delivered = await watchClient.sendCommand(.setMetricsOptIn(enabled))
+                    if !delivered {
+                        await send(.metricsOptInCommandFailed(previousValue: previousValue))
+                    }
+                }
+
+            case .metricsOptInCommandFailed(let previousValue):
+                state.metricsOptIn = previousValue
+                state.metricsOptInError = "No se pudo actualizar. Verifica la conexión con tu iPhone."
                 return .none
 
             case .connectivityChanged(let connected):

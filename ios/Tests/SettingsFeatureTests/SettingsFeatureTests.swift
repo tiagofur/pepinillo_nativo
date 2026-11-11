@@ -65,6 +65,7 @@ struct SettingsFeatureTests {
             $0.healthClient.isAuthorized = { healthAuthorized }
             $0.healthClient.requestAuthorization = { healthAuthorized }
             $0.calendarClient.requestAccess = { false }
+            $0.keychainClient.hasTokens = { false }
         }
     }
 
@@ -761,5 +762,172 @@ struct SettingsFeatureTests {
     func testPaywallDismissed() async {
         let store = makeStore()
         await store.send(.paywallDismissed)
+    }
+
+    // MARK: - Privacy / Metrics Opt-In (S1, S2, S3)
+
+    @Test("onAppear without tokens disables metricsOptIn and ignores toggle")
+    func testMetricsOptInWithoutTokens() async {
+        let savedSyncStatus = AppGroupDefaults.syncStatus
+        let savedSyncError = AppGroupDefaults.lastAppleCloudActivationError
+        let savedCanAppleCloudSync = AppGroupDefaults.canAppleCloudSync
+        defer {
+            AppGroupDefaults.syncStatus = savedSyncStatus
+            AppGroupDefaults.lastAppleCloudActivationError = savedSyncError
+            AppGroupDefaults.canAppleCloudSync = savedCanAppleCloudSync
+        }
+        AppGroupDefaults.syncStatus = .idle
+        AppGroupDefaults.lastAppleCloudActivationError = nil
+        AppGroupDefaults.canAppleCloudSync = false
+
+        let store = TestStore(initialState: SettingsFeature.State()) {
+            SettingsFeature()
+        } withDependencies: {
+            $0.persistenceClient.fetchPreferences = { self.defaultPrefs() }
+            $0.persistenceClient.savePreferences = { _ in }
+            $0.healthClient.isAuthorized = { false }
+            $0.healthClient.requestAuthorization = { false }
+            $0.calendarClient.requestAccess = { false }
+            $0.keychainClient.hasTokens = { false }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.onAppear) {
+            $0.isLoading = true
+        }
+
+        await store.receive(.metricsOptInLoaded(hasAccount: false, metricsOptIn: false))
+        #expect(store.state.hasBackendAccount == false)
+        #expect(store.state.metricsOptIn == false)
+
+        // Toggling when hasBackendAccount == false is a no-op
+        await store.send(.setMetricsOptIn(true))
+        #expect(store.state.metricsOptIn == false)
+    }
+
+    @Test("onAppear with tokens loads metricsOptIn from getMe")
+    func testMetricsOptInLoadedFromGetMe() async {
+        let savedSyncStatus = AppGroupDefaults.syncStatus
+        let savedSyncError = AppGroupDefaults.lastAppleCloudActivationError
+        let savedCanAppleCloudSync = AppGroupDefaults.canAppleCloudSync
+        defer {
+            AppGroupDefaults.syncStatus = savedSyncStatus
+            AppGroupDefaults.lastAppleCloudActivationError = savedSyncError
+            AppGroupDefaults.canAppleCloudSync = savedCanAppleCloudSync
+        }
+        AppGroupDefaults.syncStatus = .idle
+        AppGroupDefaults.lastAppleCloudActivationError = nil
+        AppGroupDefaults.canAppleCloudSync = false
+
+        let sampleUser = APIUser(
+            id: "u1",
+            email: "test@example.com",
+            name: "Tester",
+            imageUrl: nil,
+            subscriptionTier: "pro",
+            subscriptionExpiresAt: nil,
+            emailVerified: true,
+            createdAt: "2026-01-01T00:00:00Z",
+            updatedAt: "2026-01-01T00:00:00Z",
+            appleId: nil,
+            appleEmail: nil,
+            appleName: nil,
+            metricsOptIn: true
+        )
+
+        let store = TestStore(initialState: SettingsFeature.State()) {
+            SettingsFeature()
+        } withDependencies: {
+            $0.persistenceClient.fetchPreferences = { self.defaultPrefs() }
+            $0.persistenceClient.savePreferences = { _ in }
+            $0.healthClient.isAuthorized = { false }
+            $0.healthClient.requestAuthorization = { false }
+            $0.calendarClient.requestAccess = { false }
+            $0.keychainClient.hasTokens = { true }
+            $0.apiClient.getMe = { sampleUser }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.onAppear) {
+            $0.isLoading = true
+        }
+
+        await store.receive(.metricsOptInLoaded(hasAccount: true, metricsOptIn: true)) {
+            $0.hasBackendAccount = true
+            $0.metricsOptIn = true
+        }
+    }
+
+    @Test("setMetricsOptIn updates optimistically and confirms via updateMe")
+    func testSetMetricsOptInSuccess() async {
+        let sentRequest = LockIsolated<UpdateProfileRequest?>(nil)
+        let updatedUser = APIUser(
+            id: "u1",
+            email: "test@example.com",
+            name: "Tester",
+            imageUrl: nil,
+            subscriptionTier: "pro",
+            subscriptionExpiresAt: nil,
+            emailVerified: true,
+            createdAt: "2026-01-01T00:00:00Z",
+            updatedAt: "2026-01-01T00:00:00Z",
+            appleId: nil,
+            appleEmail: nil,
+            appleName: nil,
+            metricsOptIn: true
+        )
+
+        var state = SettingsFeature.State()
+        state.hasBackendAccount = true
+        state.metricsOptIn = false
+
+        let store = TestStore(initialState: state) {
+            SettingsFeature()
+        } withDependencies: {
+            $0.apiClient.updateMe = { req in
+                sentRequest.setValue(req)
+                return updatedUser
+            }
+        }
+
+        await store.send(.setMetricsOptIn(true)) {
+            $0.metricsOptIn = true
+            $0.isUpdatingMetricsOptIn = true
+            $0.metricsOptInError = nil
+        }
+
+        await store.receive(\.metricsOptInUpdateResponse.success) {
+            $0.isUpdatingMetricsOptIn = false
+            $0.metricsOptIn = true
+        }
+
+        #expect(sentRequest.value == UpdateProfileRequest(metricsOptIn: true))
+    }
+
+    @Test("setMetricsOptIn reverts optimistic value and sets error when updateMe fails")
+    func testSetMetricsOptInFailureReverts() async {
+        var state = SettingsFeature.State()
+        state.hasBackendAccount = true
+        state.metricsOptIn = false
+
+        let store = TestStore(initialState: state) {
+            SettingsFeature()
+        } withDependencies: {
+            $0.apiClient.updateMe = { _ in
+                throw APIClientError.networkError
+            }
+        }
+
+        await store.send(.setMetricsOptIn(true)) {
+            $0.metricsOptIn = true
+            $0.isUpdatingMetricsOptIn = true
+            $0.metricsOptInError = nil
+        }
+
+        await store.receive(\.metricsOptInUpdateResponse.failure) {
+            $0.isUpdatingMetricsOptIn = false
+            $0.metricsOptIn = false
+            $0.metricsOptInError = "No se pudo guardar tu preferencia de privacidad. Inténtalo de nuevo."
+        }
     }
 }

@@ -179,7 +179,8 @@ struct EditProfileFeature {
                     subscriptionExpiresAt: apiUser.subscriptionExpiresAt,
                     emailVerified: resolvedEmail == apiUser.email ? apiUser.emailVerified : false,
                     appleId: apiUser.appleId,
-                    createdAt: apiUser.createdAt, updatedAt: apiUser.updatedAt
+                    createdAt: apiUser.createdAt, updatedAt: apiUser.updatedAt,
+                    metricsOptIn: apiUser.metricsOptIn
                 )
                 return .run { [dismiss] send in
                     try? await persistence.saveCachedUser(dto)
@@ -251,7 +252,8 @@ struct EditProfileFeature {
             emailVerified: !originalEmail.isEmpty && email == originalEmail && preservedUser.emailVerified,
             appleId: preservedUser.appleId,
             createdAt: preservedUser.createdAt.isEmpty ? now : preservedUser.createdAt,
-            updatedAt: now
+            updatedAt: now,
+            metricsOptIn: preservedUser.metricsOptIn
         )
     }
 }

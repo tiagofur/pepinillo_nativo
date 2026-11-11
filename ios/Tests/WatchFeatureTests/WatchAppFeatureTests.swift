@@ -969,4 +969,72 @@ struct WatchAppFeatureTests {
             $0.tasks.linkedTaskID = taskID
         }
     }
+
+    // MARK: - Privacy / Metrics Opt-In (S1, S2, S3)
+
+    @Test("setMetricsOptIn is ignored when hasBackendAccount is false")
+    func setMetricsOptInGuardWhenNoBackendAccount() async {
+        let commandsSent = LockIsolated<[WatchCommand]>([])
+
+        let store = TestStore(initialState: WatchAppFeature.State()) {
+            WatchAppFeature()
+        } withDependencies: {
+            $0.watchConnectivityClient.sendCommand = { cmd in
+                commandsSent.withValue { $0.append(cmd) }
+                return true
+            }
+        }
+
+        await store.send(.setMetricsOptIn(true))
+        #expect(store.state.metricsOptIn == false)
+        #expect(commandsSent.value.isEmpty)
+    }
+
+    @Test("setMetricsOptIn optimistically toggles and sends command when hasBackendAccount is true")
+    func setMetricsOptInOptimisticSuccess() async {
+        let commandsSent = LockIsolated<[WatchCommand]>([])
+
+        var state = WatchAppFeature.State()
+        state.hasBackendAccount = true
+        state.metricsOptIn = false
+
+        let store = TestStore(initialState: state) {
+            WatchAppFeature()
+        } withDependencies: {
+            $0.watchConnectivityClient.sendCommand = { cmd in
+                commandsSent.withValue { $0.append(cmd) }
+                return true
+            }
+        }
+
+        await store.send(.setMetricsOptIn(true)) {
+            $0.metricsOptIn = true
+            $0.metricsOptInError = nil
+        }
+
+        #expect(commandsSent.value == [.setMetricsOptIn(true)])
+    }
+
+    @Test("setMetricsOptIn reverts optimistic value and sets error when sendCommand returns false")
+    func setMetricsOptInRevertsOnFailure() async {
+        var state = WatchAppFeature.State()
+        state.hasBackendAccount = true
+        state.metricsOptIn = false
+
+        let store = TestStore(initialState: state) {
+            WatchAppFeature()
+        } withDependencies: {
+            $0.watchConnectivityClient.sendCommand = { _ in false }
+        }
+
+        await store.send(.setMetricsOptIn(true)) {
+            $0.metricsOptIn = true
+            $0.metricsOptInError = nil
+        }
+
+        await store.receive(.metricsOptInCommandFailed(previousValue: false)) {
+            $0.metricsOptIn = false
+            $0.metricsOptInError = "No se pudo actualizar. Verifica la conexión con tu iPhone."
+        }
+    }
 }

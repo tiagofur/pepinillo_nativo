@@ -14,7 +14,11 @@ struct WatchRootView: View {
     var body: some View {
         TabView(selection: $store.selectedTab.sending(\.tabSelected)) {
             WatchDashboardView(
-                store: store.scope(state: \.dashboard, action: \.dashboard)
+                store: store.scope(state: \.dashboard, action: \.dashboard),
+                hasBackendAccount: store.hasBackendAccount,
+                metricsOptIn: store.metricsOptIn,
+                metricsOptInError: store.metricsOptInError,
+                onSetMetricsOptIn: { store.send(.setMetricsOptIn($0)) }
             )
             .tag(WatchAppFeature.WatchTab.dashboard)
 

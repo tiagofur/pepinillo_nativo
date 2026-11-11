@@ -245,6 +245,9 @@ struct WatchCommandDictionaryTests {
         case .requestDashboard:             dict["action"] = "requestDashboard"
         case .requestSession:               dict["action"] = "requestSession"
         case .startNextPhase:               dict["action"] = "startNextPhase"
+        case .setMetricsOptIn(let enabled):
+            dict["action"] = "setMetricsOptIn"
+            dict["enabled"] = enabled
         }
         return dict
     }
@@ -268,6 +271,7 @@ struct WatchCommandDictionaryTests {
         case "requestTasks":     return .requestTasks
         case "requestDashboard": return .requestDashboard
         case "requestSession":   return .requestSession
+        case "setMetricsOptIn":  return .setMetricsOptIn(message["enabled"] as? Bool ?? false)
         default:                 return nil
         }
     }

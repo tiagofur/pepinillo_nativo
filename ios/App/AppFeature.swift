@@ -164,7 +164,8 @@ struct AppFeature {
                 emailVerified: cachedUser?.emailVerified ?? false,
                 appleId: resolvedAppleID,
                 createdAt: cachedUser?.createdAt ?? "",
-                updatedAt: cachedUser?.updatedAt ?? ""
+                updatedAt: cachedUser?.updatedAt ?? "",
+                metricsOptIn: cachedUser?.metricsOptIn ?? false
             )
         }
     }
@@ -522,7 +523,8 @@ struct AppFeature {
                                  subscriptionTier: apiUser.subscriptionTier,
                                  subscriptionExpiresAt: apiUser.subscriptionExpiresAt,
                                  emailVerified: apiUser.emailVerified, appleId: apiUser.appleId,
-                                 createdAt: apiUser.createdAt, updatedAt: apiUser.updatedAt
+                                 createdAt: apiUser.createdAt, updatedAt: apiUser.updatedAt,
+                                 metricsOptIn: apiUser.metricsOptIn
                              )
                              try? await persistence.saveCachedUser(dto)
                              // Retroactive fix: sync the locally-resolved name when the server
@@ -1091,7 +1093,8 @@ struct AppFeature {
                                     subscriptionTier: response.user.subscriptionTier,
                                     subscriptionExpiresAt: response.user.subscriptionExpiresAt,
                                     emailVerified: response.user.emailVerified, appleId: response.user.appleId,
-                                    createdAt: response.user.createdAt, updatedAt: response.user.updatedAt
+                                    createdAt: response.user.createdAt, updatedAt: response.user.updatedAt,
+                                    metricsOptIn: response.user.metricsOptIn
                                 )
                                 try? await persistence.saveCachedUser(dto)
 
@@ -1235,6 +1238,30 @@ struct AppFeature {
                     guard let id = UUID(uuidString: idStr) else { return .none }
                     let task = state.tasks.tasks.first(where: { $0.id == id })
                     return .send(.focus(.linkTask(id, task?.title, task?.energyLevel.icon)))
+                case .setMetricsOptIn(let enabled):
+                    let previousValue = state.settings.metricsOptIn
+                    state.settings.metricsOptIn = enabled
+                    state.settings.metricsOptInError = nil
+                    return .run { [apiClient, keychain, persistence, watchClient] send in
+                        guard await keychain.hasTokens() else {
+                            await send(.settings(.metricsOptInLoaded(hasAccount: false, metricsOptIn: false)))
+                            await watchClient.sendMetricsOptInState(false, false, "Requiere cuenta con sincronización")
+                            return
+                        }
+                        do {
+                            let updatedUser = try await apiClient.updateMe(UpdateProfileRequest(metricsOptIn: enabled))
+                            if var cached = try? await persistence.fetchCachedUser() {
+                                cached.metricsOptIn = updatedUser.metricsOptIn
+                                try? await persistence.saveCachedUser(cached)
+                            }
+                            await send(.settings(.metricsOptInLoaded(hasAccount: true, metricsOptIn: updatedUser.metricsOptIn)))
+                            await watchClient.sendMetricsOptInState(true, updatedUser.metricsOptIn, nil)
+                        } catch {
+                            let errorMsg = "No se pudo guardar tu preferencia de privacidad. Inténtalo de nuevo."
+                            await send(.settings(.metricsOptInLoaded(hasAccount: true, metricsOptIn: previousValue)))
+                            await watchClient.sendMetricsOptInState(true, previousValue, errorMsg)
+                        }
+                    }
                 case .unlinkTask:
                     return .send(.focus(.linkTask(nil, nil, nil)))
                 case .setTaskCompleted(let idStr, let isCompleted):
@@ -1475,6 +1502,34 @@ struct AppFeature {
                 let themeName = state.settings.themeName
                 return .run { [watchClient] _ in
                     await watchClient.sendTheme(themeName)
+                }
+
+            case .settings(.metricsOptInLoaded(let hasAccount, let optIn)):
+                state.cachedUser?.metricsOptIn = optIn
+                return .run { [watchClient] _ in
+                    guard watchClient.isSupported() else { return }
+                    await watchClient.sendMetricsOptInState(hasAccount, optIn, nil)
+                }
+
+            case .settings(.metricsOptInUpdateResponse(.success(let user))):
+                state.cachedUser?.metricsOptIn = user.metricsOptIn
+                let hasAccount = state.settings.hasBackendAccount
+                return .run { [persistence, watchClient] _ in
+                    if var cached = try? await persistence.fetchCachedUser() {
+                        cached.metricsOptIn = user.metricsOptIn
+                        try? await persistence.saveCachedUser(cached)
+                    }
+                    guard watchClient.isSupported() else { return }
+                    await watchClient.sendMetricsOptInState(hasAccount, user.metricsOptIn, nil)
+                }
+
+            case .settings(.metricsOptInUpdateResponse(.failure)):
+                let hasAccount = state.settings.hasBackendAccount
+                let optIn = state.settings.metricsOptIn
+                let err = state.settings.metricsOptInError
+                return .run { [watchClient] _ in
+                    guard watchClient.isSupported() else { return }
+                    await watchClient.sendMetricsOptInState(hasAccount, optIn, err)
                 }
 
             case .settings(.dailyReminderToggled), .settings(.dailyReminderTimeChanged):
@@ -1856,7 +1911,13 @@ extension AppFeature {
         from state: State,
         publishContext: Bool
     ) -> Effect<Action> {
-        .run { [watchClient, themeName = state.settings.themeName] _ in
+        .run { [
+            watchClient,
+            themeName = state.settings.themeName,
+            hasAccount = state.settings.hasBackendAccount || state.cachedUser != nil,
+            metricsOptIn = state.settings.hasBackendAccount ? state.settings.metricsOptIn : (state.cachedUser?.metricsOptIn ?? false),
+            metricsOptInError = state.settings.metricsOptInError
+        ] _ in
             guard watchClient.isSupported() else { return }
             let watchState = WatchSessionState(from: state.focus)
             await watchClient.sendSessionState(watchState, publishContext)
@@ -1865,6 +1926,7 @@ extension AppFeature {
             // watch resolves accents without waiting for a separate theme change.
             if publishContext {
                 await watchClient.sendTheme(themeName)
+                await watchClient.sendMetricsOptInState(hasAccount, metricsOptIn, metricsOptInError)
             }
         }
     }
