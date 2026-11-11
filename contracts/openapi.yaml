@@ -63,6 +63,31 @@ tags:
     description: Sincronización multi-dispositivo paginada con reloj LWW (Everywhere+).
 
 paths:
+  /internal/stats:
+    servers:
+      - url: https://api.ppn.creapolis.dev
+        description: Raíz del host (fuera de `/api/v1`).
+    get:
+      operationId: getInternalStats
+      tags: [system]
+      summary: Agregados de uso para el collector de métricas del CRM
+      description: |
+        Solo agregados (contados, minutos), **jamás PII**. Calculado únicamente sobre usuarios con `metricsOptIn = true`.
+        "Activo" = usuario con al menos una sesión de foco iniciada o una tarea modificada en la ventana (7d/30d).
+        Minutos de foco = suma de `elapsedSeconds` de fases no-descanso / 60; descanso = fases `short_break|long_break|break`.
+        Con `METRICS_PEPINILLO_TOKEN` vacío la ruta siempre responde 401 (fail-closed).
+      security:
+        - MetricsToken: []
+      responses:
+        "200":
+          description: Snapshot a "ahora".
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InternalStats"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+
   /health:
     get:
       operationId: getHealth
@@ -2127,6 +2152,10 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
+    MetricsToken:
+      type: http
+      scheme: bearer
+      description: Token opaco configurado en `METRICS_PEPINILLO_TOKEN` (collector CRM).
     WebhookToken:
       type: http
       scheme: bearer
@@ -2484,6 +2513,9 @@ components:
         pepinilloPlusEntitlementAt:
           type: ["string", "null"]
           format: date-time
+        metricsOptIn:
+          type: boolean
+          description: Consentimiento explícito para incluir al usuario en métricas agregadas (`/internal/stats`). Default `false`.
         googleId:
           type: ["string", "null"]
         googleEmail:
@@ -2702,6 +2734,48 @@ components:
         apple:
           $ref: "#/components/schemas/OAuthProvider"
 
+    InternalStats:
+      type: object
+      required: [users, sessions, focusMinutes, breakMinutes, tasks]
+      properties:
+        users:
+          type: object
+          required: [total, new30d, active7d, active30d]
+          properties:
+            total: {type: integer}
+            new30d: {type: integer}
+            active7d: {type: integer}
+            active30d: {type: integer}
+        sessions:
+          $ref: "#/components/schemas/InternalStatsByMode"
+        focusMinutes:
+          $ref: "#/components/schemas/InternalStatsByMode"
+        breakMinutes:
+          type: object
+          required: [total30d]
+          properties:
+            total30d: {type: integer}
+        tasks:
+          type: object
+          required: [created30d, completed30d]
+          properties:
+            created30d: {type: integer}
+            completed30d: {type: integer}
+
+    InternalStatsByMode:
+      type: object
+      required: [total30d, byMode30d]
+      properties:
+        total30d: {type: integer}
+        byMode30d:
+          type: object
+          required: [pomodoro, flowtime, timeblock, stopwatch]
+          properties:
+            pomodoro: {type: integer}
+            flowtime: {type: integer}
+            timeblock: {type: integer}
+            stopwatch: {type: integer}
+
     UpdateUserRequest:
       type: object
       properties:
@@ -2711,6 +2785,9 @@ components:
         imageUrl:
           type: string
           maxLength: 2048
+        metricsOptIn:
+          type: boolean
+          description: Opt-in/out de métricas de uso agregadas. Si se omite, no cambia.
 
     VerifyReceiptInput:
       type: object
