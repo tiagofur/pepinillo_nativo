@@ -75,6 +75,7 @@ data class UserDto(
     val subscriptionExpiresAt: String? = null,
     val emailVerified: Boolean = false,
     val aiCreditsBalance: Int = 0,
+    val metricsOptIn: Boolean = false,
     val createdAt: String = "",
     val updatedAt: String = "",
 )
@@ -254,10 +255,15 @@ data class VerifyReceiptResponse(
 
 // ── Profile ──
 
+@OptIn(kotlinx.serialization.ExperimentalSerializationApi::class)
 @Serializable
 data class UpdateProfileRequest(
+    @kotlinx.serialization.EncodeDefault(kotlinx.serialization.EncodeDefault.Mode.NEVER)
     val name: String? = null,
+    @kotlinx.serialization.EncodeDefault(kotlinx.serialization.EncodeDefault.Mode.NEVER)
     val imageUrl: String? = null,
+    @kotlinx.serialization.EncodeDefault(kotlinx.serialization.EncodeDefault.Mode.NEVER)
+    val metricsOptIn: Boolean? = null,
 )
 
 @Serializable

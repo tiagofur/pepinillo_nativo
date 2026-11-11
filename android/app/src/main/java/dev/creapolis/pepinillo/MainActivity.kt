@@ -115,6 +115,13 @@ private const val SYNC_DEBOUNCE_MS = 30_000L
 private const val LIGHT_NAV_SCRIM = 0xE6FFFFFF.toInt()
 private const val DARK_NAV_SCRIM = 0x801B1B1B.toInt()
 
+private data class WearUserSyncPayload(
+    val isPro: Boolean,
+    val sessions: Int,
+    val isLoggedIn: Boolean,
+    val metricsOptIn: Boolean,
+)
+
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
@@ -132,6 +139,7 @@ class MainActivity : ComponentActivity() {
     @Inject lateinit var authStore: AuthStore
     @Inject lateinit var prefsRepository: UserPreferencesRepository
     @Inject lateinit var subscriptionManager: SubscriptionManager
+    @Inject lateinit var userRepository: dev.creapolis.pepinillo.data.repository.UserRepository
     @Inject lateinit var syncStatusManager: dev.creapolis.pepinillo.data.sync.SyncStatusManager
     @Inject lateinit var authExpiredEvent: dev.creapolis.pepinillo.core.network.AuthExpiredEvent
     @Inject lateinit var inAppReviewManager: dev.creapolis.pepinillo.util.InAppReviewManager
@@ -183,16 +191,39 @@ class MainActivity : ComponentActivity() {
 
         ProcessLifecycleOwner.get().lifecycle.addObserver(foregroundSyncObserver)
 
-        // Sync subscription and cycle preferences to Wear OS
+        // Sync subscription, login status, metrics consent, and cycle preferences to Wear OS
+        syncScope.launch {
+            authStore.isLoggedIn.collect { loggedIn ->
+                if (loggedIn) {
+                    runCatching { userRepository.fetchAndCacheProfile() }
+                }
+            }
+        }
         syncScope.launch {
             combine(
                 subscriptionManager.subscriptionState,
-                prefsRepository.preferences
-            ) { subState, prefs ->
-                subState.hasLocalPremium to prefs.sessionsBeforeLongBreak
-            }.collect { (isPro, sessions) ->
-                Log.d("MainActivity", "Syncing user status to Wear: isPro=$isPro, sessions=$sessions")
-                WearDataLayerHelper.pushUserStatus(this@MainActivity, isPro, sessions)
+                prefsRepository.preferences,
+                authStore.isLoggedIn,
+                userRepository.metricsOptIn,
+            ) { subState, prefs, isLoggedIn, metricsOptIn ->
+                 WearUserSyncPayload(
+                    isPro = subState.hasLocalPremium,
+                    sessions = prefs.sessionsBeforeLongBreak,
+                    isLoggedIn = isLoggedIn,
+                    metricsOptIn = if (isLoggedIn) metricsOptIn else false,
+                )
+            }.collect { payload ->
+                Log.d(
+                    "MainActivity",
+                    "Syncing user status to Wear: isPro=${payload.isPro}, sessions=${payload.sessions}, isLoggedIn=${payload.isLoggedIn}, metricsOptIn=${payload.metricsOptIn}",
+                )
+                WearDataLayerHelper.pushUserStatus(
+                    this@MainActivity,
+                    payload.isPro,
+                    payload.sessions,
+                    isLoggedIn = payload.isLoggedIn,
+                    metricsOptIn = payload.metricsOptIn,
+                )
             }
         }
 

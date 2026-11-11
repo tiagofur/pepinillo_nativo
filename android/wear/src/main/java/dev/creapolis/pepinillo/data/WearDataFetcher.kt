@@ -95,8 +95,13 @@ object WearDataFetcher {
 
                         WearDataPaths.PATH_USER -> {
                             val isPro = map.getBoolean("isPro", false)
-                            Log.d(TAG, "User DataItem found, isPro=$isPro")
+                            val isLoggedIn = map.getBoolean("isLoggedIn", false)
+                            val metricsOptIn = map.getBoolean("metricsOptIn", false)
+                            Log.d(TAG, "User DataItem found, isPro=$isPro, isLoggedIn=$isLoggedIn, metricsOptIn=$metricsOptIn")
                             WearDataStore.updateIsPro(isPro)
+                            WearDataStore.updateIsLoggedIn(isLoggedIn)
+                            WearDataStore.updateMetricsOptIn(metricsOptIn)
+                            WearDataStore.updateMetricsOptInError(null)
                         }
 
                         "/pepinillo/theme" -> {

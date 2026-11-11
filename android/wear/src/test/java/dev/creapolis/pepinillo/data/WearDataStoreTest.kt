@@ -16,6 +16,9 @@ class WearDataStoreTest {
         WearDataStore.updateStats(WearStatsState())
         WearDataStore.updatePendingCount(0)
         WearDataStore.updateLastSyncAtMillis(null)
+        WearDataStore.updateIsLoggedIn(false)
+        WearDataStore.updateMetricsOptIn(false)
+        WearDataStore.updateMetricsOptInError(null)
         WearDataStore.resetDiagnostics()
     }
 
@@ -381,5 +384,48 @@ class WearDataStoreTest {
 
         WearDataStore.updateLastSyncAtMillis(null)
         assertNull(WearDataStore.lastSyncAtMillis.value)
+    }
+
+    // ── metricsOptIn & isLoggedIn (S1, S2, S3) ──────────────────────────
+
+    @Test
+    fun `default metricsOptIn and isLoggedIn are false`() {
+        assertFalse(WearDataStore.isLoggedIn.value)
+        assertFalse(WearDataStore.metricsOptIn.value)
+        assertNull(WearDataStore.metricsOptInError.value)
+    }
+
+    @Test
+    fun `metricsOptIn stays false when not logged in and updates when logged in`() {
+        WearDataStore.updateIsLoggedIn(false)
+        WearDataStore.updateMetricsOptIn(true)
+        assertFalse(WearDataStore.metricsOptIn.value)
+
+        assertFalse(WearDataStore.applyOptimisticMetricsOptIn(true))
+        assertFalse(WearDataStore.metricsOptIn.value)
+
+        WearDataStore.updateIsLoggedIn(true)
+        WearDataStore.updateMetricsOptIn(true)
+        assertTrue(WearDataStore.metricsOptIn.value)
+    }
+
+    @Test
+    fun `optimistic metricsOptIn update and revert on failure populates error`() {
+        WearDataStore.updateIsLoggedIn(true)
+        WearDataStore.updateMetricsOptIn(false)
+
+        assertTrue(WearDataStore.applyOptimisticMetricsOptIn(true))
+        assertTrue(WearDataStore.metricsOptIn.value)
+        assertNull(WearDataStore.metricsOptInError.value)
+
+        WearDataStore.revertMetricsOptIn(
+            previous = false,
+            errorMessage = "No se pudo actualizar tu preferencia de privacidad. Inténtalo de nuevo.",
+        )
+        assertFalse(WearDataStore.metricsOptIn.value)
+        assertEquals(
+            "No se pudo actualizar tu preferencia de privacidad. Inténtalo de nuevo.",
+            WearDataStore.metricsOptInError.value,
+        )
     }
 }

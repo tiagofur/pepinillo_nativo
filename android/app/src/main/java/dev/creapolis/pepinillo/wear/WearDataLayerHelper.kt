@@ -44,6 +44,8 @@ object WearDataLayerHelper {
     const val CMD_TASK_LINK = "/pepinillo/cmd/task/link"
     const val CMD_TASK_UNLINK = "/pepinillo/cmd/task/unlink"
     const val CMD_REQUEST_SYNC = "/pepinillo/cmd/request_sync"
+    const val PATH_CMD_SET_METRICS_OPT_IN = "/pepinillo/cmd/set_metrics_opt_in"
+    const val CMD_SET_METRICS_OPT_IN = PATH_CMD_SET_METRICS_OPT_IN
 
     /**
      * Dedicated scope for put-item retries so the work (and its recursive
@@ -179,15 +181,31 @@ object WearDataLayerHelper {
         }
     }
 
-    fun pushUserStatus(context: Context, isPro: Boolean, sessionsBeforeLongBreak: Int = 4) {
-        val appContext = context.applicationContext
-        val request = PutDataMapRequest.create(PATH_USER).apply {
-            dataMap.putBoolean("isPro", isPro)
-            dataMap.putInt("sessionsBeforeLongBreak", sessionsBeforeLongBreak)
-            dataMap.putLong("timestamp", System.currentTimeMillis())
-        }.asPutDataRequest().setUrgent()
+    fun pushUserStatus(
+        context: Context,
+        isPro: Boolean,
+        sessionsBeforeLongBreak: Int = 4,
+        isLoggedIn: Boolean = false,
+        metricsOptIn: Boolean = false,
+    ) {
+        val appContext = context.applicationContext ?: return
+        try {
+            val request = PutDataMapRequest.create(PATH_USER).apply {
+                dataMap.putBoolean("isPro", isPro)
+                dataMap.putInt("sessionsBeforeLongBreak", sessionsBeforeLongBreak)
+                dataMap.putBoolean("isLoggedIn", isLoggedIn)
+                dataMap.putBoolean("metricsOptIn", if (isLoggedIn) metricsOptIn else false)
+                dataMap.putLong("timestamp", System.currentTimeMillis())
+            }.asPutDataRequest().setUrgent()
 
-        putWithRetry(appContext, request, "pushUserStatus(isPro=$isPro, sessions=$sessionsBeforeLongBreak)")
+            putWithRetry(
+                appContext,
+                request,
+                "pushUserStatus(isPro=$isPro, sessions=$sessionsBeforeLongBreak, isLoggedIn=$isLoggedIn, metricsOptIn=$metricsOptIn)",
+            )
+        } catch (e: Exception) {
+            // Silently fail in non-Wearable / unit test environments
+        }
     }
 
     /**
@@ -202,7 +220,7 @@ object WearDataLayerHelper {
         tag: String,
         maxRetries: Int = DEFAULT_PUT_RETRIES,
     ) {
-        val appContext = context.applicationContext
+        val appContext = context.applicationContext ?: return
         wearIoScope.launch {
             var attempt = 0
             while (true) {
@@ -212,10 +230,10 @@ object WearDataLayerHelper {
                 } catch (e: Exception) {
                     attempt++
                     if (attempt > maxRetries) {
-                        Log.e(TAG, "$tag failed after $maxRetries retries", e)
+                        runCatching { Log.e(TAG, "$tag failed after $maxRetries retries", e) }
                         return@launch
                     }
-                    Log.w(TAG, "$tag failed, retrying ($attempt/$maxRetries)", e)
+                    runCatching { Log.w(TAG, "$tag failed, retrying ($attempt/$maxRetries)", e) }
                     delay(PUT_RETRY_DELAY_MS)
                 }
             }

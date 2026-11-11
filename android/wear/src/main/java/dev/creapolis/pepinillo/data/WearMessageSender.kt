@@ -27,6 +27,8 @@ object WearDataPaths {
     const val CMD_TASK_LINK = "/pepinillo/cmd/task/link"
     const val CMD_TASK_UNLINK = "/pepinillo/cmd/task/unlink"
     const val CMD_REQUEST_SYNC = "/pepinillo/cmd/request_sync"
+    const val PATH_CMD_SET_METRICS_OPT_IN = "/pepinillo/cmd/set_metrics_opt_in"
+    const val CMD_SET_METRICS_OPT_IN = PATH_CMD_SET_METRICS_OPT_IN
 }
 
 class WearMessageSender(private val context: Context) {
@@ -145,4 +147,34 @@ class WearMessageSender(private val context: Context) {
 
     suspend fun unlinkTask(): Boolean =
         sendCommand(CMD_TASK_UNLINK)
+
+    suspend fun sendSetMetricsOptIn(enabled: Boolean): Boolean {
+        val previous = WearDataStore.metricsOptIn.value
+        if (!WearDataStore.applyOptimisticMetricsOptIn(enabled)) {
+            return false
+        }
+        val payload = enabled.toString().toByteArray(StandardCharsets.UTF_8)
+        val delivered = runCatching {
+            val nodes = Wearable.getNodeClient(context).connectedNodes.await()
+            if (nodes.isEmpty()) {
+                false
+            } else {
+                var successCount = 0
+                nodes.forEach { node ->
+                    val sent = runCatching {
+                        Wearable.getMessageClient(context)
+                            .sendMessage(node.id, WearDataPaths.PATH_CMD_SET_METRICS_OPT_IN, payload)
+                            .await()
+                    }.isSuccess
+                    if (sent) successCount += 1
+                }
+                successCount > 0
+            }
+        }.getOrDefault(false)
+
+        if (!delivered) {
+            WearDataStore.revertMetricsOptIn(previous)
+        }
+        return delivered
+    }
 }

@@ -100,6 +100,11 @@ import dev.creapolis.pepinillo.ui.theme.ThemeMode
 
 private const val PRIVACY_POLICY_URL = "https://creapolis.dev/privacy-policy/"
 private const val TERMS_OF_USE_URL = "https://creapolis.dev/terms-of-use/"
+private const val PRIVACY_SECTION_TITLE = "Privacidad"
+private const val METRICS_OPT_IN_TITLE = "Compartir métricas anónimas"
+private const val METRICS_OPT_IN_CONSENT_COPY =
+    "Comparte métricas de uso anónimas y agregadas para mejorar Pepinillo: cuántas sesiones de enfoque se completan y en qué modos, minutos totales de enfoque y descanso, y tareas creadas y completadas. Nunca se comparte el contenido de tus tareas, tus horarios individuales ni ningún dato identificable. Puedes cambiarlo cuando quieras."
+private const val METRICS_OPT_IN_REQUIRES_ACCOUNT_HINT = "Requiere cuenta con sincronización"
 
 @OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -125,7 +130,12 @@ fun SettingsScreen(
         val batteryOk = pm.isIgnoringBatteryOptimizations(context.packageName)
         hasPermissionIssues = !notificationsOk || !batteryOk
     }
-    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { checkPermissions() }
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+        checkPermissions()
+        if (uiState.isLoggedIn) {
+            viewModel.refreshMetricsOptIn()
+        }
+    }
 
     Column(
         modifier = modifier
@@ -814,6 +824,17 @@ fun SettingsScreen(
 
         Spacer(modifier = Modifier.height(28.dp))
 
+        // ── PRIVACY SECTION ──
+        SectionHeader(icon = Icons.Rounded.Lock, title = PRIVACY_SECTION_TITLE)
+        Spacer(modifier = Modifier.height(12.dp))
+
+        PrivacyConsentSection(
+            uiState = uiState,
+            onToggleMetricsOptIn = viewModel::setMetricsOptIn,
+        )
+
+        Spacer(modifier = Modifier.height(28.dp))
+
         SectionHeader(icon = Icons.Rounded.Security, title = stringResource(R.string.settings_sec_operation))
         Spacer(modifier = Modifier.height(12.dp))
 
@@ -858,6 +879,87 @@ fun SettingsScreen(
 }
 
 // ── Reusable components ──
+
+@Composable
+private fun PrivacyConsentSection(
+    uiState: SettingsUiState,
+    onToggleMetricsOptIn: (Boolean) -> Unit,
+) {
+    val toggleEnabled = uiState.isLoggedIn && !uiState.isUpdatingMetricsOptIn
+    val isChecked = if (uiState.isLoggedIn) uiState.metricsOptIn else false
+
+    SettingsCard {
+        Column(modifier = Modifier.padding(vertical = 12.dp)) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(enabled = toggleEnabled) { onToggleMetricsOptIn(!isChecked) },
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = METRICS_OPT_IN_TITLE,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = if (uiState.isLoggedIn) {
+                        MaterialTheme.colorScheme.onSurface
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    },
+                    modifier = Modifier.weight(1f),
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Switch(
+                    checked = isChecked,
+                    onCheckedChange = { onToggleMetricsOptIn(it) },
+                    enabled = toggleEnabled,
+                    colors = SwitchDefaults.colors(
+                        checkedTrackColor = MaterialTheme.colorScheme.primary,
+                        checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
+                    ),
+                )
+            }
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = METRICS_OPT_IN_CONSENT_COPY,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            if (!uiState.isLoggedIn) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Rounded.Lock,
+                        contentDescription = null,
+                        modifier = Modifier.size(14.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = METRICS_OPT_IN_REQUIRES_ACCOUNT_HINT,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+            uiState.metricsOptInError?.let { errorMsg ->
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Rounded.Warning,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp),
+                        tint = MaterialTheme.colorScheme.error,
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = errorMsg,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
+            }
+        }
+    }
+}
 
 @Composable
 private fun StepperRow(

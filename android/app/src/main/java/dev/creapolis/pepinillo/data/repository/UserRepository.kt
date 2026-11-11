@@ -8,6 +8,9 @@ import dev.creapolis.pepinillo.core.network.UserDto
 import dev.creapolis.pepinillo.data.local.dao.UserDao
 import dev.creapolis.pepinillo.data.local.entity.UserEntity
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flowOf
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -18,6 +21,9 @@ class UserRepository @Inject constructor(
     private val apiClient: PepinilloApiClient,
     private val authStore: AuthStore,
 ) {
+    private val _metricsOptIn = MutableStateFlow(false)
+    val metricsOptIn: StateFlow<Boolean> = _metricsOptIn.asStateFlow()
+
     fun observeCachedUser(): Flow<UserEntity?> {
         val userId = authStore.getUserId() ?: return flowOf(null)
         return userDao.observeById(userId)
@@ -31,6 +37,7 @@ class UserRepository @Inject constructor(
     suspend fun fetchAndCacheProfile(): Result<UserEntity> {
         return when (val result = apiClient.getMe()) {
             is NetworkResult.Success -> {
+                _metricsOptIn.value = result.data.metricsOptIn
                 val entity = result.data.toEntity()
                 userDao.upsert(entity)
                 authStore.saveUser(entity.id, entity.name, entity.email)
@@ -46,6 +53,7 @@ class UserRepository @Inject constructor(
     suspend fun updateProfile(request: UpdateProfileRequest): Result<UserEntity> {
         return when (val result = apiClient.updateMe(request)) {
             is NetworkResult.Success -> {
+                _metricsOptIn.value = result.data.metricsOptIn
                 val entity = result.data.toEntity()
                 userDao.upsert(entity)
                 authStore.saveUser(entity.id, entity.name, entity.email)
@@ -59,11 +67,13 @@ class UserRepository @Inject constructor(
     }
 
     suspend fun cacheUserFromDto(dto: UserDto) {
+        _metricsOptIn.value = dto.metricsOptIn
         val entity = dto.toEntity()
         userDao.upsert(entity)
     }
 
     suspend fun clearCache() {
+        _metricsOptIn.value = false
         userDao.deleteAll()
     }
 

@@ -13,6 +13,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
@@ -27,6 +29,7 @@ import androidx.wear.compose.material3.ScreenScaffold
 import androidx.wear.compose.material3.TimeText
 import dev.creapolis.pepinillo.data.WearDataFetcher
 import dev.creapolis.pepinillo.data.WearDataStore
+import dev.creapolis.pepinillo.data.WearMessageSender
 import dev.creapolis.pepinillo.data.WearSnapshotStore
 import dev.creapolis.pepinillo.data.WearSyncStatusFormatter
 import dev.creapolis.pepinillo.viewmodel.WearViewModel
@@ -106,12 +109,17 @@ private fun WearApp(viewModel: WearViewModel, isAmbient: Boolean = false) {
     val tasks by viewModel.tasks.collectAsStateWithLifecycle()
     val stats by viewModel.stats.collectAsStateWithLifecycle()
     val isPro by viewModel.isPro.collectAsStateWithLifecycle()
+    val isLoggedIn by WearDataStore.isLoggedIn.collectAsStateWithLifecycle()
+    val metricsOptIn by WearDataStore.metricsOptIn.collectAsStateWithLifecycle()
+    val metricsOptInError by WearDataStore.metricsOptInError.collectAsStateWithLifecycle()
     val pendingCommandCount by viewModel.pendingCommandCount.collectAsStateWithLifecycle()
     val lastSyncAtMillis by viewModel.lastSyncAtMillis.collectAsStateWithLifecycle()
     val diagnostics by viewModel.diagnostics.collectAsStateWithLifecycle()
 
     val pagerState = rememberPagerState(initialPage = 1, pageCount = { TOTAL_PAGES })
     val context = androidx.compose.ui.platform.LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    val messageSender = remember(context) { WearMessageSender(context.applicationContext) }
     val syncStatus = WearSyncStatusFormatter.format(
         context = context,
         lastSyncAtMillis = lastSyncAtMillis,
@@ -177,6 +185,14 @@ private fun WearApp(viewModel: WearViewModel, isAmbient: Boolean = false) {
                             isSyncStale = syncStatus.isStale,
                             diagnostics = diagnostics,
                             isActive = page == pagerState.settledPage,
+                            isLoggedIn = isLoggedIn,
+                            metricsOptIn = metricsOptIn,
+                            metricsOptInError = metricsOptInError,
+                            onToggleMetricsOptIn = { enabled ->
+                                coroutineScope.launch(Dispatchers.IO) {
+                                    messageSender.sendSetMetricsOptIn(enabled)
+                                }
+                            },
                         )
                     }
                 }
