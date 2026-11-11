@@ -69,3 +69,46 @@ func TestUserHandler_UpdateMe_CapsNameLength(t *testing.T) {
 		t.Fatalf("expected %d, got %d", http.StatusBadRequest, resp.StatusCode)
 	}
 }
+
+// S3: metricsOptIn persists, survives unrelated updates, and omitting it never
+// changes consent.
+func TestUserHandler_UpdateMe_MetricsOptIn(t *testing.T) {
+	users := newFakeUserRepository()
+	_ = users.Create(t.Context(), &domain.User{ID: "user-1", Email: "a@example.com", Name: "A"})
+	app := fiber.New()
+	app.Use(func(c *fiber.Ctx) error {
+		c.Locals("userID", "user-1")
+		return c.Next()
+	})
+	app.Put("/users/me", NewUserHandler(users, nil).UpdateMe)
+
+	put := func(body string) {
+		t.Helper()
+		req := httptest.NewRequest(http.MethodPut, "/users/me", bytes.NewBufferString(body))
+		req.Header.Set("Content-Type", "application/json")
+		resp, err := app.Test(req)
+		if err != nil || resp.StatusCode != http.StatusOK {
+			t.Fatalf("PUT %s: status=%v err=%v", body, resp, err)
+		}
+	}
+	optIn := func() bool {
+		u, _ := users.GetByID(t.Context(), "user-1")
+		return u.MetricsOptIn
+	}
+
+	if optIn() {
+		t.Fatal("default must be opted out")
+	}
+	put(`{"metricsOptIn":true}`)
+	if !optIn() {
+		t.Fatal("opt-in not persisted")
+	}
+	put(`{"name":"Renamed"}`)
+	if !optIn() {
+		t.Fatal("unrelated update must not clear consent")
+	}
+	put(`{"metricsOptIn":false}`)
+	if optIn() {
+		t.Fatal("opt-out not persisted")
+	}
+}

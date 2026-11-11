@@ -45,7 +45,13 @@ func TestInternalStatsEndpoint(t *testing.T) {
 	if got := do("Bearer wrong").StatusCode; got != 401 {
 		t.Fatalf("wrong token status = %d, want 401", got)
 	}
+	if got := do("").StatusCode; got != 401 {
+		t.Fatalf("missing header status = %d, want 401", got)
+	}
 	resp := do("Bearer tok")
+	if cc := resp.Header.Get("Cache-Control"); cc != "no-store" {
+		t.Fatalf("Cache-Control = %q, want no-store", cc)
+	}
 	if resp.StatusCode != 200 {
 		t.Fatalf("status = %d, want 200", resp.StatusCode)
 	}
@@ -67,5 +73,16 @@ func TestInternalStatsEndpoint(t *testing.T) {
 	}
 	if _, ok := body["sessions"]["byMode30d"].(map[string]any)["stopwatch"]; !ok {
 		t.Fatalf("byMode30d must list all four modes: %s", raw)
+	}
+}
+
+func TestInternalStatsEndpoint_EmptyTokenFailsClosed(t *testing.T) {
+	app := fiber.New()
+	RegisterInternalRoutes(app, NewInternalStatsHandler(stubStatsRepo{}), "")
+	req := httptest.NewRequest(http.MethodGet, "/internal/stats", nil)
+	req.Header.Set("Authorization", "Bearer ")
+	resp, err := app.Test(req)
+	if err != nil || resp.StatusCode != 401 {
+		t.Fatalf("status=%v err=%v, want 401", resp, err)
 	}
 }

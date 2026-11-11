@@ -173,7 +173,7 @@ func Load() (*Config, error) {
 		AlertMuteStartHourUTC:                  getEnvInt64("ALERT_MUTE_START_HOUR_UTC", 0),
 		AlertMuteEndHourUTC:                    getEnvInt64("ALERT_MUTE_END_HOUR_UTC", 0),
 		GoogleClientIDs:                        getEnv("GOOGLE_CLIENT_IDS", ""),
-		MetricsPepinilloToken:                  getEnv("METRICS_PEPINILLO_TOKEN", ""),
+		MetricsPepinilloToken:                  strings.TrimSpace(getEnv("METRICS_PEPINILLO_TOKEN", "")),
 		AppleBundleID:                          getEnv("APPLE_BUNDLE_ID", ""),
 		AppleTeamID:                            getEnv("APPLE_TEAM_ID", ""),
 		AppleKeyID:                             getEnv("APPLE_KEY_ID", ""),

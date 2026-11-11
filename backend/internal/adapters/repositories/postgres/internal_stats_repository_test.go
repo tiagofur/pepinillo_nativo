@@ -26,6 +26,12 @@ func TestInternalStatsRepository_ConsentAndAggregates(t *testing.T) {
 	t.Cleanup(func() { db.Exec("DELETE FROM users WHERE id IN ?", ids) })
 	db.Exec("DELETE FROM users WHERE id IN ?", ids)
 
+	repo := NewInternalStatsRepository(db)
+	before, err := repo.Compute(context.Background(), now)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	ago := func(days int) time.Time { return now.AddDate(0, 0, -days) }
 	mustExec := func(sql string, args ...any) {
 		t.Helper()
@@ -50,25 +56,31 @@ func TestInternalStatsRepository_ConsentAndAggregates(t *testing.T) {
 		ids[0], ago(3), ago(1), ago(1), ids[0], ago(60), ago(60), ids[2], ago(1), ago(1), ago(1))
 	t.Cleanup(func() { db.Exec("DELETE FROM tasks WHERE sync_id LIKE 'st-t%'") })
 
-	got, err := NewInternalStatsRepository(db).Compute(context.Background(), now)
+	after, err := repo.Compute(context.Background(), now)
 	if err != nil {
 		t.Fatal(err)
 	}
-	// Other opted-in rows may exist in the DB, so assert lower bounds on users and exact on mode splits via deltas.
-	if got.Users.Total < 2 || got.Users.New30d < 1 || got.Users.Active7d < 1 || got.Users.Active30d < 2 {
-		t.Fatalf("users: %+v", got.Users)
+
+	// Exact deltas vs. the pre-insert snapshot (robust on a populated DB).
+	// Non-consenting user a3 (9999s of work, a task, a new account) must add nothing.
+	check := func(name string, got, want int64) {
+		t.Helper()
+		if got != want {
+			t.Errorf("%s delta = %d, want %d", name, got, want)
+		}
 	}
-	if got.Sessions.ByMode30d["pomodoro"] < 1 || got.Sessions.ByMode30d["flowtime"] < 1 {
-		t.Fatalf("sessions: %+v", got.Sessions)
-	}
-	if got.FocusMinutes.ByMode30d["pomodoro"] < 25 || got.FocusMinutes.ByMode30d["flowtime"] < 60 {
-		t.Fatalf("focus minutes: %+v", got.FocusMinutes)
-	}
-	if got.BreakMinutes.Total30d < 5 || got.Tasks.Created30d < 1 || got.Tasks.Completed30d < 1 {
-		t.Fatalf("break/tasks: %+v %+v", got.BreakMinutes, got.Tasks)
-	}
-	// Exact check on an empty-of-others DB: consent exclusion (a3's 9999s must not appear).
-	if got.FocusMinutes.ByMode30d["pomodoro"] >= 25+166 {
-		t.Fatalf("non-consenting user leaked into aggregates: %+v", got.FocusMinutes)
-	}
+	check("users.total", after.Users.Total-before.Users.Total, 2)
+	check("users.new30d", after.Users.New30d-before.Users.New30d, 1)
+	check("users.active7d", after.Users.Active7d-before.Users.Active7d, 1)
+	check("users.active30d", after.Users.Active30d-before.Users.Active30d, 2)
+	check("sessions.total30d", after.Sessions.Total30d-before.Sessions.Total30d, 2)
+	check("sessions.pomodoro", after.Sessions.ByMode30d["pomodoro"]-before.Sessions.ByMode30d["pomodoro"], 1)
+	check("sessions.flowtime", after.Sessions.ByMode30d["flowtime"]-before.Sessions.ByMode30d["flowtime"], 1)
+	check("sessions.stopwatch", after.Sessions.ByMode30d["stopwatch"]-before.Sessions.ByMode30d["stopwatch"], 0)
+	check("focusMinutes.total30d", after.FocusMinutes.Total30d-before.FocusMinutes.Total30d, 85)
+	check("focusMinutes.pomodoro", after.FocusMinutes.ByMode30d["pomodoro"]-before.FocusMinutes.ByMode30d["pomodoro"], 25)
+	check("focusMinutes.flowtime", after.FocusMinutes.ByMode30d["flowtime"]-before.FocusMinutes.ByMode30d["flowtime"], 60)
+	check("breakMinutes.total30d", after.BreakMinutes.Total30d-before.BreakMinutes.Total30d, 5)
+	check("tasks.created30d", after.Tasks.Created30d-before.Tasks.Created30d, 1)
+	check("tasks.completed30d", after.Tasks.Completed30d-before.Tasks.Completed30d, 1)
 }
