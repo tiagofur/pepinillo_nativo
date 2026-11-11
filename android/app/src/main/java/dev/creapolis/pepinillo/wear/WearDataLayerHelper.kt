@@ -187,6 +187,7 @@ object WearDataLayerHelper {
         sessionsBeforeLongBreak: Int = 4,
         isLoggedIn: Boolean = false,
         metricsOptIn: Boolean = false,
+        metricsOptInError: String? = null,
     ) {
         val appContext = context.applicationContext ?: return
         try {
@@ -195,13 +196,16 @@ object WearDataLayerHelper {
                 dataMap.putInt("sessionsBeforeLongBreak", sessionsBeforeLongBreak)
                 dataMap.putBoolean("isLoggedIn", isLoggedIn)
                 dataMap.putBoolean("metricsOptIn", if (isLoggedIn) metricsOptIn else false)
+                if (metricsOptInError != null) {
+                    dataMap.putString("metricsOptInError", metricsOptInError)
+                }
                 dataMap.putLong("timestamp", System.currentTimeMillis())
             }.asPutDataRequest().setUrgent()
 
             putWithRetry(
                 appContext,
                 request,
-                "pushUserStatus(isPro=$isPro, sessions=$sessionsBeforeLongBreak, isLoggedIn=$isLoggedIn, metricsOptIn=$metricsOptIn)",
+                "pushUserStatus(isPro=$isPro, sessions=$sessionsBeforeLongBreak, isLoggedIn=$isLoggedIn, metricsOptIn=$metricsOptIn, error=$metricsOptInError)",
             )
         } catch (e: Exception) {
             // Silently fail in non-Wearable / unit test environments

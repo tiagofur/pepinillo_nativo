@@ -150,6 +150,15 @@ class SettingsViewModel @Inject constructor(
             }
         }
 
+        // Keep _metricsOptIn synchronized when UserRepository.metricsOptIn updates (e.g. from Wear OS)
+        viewModelScope.launch {
+            userRepository.metricsOptIn.collect { repoOptIn ->
+                if (!_isUpdatingMetricsOptIn.value && uiState.value.isLoggedIn) {
+                    _metricsOptIn.value = repoOptIn
+                }
+            }
+        }
+
         // Load real server metricsOptIn when logged in; reset to OFF when logged out
         viewModelScope.launch {
             authStore.isLoggedIn.collect { loggedIn ->

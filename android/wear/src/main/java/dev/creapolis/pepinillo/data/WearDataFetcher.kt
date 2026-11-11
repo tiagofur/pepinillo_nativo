@@ -97,11 +97,12 @@ object WearDataFetcher {
                             val isPro = map.getBoolean("isPro", false)
                             val isLoggedIn = map.getBoolean("isLoggedIn", false)
                             val metricsOptIn = map.getBoolean("metricsOptIn", false)
-                            Log.d(TAG, "User DataItem found, isPro=$isPro, isLoggedIn=$isLoggedIn, metricsOptIn=$metricsOptIn")
+                            val metricsOptInError = map.getString("metricsOptInError")
+                            Log.d(TAG, "User DataItem found, isPro=$isPro, isLoggedIn=$isLoggedIn, metricsOptIn=$metricsOptIn, error=$metricsOptInError")
                             WearDataStore.updateIsPro(isPro)
                             WearDataStore.updateIsLoggedIn(isLoggedIn)
                             WearDataStore.updateMetricsOptIn(metricsOptIn)
-                            WearDataStore.updateMetricsOptInError(null)
+                            WearDataStore.updateMetricsOptInError(metricsOptInError)
                         }
 
                         "/pepinillo/theme" -> {

@@ -428,4 +428,28 @@ class WearDataStoreTest {
             WearDataStore.metricsOptInError.value,
         )
     }
+
+    @Test
+    fun `remote PATH_USER update propagates phone-side failure error and clears on next success`() {
+        WearDataStore.updateIsLoggedIn(true)
+        WearDataStore.applyOptimisticMetricsOptIn(true)
+        assertTrue(WearDataStore.metricsOptIn.value)
+
+        // Simulate PATH_USER arriving after phone PUT /users/me failed
+        WearDataStore.updateIsLoggedIn(true)
+        WearDataStore.updateMetricsOptIn(false)
+        WearDataStore.updateMetricsOptInError("No se pudo actualizar tu preferencia de privacidad. Inténtalo de nuevo.")
+
+        assertFalse(WearDataStore.metricsOptIn.value)
+        assertEquals(
+            "No se pudo actualizar tu preferencia de privacidad. Inténtalo de nuevo.",
+            WearDataStore.metricsOptInError.value,
+        )
+
+        // Subsequent successful PATH_USER clears the error
+        WearDataStore.updateMetricsOptIn(true)
+        WearDataStore.updateMetricsOptInError(null)
+        assertTrue(WearDataStore.metricsOptIn.value)
+        assertNull(WearDataStore.metricsOptInError.value)
+    }
 }

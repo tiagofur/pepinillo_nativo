@@ -208,9 +208,10 @@ class WearSyncListenerService : WearableListenerService() {
                     val sessions = dataMap.getInt("sessionsBeforeLongBreak", 4)
                     val isLoggedIn = dataMap.getBoolean("isLoggedIn", false)
                     val metricsOptIn = dataMap.getBoolean("metricsOptIn", false)
+                    val metricsOptInError = dataMap.getString("metricsOptInError")
                     Log.d(
                         TAG,
-                        "User DataItem changed, isPro=$isPro, sessions=$sessions, isLoggedIn=$isLoggedIn, metricsOptIn=$metricsOptIn",
+                        "User DataItem changed, isPro=$isPro, sessions=$sessions, isLoggedIn=$isLoggedIn, metricsOptIn=$metricsOptIn, error=$metricsOptInError",
                     )
 
                     val currentTimer = WearDataStore.timerState.value
@@ -223,7 +224,7 @@ class WearSyncListenerService : WearableListenerService() {
                     WearDataStore.updateIsPro(isPro)
                     WearDataStore.updateIsLoggedIn(isLoggedIn)
                     WearDataStore.updateMetricsOptIn(metricsOptIn)
-                    WearDataStore.updateMetricsOptInError(null)
+                    WearDataStore.updateMetricsOptInError(metricsOptInError)
                     WearSnapshotStore.persistIsPro(this@WearSyncListenerService, isPro)
                 }
 

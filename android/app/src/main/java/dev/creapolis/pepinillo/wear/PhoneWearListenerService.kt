@@ -217,6 +217,7 @@ class PhoneWearListenerService : WearableListenerService() {
                             sessions,
                             isLoggedIn = false,
                             metricsOptIn = false,
+                            metricsOptInError = "Requiere cuenta con sincronización",
                         )
                         return@launch
                     }
@@ -229,6 +230,7 @@ class PhoneWearListenerService : WearableListenerService() {
                                 sessions,
                                 isLoggedIn = true,
                                 metricsOptIn = userRepository.metricsOptIn.value,
+                                metricsOptInError = null,
                             )
                         }
                         .onFailure { e ->
@@ -239,6 +241,7 @@ class PhoneWearListenerService : WearableListenerService() {
                                 sessions,
                                 isLoggedIn = true,
                                 metricsOptIn = previousOptIn,
+                                metricsOptInError = "No se pudo actualizar tu preferencia de privacidad. Inténtalo de nuevo.",
                             )
                         }
                 }

@@ -298,8 +298,7 @@ struct SettingsFeature {
                     if let user = try? await apiClient.getMe() {
                         await send(.metricsOptInLoaded(hasAccount: true, metricsOptIn: user.metricsOptIn))
                     } else {
-                        let cached = try? await persistence.fetchCachedUser()
-                        await send(.metricsOptInLoaded(hasAccount: true, metricsOptIn: cached?.metricsOptIn ?? currentOptIn))
+                        await send(.metricsOptInLoaded(hasAccount: true, metricsOptIn: currentOptIn))
                     }
                 }
 

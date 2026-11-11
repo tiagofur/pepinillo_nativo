@@ -871,6 +871,9 @@ struct AppFeature {
             case .cachedUserLoaded(let user):
                 state.cachedUser = user
                 if let user {
+                    state.settings.hasBackendAccount = true
+                    state.settings.metricsOptIn = user.metricsOptIn
+                    state.settings.metricsOptInError = nil
                     let normalizedName = user.name.trimmingCharacters(in: .whitespacesAndNewlines)
                     let normalizedEmail = user.email.trimmingCharacters(in: .whitespacesAndNewlines)
                     let currentDisplayName = state.displayName?.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -906,6 +909,9 @@ struct AppFeature {
                 state.cachedUser = user
                 state.displayName = user.name
                 state.userEmail = user.email
+                state.settings.hasBackendAccount = true
+                state.settings.metricsOptIn = user.metricsOptIn
+                state.settings.metricsOptInError = nil
                 state.auth = nil  // dismiss auth sheet
                 // Reload the task list: the account-only auth path runs
                 // syncClient.wipeAndSync() (deleteAllTasks) before delegating here,
@@ -915,7 +921,11 @@ struct AppFeature {
                 // so capabilities after RevenueCat logIn are authoritative (#217).
                 return .merge(
                     .send(.tasks(.refresh)),
-                    linkSubscriptionIdentity(user.id)
+                    linkSubscriptionIdentity(user.id),
+                    .run { [watchClient] _ in
+                        guard watchClient.isSupported() else { return }
+                        await watchClient.sendMetricsOptInState(true, user.metricsOptIn, nil)
+                    }
                 )
 
             case .auth(.presented(.delegate(.emailVerificationRequired(let email)))):
@@ -927,9 +937,18 @@ struct AppFeature {
                 state.cachedUser = user
                 state.displayName = user.name
                 state.userEmail = user.email
+                state.settings.hasBackendAccount = true
+                state.settings.metricsOptIn = user.metricsOptIn
+                state.settings.metricsOptInError = nil
                 state.emailVerification = nil  // dismiss verification sheet
                 // Sequential identity: logIn result drives soft-sync via applySubscriptionUpdate (#217).
-                return linkSubscriptionIdentity(user.id)
+                return .merge(
+                    linkSubscriptionIdentity(user.id),
+                    .run { [watchClient] _ in
+                        guard watchClient.isSupported() else { return }
+                        await watchClient.sendMetricsOptInState(true, user.metricsOptIn, nil)
+                    }
+                )
 
             case .emailVerification(.presented(.delegate(.signOutRequested))):
                 // User tapped the escape hatch on the verification sheet. Clear the
@@ -1239,29 +1258,15 @@ struct AppFeature {
                     let task = state.tasks.tasks.first(where: { $0.id == id })
                     return .send(.focus(.linkTask(id, task?.title, task?.energyLevel.icon)))
                 case .setMetricsOptIn(let enabled):
-                    let previousValue = state.settings.metricsOptIn
-                    state.settings.metricsOptIn = enabled
-                    state.settings.metricsOptInError = nil
-                    return .run { [apiClient, keychain, persistence, watchClient] send in
-                        guard await keychain.hasTokens() else {
-                            await send(.settings(.metricsOptInLoaded(hasAccount: false, metricsOptIn: false)))
+                    let hasAccount = state.settings.hasBackendAccount || state.cachedUser != nil
+                    guard hasAccount else {
+                        return .run { [watchClient] _ in
+                            guard watchClient.isSupported() else { return }
                             await watchClient.sendMetricsOptInState(false, false, "Requiere cuenta con sincronización")
-                            return
-                        }
-                        do {
-                            let updatedUser = try await apiClient.updateMe(UpdateProfileRequest(metricsOptIn: enabled))
-                            if var cached = try? await persistence.fetchCachedUser() {
-                                cached.metricsOptIn = updatedUser.metricsOptIn
-                                try? await persistence.saveCachedUser(cached)
-                            }
-                            await send(.settings(.metricsOptInLoaded(hasAccount: true, metricsOptIn: updatedUser.metricsOptIn)))
-                            await watchClient.sendMetricsOptInState(true, updatedUser.metricsOptIn, nil)
-                        } catch {
-                            let errorMsg = "No se pudo guardar tu preferencia de privacidad. Inténtalo de nuevo."
-                            await send(.settings(.metricsOptInLoaded(hasAccount: true, metricsOptIn: previousValue)))
-                            await watchClient.sendMetricsOptInState(true, previousValue, errorMsg)
                         }
                     }
+                    state.settings.hasBackendAccount = true
+                    return .send(.settings(.setMetricsOptIn(enabled)))
                 case .unlinkTask:
                     return .send(.focus(.linkTask(nil, nil, nil)))
                 case .setTaskCompleted(let idStr, let isCompleted):
@@ -1813,9 +1818,16 @@ struct AppFeature {
         state.appleUserID = nil
         state.displayName = nil
         state.userEmail = nil
+        state.settings.hasBackendAccount = false
+        state.settings.metricsOptIn = false
+        state.settings.isUpdatingMetricsOptIn = false
+        state.settings.metricsOptInError = nil
         if dismissProfile { state.profile = nil }
         webSocketClient.disconnect()
-        return .run { [keychain, apiClient, persistence, subscriptionClient, spotlightClient] _ in
+        return .run { [keychain, apiClient, persistence, subscriptionClient, spotlightClient, watchClient] _ in
+            if watchClient.isSupported() {
+                await watchClient.sendMetricsOptInState(false, false, nil)
+            }
             if notifyBackendLogout, let refreshToken = await keychain.loadRefreshToken() {
                 try? await apiClient.logout(LogoutRequest(refreshToken: refreshToken))
             }
