@@ -432,6 +432,7 @@ func main() {
 
 	api := app.Group("/api/v1")
 	handlers.RegisterAPIRoutes(api, routeDeps)
+	handlers.RegisterInternalRoutes(app, handlers.NewInternalStatsHandler(postgres.NewInternalStatsRepository(db)), cfg.MetricsPepinilloToken)
 
 	slog.Info("Pepinillo API listening", "port", cfg.Port)
 	go func() {
