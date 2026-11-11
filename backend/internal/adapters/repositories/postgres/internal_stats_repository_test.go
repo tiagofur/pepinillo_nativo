@@ -83,4 +83,37 @@ func TestInternalStatsRepository_ConsentAndAggregates(t *testing.T) {
 	check("breakMinutes.total30d", after.BreakMinutes.Total30d-before.BreakMinutes.Total30d, 5)
 	check("tasks.created30d", after.Tasks.Created30d-before.Tasks.Created30d, 1)
 	check("tasks.completed30d", after.Tasks.Completed30d-before.Tasks.Completed30d, 1)
+
+	// Dynamic opt-out: when user a1 revokes consent (metrics_opt_in = false),
+	// all aggregates (users, sessions, focusMinutes, breakMinutes, tasks) exclude a1.
+	mustExec(`UPDATE users SET metrics_opt_in = false WHERE id = ?`, ids[0])
+	afterOptOut, err := repo.Compute(context.Background(), now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	check("optOut.users.total", afterOptOut.Users.Total-before.Users.Total, 1)
+	check("optOut.users.new30d", afterOptOut.Users.New30d-before.Users.New30d, 0)
+	check("optOut.users.active7d", afterOptOut.Users.Active7d-before.Users.Active7d, 0)
+	check("optOut.users.active30d", afterOptOut.Users.Active30d-before.Users.Active30d, 1)
+	check("optOut.sessions.total30d", afterOptOut.Sessions.Total30d-before.Sessions.Total30d, 1)
+	check("optOut.sessions.pomodoro", afterOptOut.Sessions.ByMode30d["pomodoro"]-before.Sessions.ByMode30d["pomodoro"], 0)
+	check("optOut.sessions.flowtime", afterOptOut.Sessions.ByMode30d["flowtime"]-before.Sessions.ByMode30d["flowtime"], 1)
+	check("optOut.focusMinutes.total30d", afterOptOut.FocusMinutes.Total30d-before.FocusMinutes.Total30d, 60)
+	check("optOut.focusMinutes.pomodoro", afterOptOut.FocusMinutes.ByMode30d["pomodoro"]-before.FocusMinutes.ByMode30d["pomodoro"], 0)
+	check("optOut.breakMinutes.total30d", afterOptOut.BreakMinutes.Total30d-before.BreakMinutes.Total30d, 0)
+	check("optOut.tasks.created30d", afterOptOut.Tasks.Created30d-before.Tasks.Created30d, 0)
+	check("optOut.tasks.completed30d", afterOptOut.Tasks.Completed30d-before.Tasks.Completed30d, 0)
+
+	// Re-opt-in: toggling back to true restores the exact usage counts.
+	mustExec(`UPDATE users SET metrics_opt_in = true WHERE id = ?`, ids[0])
+	afterReOptIn, err := repo.Compute(context.Background(), now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	check("reOptIn.users.active7d", afterReOptIn.Users.Active7d-before.Users.Active7d, 1)
+	check("reOptIn.sessions.total30d", afterReOptIn.Sessions.Total30d-before.Sessions.Total30d, 2)
+	check("reOptIn.focusMinutes.total30d", afterReOptIn.FocusMinutes.Total30d-before.FocusMinutes.Total30d, 85)
+	check("reOptIn.breakMinutes.total30d", afterReOptIn.BreakMinutes.Total30d-before.BreakMinutes.Total30d, 5)
+	check("reOptIn.tasks.created30d", afterReOptIn.Tasks.Created30d-before.Tasks.Created30d, 1)
+	check("reOptIn.tasks.completed30d", afterReOptIn.Tasks.Completed30d-before.Tasks.Completed30d, 1)
 }
