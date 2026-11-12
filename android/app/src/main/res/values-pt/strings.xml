@@ -523,6 +523,20 @@
     <string name="shortcut_tasks_short">Tarefas</string>
     <string name="shortcut_tasks_long">Abrir tarefas</string>
 
+
+    <!-- Weekly recap (#730) -->
+    <string name="weekly_recap_channel_name">Resumo semanal</string>
+    <string name="weekly_recap_channel_desc">Um resumo de domingo do seu tempo de foco da semana</string>
+    <string name="weekly_recap_title">A sua semana no Pepinillo</string>
+    <string name="weekly_recap_text">%1$s de foco em %2$s esta semana. Toque para ver o detalhe.</string>
+    <string name="weekly_recap_text_empty">Sem sessões esta semana. O seu próximo foco está a um toque.</string>
+    <string name="settings_weekly_recap">Resumo semanal</string>
+    <string name="settings_weekly_recap_sub">Resumo da sua semana, domingos às 18:00</string>
+    <plurals name="weekly_recap_sessions_count">
+        <item quantity="one">%1$d sessão</item>
+        <item quantity="other">%1$d sessões</item>
+    </plurals>
+
     <!-- Onboarding -->
     <string name="onboarding_welcome_title">Bem-vindo ao Pepinillo</string>
     <string name="onboarding_welcome_desc">Seu companheiro de trabalho profundo. Foque melhor, conquiste mais e descubra seu estilo ideal de produtividade.</string>

@@ -20,6 +20,7 @@ import dev.creapolis.pepinillo.data.sync.SyncState
 import dev.creapolis.pepinillo.data.sync.SyncStatusManager
 import dev.creapolis.pepinillo.feature.focus.FocusMode
 import dev.creapolis.pepinillo.service.DailyReminderScheduler
+import dev.creapolis.pepinillo.service.WeeklyRecapScheduler
 import dev.creapolis.pepinillo.ui.theme.AppTheme
 import dev.creapolis.pepinillo.ui.theme.ThemeController
 import dev.creapolis.pepinillo.ui.theme.ThemeMode
@@ -27,6 +28,7 @@ import dev.creapolis.pepinillo.wear.WearDataLayerHelper
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -56,6 +58,7 @@ data class SettingsUiState(
     val hapticTimerTickEnabled: Boolean = false,
     val selectedTheme: String = "materialYou",
     val currentStreak: Int = 0,
+    val weeklyRecapEnabled: Boolean = false,
     val isPro: Boolean = false,
     val subscriptionTier: SubscriptionTier = SubscriptionTier.FREE,
     // Sync status
@@ -223,6 +226,18 @@ class SettingsViewModel @Inject constructor(
         prefsRepo.updateTimerNotificationsEnabled(!uiState.value.timerNotificationsEnabled)
     }
 
+
+    fun toggleWeeklyRecap() = viewModelScope.launch {
+        val newValue = !uiState.value.weeklyRecapEnabled
+        prefsRepo.updateWeeklyRecapEnabled(newValue)
+        if (newValue) {
+            val prefs = prefsRepo.preferences.first()
+            WeeklyRecapScheduler.schedule(context, prefs.weeklyRecapDayOfWeek, prefs.weeklyRecapHour, prefs.weeklyRecapMinute)
+        } else {
+            WeeklyRecapScheduler.cancel(context)
+        }
+    }
+
     fun toggleShowJournalAfterSession() = viewModelScope.launch {
         prefsRepo.updateShowJournalAfterSession(!uiState.value.showJournalAfterSession)
     }
@@ -274,6 +289,7 @@ class SettingsViewModel @Inject constructor(
         timerNotificationsEnabled = timerNotificationsEnabled,
         showJournalAfterSession = showJournalAfterSession,
         hapticTimerTickEnabled = hapticTimerTickEnabled,
+        weeklyRecapEnabled = weeklyRecapEnabled,
         selectedTheme = selectedTheme,
         currentStreak = currentStreak,
         isPro = isPro,

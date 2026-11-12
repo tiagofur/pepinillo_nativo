@@ -238,6 +238,20 @@
     <string name="shortcut_tasks_short">Tasks</string>
     <string name="shortcut_tasks_long">Open tasks</string>
 
+
+    <!-- Weekly recap (#730) -->
+    <string name="weekly_recap_channel_name">Weekly recap</string>
+    <string name="weekly_recap_channel_desc">A Sunday summary of your focus time this week</string>
+    <string name="weekly_recap_title">Your week in Pepinillo</string>
+    <string name="weekly_recap_text">%1$s of focus across %2$s this week. Tap to see the details.</string>
+    <string name="weekly_recap_text_empty">No sessions this week. Your next focus is one tap away.</string>
+    <string name="settings_weekly_recap">Weekly recap</string>
+    <string name="settings_weekly_recap_sub">A summary of your week, Sundays at 6 PM</string>
+    <plurals name="weekly_recap_sessions_count">
+        <item quantity="one">%1$d session</item>
+        <item quantity="other">%1$d sessions</item>
+    </plurals>
+
     <!-- Onboarding -->
     <string name="onboarding_welcome_title">Welcome to Pepinillo</string>
     <string name="onboarding_welcome_desc">Your deep work companion. Focus better, achieve more, and discover your optimal productivity style.</string>
