@@ -517,6 +517,12 @@
         <item quantity="other">Sequência de %1$d dias 🔥 — uma sessão hoje a mantém.</item>
     </plurals>
 
+    <!-- Launcher shortcuts (#727) -->
+    <string name="shortcut_focus_short">Iniciar foco</string>
+    <string name="shortcut_focus_long">Iniciar uma sessão de foco</string>
+    <string name="shortcut_tasks_short">Tarefas</string>
+    <string name="shortcut_tasks_long">Abrir tarefas</string>
+
     <!-- Onboarding -->
     <string name="onboarding_welcome_title">Bem-vindo ao Pepinillo</string>
     <string name="onboarding_welcome_desc">Seu companheiro de trabalho profundo. Foque melhor, conquiste mais e descubra seu estilo ideal de produtividade.</string>

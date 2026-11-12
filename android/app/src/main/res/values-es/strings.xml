@@ -232,6 +232,12 @@
         <item quantity="other">Racha de %1$d d\u00edas 🔥 — una sesi\u00f3n hoy la mantiene.</item>
     </plurals>
 
+    <!-- Launcher shortcuts (#727) -->
+    <string name="shortcut_focus_short">Iniciar foco</string>
+    <string name="shortcut_focus_long">Iniciar una sesi\u00f3n de enfoque</string>
+    <string name="shortcut_tasks_short">Tareas</string>
+    <string name="shortcut_tasks_long">Abrir tareas</string>
+
     <!-- Onboarding -->
     <string name="onboarding_welcome_title">Bienvenido a Pepinillo</string>
     <string name="onboarding_welcome_desc">Tu compa\u00f1ero de trabajo profundo. Enf\u00f3cate mejor, logra m\u00e1s y descubre tu estilo de productividad ideal.</string>

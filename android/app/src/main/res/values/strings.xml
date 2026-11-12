@@ -232,6 +232,12 @@
         <item quantity="other">%1$d-day streak 🔥 — one session today keeps it alive.</item>
     </plurals>
 
+    <!-- Launcher shortcuts (#727) -->
+    <string name="shortcut_focus_short">Start focus</string>
+    <string name="shortcut_focus_long">Start a focus session</string>
+    <string name="shortcut_tasks_short">Tasks</string>
+    <string name="shortcut_tasks_long">Open tasks</string>
+
     <!-- Onboarding -->
     <string name="onboarding_welcome_title">Welcome to Pepinillo</string>
     <string name="onboarding_welcome_desc">Your deep work companion. Focus better, achieve more, and discover your optimal productivity style.</string>
