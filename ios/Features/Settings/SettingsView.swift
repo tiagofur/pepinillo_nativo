@@ -318,8 +318,19 @@ struct SettingsView: View {
                     displayedComponents: .hourAndMinute
                 )
             }
+            Toggle(
+                String(localized: "settings.notifications.weeklyRecap", defaultValue: "Weekly recap"),
+                isOn: Binding(
+                    get: { store.weeklyRecapEnabled },
+                    set: { _ in store.send(.weeklyRecapToggled) }
+                )
+            )
         } header: {
             Label(String(localized: "Notifications"), systemImage: "bell")
+        } footer: {
+            Text(String(localized: "settings.notifications.weeklyRecap.footer", defaultValue: "Sundays at 6 PM, get a summary of your focus time and sessions."))
+                .font(.caption)
+                .foregroundStyle(.secondary)
         }
     }
 
@@ -359,8 +370,19 @@ struct SettingsView: View {
             }
             .accessibilityElement(children: .combine)
             .accessibilityLabel(String(localized: "Current streak, \(store.currentStreakDays) days"))
+            Toggle(
+                String(localized: "settings.streak.celebrateRecords", defaultValue: "Celebrate new records"),
+                isOn: Binding(
+                    get: { store.celebrateRecordsEnabled },
+                    set: { _ in store.send(.celebrateRecordsToggled) }
+                )
+            )
         } header: {
             Label(String(localized: "Streak"), systemImage: "flame")
+        } footer: {
+            Text(String(localized: "settings.streak.celebrateRecords.footer", defaultValue: "Shows a quiet celebration when your streak beats its all-time best."))
+                .font(.caption)
+                .foregroundStyle(.secondary)
         }
     }
 

@@ -79,6 +79,12 @@ struct FocusFeature {
         // Post-session journal
         @Presents var journal: SessionJournalFeature.State?
 
+        // Streak record celebration (#734). AppFeature evaluates eligibility and
+        // forwards the record here; FocusFeature owns delivery — into the journal
+        // sheet when presented (or about to be), else the quiet 8 s banner.
+        var pendingStreakRecord: StreakRecord?
+        var streakRecordBanner: Int?
+
         // Last Pomodoro work interval persisted in phaseCompleted (issue #171).
         // sessionCompleted uses the engine session UUID, but work intervals are saved
         // under fresh IDs — journal must link to the persisted record, not the engine.
@@ -156,6 +162,12 @@ struct FocusFeature {
         case showJournalSheet(sessionID: UUID, modeName: String, actualDuration: TimeInterval)
         case journal(PresentationAction<SessionJournalFeature.Action>)
 
+        // Streak record celebration (#734)
+        case streakRecordAchieved(newBest: Int, previousBest: Int)
+        case applyPendingStreakRecord(StreakRecord)
+        case presentStreakRecordBanner(newBest: Int)
+        case streakRecordBannerDismiss
+
         // Session save error dismissal (issue #75)
         case sessionSaveErrorDismissed
 
@@ -181,7 +193,7 @@ struct FocusFeature {
     @Dependency(\.uuid) var uuid
 
     // Cancellation ID for the engine observation task
-    private enum CancelID { case engineObservation }
+    private enum CancelID { case engineObservation, streakRecordBanner }
 
     // MARK: - Reducer Body
 
@@ -1322,12 +1334,61 @@ struct FocusFeature {
             case .showJournalSheet(let sessionID, let modeName, let actualDuration):
                 let minutes = Int(actualDuration) / 60
                 let seconds = Int(actualDuration) % 60
-                state.journal = SessionJournalFeature.State(
+                var journal = SessionJournalFeature.State(
                     sessionID: sessionID,
                     modeName: modeName,
                     durationFormatted: String(format: "%d:%02d", minutes, seconds)
                 )
+                // A record evaluated by AppFeature before the sheet existed rides
+                // into it here (#734); haptics respect the app's vibration pref.
+                journal.streakRecord = state.pendingStreakRecord
+                journal.hapticEnabled = state.config.hapticEnabled
+                state.journal = journal
+                state.pendingStreakRecord = nil
                 return .none
+
+            case .streakRecordAchieved(let newBest, let previousBest):
+                let record = StreakRecord(newBest: newBest, previousBest: previousBest)
+                if var journal = state.journal {
+                    // Sheet already up — swap its header for the record hero.
+                    journal.streakRecord = record
+                    state.journal = journal
+                    return .none
+                }
+                // Mirror the completion effect's read: the journal pref lives in
+                // the persisted preferences, not in FocusConfig.
+                return .run { [persistence] send in
+                    let prefs = (try? await persistence.fetchPreferences()) ?? UserPreferencesDTO()
+                    if prefs.showJournalAfterSession {
+                        // The sheet is about to be presented by its own effect;
+                        // hold the record so showJournalSheet applies it.
+                        await send(.applyPendingStreakRecord(record))
+                    } else {
+                        await send(.presentStreakRecordBanner(newBest: record.newBest))
+                    }
+                }
+
+            case .applyPendingStreakRecord(let record):
+                if var journal = state.journal {
+                    journal.streakRecord = record
+                    journal.hapticEnabled = state.config.hapticEnabled
+                    state.journal = journal
+                }
+                state.pendingStreakRecord = nil
+                return .none
+
+            case .presentStreakRecordBanner(let newBest):
+                // Journal disabled: quiet non-blocking banner, auto-dismissed.
+                state.streakRecordBanner = newBest
+                return .run { send in
+                    try? await Task.sleep(for: .seconds(8))
+                    await send(.streakRecordBannerDismiss)
+                }
+                .cancellable(id: CancelID.streakRecordBanner)
+
+            case .streakRecordBannerDismiss:
+                state.streakRecordBanner = nil
+                return .cancel(id: CancelID.streakRecordBanner)
 
             case .journal(.presented(.saved)):
                 state.journal = nil

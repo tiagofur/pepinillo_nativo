@@ -280,6 +280,16 @@ struct FocusView: View {
                 .padding(.horizontal, 16)
                 .padding(.top, 12)
             }
+
+            // Journal-disabled path for a new streak record (#734): quiet banner
+            // in the same slot, auto-dismissed by the reducer after 8 s.
+            if let recordDays = store.streakRecordBanner {
+                StreakRecordBanner(days: recordDays) {
+                    store.send(.streakRecordBannerDismiss)
+                }
+                .padding(.horizontal, 16)
+                .padding(.top, 12)
+            }
         }
     }
 
