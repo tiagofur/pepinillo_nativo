@@ -1,6 +1,22 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "Day %lld of your streak \u2014 one session today keeps it alive." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "D\u00eda %lld de tu racha \u2014 una sesi\u00f3n hoy la mantiene."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dia %lld da sua sequ\u00eancia \u2014 uma sess\u00e3o hoje a mant\u00e9m."
+          }
+        }
+      }
+    },
     "" : {
       "localizations" : {
         "es" : {

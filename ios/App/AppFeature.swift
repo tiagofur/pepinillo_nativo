@@ -211,6 +211,8 @@ struct AppFeature {
         case ghostResumeTapped
         case ghostDiscardTapped
         case appURLReceived(URL)
+        /// Home Screen quick action long-press (Start focus / Tasks) — #733.
+        case quickActionSelected(Tab)
 
         // Subscription
         case subscriptionStateLoaded(SubscriptionState)
@@ -627,6 +629,12 @@ struct AppFeature {
                 default:
                     break
                 }
+                return .none
+
+            case .quickActionSelected(let tab):
+                // Onboarding still covers the screen visually (AppView gates it),
+                // same posture as appURLReceived — just switch the tab underneath.
+                state.selectedTab = tab
                 return .none
 
             case .reconcileStaleExternalStart:
@@ -1342,13 +1350,20 @@ struct AppFeature {
                                         await send(.celebrationTriggered(milestone))
                                     }
                                 },
-                                .run { [notificationClient] _ in
-                                    if dailyReminderEnabled {
-                                        await notificationClient.rescheduleDailyReminderAfterFocus(
-                                            reminderHour,
-                                            reminderMinute
-                                        )
-                                    }
+                                .run { [notificationClient, isPro] _ in
+                                    guard dailyReminderEnabled else { return }
+                                    // Re-arm tomorrow's reminder with the fresh streak so the
+                                    // copy speaks to the user's real state (#732).
+                                    let allStats = (try? await persistence.fetchDailyStatsRange(Date.distantPast, Date.now)) ?? []
+                                    let streak = StreakProtectionService.computeProtectedStreak(
+                                        history: allStats,
+                                        isPro: isPro
+                                    ).days
+                                    await notificationClient.rescheduleDailyReminderAfterFocus(
+                                        reminderHour,
+                                        reminderMinute,
+                                        streak
+                                    )
                                 }
                             )
                         }
@@ -1481,7 +1496,8 @@ struct AppFeature {
                 let enabled = state.settings.dailyReminderEnabled
                 let hour    = state.settings.dailyReminderHour
                 let minute  = state.settings.dailyReminderMinute
-                return .run { [notificationClient] send in
+                let isPro = state.subscriptionState.isPro
+                return .run { [notificationClient, persistence, isPro] send in
                     if enabled {
                         let status = await notificationClient.authorizationStatus()
                         switch status {
@@ -1504,7 +1520,14 @@ struct AppFeature {
                             await send(.settings(.notificationAuthorizationDenied))
                             return
                         }
-                        await notificationClient.scheduleDailyReminder(hour, minute)
+                        // Personalize with the current streak (#732) — same computation
+                        // the Dashboard/Profile use, protected streak included.
+                        let allStats = (try? await persistence.fetchDailyStatsRange(Date.distantPast, Date.now)) ?? []
+                        let streak = StreakProtectionService.computeProtectedStreak(
+                            history: allStats,
+                            isPro: isPro
+                        ).days
+                        await notificationClient.scheduleDailyReminder(hour, minute, streak)
                     } else {
                         await notificationClient.cancelDailyReminder()
                     }

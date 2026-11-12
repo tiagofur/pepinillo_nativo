@@ -28,7 +28,10 @@ struct NotificationClient: Sendable {
     var scheduleBreakEnd: @Sendable (_ minutes: Int) async -> Void = { _ in }
 
     /// Schedule a daily streak reminder at a given hour:minute (local time).
-    var scheduleDailyReminder: @Sendable (_ hour: Int, _ minute: Int) async -> Void = { _, _ in }
+    /// `streakDays` personalizes the copy (≥ 1 shows the real streak, 0 keeps the
+    /// generic pitch) — iOS repeating triggers carry fixed content, so callers
+    /// re-schedule whenever the streak changes (#732).
+    var scheduleDailyReminder: @Sendable (_ hour: Int, _ minute: Int, _ streakDays: Int) async -> Void = { _, _, _ in }
 
     /// Update the active session notification with current timer display (fallback when Live Activity unavailable).
     var updateActiveSession: @Sendable (_ displayTime: String, _ mode: String, _ phase: String) async -> Void = { _, _, _ in }
@@ -45,8 +48,9 @@ struct NotificationClient: Sendable {
     /// Cancel only the daily streak reminder (#225).
     var cancelDailyReminder: @Sendable () async -> Void = {}
 
-    /// After the user completes a focus session today, skip today's daily nag (#223).
-    var rescheduleDailyReminderAfterFocus: @Sendable (_ hour: Int, _ minute: Int) async -> Void = { _, _ in }
+    /// After the user completes a focus session today, skip today's daily nag (#223)
+    /// and re-arm tomorrow's copy with the fresh streak count (#732).
+    var rescheduleDailyReminderAfterFocus: @Sendable (_ hour: Int, _ minute: Int, _ streakDays: Int) async -> Void = { _, _, _ in }
 }
 
 // MARK: - Dependency Keys
@@ -162,10 +166,10 @@ extension NotificationClient {
                 try? await center().add(request)
             },
 
-            scheduleDailyReminder: { hour, minute in
+            scheduleDailyReminder: { hour, minute, streakDays in
                 let content = UNMutableNotificationContent()
                 content.title = "🔥 \(String(localized: "Keep your streak alive!"))"
-                content.body = String(localized: "Haven't focused today yet. Open Pepinillo and get a session in.")
+                content.body = NotificationCopy.dailyReminderBody(streakDays: streakDays)
                 content.sound = .default
                 content.categoryIdentifier = "DAILY_REMINDER"
 
@@ -234,7 +238,7 @@ extension NotificationClient {
                 notificationCenter.removePendingNotificationRequests(withIdentifiers: ["daily-reminder"])
             },
 
-            rescheduleDailyReminderAfterFocus: { hour, minute in
+            rescheduleDailyReminderAfterFocus: { hour, minute, streakDays in
                 let notificationCenter = center()
                 notificationCenter.removeDeliveredNotifications(withIdentifiers: ["daily-reminder"])
                 notificationCenter.removePendingNotificationRequests(withIdentifiers: ["daily-reminder"])
@@ -259,7 +263,7 @@ extension NotificationClient {
                 )
                 let content = UNMutableNotificationContent()
                 content.title = "🔥 \(String(localized: "Keep your streak alive!"))"
-                content.body = String(localized: "Haven't focused today yet. Open Pepinillo and get a session in.")
+                content.body = NotificationCopy.dailyReminderBody(streakDays: streakDays)
                 content.sound = .default
                 content.categoryIdentifier = "DAILY_REMINDER"
 
@@ -333,6 +337,20 @@ extension NotificationClient {
             breakEndCategory,
             activeSessionCategory
         ])
+    }
+}
+
+// MARK: - Reminder Copy (pure, unit-testable)
+
+/// Copy selection for the daily reminder (#732). ≥ 1 streak day speaks to the
+/// user's real streak (loss aversion beats a generic pitch); 0 keeps the
+/// neutral invitation. No plural rules needed: "Day 1" reads naturally.
+enum NotificationCopy {
+    static func dailyReminderBody(streakDays: Int) -> String {
+        guard streakDays >= 1 else {
+            return String(localized: "Haven't focused today yet. Open Pepinillo and get a session in.")
+        }
+        return String(localized: "Day \(streakDays) of your streak — one session today keeps it alive.")
     }
 }
 
