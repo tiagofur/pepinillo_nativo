@@ -9,6 +9,7 @@ import ComposableArchitecture
 
 struct SessionJournalView: View {
     @Bindable var store: StoreOf<SessionJournalFeature>
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         NavigationStack {
@@ -31,14 +32,21 @@ struct SessionJournalView: View {
 
     @ViewBuilder
     private var headerSection: some View {
-        VStack(spacing: 8) {
-            Text(String(localized: "sessionjournal.title", defaultValue: "Session Complete"))
-                .font(.title2.bold())
-            Text("\(store.modeName.capitalized) · \(store.durationFormatted)")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
+        if let record = store.streakRecord {
+            // New streak record (#734): the quiet hero replaces the plain header —
+            // one bloom, one pop, Save stays the only CTA (Android #731 parity).
+            StreakRecordHeroBlock(record: record, hapticEnabled: store.hapticEnabled)
+                .padding(.top, 8)
+        } else {
+            VStack(spacing: 8) {
+                Text(String(localized: "sessionjournal.title", defaultValue: "Session Complete"))
+                    .font(.title2.bold())
+                Text("\(store.modeName.capitalized) · \(store.durationFormatted)")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.top, 8)
         }
-        .padding(.top, 8)
     }
 
     @ViewBuilder
@@ -129,6 +137,83 @@ struct SessionJournalView: View {
             }
             .buttonStyle(.plain)
         }
+    }
+}
+
+// MARK: - Streak Record Hero (#734)
+
+/// In-sheet record celebration. Visual vocabulary of the Dashboard streak hero
+/// (`theme.streakColor` tint + flame) scaled to a moment: color lives only in
+/// the flame and its halo — all text stays `.primary`/`.secondary` for WCAG
+/// contrast. One bloom + one pop, then silence; collapses to instant appearance
+/// under Reduce Motion; the award haptic fires once as the block settles.
+struct StreakRecordHeroBlock: View {
+    let record: StreakRecord
+    let hapticEnabled: Bool
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.appTheme) private var theme
+    @State private var bloomed = false
+
+    var body: some View {
+        VStack(spacing: 10) {
+            haloAndFlame
+            Text("\(record.newBest)")
+                .font(NumericFont.timer().weight(.semibold))
+                .foregroundStyle(.primary)
+            Text(String(localized: "%lld day streak"))
+                .font(.title3.weight(.semibold))
+                .foregroundStyle(.primary)
+            Text(String(localized: "\(record.newBest) days of focus in a row — your longest streak yet. Keep it up."))
+                .font(.subheadline)
+                .multilineTextAlignment(.center)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: GlassCornerRadius.card)
+                .fill(theme.streakColor.opacity(0.12))
+        )
+        .opacity(bloomed ? 1 : 0)
+        .task {
+            // Award haptic as the block settles (~600 ms, the spring queue); with
+            // Reduce Motion everything lands instantly and the haptic fires now.
+            if !reduceMotion {
+                try? await Task.sleep(nanoseconds: 600_000_000)
+            }
+            if hapticEnabled {
+                HapticManager.notification(.success)
+            }
+            bloomed = true
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(String(localized: "New record: \(record.newBest) day streak. Your longest streak yet."))
+    }
+
+    /// Halo (single bloom, ⌀88) behind the flame's single scale pop.
+    @ViewBuilder
+    private var haloAndFlame: some View {
+        ZStack {
+            Circle()
+                .fill(
+                    RadialGradient(
+                        colors: [theme.streakColor.opacity(0.30), .clear],
+                        center: .center,
+                        startRadius: 0,
+                        endRadius: 44
+                    )
+                )
+                .frame(width: 88, height: 88)
+                .scaleEffect(bloomed || reduceMotion ? 1.0 : 0.6)
+                .opacity(bloomed || reduceMotion ? 1 : 0)
+            Image(systemName: "flame.fill")
+                .font(.system(size: 36, weight: .semibold))
+                .foregroundStyle(theme.streakColor)
+                .scaleEffect(bloomed || reduceMotion ? 1.0 : 0.4)
+        }
+        .animation(reduceMotion ? nil : MotionTokens.heroEntrance, value: bloomed)
+        .accessibilityHidden(true)
     }
 }
 

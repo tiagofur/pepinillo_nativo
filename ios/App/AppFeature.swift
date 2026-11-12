@@ -606,7 +606,14 @@ struct AppFeature {
                         .send(.consumeExternalCommands)
                     ),
                     syncWatchStats(isPro: state.subscriptionState.isPro),
-                    pushWatchSessionSnapshot(from: state, publishContext: true)
+                    pushWatchSessionSnapshot(from: state, publishContext: true),
+                    // Weekly recap cascade (#735): keep the next Sunday's copy as
+                    // fresh as the app allows (schedule-time content).
+                    Self.rescheduleWeeklyRecapIfEnabled(
+                        enabled: state.settings.weeklyRecapEnabled,
+                        persistence: persistence,
+                        notificationClient: notificationClient
+                    )
                 )
 
             case .appURLReceived(let url):
@@ -1325,7 +1332,7 @@ struct AppFeature {
                     .run { [watchClient, watchState] _ in
                         await watchClient.sendSessionState(watchState, true)
                     },
-                    {
+                    { () -> Effect<Action> in
                         if case .focus(.sessionCompleted) = action {
                             // Task refresh after session completion is handled by the
                             // .focus(.delegate(.sessionPersisted)) path below — which fires
@@ -1339,32 +1346,28 @@ struct AppFeature {
                             let dailyReminderEnabled = state.settings.dailyReminderEnabled
                             let reminderHour = state.settings.dailyReminderHour
                             let reminderMinute = state.settings.dailyReminderMinute
+                            let streakBookkeeping = Self.streakBookkeepingEffect(
+                                isPro: isPro,
+                                persistence: persistence
+                            )
+                            let dailyReminderReschedule = Self.dailyReminderRescheduleEffect(
+                                enabled: dailyReminderEnabled,
+                                hour: reminderHour,
+                                minute: reminderMinute,
+                                isPro: isPro,
+                                persistence: persistence,
+                                notificationClient: notificationClient
+                            )
+                            // Weekly recap cascade (#735): refresh Sunday's copy.
+                            let weeklyRecapRefresh = Self.rescheduleWeeklyRecapIfEnabled(
+                                enabled: UserDefaults.standard.bool(forKey: "streak.weeklyRecap.enabled"),
+                                persistence: persistence,
+                                notificationClient: notificationClient
+                            )
                             return Effect<Action>.merge(
-                                .run { [isPro] send in
-                                    let allStats = (try? await persistence.fetchDailyStatsRange(Date.distantPast, Date.now)) ?? []
-                                    let streakResult = StreakProtectionService.computeProtectedStreak(
-                                        history: allStats,
-                                        isPro: isPro
-                                    )
-                                    if let milestone = CelebrationMilestone.checkStreak(streakResult.days) {
-                                        await send(.celebrationTriggered(milestone))
-                                    }
-                                },
-                                .run { [notificationClient, isPro] _ in
-                                    guard dailyReminderEnabled else { return }
-                                    // Re-arm tomorrow's reminder with the fresh streak so the
-                                    // copy speaks to the user's real state (#732).
-                                    let allStats = (try? await persistence.fetchDailyStatsRange(Date.distantPast, Date.now)) ?? []
-                                    let streak = StreakProtectionService.computeProtectedStreak(
-                                        history: allStats,
-                                        isPro: isPro
-                                    ).days
-                                    await notificationClient.rescheduleDailyReminderAfterFocus(
-                                        reminderHour,
-                                        reminderMinute,
-                                        streak
-                                    )
-                                }
+                                streakBookkeeping,
+                                dailyReminderReschedule,
+                                weeklyRecapRefresh
                             )
                         }
                         // stopTapped: refresh analytics so the dashboard reflects the abandoned session
@@ -1490,6 +1493,23 @@ struct AppFeature {
                 let themeName = state.settings.themeName
                 return .run { [watchClient] _ in
                     await watchClient.sendTheme(themeName)
+                }
+
+            case .settings(.weeklyRecapToggled):
+                let enabled = state.settings.weeklyRecapEnabled
+                return .run { [notificationClient, persistence] send in
+                    guard enabled else {
+                        await notificationClient.cancelWeeklyRecap()
+                        return
+                    }
+                    guard await Self.ensureNotificationAuthorized(notificationClient: notificationClient) else {
+                        await send(.settings(.weeklyRecapAuthorizationDenied))
+                        return
+                    }
+                    await Self.scheduleWeeklyRecapNow(
+                        persistence: persistence,
+                        notificationClient: notificationClient
+                    )
                 }
 
             case .settings(.dailyReminderToggled), .settings(.dailyReminderTimeChanged):
@@ -1652,6 +1672,131 @@ struct AppFeature {
             )
             await watchClient.sendDashboardStats(dashStats)
         }
+    }
+
+    // MARK: - Retention helpers (#734/#735)
+
+    /// Milestone overlay / record routing for a just-completed session.
+    /// Post-session streak bookkeeping (#734): milestone overlay first (a record
+    /// landing on a milestone day only consumes the latch — one celebration at a
+    /// time), otherwise the record routes into the journal sheet or the 8 s
+    /// banner via FocusFeature.
+    private static func processSessionCompletionStreak(
+        days: Int,
+        history: [DailyStatsDTO],
+        send: Send<Action>
+    ) async {
+        let recordEnabled = UserDefaults.standard.object(
+            forKey: "streak.record.enabled"
+        ) as? Bool ?? true
+        let previousBest = StreakRecordCelebration.previousBestExcludingToday(
+            from: history,
+            todayStart: Calendar.current.startOfDay(for: .now)
+        )
+        let latch = UserDefaults.standard.integer(forKey: "streak.record.celebratedBest")
+        let isRecord = StreakRecordCelebration.isEligible(
+            currentStreak: days,
+            previousBest: previousBest,
+            lastCelebrated: latch,
+            enabled: recordEnabled
+        )
+
+        if let milestone = CelebrationMilestone.checkStreak(days) {
+            await send(.celebrationTriggered(milestone))
+            if isRecord {
+                UserDefaults.standard.set(days, forKey: "streak.record.celebratedBest")
+            }
+        } else if isRecord {
+            UserDefaults.standard.set(days, forKey: "streak.record.celebratedBest")
+            await send(.focus(.streakRecordAchieved(newBest: days, previousBest: previousBest)))
+        }
+    }
+
+    /// Re-arms tomorrow's daily reminder with the fresh streak count (#732).
+    private static func dailyReminderRescheduleEffect(
+        enabled: Bool,
+        hour: Int,
+        minute: Int,
+        isPro: Bool,
+        persistence: PersistenceClient,
+        notificationClient: NotificationClient
+    ) -> Effect<Action> {
+        .run { _ in
+            guard enabled else { return }
+            let allStats = (try? await persistence.fetchDailyStatsRange(Date.distantPast, Date.now)) ?? []
+            let streak = StreakProtectionService.computeProtectedStreak(
+                history: allStats,
+                isPro: isPro
+            ).days
+            await notificationClient.rescheduleDailyReminderAfterFocus(hour, minute, streak)
+        }
+    }
+
+    /// Milestone overlay + record routing evaluation for a completed session.
+    private static func streakBookkeepingEffect(
+        isPro: Bool,
+        persistence: PersistenceClient
+    ) -> Effect<Action> {
+        .run { send in
+            let allStats = (try? await persistence.fetchDailyStatsRange(Date.distantPast, Date.now)) ?? []
+            let days = StreakProtectionService.computeProtectedStreak(
+                history: allStats,
+                isPro: isPro
+            ).days
+            await Self.processSessionCompletionStreak(
+                days: days,
+                history: allStats,
+                send: send
+            )
+        }
+    }
+
+    /// Shared authorization gate for notification-backed features. Requests
+    /// permission on `.notDetermined`; returns false when the app may not post.
+    private static func ensureNotificationAuthorized(
+        notificationClient: NotificationClient
+    ) async -> Bool {
+        let status = await notificationClient.authorizationStatus()
+        switch status {
+        case .notDetermined:
+            _ = await notificationClient.requestAuthorization()
+            UserDefaults.standard.set(true, forKey: "pepinillo.hasRequestedNotificationPermission")
+            let updated = await notificationClient.authorizationStatus()
+            #if os(iOS)
+            return updated == .authorized || updated == .provisional || updated == .ephemeral
+            #else
+            return updated == .authorized || updated == .provisional
+            #endif
+        case .authorized, .provisional, .ephemeral:
+            return true
+        default:
+            return false
+        }
+    }
+
+    /// Computes the week (last 7 rolling days, same aggregate the Dashboard uses)
+    /// and schedules the next Sunday's recap with fresh content. No-op when the
+    /// toggle is off.
+    private static func rescheduleWeeklyRecapIfEnabled(
+        enabled: Bool,
+        persistence: PersistenceClient,
+        notificationClient: NotificationClient
+    ) -> Effect<Action> {
+        .run { _ in
+            guard enabled else { return }
+            await Self.scheduleWeeklyRecapNow(persistence: persistence, notificationClient: notificationClient)
+        }
+    }
+
+    private static func scheduleWeeklyRecapNow(
+        persistence: PersistenceClient,
+        notificationClient: NotificationClient
+    ) async {
+        let weekAgo = Calendar.current.date(byAdding: .day, value: -7, to: .now) ?? .distantPast
+        let week = (try? await persistence.fetchDailyStatsRange(weekAgo, .now)) ?? []
+        let minutes = week.reduce(0) { $0 + $1.totalFocusMinutes }
+        let sessions = week.reduce(0) { $0 + $1.sessionsCompleted }
+        await notificationClient.scheduleWeeklyRecap(minutes: minutes, sessionCount: sessions)
     }
 
     // MARK: - Subscription helpers

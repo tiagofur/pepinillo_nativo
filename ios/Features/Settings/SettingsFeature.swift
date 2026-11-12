@@ -43,7 +43,11 @@ struct SettingsFeature {
         var dailyReminderEnabled: Bool = false
         var dailyReminderHour: Int = 9
         var dailyReminderMinute: Int = 0
+        var weeklyRecapEnabled: Bool = false
         var showNotificationDeniedAlert: Bool = false
+
+        // Streak record celebration (#734) — device-local, default ON.
+        var celebrateRecordsEnabled: Bool = true
 
         // Apple Health
         var healthLoggingEnabled: Bool = false
@@ -107,8 +111,13 @@ struct SettingsFeature {
         // Notifications
         case dailyReminderToggled
         case dailyReminderTimeChanged(hour: Int, minute: Int)
+        case weeklyRecapToggled
+        case weeklyRecapAuthorizationDenied
         case notificationAuthorizationDenied
         case notificationDeniedAlertDismissed
+
+        // Streak record celebration (#734)
+        case celebrateRecordsToggled
 
         // Apple Health
         case healthLoggingToggled
@@ -216,6 +225,11 @@ struct SettingsFeature {
                 state.syncStatus = AppGroupDefaults.syncStatus
                 state.lastAppleCloudActivationError = AppGroupDefaults.lastAppleCloudActivationError
                 state.canAppleCloudSync = AppGroupDefaults.canAppleCloudSync
+                // Device-local retention toggles (#734/#735) — not in the synced prefs.
+                state.celebrateRecordsEnabled = UserDefaults.standard.object(
+                    forKey: "streak.record.enabled"
+                ) as? Bool ?? true
+                state.weeklyRecapEnabled = UserDefaults.standard.bool(forKey: "streak.weeklyRecap.enabled")
                 guard !state.isLoading else { return .none }
                 state.isLoading = true
                 return .run { send in
@@ -352,6 +366,26 @@ struct SettingsFeature {
             case .dailyReminderToggled:
                 state.dailyReminderEnabled.toggle()
                 return .send(.saveSettings)
+
+            case .weeklyRecapToggled:
+                state.weeklyRecapEnabled.toggle()
+                // Device-local — persisted outside the synced prefs (Android parity:
+                // no dirty-marking). AppFeature intercepts this action for the
+                // authorization + schedule/cancel effects.
+                UserDefaults.standard.set(state.weeklyRecapEnabled, forKey: "streak.weeklyRecap.enabled")
+                return .none
+
+            case .celebrateRecordsToggled:
+                state.celebrateRecordsEnabled.toggle()
+                // Device-local, default ON — no synced counterpart, no effects.
+                UserDefaults.standard.set(state.celebrateRecordsEnabled, forKey: "streak.record.enabled")
+                return .none
+
+            case .weeklyRecapAuthorizationDenied:
+                state.weeklyRecapEnabled = false
+                UserDefaults.standard.set(false, forKey: "streak.weeklyRecap.enabled")
+                state.showNotificationDeniedAlert = true
+                return .none
 
             case .notificationAuthorizationDenied:
                 state.dailyReminderEnabled = false
