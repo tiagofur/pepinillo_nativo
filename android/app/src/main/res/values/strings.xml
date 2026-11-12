@@ -227,6 +227,10 @@
     <string name="daily_reminder_channel_description">Daily focus reminder notifications</string>
     <string name="daily_reminder_title">Time to focus!</string>
     <string name="daily_reminder_text">Start a focus session today and keep your streak going.</string>
+    <plurals name="daily_reminder_text_with_streak">
+        <item quantity="one">%1$d-day streak 🔥 — one session today keeps it alive.</item>
+        <item quantity="other">%1$d-day streak 🔥 — one session today keeps it alive.</item>
+    </plurals>
 
     <!-- Onboarding -->
     <string name="onboarding_welcome_title">Welcome to Pepinillo</string>

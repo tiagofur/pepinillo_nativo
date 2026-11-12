@@ -19,8 +19,10 @@ import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import dev.creapolis.pepinillo.MainActivity
 import dev.creapolis.pepinillo.R
+import dev.creapolis.pepinillo.core.billing.FeatureGate
 import dev.creapolis.pepinillo.data.local.preferences.UserPreferencesRepository
 import dev.creapolis.pepinillo.data.repository.SessionRepository
+import dev.creapolis.pepinillo.domain.streak.StreakProtectionService
 import kotlinx.coroutines.flow.first
 
 @HiltWorker
@@ -29,6 +31,7 @@ class DailyReminderWorker @AssistedInject constructor(
     @Assisted params: WorkerParameters,
     private val userPreferencesRepository: UserPreferencesRepository,
     private val sessionRepository: SessionRepository,
+    private val featureGate: FeatureGate,
 ) : CoroutineWorker(context, params) {
 
     override suspend fun doWork(): Result {
@@ -59,9 +62,21 @@ class DailyReminderWorker @AssistedInject constructor(
         }
 
         ensureNotificationChannel()
-        showReminderNotification()
+        showReminderNotification(computeCurrentStreak())
         rescheduleNext(prefs)
         return Result.success()
+    }
+
+    /**
+     * Current protected streak — the same computation the Dashboard streak hero uses —
+     * so the reminder speaks to the user's real state instead of a generic pitch (#726).
+     */
+    private suspend fun computeCurrentStreak(): Int {
+        val history = sessionRepository.getAllDaysWithSessions().first()
+        return StreakProtectionService.computeProtectedStreak(
+            history = history,
+            isPro = featureGate.isPro,
+        ).days
     }
 
     private fun rescheduleNext(prefs: dev.creapolis.pepinillo.data.local.preferences.UserPreferences) {
@@ -86,7 +101,7 @@ class DailyReminderWorker @AssistedInject constructor(
             .createNotificationChannel(channel)
     }
 
-    private fun showReminderNotification() {
+    private fun showReminderNotification(streakDays: Int) {
         val intent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_SINGLE_TOP
         }
@@ -97,10 +112,20 @@ class DailyReminderWorker @AssistedInject constructor(
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
 
+        val text = if (streakDays > 0) {
+            context.resources.getQuantityString(
+                R.plurals.daily_reminder_text_with_streak,
+                streakDays,
+                streakDays,
+            )
+        } else {
+            context.getString(R.string.daily_reminder_text)
+        }
+
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(context.getString(R.string.daily_reminder_title))
-            .setContentText(context.getString(R.string.daily_reminder_text))
+            .setContentText(text)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
