@@ -18,6 +18,12 @@ struct SessionJournalFeature {
         let durationFormatted: String
         var journalNote: String = ""
         var satisfactionRating: Int? = nil   // 1-5
+        /// Set when this session just set an all-time streak record (#734) —
+        /// swaps the sheet header for the record hero block.
+        var streakRecord: StreakRecord? = nil
+        /// Vibration master pref, captured at creation so the record hero's
+        /// haptic respects the same gate as the rest of the app.
+        var hapticEnabled: Bool = true
     }
 
     enum Action: Equatable {

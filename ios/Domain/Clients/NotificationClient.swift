@@ -51,6 +51,16 @@ struct NotificationClient: Sendable {
     /// After the user completes a focus session today, skip today's daily nag (#223)
     /// and re-arm tomorrow's copy with the fresh streak count (#732).
     var rescheduleDailyReminderAfterFocus: @Sendable (_ hour: Int, _ minute: Int, _ streakDays: Int) async -> Void = { _, _, _ in }
+
+    /// Schedule the opt-in weekly recap for the next Sunday 18:00 local with the
+    /// week's real numbers. One-time trigger re-scheduled in cascade by the app
+    /// (foreground / session completion / toggle) — content must stay fresh
+    /// (#735). The unique identifier dedupes; Android's 6-day guard exists for
+    /// WorkManager retries, which have no iOS equivalent.
+    var scheduleWeeklyRecap: @Sendable (_ minutes: Int, _ sessionCount: Int) async -> Void = { _, _ in }
+
+    /// Cancel the pending weekly recap (toggle off).
+    var cancelWeeklyRecap: @Sendable () async -> Void = {}
 }
 
 // MARK: - Dependency Keys
@@ -277,6 +287,51 @@ extension NotificationClient {
                     trigger: trigger
                 )
                 try? await notificationCenter.add(request)
+            },
+
+            scheduleWeeklyRecap: { minutes, sessionCount in
+                // Next Sunday 18:00 local, DST-safe via Calendar fields
+                // (never raw-millisecond math — Android scheduler lesson).
+                let calendar = Calendar.current
+                var components = DateComponents()
+                components.hour = 18
+                components.minute = 0
+                // Calendar weekday is 1-based: SUNDAY = 1 … SATURDAY = 7.
+                components.weekday = 1
+                guard let fireDate = calendar.nextDate(
+                    after: Date.now,
+                    matching: components,
+                    matchingPolicy: .nextTime
+                ) else { return }
+
+                let content = UNMutableNotificationContent()
+                content.title = "🍅 \(String(localized: "Your week in Pepinillo"))"
+                content.body = NotificationCopy.weeklyRecapBody(minutes: minutes, sessionCount: sessionCount)
+                content.sound = .default
+                content.interruptionLevel = .active
+                content.categoryIdentifier = "WEEKLY_RECAP"
+
+                let fireComponents = calendar.dateComponents(
+                    [.year, .month, .day, .hour, .minute],
+                    from: fireDate
+                )
+                let trigger = UNCalendarNotificationTrigger(
+                    dateMatching: fireComponents,
+                    repeats: false
+                )
+                let request = UNNotificationRequest(
+                    identifier: "weekly-recap",
+                    content: content,
+                    trigger: trigger
+                )
+                // Remove-before-add: the unique identifier makes duplicate
+                // dispatches impossible (replaces Android's retry guard).
+                center().removePendingNotificationRequests(withIdentifiers: ["weekly-recap"])
+                try? await center().add(request)
+            },
+
+            cancelWeeklyRecap: {
+                center().removePendingNotificationRequests(withIdentifiers: ["weekly-recap"])
             }
         )
     }()
@@ -351,6 +406,29 @@ enum NotificationCopy {
             return String(localized: "Haven't focused today yet. Open Pepinillo and get a session in.")
         }
         return String(localized: "Day \(streakDays) of your streak — one session today keeps it alive.")
+    }
+
+    /// Weekly recap body (#735): data sentence, or a guilt-free re-activation
+    /// invitation for empty weeks (Sunday evening is the best hook to return).
+    /// No emoji in the body — the 🍅 lives in the notification title only.
+    static func weeklyRecapBody(minutes: Int, sessionCount: Int) -> String {
+        guard minutes > 0 else {
+            return String(localized: "No sessions this week. One focused session today is enough to start again.")
+        }
+        return String(
+            localized: "\(formatDuration(minutes)) of focus across \(sessionCount) sessions this week. Tap to see the details."
+        )
+    }
+
+    /// "Xh Ym" / "Xh" / "Ym" — same compact format as the profile stats screen.
+    static func formatDuration(_ totalMinutes: Int) -> String {
+        let hours = totalMinutes / 60
+        let minutes = totalMinutes % 60
+        switch (hours > 0, minutes > 0) {
+        case (true, true): return "\(hours)h \(minutes)m"
+        case (true, false): return "\(hours)h"
+        default: return "\(minutes)m"
+        }
     }
 }
 

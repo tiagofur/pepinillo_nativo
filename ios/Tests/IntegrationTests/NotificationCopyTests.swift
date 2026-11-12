@@ -29,4 +29,18 @@ struct NotificationCopyTests {
         #expect(NotificationCopy.dailyReminderBody(streakDays: 5)
             != NotificationCopy.dailyReminderBody(streakDays: 0))
     }
+
+    // MARK: - Weekly recap (#735)
+
+    @Test func weeklyRecapEmptyWeekUsesReactivationCopy() {
+        let empty = NotificationCopy.weeklyRecapBody(minutes: 0, sessionCount: 0)
+        #expect(!empty.contains("0"))
+        #expect(empty != NotificationCopy.weeklyRecapBody(minutes: 1, sessionCount: 1))
+    }
+
+    @Test func weeklyRecapDataWeekCarriesNumbers() {
+        let body = NotificationCopy.weeklyRecapBody(minutes: 260, sessionCount: 12)
+        #expect(body.contains("4h 20m"))
+        #expect(body.contains("12"))
+    }
 }

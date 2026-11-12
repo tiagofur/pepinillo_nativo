@@ -1,6 +1,166 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "settings.notifications.weeklyRecap" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Resumen semanal"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Resumo semanal"
+          }
+        }
+      }
+    },
+    "settings.notifications.weeklyRecap.footer" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Los domingos a las 6 PM recibes un resumen del foco y las sesiones de tu semana."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aos domingos às 6 PM, receba um resumo do foco e das sessões da semana."
+          }
+        }
+      }
+    },
+    "settings.streak.celebrateRecords" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Celebrar nuevos récords"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Celebrar novos recordes"
+          }
+        }
+      }
+    },
+    "settings.streak.celebrateRecords.footer" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Muestra una celebración discreta cuando tu racha supera su mejor marca."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mostra uma celebração discreta quando sua sequência supera a melhor marca."
+          }
+        }
+      }
+    },
+    "streakrecord.banner.title" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nuevo récord"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Novo recorde"
+          }
+        }
+      }
+    },
+    "%lld days of focus in a row — your longest streak yet. Keep it up." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld días de foco seguidos: tu racha más larga hasta hoy. Sigue así."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld dias de foco seguidos — sua maior sequência até agora. Continue assim."
+          }
+        }
+      }
+    },
+    "New record: %lld day streak. Your longest streak yet." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nuevo récord: racha de %lld días. Tu racha más larga hasta hoy."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Novo recorde: sequência de %lld dias. Sua maior sequência até agora."
+          }
+        }
+      }
+    },
+    "Your week in Pepinillo" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu semana en Pepinillo"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sua semana no Pepinillo"
+          }
+        }
+      }
+    },
+    "%@ of focus across %lld sessions this week. Tap to see the details." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ de foco en %lld sesiones esta semana. Toca para ver el detalle."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ de foco em %lld sessões nesta semana. Toque para ver o detalhe."
+          }
+        }
+      }
+    },
+    "No sessions this week. One focused session today is enough to start again." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sin sesiones esta semana. Una sesión de foco hoy basta para volver a empezar."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nenhuma sessão nesta semana. Uma sessão de foco hoje basta para recomeçar."
+          }
+        }
+      }
+    },
     "Day %lld of your streak \u2014 one session today keeps it alive." : {
       "localizations" : {
         "es" : {
