@@ -58,6 +58,7 @@ data class SettingsUiState(
     val hapticTimerTickEnabled: Boolean = false,
     val selectedTheme: String = "materialYou",
     val currentStreak: Int = 0,
+    val celebrateStreakRecords: Boolean = true,
     val weeklyRecapEnabled: Boolean = false,
     val isPro: Boolean = false,
     val subscriptionTier: SubscriptionTier = SubscriptionTier.FREE,
@@ -226,6 +227,9 @@ class SettingsViewModel @Inject constructor(
         prefsRepo.updateTimerNotificationsEnabled(!uiState.value.timerNotificationsEnabled)
     }
 
+    fun toggleCelebrateStreakRecords() = viewModelScope.launch {
+        prefsRepo.updateCelebrateStreakRecords(!uiState.value.celebrateStreakRecords)
+    }
 
     fun toggleWeeklyRecap() = viewModelScope.launch {
         val newValue = !uiState.value.weeklyRecapEnabled
@@ -289,6 +293,7 @@ class SettingsViewModel @Inject constructor(
         timerNotificationsEnabled = timerNotificationsEnabled,
         showJournalAfterSession = showJournalAfterSession,
         hapticTimerTickEnabled = hapticTimerTickEnabled,
+        celebrateStreakRecords = celebrateStreakRecords,
         weeklyRecapEnabled = weeklyRecapEnabled,
         selectedTheme = selectedTheme,
         currentStreak = currentStreak,

@@ -64,6 +64,16 @@ data class UserPreferences(
      * Completed focus sessions on this device, used to trigger the one-time review prompt.
      */
     val completedSessionsCount: Int = 0,
+    /**
+     * Whether completing a session that beats the all-time best streak shows a quiet
+     * in-sheet celebration. Device-local preference — not synced across devices.
+     */
+    val celebrateStreakRecords: Boolean = true,
+    /**
+     * Last celebrated streak-record value (anti-repeat latch). The celebration fires only
+     * when the current streak exceeds max(previousBest, this). Device-local.
+     */
+    val streakRecordCelebrated: Int = 0,
     /** Opt-in weekly focus summary notification. Device-local. */
     val weeklyRecapEnabled: Boolean = false,
     /** java.util.Calendar day-of-week constant (1-based, [Calendar.SUNDAY]=1). */
@@ -113,6 +123,8 @@ class UserPreferencesRepository @Inject constructor(
         val HAPTIC_TIMER_TICK_ENABLED = booleanPreferencesKey("haptic_timer_tick_enabled")
         val HAS_PROMPTED_FOR_REVIEW = booleanPreferencesKey("has_prompted_for_review")
         val COMPLETED_SESSIONS_COUNT = intPreferencesKey("completed_sessions_count")
+        val CELEBRATE_STREAK_RECORDS = booleanPreferencesKey("celebrate_streak_records")
+        val STREAK_RECORD_CELEBRATED = intPreferencesKey("streak_record_celebrated")
         val WEEKLY_RECAP_ENABLED = booleanPreferencesKey("weekly_recap_enabled")
         val WEEKLY_RECAP_DAY_OF_WEEK = intPreferencesKey("weekly_recap_day_of_week")
         val WEEKLY_RECAP_HOUR = intPreferencesKey("weekly_recap_hour")
@@ -150,6 +162,8 @@ class UserPreferencesRepository @Inject constructor(
             hapticTimerTickEnabled = prefs[Keys.HAPTIC_TIMER_TICK_ENABLED] ?: false,
             hasPromptedForReview = prefs[Keys.HAS_PROMPTED_FOR_REVIEW] ?: false,
             completedSessionsCount = prefs[Keys.COMPLETED_SESSIONS_COUNT] ?: 0,
+            celebrateStreakRecords = prefs[Keys.CELEBRATE_STREAK_RECORDS] ?: true,
+            streakRecordCelebrated = prefs[Keys.STREAK_RECORD_CELEBRATED] ?: 0,
             weeklyRecapEnabled = prefs[Keys.WEEKLY_RECAP_ENABLED] ?: false,
             weeklyRecapDayOfWeek = prefs[Keys.WEEKLY_RECAP_DAY_OF_WEEK] ?: Calendar.SUNDAY,
             weeklyRecapHour = prefs[Keys.WEEKLY_RECAP_HOUR] ?: 18,
@@ -195,6 +209,8 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun updateSoundscapeVolume(volume: Float) = update { it[Keys.SOUNDSCAPE_VOLUME] = volume }
     suspend fun updateHapticTimerTickEnabled(value: Boolean) = update { it[Keys.HAPTIC_TIMER_TICK_ENABLED] = value }
     suspend fun markReviewPrompted() = update { it[Keys.HAS_PROMPTED_FOR_REVIEW] = true }
+    suspend fun updateCelebrateStreakRecords(value: Boolean) = update { it[Keys.CELEBRATE_STREAK_RECORDS] = value }
+    suspend fun updateStreakRecordCelebrated(value: Int) = update { it[Keys.STREAK_RECORD_CELEBRATED] = value }
     suspend fun updateWeeklyRecapEnabled(value: Boolean) = update { it[Keys.WEEKLY_RECAP_ENABLED] = value }
     suspend fun updateWeeklyRecapDayOfWeek(value: Int) = update { it[Keys.WEEKLY_RECAP_DAY_OF_WEEK] = value }
     suspend fun updateWeeklyRecapHour(value: Int) = update { it[Keys.WEEKLY_RECAP_HOUR] = value }

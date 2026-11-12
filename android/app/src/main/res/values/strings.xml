@@ -238,6 +238,14 @@
     <string name="shortcut_tasks_short">Tasks</string>
     <string name="shortcut_tasks_long">Open tasks</string>
 
+    <!-- Streak record celebration (#729) -->
+    <string name="cd_streak_record">New streak record: %1$d days, your longest streak yet.</string>
+    <plurals name="streak_record_body">
+        <item quantity="one">%1$d day of focus in a row — your longest streak yet. Keep it up.</item>
+        <item quantity="other">%1$d days of focus in a row — your longest streak yet. Keep it up.</item>
+    </plurals>
+    <string name="settings_celebrate_records">Celebrate new records</string>
+    <string name="settings_celebrate_records_sub">Show a small celebration when you beat your best streak</string>
 
     <!-- Weekly recap (#730) -->
     <string name="weekly_recap_channel_name">Weekly recap</string>

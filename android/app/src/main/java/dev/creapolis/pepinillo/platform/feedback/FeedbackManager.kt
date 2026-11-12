@@ -91,6 +91,17 @@ class FeedbackManager @Inject constructor(
         vibrateTick()
     }
 
+    /**
+     * Quiet "ta-da" haptic for a new streak-record celebration (#729). Fired when the
+     * in-sheet record block finishes appearing — not on phase completion, where
+     * [onPhaseComplete] already vibrated. Gated only by the vibration master toggle.
+     */
+    suspend fun onStreakRecordCelebration() {
+        val prefs = prefsRepo.preferences.first()
+        if (!prefs.vibrationEnabled) return
+        vibrateCelebrate()
+    }
+
     private fun showCompletionNotification(mode: FocusMode, phase: FocusPhase) {
         val (titleRes, textRes) = completionMessageRes(mode, phase)
         val title = context.getString(titleRes)
@@ -198,6 +209,30 @@ class FeedbackManager @Inject constructor(
                 vibrator.vibrate(composition)
             } else {
                 val effect = VibrationEffect.createOneShot(30, VibrationEffect.DEFAULT_AMPLITUDE)
+                vibrator.vibrate(effect)
+            }
+        } catch (_: Exception) {
+            // Silently fail (e.g. emulator without a vibrator)
+        }
+    }
+
+    /** Soft three-beat "award" for the streak-record celebration. Quieter than [vibrate]. */
+    private fun vibrateCelebrate() {
+        try {
+            if (!vibrator.hasVibrator()) return
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                val composition = VibrationEffect.startComposition()
+                    .addPrimitive(VibrationEffect.Composition.PRIMITIVE_CLICK)
+                    .addPrimitive(VibrationEffect.Composition.PRIMITIVE_TICK, 0.3f, 80)
+                    .addPrimitive(VibrationEffect.Composition.PRIMITIVE_CLICK, 1.0f, 160)
+                    .compose()
+                vibrator.vibrate(composition)
+            } else {
+                val effect = VibrationEffect.createWaveform(
+                    longArrayOf(0, 60, 70, 40, 70, 60),
+                    -1,
+                )
                 vibrator.vibrate(effect)
             }
         } catch (_: Exception) {

@@ -238,6 +238,14 @@
     <string name="shortcut_tasks_short">Tareas</string>
     <string name="shortcut_tasks_long">Abrir tareas</string>
 
+    <!-- Streak record celebration (#729) -->
+    <string name="cd_streak_record">Nuevo récord de racha: %1$d días, tu racha más larga hasta ahora.</string>
+    <plurals name="streak_record_body">
+        <item quantity="one">%1$d día de foco seguido: tu racha más larga hasta ahora. Sigue así.</item>
+        <item quantity="other">%1$d días de foco seguidos: tu racha más larga hasta ahora. Sigue así.</item>
+    </plurals>
+    <string name="settings_celebrate_records">Celebrar nuevos récords</string>
+    <string name="settings_celebrate_records_sub">Muestra una peque\u00f1a celebraci\u00f3n al superar tu mejor racha</string>
 
     <!-- Weekly recap (#730) -->
     <string name="weekly_recap_channel_name">Resumen semanal</string>

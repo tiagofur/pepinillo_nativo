@@ -657,6 +657,13 @@ fun SettingsScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
+            SettingsDivider()
+            SwitchRow(
+                label = stringResource(R.string.settings_celebrate_records),
+                subtitle = stringResource(R.string.settings_celebrate_records_sub),
+                isChecked = uiState.celebrateStreakRecords,
+                onToggle = viewModel::toggleCelebrateStreakRecords,
+            )
         }
 
         // ── SYNC STATUS SECTION ──

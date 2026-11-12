@@ -523,6 +523,14 @@
     <string name="shortcut_tasks_short">Tarefas</string>
     <string name="shortcut_tasks_long">Abrir tarefas</string>
 
+    <!-- Streak record celebration (#729) -->
+    <string name="cd_streak_record">Novo recorde de sequência: %1$d dias, a sua maior sequência até agora.</string>
+    <plurals name="streak_record_body">
+        <item quantity="one">%1$d dia de foco seguido: a sua maior sequência até agora. Continue assim.</item>
+        <item quantity="other">%1$d dias de foco seguidos: a sua maior sequência até agora. Continue assim.</item>
+    </plurals>
+    <string name="settings_celebrate_records">Celebrar novos recordes</string>
+    <string name="settings_celebrate_records_sub">Mostra uma pequena celebração ao superar a sua maior sequência</string>
 
     <!-- Weekly recap (#730) -->
     <string name="weekly_recap_channel_name">Resumo semanal</string>
