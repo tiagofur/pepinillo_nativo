@@ -487,8 +487,27 @@ struct MacSettingsView: View {
                         displayedComponents: .hourAndMinute
                     )
                 }
+                Toggle(
+                    String(localized: "settings.notifications.weeklyRecap", defaultValue: "Weekly recap"),
+                    isOn: eventBinding(store.settings.weeklyRecapEnabled) { .weeklyRecapToggled }
+                )
             } footer: {
-                Text("A nudge to start your first focus of the day.")
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("A nudge to start your first focus of the day.")
+                    Text(String(localized: "settings.notifications.weeklyRecap.footer", defaultValue: "Sundays at 6 PM, get a summary of your focus time and sessions."))
+                }
+                .foregroundStyle(.secondary)
+            }
+
+            Section {
+                Toggle(
+                    String(localized: "settings.streak.celebrateRecords", defaultValue: "Celebrate new records"),
+                    isOn: eventBinding(store.settings.celebrateRecordsEnabled) { .celebrateRecordsToggled }
+                )
+            } header: {
+                Text(String(localized: "Streak"))
+            } footer: {
+                Text(String(localized: "settings.streak.celebrateRecords.footer", defaultValue: "Shows a quiet celebration when your streak beats its all-time best."))
                     .foregroundStyle(.secondary)
             }
         }
