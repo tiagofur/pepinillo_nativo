@@ -30,6 +30,19 @@ struct AppView: View {
         }
     }
 
+    /// Cold-start quick actions land in the delegate's pending slot before the
+    /// store exists; warm ones arrive via `.pepinilloQuickAction`. Either way,
+    /// exactly-once consumption routes the tab switch into the store (#733).
+    #if canImport(UIKit)
+    private func consumePendingQuickAction() {
+        guard let tab = QuickActionAppDelegate.pendingQuickAction else { return }
+        QuickActionAppDelegate.pendingQuickAction = nil
+        store.send(.quickActionSelected(tab))
+    }
+    #else
+    private func consumePendingQuickAction() {}
+    #endif
+
     var body: some View {
         ZStack {
             Group {
@@ -65,6 +78,11 @@ struct AppView: View {
             if !isRunningUnitTests {
                 store.send(.appLaunched)
             }
+            consumePendingQuickAction()
+        }
+        // Warm-start quick action: delivered while any scene exists (#733).
+        .onReceive(NotificationCenter.default.publisher(for: .pepinilloQuickAction)) { _ in
+            consumePendingQuickAction()
         }
         .onOpenURL { url in
             store.send(.appURLReceived(url))

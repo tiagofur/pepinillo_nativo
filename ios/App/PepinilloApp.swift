@@ -308,8 +308,70 @@ private final class AppBootstrap: ObservableObject {
     }
 }
 
+#if canImport(UIKit)
+/// Bridges Home Screen quick actions into the TCA store via NotificationCenter —
+/// the same system-event idiom the app already uses for `.NSCalendarDayChanged`.
+/// Cold-start deliveries land in [pendingQuickAction] before any view exists and
+/// are consumed by AppView on first appearance (#733).
+@MainActor
+final class QuickActionAppDelegate: NSObject, UIApplicationDelegate, UIWindowSceneDelegate {
+
+    /// Shortcut type waiting to be consumed by the root store (cold start).
+    static var pendingQuickAction: AppFeature.Tab?
+
+    static func handle(_ shortcutItem: UIApplicationShortcutItem) {
+        let tab: AppFeature.Tab?
+        switch shortcutItem.type {
+        case QuickActionType.focus: tab = .focus
+        case QuickActionType.plan: tab = .plan
+        default: tab = nil
+        }
+        guard let tab else { return }
+        pendingQuickAction = tab
+        NotificationCenter.default.post(name: .pepinilloQuickAction, object: nil)
+    }
+
+    func application(
+        _ application: UIApplication,
+        configurationForConnecting connectingSceneSession: UISceneSession,
+        options: UIScene.ConnectionOptions
+    ) -> UISceneConfiguration {
+        let configuration = UISceneConfiguration(name: nil, sessionRole: connectingSceneSession.role)
+        configuration.delegateClass = QuickActionAppDelegate.self
+        // Cold start: the shortcut that launched the app arrives in the connect
+        // options, before any SwiftUI content (and before the store exists).
+        if let shortcutItem = options.shortcutItem {
+            Self.handle(shortcutItem)
+        }
+        return configuration
+    }
+
+    func windowScene(
+        _ windowScene: UIWindowScene,
+        performActionFor shortcutItem: UIApplicationShortcutItem,
+        completionHandler: @escaping (Bool) -> Void
+    ) {
+        Self.handle(shortcutItem)
+        completionHandler(true)
+    }
+}
+
+enum QuickActionType {
+    static let focus = "com.pepinillo.app.shortcut.focus"
+    static let plan = "com.pepinillo.app.shortcut.plan"
+}
+
+extension Notification.Name {
+    static let pepinilloQuickAction = Notification.Name("com.pepinillo.app.quickAction")
+}
+#endif
+
 @main
 struct PepinilloApp: App {
+
+    #if canImport(UIKit)
+    @UIApplicationDelegateAdaptor(QuickActionAppDelegate.self) private var appDelegate
+    #endif
 
     @Environment(\.scenePhase) private var scenePhase
     @StateObject private var bootstrap = AppBootstrap()
