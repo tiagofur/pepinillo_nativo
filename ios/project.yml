@@ -70,6 +70,15 @@ targets:
         UIApplicationSceneManifest:
           UIApplicationSupportsMultipleScenes: true
           UISceneConfigurations: {}
+        # Home Screen quick actions (#733) — declared here because XcodeGen
+        # regenerates App/Info.plist from this block on every run.
+        UIApplicationShortcutItems:
+          - UIApplicationShortcutItemIconSymbolName: timer
+            UIApplicationShortcutItemTitle: Start focus
+            UIApplicationShortcutItemType: com.pepinillo.app.shortcut.focus
+          - UIApplicationShortcutItemIconSymbolName: checklist
+            UIApplicationShortcutItemTitle: Tasks
+            UIApplicationShortcutItemType: com.pepinillo.app.shortcut.plan
         UIRequiredDeviceCapabilities: [arm64]
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
         UISupportedInterfaceOrientations~ipad:
