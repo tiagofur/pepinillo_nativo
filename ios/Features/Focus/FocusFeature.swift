@@ -1373,8 +1373,11 @@ struct FocusFeature {
                     journal.streakRecord = record
                     journal.hapticEnabled = state.config.hapticEnabled
                     state.journal = journal
+                } else {
+                    // The sheet's own effect has not created it yet — hold the
+                    // record; showJournalSheet applies it on creation.
+                    state.pendingStreakRecord = record
                 }
-                state.pendingStreakRecord = nil
                 return .none
 
             case .presentStreakRecordBanner(let newBest):

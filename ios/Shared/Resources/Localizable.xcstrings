@@ -22,13 +22,13 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sundays at 6 PM, get a summary of your focus time and sessions."
+            "value" : "Los domingos a las 6 PM recibes un resumen del foco y las sesiones de tu semana."
           }
         },
         "pt" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Los domingos a las 6 PM recibes un resumen del foco y las sesiones de tu semana."
+            "value" : "Aos domingos às 6 PM, receba um resumo do foco e das sessões da semana."
           }
         }
       }
@@ -54,13 +54,13 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Shows a quiet celebration when your streak beats its all-time best."
+            "value" : "Muestra una celebración discreta cuando tu racha supera su mejor marca."
           }
         },
         "pt" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Muestra una celebración discreta cuando tu racha supera su mejor marca."
+            "value" : "Mostra uma celebração discreta quando sua sequência supera a melhor marca."
           }
         }
       }
