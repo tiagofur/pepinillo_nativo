@@ -101,6 +101,7 @@ import dev.creapolis.pepinillo.feature.focus.components.CircularTimerRing
 import dev.creapolis.pepinillo.feature.focus.components.ModeChip
 import dev.creapolis.pepinillo.feature.focus.components.TimerMorph
 import dev.creapolis.pepinillo.feature.focus.components.SessionJournalSheet
+import dev.creapolis.pepinillo.feature.focus.components.StreakRecordBanner
 import dev.creapolis.pepinillo.feature.focus.components.TaskPickerDialog
 import dev.creapolis.pepinillo.feature.soundscape.SoundscapePickerSheet
 import dev.creapolis.pepinillo.navigation.NavigationTransitions
@@ -127,6 +128,8 @@ fun FocusScreen(
     // Super-review F1: screen-reader text for the timer, updated at minute/phase cadence only.
     val a11yState by viewModel.a11yState.collectAsState()
     val activeTasks by viewModel.activeTasks.collectAsState()
+    // New streak-record celebration value, or null when there is nothing to celebrate (#729).
+    val streakRecordCelebration by viewModel.streakRecordCelebration.collectAsState()
     val modeColors = uiState.selectedMode.colorScheme(uiState.currentPhase)
     val haptic = LocalHapticFeedback.current
 
@@ -642,6 +645,15 @@ fun FocusScreen(
                 onClick = { viewModel.onSoundscapePickerClick() },
             )
 
+            // Journal-disabled path: quiet record banner below the controls (#729).
+            streakRecordCelebration?.let { record ->
+                Spacer(modifier = Modifier.height(12.dp))
+                StreakRecordBanner(
+                    streakDays = record,
+                    onCelebrationShown = { viewModel.onStreakRecordShown() },
+                )
+            }
+
             AnimatedVisibility(
                 visible = uiState.selectedSoundscape != null && !sessionActive,
                 enter = fadeIn(),
@@ -706,11 +718,22 @@ fun FocusScreen(
         )
     }
 
+    // Journal-disabled path: compact non-blocking banner under the timer, auto-dismissed
+    // after 8 s (#729). The journal-enabled path dismisses via save/skip.
+    LaunchedEffect(streakRecordCelebration, uiState.showJournalSheet) {
+        if (streakRecordCelebration != null && !uiState.showJournalSheet) {
+            delay(8000)
+            viewModel.consumeStreakRecordCelebration()
+        }
+    }
+
     if (uiState.showJournalSheet) {
         SessionJournalSheet(
             onSave = { note, rating -> viewModel.saveJournalEntry(note, rating) },
             onSkip = { viewModel.skipJournal() },
             onDismiss = { viewModel.skipJournal() },
+            streakRecord = streakRecordCelebration,
+            onRecordShown = { viewModel.onStreakRecordShown() },
         )
     }
 

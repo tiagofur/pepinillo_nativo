@@ -213,6 +213,7 @@ class FocusViewModelTest {
             prefsRepo = prefsRepo,
             featureGate = featureGate,
             soundscapeManager = soundscapeManager,
+            feedbackManager = feedbackManager,
             inAppReviewManager = inAppReviewManager,
         )
 
@@ -347,6 +348,7 @@ class FocusViewModelTest {
             prefsRepo = prefsRepo,
             featureGate = featureGate,
             soundscapeManager = soundscapeManager,
+            feedbackManager = feedbackManager,
             inAppReviewManager = inAppReviewManager,
         )
         backgroundScope.launch { localViewModel.uiState.collect {} }
@@ -745,6 +747,7 @@ class FocusViewModelTest {
             prefsRepo = prefsRepo,
             featureGate = featureGate,
             soundscapeManager = soundscapeManager,
+            feedbackManager = feedbackManager,
             inAppReviewManager = inAppReviewManager,
         )
 

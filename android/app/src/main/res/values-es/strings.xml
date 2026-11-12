@@ -238,6 +238,28 @@
     <string name="shortcut_tasks_short">Tareas</string>
     <string name="shortcut_tasks_long">Abrir tareas</string>
 
+    <!-- Streak record celebration (#729) -->
+    <string name="cd_streak_record">Nuevo récord de racha: %1$d días, tu racha más larga hasta ahora.</string>
+    <plurals name="streak_record_body">
+        <item quantity="one">%1$d día de foco seguido: tu racha más larga hasta ahora. Sigue así.</item>
+        <item quantity="other">%1$d días de foco seguidos: tu racha más larga hasta ahora. Sigue así.</item>
+    </plurals>
+    <string name="settings_celebrate_records">Celebrar nuevos récords</string>
+    <string name="settings_celebrate_records_sub">Muestra una peque\u00f1a celebraci\u00f3n al superar tu mejor racha</string>
+
+    <!-- Weekly recap (#730) -->
+    <string name="weekly_recap_channel_name">Resumen semanal</string>
+    <string name="weekly_recap_channel_desc">Un resumen dominical de tu tiempo de foco de la semana</string>
+    <string name="weekly_recap_title">Tu semana en Pepinillo</string>
+    <string name="weekly_recap_text">%1$s de foco en %2$s esta semana. Toca para ver el detalle.</string>
+    <string name="weekly_recap_text_empty">Sin sesiones esta semana. Tu pr\u00f3ximo enfoque est\u00e1 a un toque.</string>
+    <string name="settings_weekly_recap">Resumen semanal</string>
+    <string name="settings_weekly_recap_sub">Resumen de tu semana, domingos a las 18:00</string>
+    <plurals name="weekly_recap_sessions_count">
+        <item quantity="one">%1$d sesi\u00f3n</item>
+        <item quantity="other">%1$d sesiones</item>
+    </plurals>
+
     <!-- Onboarding -->
     <string name="onboarding_welcome_title">Bienvenido a Pepinillo</string>
     <string name="onboarding_welcome_desc">Tu compa\u00f1ero de trabajo profundo. Enf\u00f3cate mejor, logra m\u00e1s y descubre tu estilo de productividad ideal.</string>

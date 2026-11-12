@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -16,6 +17,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import java.util.Calendar
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -62,6 +64,24 @@ data class UserPreferences(
      * Completed focus sessions on this device, used to trigger the one-time review prompt.
      */
     val completedSessionsCount: Int = 0,
+    /**
+     * Whether completing a session that beats the all-time best streak shows a quiet
+     * in-sheet celebration. Device-local preference — not synced across devices.
+     */
+    val celebrateStreakRecords: Boolean = true,
+    /**
+     * Last celebrated streak-record value (anti-repeat latch). The celebration fires only
+     * when the current streak exceeds max(previousBest, this). Device-local.
+     */
+    val streakRecordCelebrated: Int = 0,
+    /** Opt-in weekly focus summary notification. Device-local. */
+    val weeklyRecapEnabled: Boolean = false,
+    /** java.util.Calendar day-of-week constant (1-based, [Calendar.SUNDAY]=1). */
+    val weeklyRecapDayOfWeek: Int = Calendar.SUNDAY,
+    val weeklyRecapHour: Int = 18,
+    val weeklyRecapMinute: Int = 0,
+    /** Last weekly-recap dispatch (epoch millis); guards against WorkManager retries. */
+    val weeklyRecapLastSentAt: Long = 0,
 )
 
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "user_preferences")
@@ -103,6 +123,13 @@ class UserPreferencesRepository @Inject constructor(
         val HAPTIC_TIMER_TICK_ENABLED = booleanPreferencesKey("haptic_timer_tick_enabled")
         val HAS_PROMPTED_FOR_REVIEW = booleanPreferencesKey("has_prompted_for_review")
         val COMPLETED_SESSIONS_COUNT = intPreferencesKey("completed_sessions_count")
+        val CELEBRATE_STREAK_RECORDS = booleanPreferencesKey("celebrate_streak_records")
+        val STREAK_RECORD_CELEBRATED = intPreferencesKey("streak_record_celebrated")
+        val WEEKLY_RECAP_ENABLED = booleanPreferencesKey("weekly_recap_enabled")
+        val WEEKLY_RECAP_DAY_OF_WEEK = intPreferencesKey("weekly_recap_day_of_week")
+        val WEEKLY_RECAP_HOUR = intPreferencesKey("weekly_recap_hour")
+        val WEEKLY_RECAP_MINUTE = intPreferencesKey("weekly_recap_minute")
+        val WEEKLY_RECAP_LAST_SENT_AT = longPreferencesKey("weekly_recap_last_sent_at")
     }
 
     val preferences: Flow<UserPreferences> = dataStore.data.map { prefs ->
@@ -135,6 +162,13 @@ class UserPreferencesRepository @Inject constructor(
             hapticTimerTickEnabled = prefs[Keys.HAPTIC_TIMER_TICK_ENABLED] ?: false,
             hasPromptedForReview = prefs[Keys.HAS_PROMPTED_FOR_REVIEW] ?: false,
             completedSessionsCount = prefs[Keys.COMPLETED_SESSIONS_COUNT] ?: 0,
+            celebrateStreakRecords = prefs[Keys.CELEBRATE_STREAK_RECORDS] ?: true,
+            streakRecordCelebrated = prefs[Keys.STREAK_RECORD_CELEBRATED] ?: 0,
+            weeklyRecapEnabled = prefs[Keys.WEEKLY_RECAP_ENABLED] ?: false,
+            weeklyRecapDayOfWeek = prefs[Keys.WEEKLY_RECAP_DAY_OF_WEEK] ?: Calendar.SUNDAY,
+            weeklyRecapHour = prefs[Keys.WEEKLY_RECAP_HOUR] ?: 18,
+            weeklyRecapMinute = prefs[Keys.WEEKLY_RECAP_MINUTE] ?: 0,
+            weeklyRecapLastSentAt = prefs[Keys.WEEKLY_RECAP_LAST_SENT_AT] ?: 0L,
         )
     }
 
@@ -175,6 +209,13 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun updateSoundscapeVolume(volume: Float) = update { it[Keys.SOUNDSCAPE_VOLUME] = volume }
     suspend fun updateHapticTimerTickEnabled(value: Boolean) = update { it[Keys.HAPTIC_TIMER_TICK_ENABLED] = value }
     suspend fun markReviewPrompted() = update { it[Keys.HAS_PROMPTED_FOR_REVIEW] = true }
+    suspend fun updateCelebrateStreakRecords(value: Boolean) = update { it[Keys.CELEBRATE_STREAK_RECORDS] = value }
+    suspend fun updateStreakRecordCelebrated(value: Int) = update { it[Keys.STREAK_RECORD_CELEBRATED] = value }
+    suspend fun updateWeeklyRecapEnabled(value: Boolean) = update { it[Keys.WEEKLY_RECAP_ENABLED] = value }
+    suspend fun updateWeeklyRecapDayOfWeek(value: Int) = update { it[Keys.WEEKLY_RECAP_DAY_OF_WEEK] = value }
+    suspend fun updateWeeklyRecapHour(value: Int) = update { it[Keys.WEEKLY_RECAP_HOUR] = value }
+    suspend fun updateWeeklyRecapMinute(value: Int) = update { it[Keys.WEEKLY_RECAP_MINUTE] = value }
+    suspend fun updateWeeklyRecapLastSentAt(value: Long) = update { it[Keys.WEEKLY_RECAP_LAST_SENT_AT] = value }
     suspend fun incrementCompletedSessionsCount(): Int {
         var count = 0
         update {

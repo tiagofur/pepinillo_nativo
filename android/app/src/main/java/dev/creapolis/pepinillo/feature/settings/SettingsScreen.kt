@@ -622,6 +622,13 @@ fun SettingsScreen(
                     )
                 }
             }
+            SettingsDivider()
+            SwitchRow(
+                label = stringResource(R.string.settings_weekly_recap),
+                subtitle = stringResource(R.string.settings_weekly_recap_sub),
+                isChecked = uiState.weeklyRecapEnabled,
+                onToggle = viewModel::toggleWeeklyRecap,
+            )
         }
 
         Spacer(modifier = Modifier.height(28.dp))
@@ -650,6 +657,13 @@ fun SettingsScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
+            SettingsDivider()
+            SwitchRow(
+                label = stringResource(R.string.settings_celebrate_records),
+                subtitle = stringResource(R.string.settings_celebrate_records_sub),
+                isChecked = uiState.celebrateStreakRecords,
+                onToggle = viewModel::toggleCelebrateStreakRecords,
+            )
         }
 
         // ── SYNC STATUS SECTION ──
