@@ -121,6 +121,18 @@ class MainActivity : ComponentActivity() {
     companion object {
         const val EXTRA_NAV_ROUTE = "nav_route"
         const val ROUTE_PAYWALL = "paywall"
+
+        // Launcher shortcut actions (#727). Static shortcut XML cannot carry extras,
+        // so each shortcut intent is identified by its action and mapped to a route.
+        const val ACTION_SHORTCUT_START_FOCUS = "dev.creapolis.pepinillo.action.START_FOCUS"
+        const val ACTION_SHORTCUT_OPEN_TASKS = "dev.creapolis.pepinillo.action.OPEN_TASKS"
+
+        /** Maps a launcher-shortcut intent action to its top-level navigation route. */
+        fun routeForShortcutAction(action: String?): String? = when (action) {
+            ACTION_SHORTCUT_START_FOCUS -> TopLevelDestination.Focus.route
+            ACTION_SHORTCUT_OPEN_TASKS -> TopLevelDestination.Plan.route
+            else -> null
+        }
     }
 
     private var isPipMode by mutableStateOf(value = false)
@@ -171,6 +183,7 @@ class MainActivity : ComponentActivity() {
         )
         super.onCreate(savedInstanceState)
         pendingNavRoute = intent?.getStringExtra(EXTRA_NAV_ROUTE)
+            ?: routeForShortcutAction(intent?.action)
         var isAppReady by mutableStateOf(value = false)
 
         // Keep the splash screen on-screen until the app is ready
@@ -241,6 +254,7 @@ class MainActivity : ComponentActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         pendingNavRoute = intent.getStringExtra(EXTRA_NAV_ROUTE)
+            ?: routeForShortcutAction(intent.action)
     }
 
     override fun onPictureInPictureModeChanged(
@@ -283,11 +297,14 @@ fun PepinilloApp(
 ) {
     val navController = rememberNavController()
 
+    // Deep routes (launcher shortcuts, widget taps) must read the persisted onboarding
+    // flag — not the composable state, which starts optimistically true before prefs
+    // load — so a fresh install can never be pushed past onboarding (#727).
     LaunchedEffect(initialNavRoute) {
-        initialNavRoute?.let { route ->
-            navController.navigate(route) { launchSingleTop = true }
-            onNavRouteConsumed()
-        }
+        val route = initialNavRoute ?: return@LaunchedEffect
+        if (!prefsRepository.preferences.first().onboardingCompleted) return@LaunchedEffect
+        navController.navigate(route) { launchSingleTop = true }
+        onNavRouteConsumed()
     }
 
     // Global auth-expired handler: when the session is cleared mid-flight (refresh-401),

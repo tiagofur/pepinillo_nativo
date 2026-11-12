@@ -512,6 +512,16 @@
     <string name="daily_reminder_channel_description">Notificações diárias de lembrete de foco</string>
     <string name="daily_reminder_title">Hora de focar!</string>
     <string name="daily_reminder_text">Inicie uma sessão de foco hoje e mantenha sua sequência.</string>
+    <plurals name="daily_reminder_text_with_streak">
+        <item quantity="one">Sequência de %1$d dia 🔥 — uma sessão hoje a mantém.</item>
+        <item quantity="other">Sequência de %1$d dias 🔥 — uma sessão hoje a mantém.</item>
+    </plurals>
+
+    <!-- Launcher shortcuts (#727) -->
+    <string name="shortcut_focus_short">Iniciar foco</string>
+    <string name="shortcut_focus_long">Iniciar uma sessão de foco</string>
+    <string name="shortcut_tasks_short">Tarefas</string>
+    <string name="shortcut_tasks_long">Abrir tarefas</string>
 
     <!-- Onboarding -->
     <string name="onboarding_welcome_title">Bem-vindo ao Pepinillo</string>

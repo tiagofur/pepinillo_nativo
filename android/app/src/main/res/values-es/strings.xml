@@ -227,6 +227,16 @@
     <string name="daily_reminder_channel_description">Notificaciones diarias de recordatorio de enfoque</string>
     <string name="daily_reminder_title">\u00a1Es hora de enfocarse!</string>
     <string name="daily_reminder_text">Inicia una sesi\u00f3n de enfoque hoy y mant\u00e9n tu racha.</string>
+    <plurals name="daily_reminder_text_with_streak">
+        <item quantity="one">Racha de %1$d d\u00eda 🔥 — una sesi\u00f3n hoy la mantiene.</item>
+        <item quantity="other">Racha de %1$d d\u00edas 🔥 — una sesi\u00f3n hoy la mantiene.</item>
+    </plurals>
+
+    <!-- Launcher shortcuts (#727) -->
+    <string name="shortcut_focus_short">Iniciar foco</string>
+    <string name="shortcut_focus_long">Iniciar una sesi\u00f3n de enfoque</string>
+    <string name="shortcut_tasks_short">Tareas</string>
+    <string name="shortcut_tasks_long">Abrir tareas</string>
 
     <!-- Onboarding -->
     <string name="onboarding_welcome_title">Bienvenido a Pepinillo</string>
