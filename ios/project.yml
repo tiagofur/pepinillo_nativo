@@ -27,8 +27,8 @@ packages:
 
 settings:
   base:
-    MARKETING_VERSION: "1.1.0"
-    CURRENT_PROJECT_VERSION: "5"
+    MARKETING_VERSION: "1.2.0"
+    CURRENT_PROJECT_VERSION: "6"
     SWIFT_VERSION: "6.0"
     CODE_SIGN_STYLE: Automatic
     ENABLE_BITCODE: "NO"
