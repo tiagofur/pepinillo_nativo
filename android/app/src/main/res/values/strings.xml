@@ -189,6 +189,10 @@
     <string name="notification_channel_name">Focus Timer</string>
     <string name="notification_channel_description">Shows the active focus timer</string>
     <string name="notification_connecting">Connecting to phone...</string>
+    <string name="notification_status_running">Session in progress</string>
+    <string name="notification_status_paused">Session paused</string>
+    <string name="notification_status_waiting">Ready for next phase</string>
+    <string name="pip_paused_badge">Paused</string>
 
     <!-- Completion Messages -->
     <string name="msg_focus_complete_title">Focus session complete!</string>
