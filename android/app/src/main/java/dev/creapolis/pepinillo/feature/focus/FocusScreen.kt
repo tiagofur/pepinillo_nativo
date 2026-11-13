@@ -122,6 +122,11 @@ fun FocusScreen(
     onMoreClick: () -> Unit = {},
     onNavigateToPaywall: () -> Unit = {},
 ) {
+    // PiP has its own compact layout; the full screen never renders in the floating window.
+    if (isPipMode) {
+        dev.creapolis.pepinillo.feature.focus.components.FocusPipContent(modifier = modifier, viewModel = viewModel)
+        return
+    }
     val uiState by viewModel.uiState.collectAsState()
     // #505: hero ring + live time read the high-rate (4Hz) flow; everything else stays on uiState.
     val ringState by viewModel.ringState.collectAsState()
