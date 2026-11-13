@@ -9,6 +9,7 @@ import androidx.activity.SystemBarStyle
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.ProcessLifecycleOwner
+import androidx.lifecycle.lifecycleScope
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import dev.creapolis.pepinillo.core.auth.AuthStore
 import dev.creapolis.pepinillo.core.billing.SubscriptionManager
@@ -203,12 +204,14 @@ class MainActivity : ComponentActivity() {
         ProcessLifecycleOwner.get().lifecycle.addObserver(foregroundSyncObserver)
 
         // Keep PiP params (Pause/Resume/Stop actions, auto-enter) in sync with the timer.
-        syncScope.launch {
+        // Run on lifecycleScope (Main) because Activity and PendingIntent APIs are main-thread bound.
+        lifecycleScope.launch {
             focusEngine.state
                 .map { it.status to it.phase }
                 .distinctUntilChanged()
                 .collect {
                     runCatching { setPictureInPictureParams(buildPipParams()) }
+                        .onFailure { Log.w("MainActivity", "setPictureInPictureParams failed", it) }
                 }
         }
         // Sync subscription and cycle preferences to Wear OS
@@ -322,7 +325,7 @@ class MainActivity : ComponentActivity() {
                 android.content.Intent(this, FocusTimerService::class.java).apply {
                     this.action = serviceAction
                 },
-                android.app.PendingIntent.FLAG_IMMUTABLE,
+                android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE,
             )
             return android.app.RemoteAction(
                 android.graphics.drawable.Icon.createWithResource(this, iconRes),
@@ -333,13 +336,21 @@ class MainActivity : ComponentActivity() {
         }
         when (state.status) {
             TimerStatus.Running ->
-                actions += action(R.drawable.ic_pause, R.string.btn_pause, FocusTimerService.ACTION_PAUSE, 1)
-            TimerStatus.Paused, TimerStatus.WaitingForNext ->
-                actions += action(R.drawable.ic_play, R.string.btn_resume, FocusTimerService.ACTION_RESUME, 2)
+                actions += action(R.drawable.ic_pip_pause, R.string.btn_pause, FocusTimerService.ACTION_PAUSE, 1)
+            TimerStatus.Paused ->
+                actions += action(R.drawable.ic_pip_play, R.string.btn_resume, FocusTimerService.ACTION_RESUME, 2)
+            TimerStatus.WaitingForNext -> {
+                val startTitleRes = when (state.phase) {
+                    dev.creapolis.pepinillo.domain.timer.FocusPhase.ShortBreak -> R.string.btn_start_break
+                    dev.creapolis.pepinillo.domain.timer.FocusPhase.LongBreak -> R.string.btn_start_long_break
+                    else -> R.string.btn_start_focus
+                }
+                actions += action(R.drawable.ic_pip_play, startTitleRes, FocusTimerService.ACTION_RESUME, 2)
+            }
             else -> Unit
         }
         if (state.status != TimerStatus.Idle) {
-            actions += action(R.drawable.ic_stop, R.string.btn_stop, FocusTimerService.ACTION_STOP, 3)
+            actions += action(R.drawable.ic_pip_stop, R.string.btn_stop, FocusTimerService.ACTION_STOP, 3)
         }
         val builder = android.app.PictureInPictureParams.Builder()
             .setAspectRatio(android.util.Rational(16, 9))

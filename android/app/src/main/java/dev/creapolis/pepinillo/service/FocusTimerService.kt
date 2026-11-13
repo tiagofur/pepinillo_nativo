@@ -358,6 +358,7 @@ class FocusTimerService : Service() {
         // Collect timer state — update notification + widget
         serviceScope.launch {
             var lastWidgetUpdate = 0L
+            var lastNotificationUpdate = 0L
             var previousStatus: TimerStatus? = null
             var previousPhase: FocusPhase? = null
             var previousMode: dev.creapolis.pepinillo.feature.focus.FocusMode? = null
@@ -406,12 +407,15 @@ class FocusTimerService : Service() {
                     val shouldUpdateWidget = statusChanged || modeChanged || themeChanged ||
                         (now - lastWidgetUpdate >= throttleMs)
 
-                    // Update notification on state/task transitions or widget throttle (for the
-                    // expanded progress bar), relying on the custom RemoteViews Chronometer for
-                    // smooth 1Hz ticks without 4Hz binder spam.
+                    // Update notification on state/task transitions or every 15s (to advance the
+                    // expanded progress bar without 1Hz binder spam or resetting the Chronometer
+                    // tick handler every second).
+                    val notificationProgressDue = state.status == TimerStatus.Running &&
+                        (now - lastNotificationUpdate >= 15_000L)
                     val shouldUpdateNotification = statusChanged || phaseChanged || modeChanged ||
-                        themeChanged || taskChanged || shouldUpdateWidget
+                        themeChanged || taskChanged || notificationProgressDue
                     if (shouldUpdateNotification) {
+                        lastNotificationUpdate = now
                         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
                             ContextCompat.checkSelfPermission(this@FocusTimerService, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
                             getSystemService(NotificationManager::class.java)

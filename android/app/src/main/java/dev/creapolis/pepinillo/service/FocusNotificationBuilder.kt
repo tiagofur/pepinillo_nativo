@@ -218,6 +218,6 @@ object FocusNotificationBuilder {
             context,
             code,
             Intent(context, FocusTimerService::class.java).apply { this.action = action },
-            PendingIntent.FLAG_IMMUTABLE,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
 }
