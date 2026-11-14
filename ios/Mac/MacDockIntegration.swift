@@ -169,6 +169,16 @@ extension MacAppDelegate {
                 action: #selector(dockNewTask(_:))
             )
         )
+        // Touch path (guide R4): Quick Capture reachable from the Dock
+        // long-press/right-click menu, not only via the ⌃⌥T hotkey or the
+        // app menu bar. Routes through the same notification as Plan >
+        // Quick Capture.
+        menu.addItem(
+            Self.actionItem(
+                title: String(localized: "Quick Capture"),
+                action: #selector(dockQuickCapture(_:))
+            )
+        )
 
         menu.addItem(.separator())
         for tab in AppFeature.Tab.macSidebarSections {
@@ -215,6 +225,10 @@ extension MacAppDelegate {
         store?.send(.tabSelected(.plan))
         store?.send(.tasks(.newTaskRequested))
         requestMainWindow(selecting: .plan)
+    }
+
+    @objc func dockQuickCapture(_ sender: Any?) {
+        NotificationCenter.default.post(name: .macQuickCaptureToggleRequested, object: nil)
     }
 
     @objc func dockOpenSection(_ sender: NSMenuItem) {

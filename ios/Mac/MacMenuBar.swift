@@ -202,6 +202,18 @@ struct MacMenuBarView: View {
             }
             .buttonStyle(.link)
 
+            // Touch path (guide R4): capture without keyboard — the ⌃⌥T
+            // hotkey stays the accelerator, the popover link is the visible
+            // entry. The transient popover closes itself when the capture
+            // panel takes key focus.
+            Button("Quick Capture") {
+                NotificationCenter.default.post(
+                    name: .macQuickCaptureToggleRequested,
+                    object: nil
+                )
+            }
+            .buttonStyle(.link)
+
             Spacer()
 
             Menu {
