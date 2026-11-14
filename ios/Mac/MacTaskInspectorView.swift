@@ -259,6 +259,7 @@ struct MacTaskInspectorView: View {
                     } label: {
                         Image(systemName: subtask.isCompleted ? "checkmark.circle.fill" : "circle")
                             .foregroundStyle(subtask.isCompleted ? Color.green : Color.secondary)
+                            .macTouchTarget()
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel(
@@ -278,6 +279,7 @@ struct MacTaskInspectorView: View {
                     } label: {
                         Image(systemName: "xmark.circle")
                             .foregroundStyle(.tertiary)
+                            .macTouchTarget()
                     }
                     .buttonStyle(.plain)
                     .help(String(localized: "Delete"))
