@@ -12,6 +12,7 @@
 | "¿Existe X hoy?" (estado por plataforma) | [`product-map.md`](product-map.md) | [`strategy/PLATFORM_DECISIONS.md`](strategy/PLATFORM_DECISIONS.md) |
 | `backend/**`, sync LWW, auth, billing | [`architecture.md`](architecture.md), [`../contracts/openapi.yaml`](../contracts/openapi.yaml) | [`../backend/AGENTS.md`](../backend/AGENTS.md), [`architecture/adr/ADR-0001-go-backend-and-db-matrix.md`](architecture/adr/ADR-0001-go-backend-and-db-matrix.md) |
 | `ios/**` (iPhone/iPad/watchOS/macOS) | [`architecture.md`](architecture.md) § Apple | [`../ios/AGENTS.md`](../ios/AGENTS.md), [`../ios/docs/macos-design-contract.md`](../ios/docs/macos-design-contract.md) |
+| `ios/Mac/**` (PepinilloMac, touch en Mac) | [`../ios/docs/macos-design-contract.md`](../ios/docs/macos-design-contract.md) | [`../ios/docs/touch-on-mac.md`](../ios/docs/touch-on-mac.md) |
 | `android/**` (phone/Wear OS) | [`architecture.md`](architecture.md) § Android | [`../android/AGENTS.md`](../android/AGENTS.md) |
 | UI/UX, tema, glass, soundscapes | [`design.md`](design.md) | [`../.impeccable.md`](../.impeccable.md) |
 | Cambios HTTP | [`../contracts/openapi.yaml`](../contracts/openapi.yaml) **antes del código** | [`architecture/adr/ADR-0003-contract-first-openapi.md`](architecture/adr/ADR-0003-contract-first-openapi.md) |

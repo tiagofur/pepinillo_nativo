@@ -3,7 +3,7 @@
 **Status:** v1 (Focus-first + Plan)
 **Target:** `PepinilloMac` (macOS 15+, SwiftUI + AppKit)
 **Shared core:** `AppFeature`, `FocusFeature`, `TaskListFeature`, `AnalyticsFeature`, `PersistenceClient`
-**Related:** `.impeccable.md`, `PRD/05_TECHNICAL_ARCHITECTURE_IOS.md`, `PRD/09_CURRENT_STATUS.md`
+**Related:** `.impeccable.md`, `PRD/05_TECHNICAL_ARCHITECTURE_IOS.md`, `PRD/09_CURRENT_STATUS.md`, [`touch-on-mac.md`](touch-on-mac.md)
 
 ---
 
@@ -41,7 +41,7 @@ Coherence means the same palette, ring geometry, glass language, motion feel, an
 | Materials | glass + ambient | materials in chrome; ambient only in the Focus stage |
 | Primary actions | prominent buttons | toolbar + menus + keyboard shortcuts |
 | Plan | list + sheet | table + inspector |
-| Pointer | touch | hover, context menus, drag & drop |
+| Pointer | touch | hover + touch (ver [`touch-on-mac.md`](touch-on-mac.md)), context menus, drag & drop |
 | Windows | one scene | main window + menu bar + settings + statistics |
 
 ---
@@ -230,7 +230,7 @@ Menus: App, File, Edit (undo/redo), View, Focus, Plan, Window, Help. No bare `Sp
 
 - Timer: `.accessibilityLabel("25 minutes remaining")` and an `.accessibilityValue` that updates with the phase.
 - Ring progress is exposed as a value; never color alone.
-- Minimum hit target 28×28; primary action at least 32 pt high.
+- Minimum hit target 28×28; primary action at least 32 pt high. For touch input, interactive hit areas expand to ≥36 pt per axis (visual sizes unchanged) — see [`touch-on-mac.md`](touch-on-mac.md) R2.
 - Contrast: 4.5:1 body, 3:1 large text. Mode and priority pair color with an icon or label.
 - Full Keyboard Access and a visible focus ring.
 - VoiceOver reads the menu bar popover controls.
@@ -263,3 +263,5 @@ Menus: App, File, Edit (undo/redo), View, Focus, Plan, Window, Help. No bare `Sp
 2. Pro entitlement on macOS: existing gate with a clear state vs free modes only in v1.
 3. Mac test target: add `PepinilloMacTests` or run shared tests with a macOS destination.
 4. RESOLVED (T22): app-usage insights shipped as opt-in `NSWorkspace` foreground sampling — see §4 (Top activity) and §10 (General).
+5. Touch (macOS 27): declare `NSIsTouchNative` in Info.plist or keep automatic touch→click translation — **open until Apple labs 18–19 nov 2026**; defaults to NOT declaring ([`touch-on-mac.md`](touch-on-mac.md) §4, issue #747).
+6. Touch (macOS 27): custom notch `NSPanel` (`MacNotchPanelController`) coexistence with the system Dynamic Island — **open until labs 18–19 nov 2026**; conditions Live Activities scope (issue #746).
