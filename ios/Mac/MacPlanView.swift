@@ -188,7 +188,9 @@ struct MacPlanView: View {
             TableColumn(String(localized: "Done")) { task in
                 MacTaskRowObserver(store: store, taskID: task.id) { current in
                     doneCell(current)
-                        .frame(width: 28, height: 30)
+                        // 36 pt-wide touch target; height stays row-limited
+                        // (30 pt) so table density is untouched (guide R2).
+                        .frame(width: TouchTargets.macMinimum, height: 30)
                 }
             }
             .width(44)
@@ -283,7 +285,7 @@ struct MacPlanView: View {
                 .font(.system(size: 14, weight: .regular))
                 .foregroundStyle(task.isCompleted ? Color.green : Color.secondary)
                 .contentTransition(.symbolEffect(.replace))
-                .frame(width: 28, height: 28)
+                .frame(width: TouchTargets.macMinimum, height: 30)
                 .contentShape(Rectangle())
                 .accessibilityHidden(true)
         }
@@ -872,7 +874,7 @@ private struct MacTaskTitleCell: View {
                             Image(systemName: "info.circle")
                                 .font(.callout)
                                 .foregroundStyle(.secondary)
-                                .frame(width: 22, height: 22)
+                                .frame(minWidth: TouchTargets.macMinimum, minHeight: 30)
                                 .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)

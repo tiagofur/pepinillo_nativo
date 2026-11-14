@@ -227,6 +227,7 @@ struct MacAppView: View {
                     }
                     Spacer(minLength: 0)
                 }
+                .frame(minHeight: TouchTargets.macMinimum)
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
@@ -242,8 +243,7 @@ struct MacAppView: View {
             } label: {
                 Image(systemName: "gearshape")
                     .font(.body)
-                    .frame(width: 28, height: 28)
-                    .contentShape(Rectangle())
+                    .macTouchTarget()
             }
             .buttonStyle(.plain)
             .foregroundStyle(.secondary)

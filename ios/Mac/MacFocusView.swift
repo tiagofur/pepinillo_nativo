@@ -236,6 +236,11 @@ struct MacFocusView: View {
             .padding(.horizontal, 12)
             .padding(.vertical, 6)
             .adaptiveGlassCapsule(id: "link-task-chip", namespace: glassNS)
+            // Touch target: the glass capsule keeps its compact visual; the
+            // tappable rect grows to the 36 pt minimum (invisible, stage
+            // space around the chip absorbs it).
+            .frame(minHeight: TouchTargets.macMinimum)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .help(store.linkedTaskTitle == nil

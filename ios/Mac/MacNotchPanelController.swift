@@ -174,6 +174,10 @@ private struct MacNotchIslandView: View {
             .frame(height: 28)
             .frame(maxWidth: notchWidth)
             .islandBackground(cornerRadius: 14, tint: .accentColor, interactive: false, opaque: reduceTransparency)
+            // Touch target without visual drift: the pill stays glued to the
+            // notch (no top padding); the tappable rect grows 8 pt downward
+            // into the empty panel space to reach the 36 pt touch minimum.
+            .padding(.bottom, TouchTargets.macMinimum - 28)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -230,8 +234,7 @@ private struct MacNotchIslandView: View {
                 Image(systemName: "chevron.up")
                     .font(.system(size: 10, weight: .bold))
                     .foregroundStyle(.tertiary)
-                    .frame(width: 22, height: 22)
-                    .contentShape(Rectangle())
+                    .macTouchTarget()
             }
             .buttonStyle(.plain)
             .help(String(localized: "Collapse"))
@@ -378,7 +381,7 @@ private struct MacNotchIslandView: View {
                 .font(.system(size: 11, weight: .medium))
                 .foregroundStyle(isDestructive ? Color.red : Color.primary)
                 .frame(maxWidth: .infinity)
-                .frame(height: 30)
+                .frame(minHeight: TouchTargets.macMinimum)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
