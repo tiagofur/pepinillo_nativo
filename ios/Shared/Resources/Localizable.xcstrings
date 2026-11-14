@@ -1,182 +1,6 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "settings.notifications.weeklyRecap" : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Resumen semanal"
-          }
-        },
-        "pt" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Resumo semanal"
-          }
-        }
-      }
-    },
-    "settings.notifications.weeklyRecap.footer" : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Los domingos a las 6 PM recibes un resumen del foco y las sesiones de tu semana."
-          }
-        },
-        "pt" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aos domingos às 6 PM, receba um resumo do foco e das sessões da semana."
-          }
-        }
-      }
-    },
-    "settings.streak.celebrateRecords" : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Celebrar nuevos récords"
-          }
-        },
-        "pt" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Celebrar novos recordes"
-          }
-        }
-      }
-    },
-    "settings.streak.celebrateRecords.footer" : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Muestra una celebración discreta cuando tu racha supera su mejor marca."
-          }
-        },
-        "pt" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mostra uma celebração discreta quando sua sequência supera a melhor marca."
-          }
-        }
-      }
-    },
-    "streakrecord.banner.title" : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nuevo récord"
-          }
-        },
-        "pt" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Novo recorde"
-          }
-        }
-      }
-    },
-    "%lld days of focus in a row — your longest streak yet. Keep it up." : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld días de foco seguidos: tu racha más larga hasta hoy. Sigue así."
-          }
-        },
-        "pt" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld dias de foco seguidos — sua maior sequência até agora. Continue assim."
-          }
-        }
-      }
-    },
-    "New record: %lld day streak. Your longest streak yet." : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nuevo récord: racha de %lld días. Tu racha más larga hasta hoy."
-          }
-        },
-        "pt" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Novo recorde: sequência de %lld dias. Sua maior sequência até agora."
-          }
-        }
-      }
-    },
-    "Your week in Pepinillo" : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tu semana en Pepinillo"
-          }
-        },
-        "pt" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sua semana no Pepinillo"
-          }
-        }
-      }
-    },
-    "%@ of focus across %lld sessions this week. Tap to see the details." : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ de foco en %lld sesiones esta semana. Toca para ver el detalle."
-          }
-        },
-        "pt" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ de foco em %lld sessões nesta semana. Toque para ver o detalhe."
-          }
-        }
-      }
-    },
-    "No sessions this week. One focused session today is enough to start again." : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sin sesiones esta semana. Una sesión de foco hoy basta para volver a empezar."
-          }
-        },
-        "pt" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nenhuma sessão nesta semana. Uma sessão de foco hoje basta para recomeçar."
-          }
-        }
-      }
-    },
-    "Day %lld of your streak \u2014 one session today keeps it alive." : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "D\u00eda %lld de tu racha \u2014 una sesi\u00f3n hoy la mantiene."
-          }
-        },
-        "pt" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dia %lld da sua sequ\u00eancia \u2014 uma sess\u00e3o hoje a mant\u00e9m."
-          }
-        }
-      }
-    },
     "" : {
       "localizations" : {
         "es" : {
@@ -411,6 +235,19 @@
         }
       }
     },
+    "%@ · %lld:%@ left" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ · %2$lld:%3$@ left"
+          }
+        }
+      }
+    },
+    "%@ · open session" : {
+
+    },
     "%@ (Pro)" : {
       "comment" : "A label that indicates a macOS settings mode is enabled in Pro mode. The argument is the name of the mode.",
       "isCommentAutoGenerated" : true
@@ -467,6 +304,22 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "%1$@ focused, %2$lld sessions"
+          }
+        }
+      }
+    },
+    "%@ of focus across %lld sessions this week. Tap to see the details." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ de foco en %lld sesiones esta semana. Toca para ver el detalle."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ de foco em %lld sessões nesta semana. Toque para ver o detalhe."
           }
         }
       }
@@ -1063,6 +916,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%lld dias"
+          }
+        }
+      }
+    },
+    "%lld days of focus in a row — your longest streak yet. Keep it up." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld días de foco seguidos: tu racha más larga hasta hoy. Sigue así."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld dias de foco seguidos — sua maior sequência até agora. Continue assim."
           }
         }
       }
@@ -7119,6 +6988,22 @@
         }
       }
     },
+    "Day %lld of your streak — one session today keeps it alive." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Día %lld de tu racha — una sesión hoy la mantiene."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dia %lld da sua sequência — uma sessão hoje a mantém."
+          }
+        }
+      }
+    },
     "day streak" : {
       "comment" : "A label describing the user's current streak of days.",
       "isCommentAutoGenerated" : true,
@@ -7438,6 +7323,9 @@
           }
         }
       }
+    },
+    "Discard" : {
+
     },
     "Dismiss energy suggestion" : {
       "comment" : "Accessibility label for the dismiss button on the energy suggestion banner.",
@@ -13316,6 +13204,22 @@
         }
       }
     },
+    "New record: %lld day streak. Your longest streak yet." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nuevo récord: racha de %lld días. Tu racha más larga hasta hoy."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Novo recorde: sequência de %lld dias. Sua maior sequência até agora."
+          }
+        }
+      }
+    },
     "New task" : {
       "comment" : "Label on the collapsed quick-add row. Tapping it expands the text field.",
       "localizations" : {
@@ -13752,6 +13656,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sem sessões esta semana"
+          }
+        }
+      }
+    },
+    "No sessions this week. One focused session today is enough to start again." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sin sesiones esta semana. Una sesión de foco hoy basta para volver a empezar."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nenhuma sessão nesta semana. Uma sessão de foco hoje basta para recomeçar."
           }
         }
       }
@@ -16744,6 +16664,9 @@
         }
       }
     },
+    "Resume Focus Session?" : {
+
+    },
     "Resume session" : {
       "localizations" : {
         "es" : {
@@ -17459,6 +17382,98 @@
         }
       }
     },
+    "settings.notifications.weeklyRecap" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Weekly recap"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Resumen semanal"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Resumo semanal"
+          }
+        }
+      }
+    },
+    "settings.notifications.weeklyRecap.footer" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Sundays at 6 PM, get a summary of your focus time and sessions."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Los domingos a las 6 PM recibes un resumen del foco y las sesiones de tu semana."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Aos domingos às 6 PM, receba um resumo do foco e das sessões da semana."
+          }
+        }
+      }
+    },
+    "settings.streak.celebrateRecords" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Celebrate new records"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Celebrar nuevos récords"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Celebrar novos recordes"
+          }
+        }
+      }
+    },
+    "settings.streak.celebrateRecords.footer" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Shows a quiet celebration when your streak beats its all-time best."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Muestra una celebración discreta cuando tu racha supera su mejor marca."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Mostra uma celebração discreta quando sua sequência supera a melhor marca."
+          }
+        }
+      }
+    },
     "Shallow" : {
       "localizations" : {
         "es" : {
@@ -18108,6 +18123,10 @@
         }
       }
     },
+    "Start a focus session from the Tasks widget." : {
+      "comment" : "Intent description for starting a focus session from the Tasks widget.",
+      "isCommentAutoGenerated" : true
+    },
     "Start a focus session from the widget." : {
       "comment" : "App intent to start a focus session from the widget.",
       "isCommentAutoGenerated" : true,
@@ -18221,6 +18240,10 @@
           }
         }
       }
+    },
+    "Start Focus from Tasks" : {
+      "comment" : "Intent to start a focus session from the Tasks widget.",
+      "isCommentAutoGenerated" : true
     },
     "Start Focus Session" : {
       "comment" : "A button label that starts a focus session.",
@@ -18391,6 +18414,10 @@
           }
         }
       }
+    },
+    "Start the pending phase from the widget." : {
+      "comment" : "Widget intent to start the pending phase from the widget.",
+      "isCommentAutoGenerated" : true
     },
     "Started %@ session%@. Let's focus! 🎯" : {
       "localizations" : {
@@ -18806,6 +18833,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sequência protegida · Pulo Pro usado"
+          }
+        }
+      }
+    },
+    "streakrecord.banner.title" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "New record"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Nuevo récord"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Novo recorde"
           }
         }
       }
@@ -21831,6 +21881,9 @@
         }
       }
     },
+    "Your last session ended unexpectedly." : {
+
+    },
     "Your most used mode was %@." : {
       "localizations" : {
         "es" : {
@@ -21942,6 +21995,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sua tarefa principal '%@' consumiu %lldm — considere dividi-la em subtarefas"
+          }
+        }
+      }
+    },
+    "Your week in Pepinillo" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu semana en Pepinillo"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sua semana no Pepinillo"
           }
         }
       }
