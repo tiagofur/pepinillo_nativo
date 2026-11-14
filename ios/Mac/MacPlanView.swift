@@ -197,6 +197,7 @@ struct MacPlanView: View {
                 MacTaskTitleCell(
                     store: store,
                     taskID: task.id,
+                    isSelected: selection.contains(task.id),
                     editingTaskID: $editingTaskID,
                     editingTitle: $editingTitle,
                     onCommit: { commitTitleEdit(for: $0) },
@@ -821,6 +822,7 @@ struct MacPlanView: View {
 private struct MacTaskTitleCell: View {
     let store: StoreOf<TaskListFeature>
     let taskID: UUID
+    var isSelected: Bool = false
     @Binding var editingTaskID: UUID?
     @Binding var editingTitle: String
     let onCommit: (UUID) -> Void
@@ -829,6 +831,11 @@ private struct MacTaskTitleCell: View {
 
     @FocusState private var isFocused: Bool
     @State private var isHovering = false
+
+    /// Hover-never-only (touch-on-mac guide R1): the inspector affordance must
+    /// survive without a pointer. Selection is the touch path — tap selects the
+    /// row, the ⓘ appears, tap again opens the inspector.
+    private var showsInfoButton: Bool { isHovering || isSelected }
 
     var body: some View {
         if let task = store.tasks[id: taskID] {
@@ -857,9 +864,10 @@ private struct MacTaskTitleCell: View {
 
                         Spacer(minLength: 8)
 
-                        // Reminders-style trailing ⓘ: appears on hover as the
-                        // row's visible signal that details live in the inspector
-                        // (double-click and ⌘⌥I remain the power paths).
+                        // Reminders-style trailing ⓘ: appears on hover or row
+                        // selection as the row's visible signal that details
+                        // live in the inspector (double-click and ⌘⌥I remain
+                        // the power paths).
                         Button(action: onOpenInspector) {
                             Image(systemName: "info.circle")
                                 .font(.callout)
@@ -868,12 +876,12 @@ private struct MacTaskTitleCell: View {
                                 .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
-                        .opacity(isHovering ? 1 : 0)
-                        .animation(.easeOut(duration: 0.15), value: isHovering)
+                        .opacity(showsInfoButton ? 1 : 0)
+                        .animation(.easeOut(duration: 0.15), value: showsInfoButton)
                         // Hidden must also be un-clickable: at opacity(0) the
                         // button otherwise leaves an invisible 22pt hot zone
                         // at the trailing edge of the cell.
-                        .allowsHitTesting(isHovering)
+                        .allowsHitTesting(showsInfoButton)
                         .help(String(localized: "Show Details (⌘⌥I)"))
                         .accessibilityLabel(String(localized: "Show Details"))
                     }
