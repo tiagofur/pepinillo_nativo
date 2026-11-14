@@ -15,9 +15,11 @@ import dev.creapolis.pepinillo.core.billing.FeatureGate
 import dev.creapolis.pepinillo.data.local.preferences.UserPreferencesRepository
 import dev.creapolis.pepinillo.data.repository.SessionRepository
 import dev.creapolis.pepinillo.domain.streak.StreakProtectionService
+import dev.creapolis.pepinillo.domain.streak.StreakRecordCelebration
 import dev.creapolis.pepinillo.data.repository.TaskRepository
 import dev.creapolis.pepinillo.domain.soundscape.Soundscape
 import dev.creapolis.pepinillo.domain.soundscape.SoundscapeManager
+import dev.creapolis.pepinillo.platform.feedback.FeedbackManager
 import dev.creapolis.pepinillo.domain.timer.FocusEngine
 import dev.creapolis.pepinillo.domain.timer.FocusPhase
 import dev.creapolis.pepinillo.domain.timer.FailedSession
@@ -132,6 +134,7 @@ class FocusViewModel @Inject constructor(
     private val prefsRepo: UserPreferencesRepository,
     private val featureGate: FeatureGate,
     private val soundscapeManager: SoundscapeManager,
+    private val feedbackManager: FeedbackManager,
     private val inAppReviewManager: InAppReviewManager,
 ) : ViewModel() {
 
@@ -143,6 +146,9 @@ class FocusViewModel @Inject constructor(
     private val _showStopConfirmation = MutableStateFlow(false)
     private val _showPaywall = MutableStateFlow(false)
     private val _showJournalSheet = MutableStateFlow(false)
+    /** Streak value to celebrate as a new record, or null. Cleared on journal dismiss. */
+    private val _streakRecordCelebration = MutableStateFlow<Int?>(null)
+    val streakRecordCelebration: StateFlow<Int?> = _streakRecordCelebration.asStateFlow()
     private val _selectedSoundscape = MutableStateFlow<Soundscape?>(null)
     private val _soundscapeVolume = MutableStateFlow(0.5f)
     private val _showSoundscapePicker = MutableStateFlow(false)
@@ -272,6 +278,7 @@ class FocusViewModel @Inject constructor(
                 } else {
                     checkReviewEligibility()
                 }
+                evaluateStreakRecordCelebration(prefs)
             }
         }
 
@@ -568,6 +575,7 @@ class FocusViewModel @Inject constructor(
             sessionRepository.saveJournalEntry(sessionId, note, rating)
             _showJournalSheet.value = false
             _lastCompletedSessionId = null
+            _streakRecordCelebration.value = null
             checkReviewEligibility()
         }
     }
@@ -575,7 +583,47 @@ class FocusViewModel @Inject constructor(
     fun skipJournal() {
         _showJournalSheet.value = false
         _lastCompletedSessionId = null
+        _streakRecordCelebration.value = null
         checkReviewEligibility()
+    }
+
+    fun consumeStreakRecordCelebration() {
+        _streakRecordCelebration.value = null
+    }
+
+    /** Haptic trigger fired by the celebration UI once the record block has appeared (#729). */
+    fun onStreakRecordShown() {
+        viewModelScope.launch { feedbackManager.onStreakRecordCelebration() }
+    }
+
+    /**
+     * New-record check after a completed work session (#729). `previousBest` must come
+     * from history EXCLUDING today — including today would make previousBest ≥
+     * currentStreak and the celebration would never fire.
+     */
+    private suspend fun evaluateStreakRecordCelebration(prefs: dev.creapolis.pepinillo.data.local.preferences.UserPreferences) {
+        if (!prefs.celebrateStreakRecords) return
+        val allDays = sessionRepository.getAllDaysWithSessions().first()
+        val todayStart = java.util.Calendar.getInstance().apply {
+            set(java.util.Calendar.HOUR_OF_DAY, 0)
+            set(java.util.Calendar.MINUTE, 0)
+            set(java.util.Calendar.SECOND, 0)
+            set(java.util.Calendar.MILLISECOND, 0)
+        }.timeInMillis
+        val previousBest = sessionRepository.calculateBestStreak(allDays.filter { it.date < todayStart })
+        val currentStreak = StreakProtectionService.computeProtectedStreak(
+            history = allDays,
+            isPro = featureGate.isPro,
+        ).days
+        if (StreakRecordCelebration.isEligible(
+                currentStreak = currentStreak,
+                previousBest = previousBest,
+                lastCelebrated = prefs.streakRecordCelebrated,
+            )
+        ) {
+            prefsRepo.updateStreakRecordCelebrated(currentStreak)
+            _streakRecordCelebration.value = currentStreak
+        }
     }
 
     fun consumeReviewRequest() {

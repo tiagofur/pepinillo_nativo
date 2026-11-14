@@ -74,6 +74,25 @@
 		<key>UISceneConfigurations</key>
 		<dict/>
 	</dict>
+	<key>UIApplicationShortcutItems</key>
+	<array>
+		<dict>
+			<key>UIApplicationShortcutItemIconSymbolName</key>
+			<string>timer</string>
+			<key>UIApplicationShortcutItemTitle</key>
+			<string>Start focus</string>
+			<key>UIApplicationShortcutItemType</key>
+			<string>com.pepinillo.app.shortcut.focus</string>
+		</dict>
+		<dict>
+			<key>UIApplicationShortcutItemIconSymbolName</key>
+			<string>checklist</string>
+			<key>UIApplicationShortcutItemTitle</key>
+			<string>Tasks</string>
+			<key>UIApplicationShortcutItemType</key>
+			<string>com.pepinillo.app.shortcut.plan</string>
+		</dict>
+	</array>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>audio</string>

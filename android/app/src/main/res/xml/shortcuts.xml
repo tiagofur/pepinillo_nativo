@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Static launcher shortcuts (#727): long-press → Start focus / Tasks.
+     Each intent carries its action; MainActivity maps action → nav route via
+     routeForShortcutAction() (static shortcut XML cannot carry extras). -->
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <shortcut
+        android:shortcutId="start_focus"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_focus"
+        android:shortcutShortLabel="@string/shortcut_focus_short"
+        android:shortcutLongLabel="@string/shortcut_focus_long">
+        <intent
+            android:action="dev.creapolis.pepinillo.action.START_FOCUS"
+            android:targetPackage="dev.creapolis.pepinillo"
+            android:targetClass="dev.creapolis.pepinillo.MainActivity" />
+    </shortcut>
+
+    <shortcut
+        android:shortcutId="open_tasks"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_tasks"
+        android:shortcutShortLabel="@string/shortcut_tasks_short"
+        android:shortcutLongLabel="@string/shortcut_tasks_long">
+        <intent
+            android:action="dev.creapolis.pepinillo.action.OPEN_TASKS"
+            android:targetPackage="dev.creapolis.pepinillo"
+            android:targetClass="dev.creapolis.pepinillo.MainActivity" />
+    </shortcut>
+</shortcuts>

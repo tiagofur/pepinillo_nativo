@@ -358,10 +358,12 @@ class FocusTimerService : Service() {
         // Collect timer state — update notification + widget
         serviceScope.launch {
             var lastWidgetUpdate = 0L
+            var lastNotificationUpdate = 0L
             var previousStatus: TimerStatus? = null
             var previousPhase: FocusPhase? = null
             var previousMode: dev.creapolis.pepinillo.feature.focus.FocusMode? = null
             var previousThemeId: String? = null
+            var previousTaskTitle: String? = null
             // Recovery-write throttle: persist only on status/phase change or once per second.
             var lastRecoveryWriteMs = 0L
             var recoveryStatus: TimerStatus? = null
@@ -400,15 +402,24 @@ class FocusTimerService : Service() {
                     val phaseChanged = state.phase != previousPhase
                     val modeChanged = state.mode != previousMode
                     val themeChanged = themeId != previousThemeId
+                    val taskChanged = taskTitle != previousTaskTitle
+                    val throttleMs = FocusTimerWidgetLogic.widgetUpdateThrottleMs(state.status)
+                    val shouldUpdateWidget = statusChanged || modeChanged || themeChanged ||
+                        (now - lastWidgetUpdate >= throttleMs)
 
-                    // Update notification on status/phase/mode changes or widget throttle,
-                    // relying on standard Chronometer countdown for smooth 1Hz ticks without 4Hz binder spam
-                    val shouldUpdateNotification = statusChanged || phaseChanged || modeChanged || themeChanged
+                    // Update notification on state/task transitions or every 15s (to advance the
+                    // expanded progress bar without 1Hz binder spam or resetting the Chronometer
+                    // tick handler every second).
+                    val notificationProgressDue = state.status == TimerStatus.Running &&
+                        (now - lastNotificationUpdate >= 15_000L)
+                    val shouldUpdateNotification = statusChanged || phaseChanged || modeChanged ||
+                        themeChanged || taskChanged || notificationProgressDue
                     if (shouldUpdateNotification) {
+                        lastNotificationUpdate = now
                         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
                             ContextCompat.checkSelfPermission(this@FocusTimerService, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
                             getSystemService(NotificationManager::class.java)
-                                .notify(NOTIFICATION_ID, buildNotification(state))
+                                .notify(NOTIFICATION_ID, buildNotification(state, taskTitle))
                         }
                     }
 
@@ -427,15 +438,12 @@ class FocusTimerService : Service() {
                             scope = serviceScope,
                         )
                     }
-                    
-                    val throttleMs = FocusTimerWidgetLogic.widgetUpdateThrottleMs(state.status)
-                    val shouldUpdateWidget = statusChanged || modeChanged || themeChanged ||
-                        (now - lastWidgetUpdate >= throttleMs)
-                    
+
                     previousStatus = state.status
                     previousPhase = state.phase
                     previousMode = state.mode
                     previousThemeId = themeId
+                    previousTaskTitle = taskTitle
                     
                     // Persist recovery state when relevant state changes (status/phase transition)
                     // or at most once per second — cuts write rate ~99% while keeping fidelity
@@ -571,76 +579,13 @@ class FocusTimerService : Service() {
         getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
     }
 
-    private fun buildNotification(state: dev.creapolis.pepinillo.domain.timer.FocusTimerState): Notification {
-        val openApp = PendingIntent.getActivity(
-            this, 0,
-            Intent(this, MainActivity::class.java).apply { flags = Intent.FLAG_ACTIVITY_SINGLE_TOP },
-            PendingIntent.FLAG_IMMUTABLE,
-        )
-
-        val phaseLabel = if (state.mode == FocusMode.Pomodoro &&
-            state.phase == dev.creapolis.pepinillo.domain.timer.FocusPhase.Work &&
-            (state.status == TimerStatus.Running || state.status == TimerStatus.Paused ||
-                state.status == TimerStatus.WaitingForNext)) {
-            val focusWord = getString(R.string.phase_focus)
-            "$focusWord ${state.completedSessions + 1}/$sessionsBeforeLongBreak"
-        } else {
-            getString(state.phaseLabelRes)
-        }
-
-        val builder = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_notification)
-            .setContentTitle("${getString(state.mode.labelRes)} \u2014 $phaseLabel")
-            .setContentText(state.displayTime)
-            .setContentIntent(openApp)
-            .setOngoing(true)
-            .setSilent(true)
-            .setCategory(NotificationCompat.CATEGORY_PROGRESS)
-            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-
-        // Native chronometer so the notification ticks live without rewriting its text
-        // every tick: countdown for timed phases (Pomodoro/breaks/Blocks), count-up for
-        // Flow/Chrono (P2a: anchored at build time to "now - elapsed" so the chronometer
-        // starts from the current elapsed and ticks forward instead of staying frozen
-        // on the last rebuild's snapshot). Renders a live timer on the lock screen.
-        if (state.status == TimerStatus.Running) {
-            if (state.mode != FocusMode.Flow &&
-                state.mode != FocusMode.Chrono &&
-                state.totalMillis > 0L
-            ) {
-                val remainingMs = (state.totalMillis - state.elapsedMillis).coerceAtLeast(0L)
-                builder.setUsesChronometer(true)
-                builder.setChronometerCountDown(true)
-                builder.setWhen(System.currentTimeMillis() + remainingMs)
-            } else {
-                builder.setUsesChronometer(true)
-                builder.setChronometerCountDown(false)
-                builder.setWhen(System.currentTimeMillis() - state.elapsedMillis)
-            }
-        }
-
-        when (state.status) {
-            TimerStatus.Running -> builder.addAction(0, getString(R.string.btn_pause), servicePending(1, ACTION_PAUSE))
-            TimerStatus.Paused -> builder.addAction(0, getString(R.string.btn_resume), servicePending(2, ACTION_RESUME))
-            TimerStatus.WaitingForNext -> {
-                val actionLabel = when (state.phase) {
-                    dev.creapolis.pepinillo.domain.timer.FocusPhase.ShortBreak -> getString(R.string.btn_start_break)
-                    dev.creapolis.pepinillo.domain.timer.FocusPhase.LongBreak -> getString(R.string.btn_start_long_break)
-                    else -> getString(R.string.btn_start_focus)
-                }
-                builder.addAction(0, actionLabel, servicePending(2, ACTION_RESUME))
-            }
-            else -> {}
-        }
-        builder.addAction(0, getString(R.string.btn_stop), servicePending(3, ACTION_STOP))
-
-        return builder.build()
-    }
-
-    private fun servicePending(code: Int, action: String): PendingIntent =
-        PendingIntent.getService(
-            this, code,
-            Intent(this, FocusTimerService::class.java).apply { this.action = action },
-            PendingIntent.FLAG_IMMUTABLE,
-        )
+    private fun buildNotification(
+        state: dev.creapolis.pepinillo.domain.timer.FocusTimerState,
+        taskTitle: String? = null,
+    ): Notification = FocusNotificationBuilder.buildNotification(
+        context = this,
+        state = state,
+        sessionsBeforeLongBreak = sessionsBeforeLongBreak,
+        taskTitle = taskTitle,
+    )
 }

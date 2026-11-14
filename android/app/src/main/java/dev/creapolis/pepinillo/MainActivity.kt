@@ -9,12 +9,19 @@ import androidx.activity.SystemBarStyle
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.ProcessLifecycleOwner
+import androidx.lifecycle.lifecycleScope
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import dev.creapolis.pepinillo.core.auth.AuthStore
 import dev.creapolis.pepinillo.core.billing.SubscriptionManager
 import dev.creapolis.pepinillo.data.sync.SyncEngine
 import dev.creapolis.pepinillo.domain.timer.FocusEngine
+import dev.creapolis.pepinillo.domain.timer.FocusTimerState
 import dev.creapolis.pepinillo.domain.timer.TimerStatus
+import dev.creapolis.pepinillo.feature.focus.components.FocusPipContent
+import dev.creapolis.pepinillo.feature.focus.components.FocusPipLogic
+import dev.creapolis.pepinillo.service.FocusTimerService
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -128,6 +135,18 @@ class MainActivity : ComponentActivity() {
     companion object {
         const val EXTRA_NAV_ROUTE = "nav_route"
         const val ROUTE_PAYWALL = "paywall"
+
+        // Launcher shortcut actions (#727). Static shortcut XML cannot carry extras,
+        // so each shortcut intent is identified by its action and mapped to a route.
+        const val ACTION_SHORTCUT_START_FOCUS = "dev.creapolis.pepinillo.action.START_FOCUS"
+        const val ACTION_SHORTCUT_OPEN_TASKS = "dev.creapolis.pepinillo.action.OPEN_TASKS"
+
+        /** Maps a launcher-shortcut intent action to its top-level navigation route. */
+        fun routeForShortcutAction(action: String?): String? = when (action) {
+            ACTION_SHORTCUT_START_FOCUS -> TopLevelDestination.Focus.route
+            ACTION_SHORTCUT_OPEN_TASKS -> TopLevelDestination.Plan.route
+            else -> null
+        }
     }
 
     private var isPipMode by mutableStateOf(value = false)
@@ -179,6 +198,7 @@ class MainActivity : ComponentActivity() {
         )
         super.onCreate(savedInstanceState)
         pendingNavRoute = intent?.getStringExtra(EXTRA_NAV_ROUTE)
+            ?: routeForShortcutAction(intent?.action)
         var isAppReady by mutableStateOf(value = false)
 
         // Keep the splash screen on-screen until the app is ready
@@ -191,6 +211,17 @@ class MainActivity : ComponentActivity() {
 
         ProcessLifecycleOwner.get().lifecycle.addObserver(foregroundSyncObserver)
 
+        // Keep PiP params (Pause/Resume/Stop actions, auto-enter) in sync with the timer.
+        // Run on lifecycleScope (Main) because Activity and PendingIntent APIs are main-thread bound.
+        lifecycleScope.launch {
+            focusEngine.state
+                .map { it.status to it.phase }
+                .distinctUntilChanged()
+                .collect {
+                    runCatching { setPictureInPictureParams(buildPipParams()) }
+                        .onFailure { Log.w("MainActivity", "setPictureInPictureParams failed", it) }
+                }
+        }
         // Sync subscription, login status, metrics consent, and cycle preferences to Wear OS
         syncScope.launch {
             authStore.isLoggedIn.collect { loggedIn ->
@@ -255,7 +286,7 @@ class MainActivity : ComponentActivity() {
                 ) {
                     PepinilloApp(
                         prefsRepository = prefsRepository,
-                        isPipMode = isPipMode,
+                        isPipMode = FocusPipLogic.resolveEffectivePipMode(isPipMode, isInPictureInPictureMode),
                         syncStatusManager = syncStatusManager,
                         initialNavRoute = pendingNavRoute,
                         onNavRouteConsumed = { pendingNavRoute = null },
@@ -272,6 +303,23 @@ class MainActivity : ComponentActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         pendingNavRoute = intent.getStringExtra(EXTRA_NAV_ROUTE)
+            ?: routeForShortcutAction(intent.action)
+    }
+
+    override fun onStart() {
+        super.onStart()
+        isPipMode = isInPictureInPictureMode
+    }
+
+    override fun onResume() {
+        super.onResume()
+        isPipMode = isInPictureInPictureMode
+    }
+
+    override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {
+        super.onConfigurationChanged(newConfig)
+        // Lock/unlock and uiMode changes can reach us while floating: re-sync from the platform.
+        isPipMode = isInPictureInPictureMode
     }
 
     override fun onPictureInPictureModeChanged(
@@ -285,12 +333,66 @@ class MainActivity : ComponentActivity() {
     override fun onUserLeaveHint() {
         super.onUserLeaveHint()
         // Enter PiP if a focus session is active
-        if (focusEngine.state.value.status == TimerStatus.Running) {
-            enterPictureInPictureMode(
-                android.app.PictureInPictureParams.Builder().build(),
-            )
+        if (FocusPipLogic.shouldAutoEnterPip(focusEngine.state.value.status) && !isInPictureInPictureMode) {
+            runCatching { enterPictureInPictureMode(buildPipParams()) }
         }
     }
+
+    /** PiP params with native Pause/Resume + Stop actions shown over the floating window. */
+    private fun buildPipParams(
+        state: FocusTimerState = focusEngine.state.value,
+    ): android.app.PictureInPictureParams {
+        val actions = ArrayList<android.app.RemoteAction>()
+        fun action(
+            iconRes: Int,
+            titleRes: Int,
+            serviceAction: String,
+            requestCode: Int,
+        ): android.app.RemoteAction {
+            val title = getString(titleRes)
+            val pending = android.app.PendingIntent.getService(
+                this,
+                100 + requestCode,
+                android.content.Intent(this, FocusTimerService::class.java).apply {
+                    this.action = serviceAction
+                },
+                android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE,
+            )
+            return android.app.RemoteAction(
+                android.graphics.drawable.Icon.createWithResource(this, iconRes),
+                title,
+                title,
+                pending,
+            )
+        }
+        when (state.status) {
+            TimerStatus.Running ->
+                actions += action(R.drawable.ic_pip_pause, R.string.btn_pause, FocusTimerService.ACTION_PAUSE, 1)
+            TimerStatus.Paused ->
+                actions += action(R.drawable.ic_pip_play, R.string.btn_resume, FocusTimerService.ACTION_RESUME, 2)
+            TimerStatus.WaitingForNext -> {
+                val startTitleRes = when (state.phase) {
+                    dev.creapolis.pepinillo.domain.timer.FocusPhase.ShortBreak -> R.string.btn_start_break
+                    dev.creapolis.pepinillo.domain.timer.FocusPhase.LongBreak -> R.string.btn_start_long_break
+                    else -> R.string.btn_start_focus
+                }
+                actions += action(R.drawable.ic_pip_play, startTitleRes, FocusTimerService.ACTION_RESUME, 2)
+            }
+            else -> Unit
+        }
+        if (state.status != TimerStatus.Idle) {
+            actions += action(R.drawable.ic_pip_stop, R.string.btn_stop, FocusTimerService.ACTION_STOP, 3)
+        }
+        val builder = android.app.PictureInPictureParams.Builder()
+            .setAspectRatio(android.util.Rational(16, 9))
+            .setActions(actions)
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+            builder.setAutoEnterEnabled(FocusPipLogic.shouldAutoEnterPip(state.status))
+            builder.setSeamlessResizeEnabled(true)
+        }
+        return builder.build()
+    }
+
 
     override fun onDestroy() {
         ProcessLifecycleOwner.get().lifecycle.removeObserver(foregroundSyncObserver)
@@ -314,11 +416,14 @@ fun PepinilloApp(
 ) {
     val navController = rememberNavController()
 
+    // Deep routes (launcher shortcuts, widget taps) must read the persisted onboarding
+    // flag — not the composable state, which starts optimistically true before prefs
+    // load — so a fresh install can never be pushed past onboarding (#727).
     LaunchedEffect(initialNavRoute) {
-        initialNavRoute?.let { route ->
-            navController.navigate(route) { launchSingleTop = true }
-            onNavRouteConsumed()
-        }
+        val route = initialNavRoute ?: return@LaunchedEffect
+        if (!prefsRepository.preferences.first().onboardingCompleted) return@LaunchedEffect
+        navController.navigate(route) { launchSingleTop = true }
+        onNavRouteConsumed()
     }
 
     // Global auth-expired handler: when the session is cleared mid-flight (refresh-401),
@@ -359,6 +464,12 @@ fun PepinilloApp(
     val snackbarController = rememberSnackbarController()
 
     CompositionLocalProvider(LocalSnackbarController provides snackbarController) {
+        // PiP: render only the compact timer. The nav suite, offline banner and safe-drawing
+        // padding must never be composed inside the floating window.
+        if (isPipMode) {
+            FocusPipContent()
+            return@CompositionLocalProvider
+        }
         // Snackbar floats above NavigationSuiteScaffold so it's always visible
         // regardless of which navigation type is active.
         androidx.compose.foundation.layout.Box(modifier = Modifier.fillMaxSize()) {

@@ -62,6 +62,15 @@
   LONG_TEXT, RANGED_VALUE) en Wear OS, **Google Play In-App Review** tras 3
   sesiones con never-prompt-again, sonidos/paisajes (8 soundscapes), PiP
   automático al salir de la app con timer corriendo.
+- **Paquete de retención 3.1.0** (PRs #728/#731): recordatorio diario con
+  racha real (`StreakProtectionService` + `FeatureGate.isPro`, plurales
+  es/en/pt), launcher shortcuts (*Iniciar foco* / *Tareas* con guard de
+  onboarding), celebración de récord de racha integrada en el journal sheet
+  (regla pura `StreakRecordCelebration`, latch anti-repetición, banner
+  fallback, haptic "award") y **resumen semanal notificado** (domingo 18:00,
+  WorkManager en cascada, dedup 6 días, deep-link al Dashboard). Políticas
+  Play vigentes: targetSdk 36 + Billing Library 8.3.0 (vía RevenueCat 10.15.1).
+  Paridad iOS pendiente: **#732–#735** (`status:new`).
 
 ### Sincronización y cuentas
 - **Offline-first**: todo funciona sin cuenta; sync es opcional y premium.
@@ -107,5 +116,8 @@
 - CI iOS ejecuta solo subconjuntos `-only-testing:` (fast/full); no toda la
   suite de 923 tests corre en cada PR.
 - Widget iPad en macOS 27 crashea (issue #674, abierto).
+- Paridad iOS del paquete de retención Android pendiente (#732 racha en
+  recordatorio, #733 quick actions, #734 celebración de récord, #735 recap
+  semanal — todos `status:new`).
 - Errores HTTP aún no RFC 9457 (envolvente `{"error": ...}` vigente; objetivo
   en `ADR-0003` para endpoints nuevos).

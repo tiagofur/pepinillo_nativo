@@ -26,8 +26,15 @@ class FocusTileService : TileService() {
     companion object {
         private const val RESOURCES_VERSION = "1"
         internal const val REFRESH_IDLE_MS = 60_000L
-        // 5s is sufficient for a countdown tile; 1s burns battery with no user-visible benefit (#389).
-        internal const val REFRESH_ACTIVE_MS = 30_000L
+        // User-approved 5s cadence so the countdown looks alive; push updates from
+        // WearFocusService cover in-between ticks and freshness is the fallback.
+        internal const val REFRESH_ACTIVE_MS = 5_000L
+
+        /** Intent extra key carrying the tile button action into MainActivity. */
+        const val EXTRA_TILE_ACTION = "tile_action"
+        const val ACTION_PAUSE = "pause"
+        const val ACTION_RESUME = "resume"
+        const val ACTION_STOP = "stop"
     }
 
     override fun onTileRequest(
@@ -148,6 +155,64 @@ class FocusTileService : TileService() {
                     .build(),
             ).build()
 
+    private fun launchActionWithExtra(tileAction: String): ActionBuilders.LaunchAction =
+        ActionBuilders.LaunchAction.Builder()
+            .setAndroidActivity(
+                ActionBuilders.AndroidActivity.Builder()
+                    .setPackageName(packageName)
+                    .setClassName("dev.creapolis.pepinillo.presentation.MainActivity")
+                    .addKeyToExtraMapping(
+                        EXTRA_TILE_ACTION,
+                        ActionBuilders.AndroidStringExtra.Builder().setValue(tileAction).build(),
+                    )
+                    .build(),
+            ).build()
+
+    private fun actionClickable(actionId: String, tileAction: String): ModifiersBuilders.Modifiers =
+        ModifiersBuilders.Modifiers.Builder()
+            .setClickable(
+                ModifiersBuilders.Clickable.Builder()
+                    .setId(actionId)
+                    .setOnClick(launchActionWithExtra(tileAction))
+                    .build(),
+            ).build()
+
+    private fun actionButton(
+        label: String,
+        actionId: String,
+        tileAction: String,
+    ): LayoutElementBuilders.LayoutElement =
+        LayoutElementBuilders.Box.Builder()
+            .setModifiers(actionClickable(actionId, tileAction))
+            .addContent(
+                LayoutElementBuilders.Column.Builder()
+                    .setHorizontalAlignment(HORIZONTAL_ALIGN_CENTER)
+                    .addContent(text(label, 14f, bold = true))
+                    .build(),
+            )
+            .build()
+
+    private fun hSpacer(widthDp: Float): LayoutElementBuilders.Spacer =
+        LayoutElementBuilders.Spacer.Builder()
+            .setWidth(DimensionBuilders.dp(widthDp))
+            .setHeight(DimensionBuilders.dp(0f))
+            .build()
+
+    private fun controlsRow(
+        primaryLabel: String,
+        primaryActionId: String,
+        primaryAction: String,
+        secondaryLabel: String,
+        secondaryActionId: String,
+        secondaryAction: String,
+    ): LayoutElementBuilders.LayoutElement =
+        LayoutElementBuilders.Row.Builder()
+            .setVerticalAlignment(VERTICAL_ALIGN_CENTER)
+            .addContent(actionButton(primaryLabel, primaryActionId, primaryAction))
+            .addContent(hSpacer(16f))
+            .addContent(actionButton(secondaryLabel, secondaryActionId, secondaryAction))
+            .build()
+
     private fun text(value: String, sizeSp: Float, bold: Boolean = false, color: Int? = null): LayoutElementBuilders.Text {
         val fontBuilder = LayoutElementBuilders.FontStyle.Builder()
             .setSize(DimensionBuilders.SpProp.Builder().setValue(sizeSp).build())
@@ -221,26 +286,46 @@ class FocusTileService : TileService() {
         val totalSessions = state.sessionsBeforeLongBreak.coerceAtLeast(1)
         val sessionLabel = "${state.phaseLabel} \u00b7 ${state.completedSessions + 1}/$totalSessions"
 
+        val infoColumn = LayoutElementBuilders.Column.Builder()
+            .setHorizontalAlignment(HORIZONTAL_ALIGN_CENTER)
+            .addContent(text(state.displayTime, 28f, bold = true))
+            .addContent(spacer(4f))
+            .addContent(text(sessionLabel, 14f, color = 0xFFAAAAAA.toInt()))
+            .apply {
+                val taskName = state.linkedTaskName
+                if (!taskName.isNullOrEmpty()) {
+                    addContent(spacer(4f))
+                    addContent(text(taskName.take(20), 14f, color = 0xFF888888.toInt()))
+                }
+            }
+            .build()
+
         return LayoutElementBuilders.Box.Builder()
             .setWidth(DimensionBuilders.expand())
             .setHeight(DimensionBuilders.expand())
             .setVerticalAlignment(VERTICAL_ALIGN_CENTER)
             .setHorizontalAlignment(HORIZONTAL_ALIGN_CENTER)
-            .setModifiers(clickableModifiers())
             .addContent(progressArc(state.progress, color))
             .addContent(
                 LayoutElementBuilders.Column.Builder()
                     .setHorizontalAlignment(HORIZONTAL_ALIGN_CENTER)
-                    .addContent(text(state.displayTime, 28f, bold = true))
-                    .addContent(spacer(4f))
-                    .addContent(text(sessionLabel, 14f, color = 0xFFAAAAAA.toInt()))
-                    .apply {
-                        val taskName = state.linkedTaskName
-                        if (!taskName.isNullOrEmpty()) {
-                            addContent(spacer(4f))
-                            addContent(text(taskName.take(20), 14f, color = 0xFF888888.toInt()))
-                        }
-                    }
+                    .addContent(
+                        LayoutElementBuilders.Box.Builder()
+                            .setModifiers(clickableModifiers())
+                            .addContent(infoColumn)
+                            .build(),
+                    )
+                    .addContent(spacer(6f))
+                    .addContent(
+                        controlsRow(
+                            primaryLabel = getString(dev.creapolis.pepinillo.R.string.btn_pause),
+                            primaryActionId = "tile_pause",
+                            primaryAction = ACTION_PAUSE,
+                            secondaryLabel = getString(dev.creapolis.pepinillo.R.string.btn_stop),
+                            secondaryActionId = "tile_stop",
+                            secondaryAction = ACTION_STOP,
+                        ),
+                    )
                     .build(),
             )
             .build()
@@ -253,19 +338,39 @@ class FocusTileService : TileService() {
         val color = modeColor(state.mode, colors)
         val dimmedColor = (color and 0x00FFFFFFL) or 0x80000000L
 
+        val infoColumn = LayoutElementBuilders.Column.Builder()
+            .setHorizontalAlignment(HORIZONTAL_ALIGN_CENTER)
+            .addContent(text(state.displayTime, 28f, bold = true))
+            .addContent(spacer(4f))
+            .addContent(text("\u23F8 " + getString(dev.creapolis.pepinillo.R.string.tile_paused), 14f, color = 0xFFAAAAAA.toInt()))
+            .build()
+
         return LayoutElementBuilders.Box.Builder()
             .setWidth(DimensionBuilders.expand())
             .setHeight(DimensionBuilders.expand())
             .setVerticalAlignment(VERTICAL_ALIGN_CENTER)
             .setHorizontalAlignment(HORIZONTAL_ALIGN_CENTER)
-            .setModifiers(clickableModifiers())
             .addContent(progressArc(state.progress, dimmedColor))
             .addContent(
                 LayoutElementBuilders.Column.Builder()
                     .setHorizontalAlignment(HORIZONTAL_ALIGN_CENTER)
-                    .addContent(text(state.displayTime, 28f, bold = true))
-                    .addContent(spacer(4f))
-                    .addContent(text("\u23F8 " + getString(dev.creapolis.pepinillo.R.string.tile_paused), 14f, color = 0xFFAAAAAA.toInt()))
+                    .addContent(
+                        LayoutElementBuilders.Box.Builder()
+                            .setModifiers(clickableModifiers())
+                            .addContent(infoColumn)
+                            .build(),
+                    )
+                    .addContent(spacer(6f))
+                    .addContent(
+                        controlsRow(
+                            primaryLabel = getString(dev.creapolis.pepinillo.R.string.btn_resume),
+                            primaryActionId = "tile_resume",
+                            primaryAction = ACTION_RESUME,
+                            secondaryLabel = getString(dev.creapolis.pepinillo.R.string.btn_stop),
+                            secondaryActionId = "tile_stop",
+                            secondaryAction = ACTION_STOP,
+                        ),
+                    )
                     .build(),
             )
             .build()

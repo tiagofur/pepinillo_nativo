@@ -189,6 +189,10 @@
     <string name="notification_channel_name">Temporizador de Enfoque</string>
     <string name="notification_channel_description">Muestra el temporizador de enfoque activo</string>
     <string name="notification_connecting">Conectando con el tel\u00e9fono...</string>
+    <string name="notification_status_running">Sesi\u00f3n en curso</string>
+    <string name="notification_status_paused">Sesi\u00f3n en pausa</string>
+    <string name="notification_status_waiting">Listo para la siguiente fase</string>
+    <string name="pip_paused_badge">En pausa</string>
 
     <!-- Completion Messages -->
     <string name="msg_focus_complete_title">\u00a1Sesi\u00f3n de enfoque completada!</string>
@@ -227,6 +231,38 @@
     <string name="daily_reminder_channel_description">Notificaciones diarias de recordatorio de enfoque</string>
     <string name="daily_reminder_title">\u00a1Es hora de enfocarse!</string>
     <string name="daily_reminder_text">Inicia una sesi\u00f3n de enfoque hoy y mant\u00e9n tu racha.</string>
+    <plurals name="daily_reminder_text_with_streak">
+        <item quantity="one">Racha de %1$d d\u00eda 🔥 — una sesi\u00f3n hoy la mantiene.</item>
+        <item quantity="other">Racha de %1$d d\u00edas 🔥 — una sesi\u00f3n hoy la mantiene.</item>
+    </plurals>
+
+    <!-- Launcher shortcuts (#727) -->
+    <string name="shortcut_focus_short">Iniciar foco</string>
+    <string name="shortcut_focus_long">Iniciar una sesi\u00f3n de enfoque</string>
+    <string name="shortcut_tasks_short">Tareas</string>
+    <string name="shortcut_tasks_long">Abrir tareas</string>
+
+    <!-- Streak record celebration (#729) -->
+    <string name="cd_streak_record">Nuevo récord de racha: %1$d días, tu racha más larga hasta ahora.</string>
+    <plurals name="streak_record_body">
+        <item quantity="one">%1$d día de foco seguido: tu racha más larga hasta ahora. Sigue así.</item>
+        <item quantity="other">%1$d días de foco seguidos: tu racha más larga hasta ahora. Sigue así.</item>
+    </plurals>
+    <string name="settings_celebrate_records">Celebrar nuevos récords</string>
+    <string name="settings_celebrate_records_sub">Muestra una peque\u00f1a celebraci\u00f3n al superar tu mejor racha</string>
+
+    <!-- Weekly recap (#730) -->
+    <string name="weekly_recap_channel_name">Resumen semanal</string>
+    <string name="weekly_recap_channel_desc">Un resumen dominical de tu tiempo de foco de la semana</string>
+    <string name="weekly_recap_title">Tu semana en Pepinillo</string>
+    <string name="weekly_recap_text">%1$s de foco en %2$s esta semana. Toca para ver el detalle.</string>
+    <string name="weekly_recap_text_empty">Sin sesiones esta semana. Tu pr\u00f3ximo enfoque est\u00e1 a un toque.</string>
+    <string name="settings_weekly_recap">Resumen semanal</string>
+    <string name="settings_weekly_recap_sub">Resumen de tu semana, domingos a las 18:00</string>
+    <plurals name="weekly_recap_sessions_count">
+        <item quantity="one">%1$d sesi\u00f3n</item>
+        <item quantity="other">%1$d sesiones</item>
+    </plurals>
 
     <!-- Onboarding -->
     <string name="onboarding_welcome_title">Bienvenido a Pepinillo</string>

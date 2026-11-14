@@ -474,6 +474,10 @@
     <string name="notification_channel_name">Temporizador de Foco</string>
     <string name="notification_channel_description">Exibe o temporizador de foco ativo</string>
     <string name="notification_connecting">Conectando ao telefone...</string>
+    <string name="notification_status_running">Sessão em andamento</string>
+    <string name="notification_status_paused">Sessão pausada</string>
+    <string name="notification_status_waiting">Pronto para a próxima fase</string>
+    <string name="pip_paused_badge">Pausado</string>
 
     <!-- Completion Messages -->
     <string name="msg_focus_complete_title">Sessão de foco concluída!</string>
@@ -512,6 +516,38 @@
     <string name="daily_reminder_channel_description">Notificações diárias de lembrete de foco</string>
     <string name="daily_reminder_title">Hora de focar!</string>
     <string name="daily_reminder_text">Inicie uma sessão de foco hoje e mantenha sua sequência.</string>
+    <plurals name="daily_reminder_text_with_streak">
+        <item quantity="one">Sequência de %1$d dia 🔥 — uma sessão hoje a mantém.</item>
+        <item quantity="other">Sequência de %1$d dias 🔥 — uma sessão hoje a mantém.</item>
+    </plurals>
+
+    <!-- Launcher shortcuts (#727) -->
+    <string name="shortcut_focus_short">Iniciar foco</string>
+    <string name="shortcut_focus_long">Iniciar uma sessão de foco</string>
+    <string name="shortcut_tasks_short">Tarefas</string>
+    <string name="shortcut_tasks_long">Abrir tarefas</string>
+
+    <!-- Streak record celebration (#729) -->
+    <string name="cd_streak_record">Novo recorde de sequência: %1$d dias, a sua maior sequência até agora.</string>
+    <plurals name="streak_record_body">
+        <item quantity="one">%1$d dia de foco seguido: a sua maior sequência até agora. Continue assim.</item>
+        <item quantity="other">%1$d dias de foco seguidos: a sua maior sequência até agora. Continue assim.</item>
+    </plurals>
+    <string name="settings_celebrate_records">Celebrar novos recordes</string>
+    <string name="settings_celebrate_records_sub">Mostra uma pequena celebração ao superar a sua maior sequência</string>
+
+    <!-- Weekly recap (#730) -->
+    <string name="weekly_recap_channel_name">Resumo semanal</string>
+    <string name="weekly_recap_channel_desc">Um resumo de domingo do seu tempo de foco da semana</string>
+    <string name="weekly_recap_title">A sua semana no Pepinillo</string>
+    <string name="weekly_recap_text">%1$s de foco em %2$s esta semana. Toque para ver o detalhe.</string>
+    <string name="weekly_recap_text_empty">Sem sessões esta semana. O seu próximo foco está a um toque.</string>
+    <string name="settings_weekly_recap">Resumo semanal</string>
+    <string name="settings_weekly_recap_sub">Resumo da sua semana, domingos às 18:00</string>
+    <plurals name="weekly_recap_sessions_count">
+        <item quantity="one">%1$d sessão</item>
+        <item quantity="other">%1$d sessões</item>
+    </plurals>
 
     <!-- Onboarding -->
     <string name="onboarding_welcome_title">Bem-vindo ao Pepinillo</string>

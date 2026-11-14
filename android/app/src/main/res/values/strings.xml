@@ -189,6 +189,10 @@
     <string name="notification_channel_name">Focus Timer</string>
     <string name="notification_channel_description">Shows the active focus timer</string>
     <string name="notification_connecting">Connecting to phone...</string>
+    <string name="notification_status_running">Session in progress</string>
+    <string name="notification_status_paused">Session paused</string>
+    <string name="notification_status_waiting">Ready for next phase</string>
+    <string name="pip_paused_badge">Paused</string>
 
     <!-- Completion Messages -->
     <string name="msg_focus_complete_title">Focus session complete!</string>
@@ -227,6 +231,38 @@
     <string name="daily_reminder_channel_description">Daily focus reminder notifications</string>
     <string name="daily_reminder_title">Time to focus!</string>
     <string name="daily_reminder_text">Start a focus session today and keep your streak going.</string>
+    <plurals name="daily_reminder_text_with_streak">
+        <item quantity="one">%1$d-day streak 🔥 — one session today keeps it alive.</item>
+        <item quantity="other">%1$d-day streak 🔥 — one session today keeps it alive.</item>
+    </plurals>
+
+    <!-- Launcher shortcuts (#727) -->
+    <string name="shortcut_focus_short">Start focus</string>
+    <string name="shortcut_focus_long">Start a focus session</string>
+    <string name="shortcut_tasks_short">Tasks</string>
+    <string name="shortcut_tasks_long">Open tasks</string>
+
+    <!-- Streak record celebration (#729) -->
+    <string name="cd_streak_record">New streak record: %1$d days, your longest streak yet.</string>
+    <plurals name="streak_record_body">
+        <item quantity="one">%1$d day of focus in a row — your longest streak yet. Keep it up.</item>
+        <item quantity="other">%1$d days of focus in a row — your longest streak yet. Keep it up.</item>
+    </plurals>
+    <string name="settings_celebrate_records">Celebrate new records</string>
+    <string name="settings_celebrate_records_sub">Show a small celebration when you beat your best streak</string>
+
+    <!-- Weekly recap (#730) -->
+    <string name="weekly_recap_channel_name">Weekly recap</string>
+    <string name="weekly_recap_channel_desc">A Sunday summary of your focus time this week</string>
+    <string name="weekly_recap_title">Your week in Pepinillo</string>
+    <string name="weekly_recap_text">%1$s of focus across %2$s this week. Tap to see the details.</string>
+    <string name="weekly_recap_text_empty">No sessions this week. Your next focus is one tap away.</string>
+    <string name="settings_weekly_recap">Weekly recap</string>
+    <string name="settings_weekly_recap_sub">A summary of your week, Sundays at 6 PM</string>
+    <plurals name="weekly_recap_sessions_count">
+        <item quantity="one">%1$d session</item>
+        <item quantity="other">%1$d sessions</item>
+    </plurals>
 
     <!-- Onboarding -->
     <string name="onboarding_welcome_title">Welcome to Pepinillo</string>

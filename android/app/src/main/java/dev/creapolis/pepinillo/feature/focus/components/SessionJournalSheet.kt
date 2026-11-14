@@ -59,6 +59,8 @@ fun SessionJournalSheet(
     onSave: (note: String?, rating: Int?) -> Unit,
     onSkip: () -> Unit,
     onDismiss: () -> Unit,
+    streakRecord: Int? = null,
+    onRecordShown: () -> Unit = {},
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var selectedRating by remember { mutableIntStateOf(0) }
@@ -74,12 +76,16 @@ fun SessionJournalSheet(
                 .padding(horizontal = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            // Header
-            Text(
-                text = stringResource(R.string.journal_session_complete),
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-            )
+            // Header — swapped for the record hero when this session set a new streak record (#729)
+            if (streakRecord != null) {
+                StreakRecordHeader(streakDays = streakRecord, onCelebrationShown = onRecordShown)
+            } else {
+                Text(
+                    text = stringResource(R.string.journal_session_complete),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
             Spacer(modifier = Modifier.height(24.dp))
 
             // Rating section

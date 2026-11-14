@@ -30,6 +30,7 @@ class BootCompletedReceiver : BroadcastReceiver() {
                         )
                         val prefs = entryPoint.userPreferencesRepository().preferences.first()
                         DailyReminderScheduler.restoreFromPreferences(context, prefs)
+                        WeeklyRecapScheduler.restoreFromPreferences(context, prefs)
                         FocusTimerRecovery.restoreOnLaunch(context)
                         MidnightWidgetRefreshScheduler.schedule(context)
                     } finally {
