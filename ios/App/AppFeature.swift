@@ -164,7 +164,8 @@ struct AppFeature {
                 emailVerified: cachedUser?.emailVerified ?? false,
                 appleId: resolvedAppleID,
                 createdAt: cachedUser?.createdAt ?? "",
-                updatedAt: cachedUser?.updatedAt ?? ""
+                updatedAt: cachedUser?.updatedAt ?? "",
+                metricsOptIn: cachedUser?.metricsOptIn ?? false
             )
         }
     }
@@ -524,7 +525,8 @@ struct AppFeature {
                                  subscriptionTier: apiUser.subscriptionTier,
                                  subscriptionExpiresAt: apiUser.subscriptionExpiresAt,
                                  emailVerified: apiUser.emailVerified, appleId: apiUser.appleId,
-                                 createdAt: apiUser.createdAt, updatedAt: apiUser.updatedAt
+                                 createdAt: apiUser.createdAt, updatedAt: apiUser.updatedAt,
+                                 metricsOptIn: apiUser.metricsOptIn
                              )
                              try? await persistence.saveCachedUser(dto)
                              // Retroactive fix: sync the locally-resolved name when the server
@@ -884,6 +886,9 @@ struct AppFeature {
             case .cachedUserLoaded(let user):
                 state.cachedUser = user
                 if let user {
+                    state.settings.hasBackendAccount = true
+                    state.settings.metricsOptIn = user.metricsOptIn
+                    state.settings.metricsOptInError = nil
                     let normalizedName = user.name.trimmingCharacters(in: .whitespacesAndNewlines)
                     let normalizedEmail = user.email.trimmingCharacters(in: .whitespacesAndNewlines)
                     let currentDisplayName = state.displayName?.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -919,6 +924,9 @@ struct AppFeature {
                 state.cachedUser = user
                 state.displayName = user.name
                 state.userEmail = user.email
+                state.settings.hasBackendAccount = true
+                state.settings.metricsOptIn = user.metricsOptIn
+                state.settings.metricsOptInError = nil
                 state.auth = nil  // dismiss auth sheet
                 // Reload the task list: the account-only auth path runs
                 // syncClient.wipeAndSync() (deleteAllTasks) before delegating here,
@@ -928,7 +936,11 @@ struct AppFeature {
                 // so capabilities after RevenueCat logIn are authoritative (#217).
                 return .merge(
                     .send(.tasks(.refresh)),
-                    linkSubscriptionIdentity(user.id)
+                    linkSubscriptionIdentity(user.id),
+                    .run { [watchClient] _ in
+                        guard watchClient.isSupported() else { return }
+                        await watchClient.sendMetricsOptInState(true, user.metricsOptIn, nil)
+                    }
                 )
 
             case .auth(.presented(.delegate(.emailVerificationRequired(let email)))):
@@ -940,9 +952,18 @@ struct AppFeature {
                 state.cachedUser = user
                 state.displayName = user.name
                 state.userEmail = user.email
+                state.settings.hasBackendAccount = true
+                state.settings.metricsOptIn = user.metricsOptIn
+                state.settings.metricsOptInError = nil
                 state.emailVerification = nil  // dismiss verification sheet
                 // Sequential identity: logIn result drives soft-sync via applySubscriptionUpdate (#217).
-                return linkSubscriptionIdentity(user.id)
+                return .merge(
+                    linkSubscriptionIdentity(user.id),
+                    .run { [watchClient] _ in
+                        guard watchClient.isSupported() else { return }
+                        await watchClient.sendMetricsOptInState(true, user.metricsOptIn, nil)
+                    }
+                )
 
             case .emailVerification(.presented(.delegate(.signOutRequested))):
                 // User tapped the escape hatch on the verification sheet. Clear the
@@ -1106,7 +1127,8 @@ struct AppFeature {
                                     subscriptionTier: response.user.subscriptionTier,
                                     subscriptionExpiresAt: response.user.subscriptionExpiresAt,
                                     emailVerified: response.user.emailVerified, appleId: response.user.appleId,
-                                    createdAt: response.user.createdAt, updatedAt: response.user.updatedAt
+                                    createdAt: response.user.createdAt, updatedAt: response.user.updatedAt,
+                                    metricsOptIn: response.user.metricsOptIn
                                 )
                                 try? await persistence.saveCachedUser(dto)
 
@@ -1250,6 +1272,16 @@ struct AppFeature {
                     guard let id = UUID(uuidString: idStr) else { return .none }
                     let task = state.tasks.tasks.first(where: { $0.id == id })
                     return .send(.focus(.linkTask(id, task?.title, task?.energyLevel.icon)))
+                case .setMetricsOptIn(let enabled):
+                    let hasAccount = state.settings.hasBackendAccount || state.cachedUser != nil
+                    guard hasAccount else {
+                        return .run { [watchClient] _ in
+                            guard watchClient.isSupported() else { return }
+                            await watchClient.sendMetricsOptInState(false, false, "Requiere cuenta con sincronización")
+                        }
+                    }
+                    state.settings.hasBackendAccount = true
+                    return .send(.settings(.setMetricsOptIn(enabled)))
                 case .unlinkTask:
                     return .send(.focus(.linkTask(nil, nil, nil)))
                 case .setTaskCompleted(let idStr, let isCompleted):
@@ -1493,6 +1525,34 @@ struct AppFeature {
                 let themeName = state.settings.themeName
                 return .run { [watchClient] _ in
                     await watchClient.sendTheme(themeName)
+                }
+
+            case .settings(.metricsOptInLoaded(let hasAccount, let optIn)):
+                state.cachedUser?.metricsOptIn = optIn
+                return .run { [watchClient] _ in
+                    guard watchClient.isSupported() else { return }
+                    await watchClient.sendMetricsOptInState(hasAccount, optIn, nil)
+                }
+
+            case .settings(.metricsOptInUpdateResponse(.success(let user))):
+                state.cachedUser?.metricsOptIn = user.metricsOptIn
+                let hasAccount = state.settings.hasBackendAccount
+                return .run { [persistence, watchClient] _ in
+                    if var cached = try? await persistence.fetchCachedUser() {
+                        cached.metricsOptIn = user.metricsOptIn
+                        try? await persistence.saveCachedUser(cached)
+                    }
+                    guard watchClient.isSupported() else { return }
+                    await watchClient.sendMetricsOptInState(hasAccount, user.metricsOptIn, nil)
+                }
+
+            case .settings(.metricsOptInUpdateResponse(.failure)):
+                let hasAccount = state.settings.hasBackendAccount
+                let optIn = state.settings.metricsOptIn
+                let err = state.settings.metricsOptInError
+                return .run { [watchClient] _ in
+                    guard watchClient.isSupported() else { return }
+                    await watchClient.sendMetricsOptInState(hasAccount, optIn, err)
                 }
 
             case .settings(.weeklyRecapToggled):
@@ -1926,9 +1986,16 @@ struct AppFeature {
         state.appleUserID = nil
         state.displayName = nil
         state.userEmail = nil
+        state.settings.hasBackendAccount = false
+        state.settings.metricsOptIn = false
+        state.settings.isUpdatingMetricsOptIn = false
+        state.settings.metricsOptInError = nil
         if dismissProfile { state.profile = nil }
         webSocketClient.disconnect()
-        return .run { [keychain, apiClient, persistence, subscriptionClient, spotlightClient] _ in
+        return .run { [keychain, apiClient, persistence, subscriptionClient, spotlightClient, watchClient] _ in
+            if watchClient.isSupported() {
+                await watchClient.sendMetricsOptInState(false, false, nil)
+            }
             if notifyBackendLogout, let refreshToken = await keychain.loadRefreshToken() {
                 try? await apiClient.logout(LogoutRequest(refreshToken: refreshToken))
             }
@@ -2024,7 +2091,13 @@ extension AppFeature {
         from state: State,
         publishContext: Bool
     ) -> Effect<Action> {
-        .run { [watchClient, themeName = state.settings.themeName] _ in
+        .run { [
+            watchClient,
+            themeName = state.settings.themeName,
+            hasAccount = state.settings.hasBackendAccount || state.cachedUser != nil,
+            metricsOptIn = state.settings.hasBackendAccount ? state.settings.metricsOptIn : (state.cachedUser?.metricsOptIn ?? false),
+            metricsOptInError = state.settings.metricsOptInError
+        ] _ in
             guard watchClient.isSupported() else { return }
             let watchState = WatchSessionState(from: state.focus)
             await watchClient.sendSessionState(watchState, publishContext)
@@ -2033,6 +2106,7 @@ extension AppFeature {
             // watch resolves accents without waiting for a separate theme change.
             if publishContext {
                 await watchClient.sendTheme(themeName)
+                await watchClient.sendMetricsOptInState(hasAccount, metricsOptIn, metricsOptInError)
             }
         }
     }

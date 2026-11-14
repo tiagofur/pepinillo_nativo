@@ -3,6 +3,7 @@ package dev.creapolis.pepinillo.presentation
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -16,7 +17,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
 import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
+import androidx.wear.compose.material3.ListHeader
 import androidx.wear.compose.material3.MaterialTheme
+import androidx.wear.compose.material3.SwitchButton
 import androidx.wear.compose.material3.Text
 import dev.creapolis.pepinillo.R
 import dev.creapolis.pepinillo.data.WearDiagnosticsState
@@ -24,6 +27,12 @@ import dev.creapolis.pepinillo.data.WearStatsState
 import dev.creapolis.pepinillo.data.WearTask
 import dev.creapolis.pepinillo.data.WearTimerState
 import kotlinx.coroutines.launch
+
+private const val WEAR_PRIVACY_HEADER = "Privacidad"
+private const val WEAR_METRICS_OPT_IN_LABEL = "Compartir métricas anónimas"
+private const val WEAR_METRICS_OPT_IN_CONSENT_COPY =
+    "Comparte métricas de uso anónimas y agregadas para mejorar Pepinillo: cuántas sesiones de enfoque se completan y en qué modos, minutos totales de enfoque y descanso, y tareas creadas y completadas. Nunca se comparte el contenido de tus tareas, tus horarios individuales ni ningún dato identificable. Puedes cambiarlo cuando quieras."
+private const val WEAR_METRICS_REQUIRES_ACCOUNT_HINT = "Requiere cuenta con sincronización"
 
 @Composable
 fun DiagnosticsScreen(
@@ -35,6 +44,10 @@ fun DiagnosticsScreen(
     isSyncStale: Boolean,
     diagnostics: WearDiagnosticsState,
     isActive: Boolean = true,
+    isLoggedIn: Boolean = false,
+    metricsOptIn: Boolean = false,
+    metricsOptInError: String? = null,
+    onToggleMetricsOptIn: (Boolean) -> Unit = {},
 ) {
     val listState = rememberScalingLazyListState()
     val focusRequester = remember { FocusRequester() }
@@ -63,6 +76,56 @@ fun DiagnosticsScreen(
             .focusRequester(focusRequester)
             .focusable(),
     ) {
+        item {
+            ListHeader {
+                Text(
+                    text = WEAR_PRIVACY_HEADER,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
+        }
+        item {
+            SwitchButton(
+                checked = if (isLoggedIn) metricsOptIn else false,
+                onCheckedChange = { onToggleMetricsOptIn(it) },
+                enabled = isLoggedIn,
+                modifier = Modifier.fillMaxWidth(),
+                label = {
+                    Text(
+                        text = WEAR_METRICS_OPT_IN_LABEL,
+                        style = MaterialTheme.typography.labelMedium,
+                    )
+                },
+            )
+        }
+        if (!isLoggedIn) {
+            item {
+                Text(
+                    text = WEAR_METRICS_REQUIRES_ACCOUNT_HINT,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                )
+            }
+        }
+        metricsOptInError?.takeIf { it.isNotBlank() }?.let { errorMsg ->
+            item {
+                Text(
+                    text = errorMsg,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                )
+            }
+        }
+        item {
+            Text(
+                text = WEAR_METRICS_OPT_IN_CONSENT_COPY,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+            )
+        }
         item { Text(diagTitle) }
         item {
             Text(

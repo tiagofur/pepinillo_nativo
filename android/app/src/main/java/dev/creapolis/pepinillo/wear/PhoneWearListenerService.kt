@@ -9,9 +9,12 @@ import com.google.android.gms.wearable.MessageEvent
 import com.google.android.gms.wearable.Node
 import com.google.android.gms.wearable.WearableListenerService
 import dagger.hilt.android.AndroidEntryPoint
+import dev.creapolis.pepinillo.core.auth.AuthStore
 import dev.creapolis.pepinillo.core.billing.FeatureGate
+import dev.creapolis.pepinillo.core.network.UpdateProfileRequest
 import dev.creapolis.pepinillo.data.repository.SessionRepository
 import dev.creapolis.pepinillo.data.repository.TaskRepository
+import dev.creapolis.pepinillo.data.repository.UserRepository
 import dev.creapolis.pepinillo.data.sync.WidgetRefreshWorker
 import dev.creapolis.pepinillo.domain.streak.StreakProtectionService
 import dev.creapolis.pepinillo.domain.timer.FocusEngine
@@ -43,6 +46,8 @@ class PhoneWearListenerService : WearableListenerService() {
     @Inject lateinit var sessionRepository: SessionRepository
     @Inject lateinit var prefsRepo: UserPreferencesRepository
     @Inject lateinit var featureGate: FeatureGate
+    @Inject lateinit var authStore: AuthStore
+    @Inject lateinit var userRepository: UserRepository
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -194,6 +199,52 @@ class PhoneWearListenerService : WearableListenerService() {
             WearDataLayerHelper.CMD_REQUEST_SYNC -> {
                 Log.d(TAG, "Watch requested sync — pushing directly")
                 pushTasksAndStatsDirectly()
+                pushUserStatusDirectly()
+            }
+
+            WearDataLayerHelper.PATH_CMD_SET_METRICS_OPT_IN -> {
+                val payload = messageEvent.data.toString(StandardCharsets.UTF_8).trim()
+                val enabled = payload.toBooleanStrictOrNull() ?: return
+                Log.d(TAG, "Watch requested metricsOptIn=$enabled")
+                scope.launch {
+                    val isLoggedIn = authStore.getAccessToken() != null
+                    val prefs = runCatching { prefsRepo.preferences.first() }.getOrNull()
+                    val sessions = prefs?.sessionsBeforeLongBreak ?: 4
+                    if (!isLoggedIn) {
+                        WearDataLayerHelper.pushUserStatus(
+                            this@PhoneWearListenerService,
+                            featureGate.isPro,
+                            sessions,
+                            isLoggedIn = false,
+                            metricsOptIn = false,
+                            metricsOptInError = "Requiere cuenta con sincronización",
+                        )
+                        return@launch
+                    }
+                    val previousOptIn = userRepository.metricsOptIn.value
+                    userRepository.updateProfile(UpdateProfileRequest(metricsOptIn = enabled))
+                        .onSuccess {
+                            WearDataLayerHelper.pushUserStatus(
+                                this@PhoneWearListenerService,
+                                featureGate.isPro,
+                                sessions,
+                                isLoggedIn = true,
+                                metricsOptIn = userRepository.metricsOptIn.value,
+                                metricsOptInError = null,
+                            )
+                        }
+                        .onFailure { e ->
+                            Log.e(TAG, "Failed to update metricsOptIn from watch", e)
+                            WearDataLayerHelper.pushUserStatus(
+                                this@PhoneWearListenerService,
+                                featureGate.isPro,
+                                sessions,
+                                isLoggedIn = true,
+                                metricsOptIn = previousOptIn,
+                                metricsOptInError = "No se pudo actualizar tu preferencia de privacidad. Inténtalo de nuevo.",
+                            )
+                        }
+                }
             }
 
             else -> {
@@ -252,17 +303,27 @@ class PhoneWearListenerService : WearableListenerService() {
     }
 
     /** Mirrors MainActivity's subscription/prefs sync so a reconnecting watch immediately
-     *  learns the current entitlement and sessions-before-long-break. */
+     *  learns the current entitlement, login state, metrics consent, and sessions-before-long-break. */
     private fun pushUserStatusDirectly() {
         scope.launch {
             runCatching {
                 val prefs = prefsRepo.preferences.first()
+                val isLoggedIn = authStore.getAccessToken() != null
+                if (isLoggedIn) {
+                    runCatching { userRepository.fetchAndCacheProfile() }
+                }
+                val metricsOptIn = if (isLoggedIn) userRepository.metricsOptIn.value else false
                 WearDataLayerHelper.pushUserStatus(
                     this@PhoneWearListenerService,
                     featureGate.isPro,
                     prefs.sessionsBeforeLongBreak,
+                    isLoggedIn = isLoggedIn,
+                    metricsOptIn = metricsOptIn,
                 )
-                Log.d(TAG, "User status pushed: isPro=${featureGate.isPro}, sessions=${prefs.sessionsBeforeLongBreak}")
+                Log.d(
+                    TAG,
+                    "User status pushed: isPro=${featureGate.isPro}, sessions=${prefs.sessionsBeforeLongBreak}, isLoggedIn=$isLoggedIn, metricsOptIn=$metricsOptIn",
+                )
             }.onFailure { e ->
                 Log.e(TAG, "Failed to push user status", e)
             }

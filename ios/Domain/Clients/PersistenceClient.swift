@@ -356,13 +356,15 @@ public struct CachedUserDTO: Sendable, Equatable {
     public let appleId: String?
     public let createdAt: String
     public let updatedAt: String
+    public var metricsOptIn: Bool
 
     public init(
         id: String, email: String, name: String,
         imageUrl: String? = nil,
         subscriptionTier: String = "free", subscriptionExpiresAt: String? = nil,
         emailVerified: Bool = false, appleId: String? = nil,
-        createdAt: String = "", updatedAt: String = ""
+        createdAt: String = "", updatedAt: String = "",
+        metricsOptIn: Bool = false
     ) {
         self.id = id
         self.email = email
@@ -374,6 +376,7 @@ public struct CachedUserDTO: Sendable, Equatable {
         self.appleId = appleId
         self.createdAt = createdAt
         self.updatedAt = updatedAt
+        self.metricsOptIn = metricsOptIn
     }
 
     init(from user: CachedUser) {
@@ -387,6 +390,7 @@ public struct CachedUserDTO: Sendable, Equatable {
         self.appleId = user.appleId
         self.createdAt = user.createdAt
         self.updatedAt = user.updatedAt
+        self.metricsOptIn = false
     }
 }
 

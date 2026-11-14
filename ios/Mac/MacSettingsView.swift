@@ -258,11 +258,36 @@ struct MacSettingsView: View {
                         set: { preferences.setTopActivityEnabled($0) }
                     )
                 )
+
+                Toggle(
+                    "Compartir métricas anónimas",
+                    isOn: Binding(
+                        get: { store.settings.hasBackendAccount ? store.settings.metricsOptIn : false },
+                        set: { store.send(.settings(.setMetricsOptIn($0))) }
+                    )
+                )
+                .disabled(!store.settings.hasBackendAccount || store.settings.isUpdatingMetricsOptIn)
+
+                if !store.settings.hasBackendAccount {
+                    Text("Requiere cuenta con sincronización")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                if let error = store.settings.metricsOptInError {
+                    Text(error)
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                }
             } header: {
                 Label(String(localized: "Usage statistics"), systemImage: "chart.bar")
             } footer: {
-                Text("Counts which apps are frontmost while a focus session runs. App names never leave this Mac.")
-                    .foregroundStyle(.secondary)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Counts which apps are frontmost while a focus session runs. App names never leave this Mac.")
+                        .foregroundStyle(.secondary)
+                    Text("Comparte métricas de uso anónimas y agregadas para mejorar Pepinillo: cuántas sesiones de enfoque se completan y en qué modos, minutos totales de enfoque y descanso, y tareas creadas y completadas. Nunca se comparte el contenido de tus tareas, tus horarios individuales ni ningún dato identificable. Puedes cambiarlo cuando quieras.")
+                        .foregroundStyle(.secondary)
+                }
             }
 
             iCloudSyncSection

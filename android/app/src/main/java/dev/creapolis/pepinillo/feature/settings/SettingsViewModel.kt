@@ -13,9 +13,11 @@ import dev.creapolis.pepinillo.core.auth.AuthStore
 import dev.creapolis.pepinillo.core.billing.SubscriptionState
 import dev.creapolis.pepinillo.data.local.entity.DailyStatsEntity
 import dev.creapolis.pepinillo.domain.streak.StreakProtectionService
+import dev.creapolis.pepinillo.core.network.UpdateProfileRequest
 import dev.creapolis.pepinillo.data.local.preferences.UserPreferences
 import dev.creapolis.pepinillo.data.local.preferences.UserPreferencesRepository
 import dev.creapolis.pepinillo.data.repository.SessionRepository
+import dev.creapolis.pepinillo.data.repository.UserRepository
 import dev.creapolis.pepinillo.data.sync.SyncState
 import dev.creapolis.pepinillo.data.sync.SyncStatusManager
 import dev.creapolis.pepinillo.feature.focus.FocusMode
@@ -25,6 +27,7 @@ import dev.creapolis.pepinillo.ui.theme.AppTheme
 import dev.creapolis.pepinillo.ui.theme.ThemeController
 import dev.creapolis.pepinillo.ui.theme.ThemeMode
 import dev.creapolis.pepinillo.wear.WearDataLayerHelper
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -32,6 +35,9 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+
+private const val METRICS_OPT_IN_ERROR_MESSAGE =
+    "No se pudo actualizar tu preferencia de privacidad. Inténtalo de nuevo."
 
 data class SettingsUiState(
     val pomodoroMinutes: Int = 25,
@@ -68,6 +74,9 @@ data class SettingsUiState(
     val lastSyncAt: Long? = null,
     val pendingChangesCount: Int = 0,
     val isLoggedIn: Boolean = false,
+    val metricsOptIn: Boolean = false,
+    val isUpdatingMetricsOptIn: Boolean = false,
+    val metricsOptInError: String? = null,
 )
 
 @HiltViewModel
@@ -78,7 +87,12 @@ class SettingsViewModel @Inject constructor(
     private val featureGate: FeatureGate,
     private val syncStatusManager: SyncStatusManager,
     private val authStore: AuthStore,
+    private val userRepository: UserRepository,
 ) : ViewModel() {
+
+    private val _metricsOptIn = MutableStateFlow(false)
+    private val _isUpdatingMetricsOptIn = MutableStateFlow(false)
+    private val _metricsOptInError = MutableStateFlow<String?>(null)
 
     @Suppress("UNCHECKED_CAST")
     val uiState: StateFlow<SettingsUiState> = combine(
@@ -91,6 +105,9 @@ class SettingsViewModel @Inject constructor(
             syncStatusManager.lastSyncAt,
             syncStatusManager.pendingChangesCount,
             authStore.isLoggedIn,
+            _metricsOptIn,
+            _isUpdatingMetricsOptIn,
+            _metricsOptInError,
         ),
     ) { values ->
         val prefs = values[0] as UserPreferences
@@ -101,6 +118,9 @@ class SettingsViewModel @Inject constructor(
         val lastSyncAt = values[5] as Long?
         val pendingChangesCount = values[6] as Int
         val isLoggedIn = values[7] as Boolean
+        val metricsOptIn = values[8] as Boolean
+        val isUpdatingMetricsOptIn = values[9] as Boolean
+        val metricsOptInError = values[10] as String?
 
         prefs.toUiState(
             currentStreak = StreakProtectionService.computeProtectedStreak(
@@ -114,8 +134,11 @@ class SettingsViewModel @Inject constructor(
             lastSyncAt = lastSyncAt,
             pendingChangesCount = pendingChangesCount,
             isLoggedIn = isLoggedIn,
+            metricsOptIn = if (isLoggedIn) metricsOptIn else false,
+            isUpdatingMetricsOptIn = if (isLoggedIn) isUpdatingMetricsOptIn else false,
+            metricsOptInError = if (isLoggedIn) metricsOptInError else null,
         )
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SettingsUiState())
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, SettingsUiState())
 
     init {
         // Sync theme controller with persisted preferences
@@ -130,6 +153,88 @@ class SettingsViewModel @Inject constructor(
                 WearDataLayerHelper.pushTheme(context, prefs.selectedTheme, theme)
             }
         }
+
+        // Keep _metricsOptIn synchronized when UserRepository.metricsOptIn updates (e.g. from Wear OS)
+        viewModelScope.launch {
+            userRepository.metricsOptIn.collect { repoOptIn ->
+                if (!_isUpdatingMetricsOptIn.value && uiState.value.isLoggedIn) {
+                    _metricsOptIn.value = repoOptIn
+                }
+            }
+        }
+
+        // Load real server metricsOptIn when logged in; reset to OFF when logged out
+        viewModelScope.launch {
+            authStore.isLoggedIn.collect { loggedIn ->
+                if (loggedIn) {
+                    refreshMetricsOptIn()
+                } else {
+                    _metricsOptIn.value = false
+                    _isUpdatingMetricsOptIn.value = false
+                    _metricsOptInError.value = null
+                    WearDataLayerHelper.pushUserStatus(
+                        context = context,
+                        isPro = uiState.value.isPro,
+                        sessionsBeforeLongBreak = uiState.value.sessionsBeforeLongBreak,
+                        isLoggedIn = false,
+                        metricsOptIn = false,
+                    )
+                }
+            }
+        }
+    }
+
+    fun refreshMetricsOptIn() {
+        viewModelScope.launch {
+            if (!uiState.value.isLoggedIn) {
+                _metricsOptIn.value = false
+                return@launch
+            }
+            userRepository.fetchAndCacheProfile().onSuccess {
+                val optedIn = userRepository.metricsOptIn.value
+                _metricsOptIn.value = optedIn
+                WearDataLayerHelper.pushUserStatus(
+                    context = context,
+                    isPro = uiState.value.isPro,
+                    sessionsBeforeLongBreak = uiState.value.sessionsBeforeLongBreak,
+                    isLoggedIn = true,
+                    metricsOptIn = optedIn,
+                )
+            }
+        }
+    }
+
+    fun setMetricsOptIn(enabled: Boolean) {
+        if (!uiState.value.isLoggedIn || _isUpdatingMetricsOptIn.value) return
+        val previous = _metricsOptIn.value
+        _metricsOptIn.value = enabled
+        _metricsOptInError.value = null
+        _isUpdatingMetricsOptIn.value = true
+
+        viewModelScope.launch {
+            userRepository.updateProfile(UpdateProfileRequest(metricsOptIn = enabled))
+                .onSuccess {
+                    val confirmed = userRepository.metricsOptIn.value
+                    _metricsOptIn.value = confirmed
+                    _isUpdatingMetricsOptIn.value = false
+                    WearDataLayerHelper.pushUserStatus(
+                        context = context,
+                        isPro = uiState.value.isPro,
+                        sessionsBeforeLongBreak = uiState.value.sessionsBeforeLongBreak,
+                        isLoggedIn = true,
+                        metricsOptIn = confirmed,
+                    )
+                }
+                .onFailure {
+                    _metricsOptIn.value = previous
+                    _isUpdatingMetricsOptIn.value = false
+                    _metricsOptInError.value = METRICS_OPT_IN_ERROR_MESSAGE
+                }
+        }
+    }
+
+    fun dismissMetricsOptInError() {
+        _metricsOptInError.value = null
     }
 
     fun updatePomodoroMinutes(value: Int) = viewModelScope.launch {
@@ -271,6 +376,9 @@ class SettingsViewModel @Inject constructor(
         lastSyncAt: Long? = null,
         pendingChangesCount: Int = 0,
         isLoggedIn: Boolean = false,
+        metricsOptIn: Boolean = false,
+        isUpdatingMetricsOptIn: Boolean = false,
+        metricsOptInError: String? = null,
     ) = SettingsUiState(
         pomodoroMinutes = pomodoroMinutes,
         shortBreakMinutes = shortBreakMinutes,
@@ -304,5 +412,8 @@ class SettingsViewModel @Inject constructor(
         lastSyncAt = lastSyncAt,
         pendingChangesCount = pendingChangesCount,
         isLoggedIn = isLoggedIn,
+        metricsOptIn = metricsOptIn,
+        isUpdatingMetricsOptIn = isUpdatingMetricsOptIn,
+        metricsOptInError = metricsOptInError,
     )
 }

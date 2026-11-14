@@ -95,6 +95,8 @@ enum WatchCommand: Equatable, Sendable {
     case requestSession
     /// Watch → iOS: user tapped the "Start Break / Start Focus" CTA during a waiting hold.
     case startNextPhase
+    /// Watch → iOS: user toggled anonymous aggregate metrics opt-in (#725).
+    case setMetricsOptIn(Bool)
 }
 
 /// Messages received on each side from the counterpart.
@@ -111,6 +113,8 @@ enum WatchMessage: Equatable, Sendable {
     /// Pushed on theme change and on cold-start hydration so the watch can resolve
     /// accents via `AppTheme.named(_:)`. Rare event — never at tick rate.
     case theme(String)
+    /// iOS → Watch: privacy / metrics opt-in state (#725).
+    case metricsOptInState(hasBackendAccount: Bool, metricsOptIn: Bool, metricsOptInError: String?)
     /// Both sides: reachability changes.
     case connectivityStatus(Bool)
     /// Watch → iOS: user tapped a control on the Watch.
@@ -142,6 +146,9 @@ struct WatchConnectivityClient: Sendable {
     /// iOS → Watch: push the selected theme name so the watch can resolve accents.
     /// Merged into `applicationContext` (cold-start hydration) + `sendMessage` when reachable.
     var sendTheme: @Sendable (_ themeName: String) async -> Void = { _ in }
+
+    /// iOS → Watch: push privacy / metrics opt-in state (#725).
+    var sendMetricsOptInState: @Sendable (_ hasBackendAccount: Bool, _ metricsOptIn: Bool, _ metricsOptInError: String?) async -> Void = { _, _, _ in }
 
     /// Whether WatchConnectivity is supported on this device.
     var isSupported: @Sendable () -> Bool = { false }
@@ -175,6 +182,13 @@ extension WatchConnectivityClient {
             sendTasks:        { tasks in await manager.sendTasks(tasks) },
             sendDashboardStats: { stats in await manager.sendDashboardStats(stats) },
             sendTheme:        { themeName in await manager.sendTheme(themeName) },
+            sendMetricsOptInState: { hasAccount, optIn, err in
+                await manager.sendMetricsOptInState(
+                    hasBackendAccount: hasAccount,
+                    metricsOptIn: optIn,
+                    metricsOptInError: err
+                )
+            },
             isSupported:      { WCSession.isSupported() }
         )
 #else
@@ -204,6 +218,7 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate, @unchecked Se
     private var cachedStatsDict: [String: Any] = [:]
     private var cachedDashboardStatsDict: [String: Any] = [:]
     private var cachedThemeDict: [String: Any] = [:]
+    private var cachedMetricsOptInDict: [String: Any] = [:]
     private let contextCacheLock = NSLock()
 
     private override init() {
@@ -453,6 +468,38 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate, @unchecked Se
         }
     }
 
+    func sendMetricsOptInState(
+        hasBackendAccount: Bool,
+        metricsOptIn: Bool,
+        metricsOptInError: String?
+    ) async {
+        guard let session else { return }
+
+        var optInDict: [String: Any] = [
+            "hasBackendAccount": hasBackendAccount,
+            "metricsOptIn": metricsOptIn,
+        ]
+        if let metricsOptInError {
+            optInDict["metricsOptInError"] = metricsOptInError
+        }
+
+        let fullContext = updateContextCache { self.cachedMetricsOptInDict = optInDict }
+
+        do {
+            try session.updateApplicationContext(fullContext)
+        } catch {
+            Self.log.error("updateApplicationContext(metricsOptIn) failed: \(error.localizedDescription)")
+        }
+
+        if session.isReachable {
+            var messageDict = optInDict
+            messageDict["type"] = "metricsOptIn"
+            session.sendMessage(messageDict, replyHandler: nil) { error in
+                Self.log.error("sendMessage(metricsOptIn) failed: \(error.localizedDescription)")
+            }
+        }
+    }
+
     /// Applies a cache mutation under the lock and returns the merged full context.
     /// Synchronous on purpose: NSLock.lock()/unlock() is unavailable in async
     /// contexts under Swift 6, and no suspension may occur while holding the lock.
@@ -478,6 +525,9 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate, @unchecked Se
         }
         if !cachedThemeDict.isEmpty {
             ctx["theme"] = cachedThemeDict
+        }
+        if !cachedMetricsOptInDict.isEmpty {
+            ctx["metricsOptIn"] = cachedMetricsOptInDict
         }
         ctx["sentAt"] = Date().timeIntervalSince1970
         return ctx
@@ -536,6 +586,11 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate, @unchecked Se
             if let themeName = message["themeName"] as? String {
                 yield(.theme(themeName))
             }
+        case "metricsOptIn":
+            let hasAccount = message["hasBackendAccount"] as? Bool ?? false
+            let optIn = message["metricsOptIn"] as? Bool ?? false
+            let err = message["metricsOptInError"] as? String
+            yield(.metricsOptInState(hasBackendAccount: hasAccount, metricsOptIn: optIn, metricsOptInError: err))
         default:
             break
         }
@@ -610,6 +665,12 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate, @unchecked Se
            let themeName = themeDict["themeName"] as? String {
             yield(.theme(themeName))
         }
+        if let optInDict = ctx["metricsOptIn"] as? [String: Any] {
+            let hasAccount = optInDict["hasBackendAccount"] as? Bool ?? false
+            let optIn = optInDict["metricsOptIn"] as? Bool ?? false
+            let err = optInDict["metricsOptInError"] as? String
+            yield(.metricsOptInState(hasBackendAccount: hasAccount, metricsOptIn: optIn, metricsOptInError: err))
+        }
     }
 
     // Required on iOS (not on watchOS)
@@ -650,6 +711,9 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate, @unchecked Se
         case .requestDashboard:             dict["action"] = "requestDashboard"
         case .requestSession:               dict["action"] = "requestSession"
         case .startNextPhase:               dict["action"] = "startNextPhase"
+        case .setMetricsOptIn(let enabled):
+            dict["action"] = "setMetricsOptIn"
+            dict["enabled"] = enabled
         }
         return dict
     }
@@ -673,6 +737,8 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate, @unchecked Se
         case "requestDashboard": return .requestDashboard
         case "requestSession":  return .requestSession
         case "startNextPhase": return .startNextPhase
+        case "setMetricsOptIn":
+            return .setMetricsOptIn(message["enabled"] as? Bool ?? false)
         default:               return nil
         }
     }

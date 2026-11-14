@@ -70,6 +70,12 @@ struct SettingsFeature {
         var canAppleCloudSync: Bool = false
         var isRetryingAppleCloudSync: Bool = false
 
+        // Privacy / Aggregate Metrics Opt-in (#725)
+        public var hasBackendAccount: Bool = false
+        public var metricsOptIn: Bool = false
+        public var isUpdatingMetricsOptIn: Bool = false
+        public var metricsOptInError: String? = nil
+
         var isLoading: Bool = false
 
         // Child features
@@ -151,9 +157,64 @@ struct SettingsFeature {
             error: String?
         )
 
+        // Privacy / Aggregate Metrics Opt-in (#725)
+        case metricsOptInLoaded(hasAccount: Bool, metricsOptIn: Bool)
+        case setMetricsOptIn(Bool)
+        case metricsOptInUpdateResponse(Result<APIUser, Error>)
+        case dismissMetricsOptInError
+
         // Internal
         case saveSettings
         case settingsSaved
+
+        static func == (lhs: Action, rhs: Action) -> Bool {
+            switch (lhs, rhs) {
+            case (.onAppear, .onAppear),
+                 (.autoStartBreaksToggled, .autoStartBreaksToggled),
+                 (.autoStartWorkToggled, .autoStartWorkToggled),
+                 (.blockMidpointToggled, .blockMidpointToggled),
+                 (.soundToggled, .soundToggled),
+                 (.hapticToggled, .hapticToggled),
+                 (.keepScreenOnToggled, .keepScreenOnToggled),
+                 (.showJournalAfterSessionToggled, .showJournalAfterSessionToggled),
+                 (.dailyReminderToggled, .dailyReminderToggled),
+                 (.notificationAuthorizationDenied, .notificationAuthorizationDenied),
+                 (.notificationDeniedAlertDismissed, .notificationDeniedAlertDismissed),
+                 (.healthLoggingToggled, .healthLoggingToggled),
+                 (.healthDeniedAlertDismissed, .healthDeniedAlertDismissed),
+                 (.adhdFriendlyToggled, .adhdFriendlyToggled),
+                 (.calendarIntegrationToggled, .calendarIntegrationToggled),
+                 (.aboutTapped, .aboutTapped),
+                 (.upgradeTapped, .upgradeTapped),
+                 (.paywallDismissed, .paywallDismissed),
+                 (.retryAppleCloudSyncTapped, .retryAppleCloudSyncTapped),
+                 (.dismissMetricsOptInError, .dismissMetricsOptInError),
+                 (.saveSettings, .saveSettings),
+                 (.settingsSaved, .settingsSaved):
+                return true
+            case let (.preferencesLoaded(a), .preferencesLoaded(b)): return a == b
+            case let (.pomodoroDurationChanged(a), .pomodoroDurationChanged(b)): return a == b
+            case let (.shortBreakChanged(a), .shortBreakChanged(b)): return a == b
+            case let (.longBreakChanged(a), .longBreakChanged(b)): return a == b
+            case let (.pomodorosPerCycleChanged(a), .pomodorosPerCycleChanged(b)): return a == b
+            case let (.blockDurationChanged(a), .blockDurationChanged(b)): return a == b
+            case let (.flowtimeMinMinutesChanged(a), .flowtimeMinMinutesChanged(b)): return a == b
+            case let (.defaultModeChanged(a), .defaultModeChanged(b)): return a == b
+            case let (.themeChanged(a), .themeChanged(b)): return a == b
+            case let (.appearanceModeChanged(a), .appearanceModeChanged(b)): return a == b
+            case let (.dailyReminderTimeChanged(h1, m1), .dailyReminderTimeChanged(h2, m2)): return h1 == h2 && m1 == m2
+            case let (.healthAuthorizationResult(a), .healthAuthorizationResult(b)): return a == b
+            case let (.calendarAuthorizationResult(a), .calendarAuthorizationResult(b)): return a == b
+            case let (.about(a), .about(b)): return a == b
+            case let (.syncStatusRefreshed(s1, e1, c1), .syncStatusRefreshed(s2, e2, c2)): return s1 == s2 && e1 == e2 && c1 == c2
+            case let (.appleCloudSyncRetryFinished(s1, e1), .appleCloudSyncRetryFinished(s2, e2)): return s1 == s2 && e1 == e2
+            case let (.metricsOptInLoaded(h1, m1), .metricsOptInLoaded(h2, m2)): return h1 == h2 && m1 == m2
+            case let (.setMetricsOptIn(a), .setMetricsOptIn(b)): return a == b
+            case let (.metricsOptInUpdateResponse(.success(a)), .metricsOptInUpdateResponse(.success(b))): return a == b
+            case (.metricsOptInUpdateResponse(.failure), .metricsOptInUpdateResponse(.failure)): return true
+            default: return false
+            }
+        }
     }
 
     /// Value-type snapshot for passing preferences across concurrency boundaries.
@@ -216,6 +277,8 @@ struct SettingsFeature {
     @Dependency(\.persistenceClient) var persistence
     @Dependency(\.healthClient) var healthClient
     @Dependency(\.calendarClient) var calendarClient
+    @Dependency(\.apiClient) var apiClient
+    @Dependency(\.keychainClient) var keychainClient
 
     var body: some ReducerOf<Self> {
         Reduce { state, action in
@@ -232,7 +295,8 @@ struct SettingsFeature {
                 state.weeklyRecapEnabled = UserDefaults.standard.bool(forKey: "streak.weeklyRecap.enabled")
                 guard !state.isLoading else { return .none }
                 state.isLoading = true
-                return .run { send in
+                let currentOptIn = state.metricsOptIn
+                return .run { [keychainClient, apiClient, persistence] send in
                     let prefs = try await persistence.fetchPreferences()
                     let snapshot = SettingsSnapshot(from: prefs)
                     await send(.preferencesLoaded(snapshot))
@@ -241,6 +305,15 @@ struct SettingsFeature {
                         error: AppGroupDefaults.lastAppleCloudActivationError,
                         canAppleCloudSync: AppGroupDefaults.canAppleCloudSync
                     ))
+                    guard await keychainClient.hasTokens() else {
+                        await send(.metricsOptInLoaded(hasAccount: false, metricsOptIn: false))
+                        return
+                    }
+                    if let user = try? await apiClient.getMe() {
+                        await send(.metricsOptInLoaded(hasAccount: true, metricsOptIn: user.metricsOptIn))
+                    } else {
+                        await send(.metricsOptInLoaded(hasAccount: true, metricsOptIn: currentOptIn))
+                    }
                 }
 
             case .preferencesLoaded(let snap):
@@ -544,6 +617,37 @@ struct SettingsFeature {
                 state.isRetryingAppleCloudSync = false
                 state.syncStatus = status
                 state.lastAppleCloudActivationError = error
+                return .none
+
+            case .metricsOptInLoaded(let hasAccount, let metricsOptIn):
+                state.hasBackendAccount = hasAccount
+                state.metricsOptIn = hasAccount ? metricsOptIn : false
+                return .none
+
+            case .setMetricsOptIn(let enabled):
+                guard state.hasBackendAccount, !state.isUpdatingMetricsOptIn else { return .none }
+                state.metricsOptIn = enabled
+                state.metricsOptInError = nil
+                state.isUpdatingMetricsOptIn = true
+                return .run { [apiClient] send in
+                    await send(.metricsOptInUpdateResponse(Result {
+                        try await apiClient.updateMe(UpdateProfileRequest(metricsOptIn: enabled))
+                    }))
+                }
+
+            case .metricsOptInUpdateResponse(.success(let user)):
+                state.isUpdatingMetricsOptIn = false
+                state.metricsOptIn = user.metricsOptIn
+                return .none
+
+            case .metricsOptInUpdateResponse(.failure):
+                state.isUpdatingMetricsOptIn = false
+                state.metricsOptIn.toggle()
+                state.metricsOptInError = "No se pudo guardar tu preferencia de privacidad. Inténtalo de nuevo."
+                return .none
+
+            case .dismissMetricsOptInError:
+                state.metricsOptInError = nil
                 return .none
             }
         }

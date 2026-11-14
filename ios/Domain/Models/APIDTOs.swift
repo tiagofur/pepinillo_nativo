@@ -90,11 +90,13 @@ public struct UpdateProfileRequest: Codable, Sendable, Equatable {
     public let name: String?
     public let email: String?
     public let imageUrl: String?
+    public let metricsOptIn: Bool?
 
-    public init(name: String? = nil, email: String? = nil, imageUrl: String? = nil) {
+    public init(name: String? = nil, email: String? = nil, imageUrl: String? = nil, metricsOptIn: Bool? = nil) {
         self.name = name
         self.email = email
         self.imageUrl = imageUrl
+        self.metricsOptIn = metricsOptIn
     }
 }
 
@@ -113,6 +115,59 @@ public struct APIUser: Codable, Sendable, Equatable {
     public let appleId: String?
     public let appleEmail: String?
     public let appleName: String?
+    public let metricsOptIn: Bool
+
+    public init(
+        id: String,
+        email: String,
+        name: String,
+        imageUrl: String?,
+        subscriptionTier: String,
+        subscriptionExpiresAt: String?,
+        emailVerified: Bool,
+        createdAt: String,
+        updatedAt: String,
+        appleId: String?,
+        appleEmail: String?,
+        appleName: String?,
+        metricsOptIn: Bool = false
+    ) {
+        self.id = id
+        self.email = email
+        self.name = name
+        self.imageUrl = imageUrl
+        self.subscriptionTier = subscriptionTier
+        self.subscriptionExpiresAt = subscriptionExpiresAt
+        self.emailVerified = emailVerified
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
+        self.appleId = appleId
+        self.appleEmail = appleEmail
+        self.appleName = appleName
+        self.metricsOptIn = metricsOptIn
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id, email, name, imageUrl, subscriptionTier, subscriptionExpiresAt
+        case emailVerified, createdAt, updatedAt, appleId, appleEmail, appleName, metricsOptIn
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(String.self, forKey: .id)
+        email = try container.decode(String.self, forKey: .email)
+        name = try container.decode(String.self, forKey: .name)
+        imageUrl = try container.decodeIfPresent(String.self, forKey: .imageUrl)
+        subscriptionTier = try container.decode(String.self, forKey: .subscriptionTier)
+        subscriptionExpiresAt = try container.decodeIfPresent(String.self, forKey: .subscriptionExpiresAt)
+        emailVerified = try container.decode(Bool.self, forKey: .emailVerified)
+        createdAt = try container.decode(String.self, forKey: .createdAt)
+        updatedAt = try container.decode(String.self, forKey: .updatedAt)
+        appleId = try container.decodeIfPresent(String.self, forKey: .appleId)
+        appleEmail = try container.decodeIfPresent(String.self, forKey: .appleEmail)
+        appleName = try container.decodeIfPresent(String.self, forKey: .appleName)
+        metricsOptIn = try container.decodeIfPresent(Bool.self, forKey: .metricsOptIn) ?? false
+    }
 }
 
 public struct APITokens: Codable, Sendable, Equatable {

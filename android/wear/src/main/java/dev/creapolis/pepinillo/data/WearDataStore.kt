@@ -13,6 +13,9 @@ object WearDataStore {
     private val _tasks = MutableStateFlow(emptyList<WearTask>())
     private val _stats = MutableStateFlow(WearStatsState())
     private val _isPro = MutableStateFlow(false)
+    private val _isLoggedIn = MutableStateFlow(false)
+    private val _metricsOptIn = MutableStateFlow(false)
+    private val _metricsOptInError = MutableStateFlow<String?>(null)
 
     private val _themeColors = MutableStateFlow(WearThemeColors())
     val themeColors: StateFlow<WearThemeColors> = _themeColors
@@ -35,6 +38,9 @@ object WearDataStore {
     val tasks = _tasks.asStateFlow()
     val stats = _stats.asStateFlow()
     val isPro = _isPro.asStateFlow()
+    val isLoggedIn = _isLoggedIn.asStateFlow()
+    val metricsOptIn = _metricsOptIn.asStateFlow()
+    val metricsOptInError = _metricsOptInError.asStateFlow()
     val pendingCommandCount = _pendingCommandCount.asStateFlow()
     val lastSyncAtMillis = _lastSyncAtMillis.asStateFlow()
     val diagnostics = _diagnostics.asStateFlow()
@@ -164,6 +170,40 @@ object WearDataStore {
 
     fun updateIsPro(isPro: Boolean) {
         _isPro.value = isPro
+    }
+
+    fun updateIsLoggedIn(isLoggedIn: Boolean) {
+        _isLoggedIn.value = isLoggedIn
+        if (!isLoggedIn) {
+            _metricsOptIn.value = false
+            _metricsOptInError.value = null
+        }
+    }
+
+    fun updateMetricsOptIn(enabled: Boolean) {
+        _metricsOptIn.value = if (_isLoggedIn.value) enabled else false
+    }
+
+    fun updateMetricsOptInError(error: String?) {
+        _metricsOptInError.value = error
+    }
+
+    fun applyOptimisticMetricsOptIn(enabled: Boolean): Boolean {
+        if (!_isLoggedIn.value) {
+            _metricsOptIn.value = false
+            return false
+        }
+        _metricsOptIn.value = enabled
+        _metricsOptInError.value = null
+        return true
+    }
+
+    fun revertMetricsOptIn(
+        previous: Boolean,
+        errorMessage: String = "No se pudo actualizar tu preferencia de privacidad. Inténtalo de nuevo.",
+    ) {
+        _metricsOptIn.value = if (_isLoggedIn.value) previous else false
+        _metricsOptInError.value = errorMessage
     }
 }
 

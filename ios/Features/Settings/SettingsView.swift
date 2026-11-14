@@ -25,6 +25,7 @@ struct SettingsView: View {
                 themeSection
                 notificationsSection
                 healthSection
+                privacySection
                 streakSection
                 if store.isProUser && store.canAppleCloudSync {
                     iCloudSyncSection
@@ -349,6 +350,39 @@ struct SettingsView: View {
             Label(String(localized: "Apple Health"), systemImage: "heart.fill")
         } footer: {
             Text(String(localized: "Completed focus time is saved as Mindful Minutes in the Health app. Pepinillo does not read your health data."))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    // MARK: - Privacy Section
+
+    private var privacySection: some View {
+        Section {
+            Toggle(
+                "Compartir métricas anónimas",
+                isOn: Binding(
+                    get: { store.hasBackendAccount ? store.metricsOptIn : false },
+                    set: { store.send(.setMetricsOptIn($0)) }
+                )
+            )
+            .disabled(!store.hasBackendAccount || store.isUpdatingMetricsOptIn)
+
+            if !store.hasBackendAccount {
+                Text("Requiere cuenta con sincronización")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            if let error = store.metricsOptInError {
+                Text(error)
+                    .font(.caption)
+                    .foregroundStyle(.red)
+            }
+        } header: {
+            Label("Privacidad", systemImage: "hand.raised.fill")
+        } footer: {
+            Text("Comparte métricas de uso anónimas y agregadas para mejorar Pepinillo: cuántas sesiones de enfoque se completan y en qué modos, minutos totales de enfoque y descanso, y tareas creadas y completadas. Nunca se comparte el contenido de tus tareas, tus horarios individuales ni ningún dato identificable. Puedes cambiarlo cuando quieras.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }

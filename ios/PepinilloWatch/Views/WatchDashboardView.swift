@@ -11,6 +11,10 @@ import ComposableArchitecture
 
 struct WatchDashboardView: View {
     @Bindable var store: StoreOf<WatchDashboardFeature>
+    var hasBackendAccount: Bool = false
+    var metricsOptIn: Bool = false
+    var metricsOptInError: String? = nil
+    var onSetMetricsOptIn: ((Bool) -> Void)? = nil
     /// Phone-synced theme (#533). Per-mode accents resolve from the theme so
     /// Forest/Ocean/Sunset on the phone propagate to the watch dashboard.
     @Environment(\.appTheme) private var appTheme
@@ -42,11 +46,61 @@ struct WatchDashboardView: View {
                 if store.longestSessionMinutes > 0 {
                     bestSessionView
                 }
+
+                // Privacy / Aggregate Metrics Opt-in (#725)
+                privacySection
             }
             .padding(.horizontal, 4)
             .padding(.top, 4)
         }
         .onAppear { store.send(.onAppear) }
+    }
+
+    // MARK: - Privacy Section
+
+    private var effectiveMetricsOptIn: Bool {
+        guard hasBackendAccount else { return false }
+        return metricsOptIn
+    }
+
+    private var privacySection: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text("Privacidad")
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundStyle(.secondary)
+                .padding(.leading, 4)
+
+            Toggle(
+                "Compartir métricas anónimas",
+                isOn: Binding(
+                    get: { effectiveMetricsOptIn },
+                    set: { newValue in
+                        onSetMetricsOptIn?(newValue)
+                    }
+                )
+            )
+            .font(.system(size: 11))
+            .disabled(!hasBackendAccount)
+
+            if !hasBackendAccount {
+                Text("Requiere cuenta con sincronización")
+                    .font(.system(size: 9))
+                    .foregroundStyle(.secondary)
+            }
+
+            if let error = metricsOptInError {
+                Text(error)
+                    .font(.system(size: 9))
+                    .foregroundStyle(.red)
+            }
+
+            Text("Comparte métricas de uso anónimas y agregadas para mejorar Pepinillo: cuántas sesiones de enfoque se completan y en qué modos, minutos totales de enfoque y descanso, y tareas creadas y completadas. Nunca se comparte el contenido de tus tareas, tus horarios individuales ni ningún dato identificable. Puedes cambiarlo cuando quieras.")
+                .font(.system(size: 9))
+                .foregroundStyle(.secondary)
+        }
+        .padding(.vertical, 6)
+        .padding(.horizontal, 6)
+        .pepinilloGlass(cornerRadius: 10)
     }
 
     // MARK: - Header
