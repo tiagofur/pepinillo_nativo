@@ -88,6 +88,13 @@ struct MacPlanView: View {
 
         content(tasks: tasks)
             .background(Color.pepinilloSystemBackground)
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                VStack(spacing: 0) {
+                    undoBannerContent
+                    Divider()
+                    newTaskRow
+                }
+            }
         .dropDestination(for: String.self) { items, _ in
             createTaskFromDroppedText(items)
         }
@@ -137,13 +144,6 @@ struct MacPlanView: View {
         }
         .onChange(of: tasks.map(\.id)) { _, ids in
             selection.formIntersection(Set(ids))
-        }
-        .safeAreaInset(edge: .bottom, spacing: 0) {
-            VStack(spacing: 0) {
-                undoBannerContent
-                Divider()
-                newTaskRow
-            }
         }
         .alert(
             String(localized: "Couldn't Load Tasks"),

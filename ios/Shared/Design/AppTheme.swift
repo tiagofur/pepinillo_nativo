@@ -35,10 +35,14 @@ struct AppTheme: Sendable {
     }
 
     /// Gradient for the timer ring progress arc.
+    ///
+    /// Both seam ends are faded so the round caps meeting at the arc origin
+    /// (rotated to the top) never sample a discontinuity: the zero tips stay
+    /// soft instead of picking up a strong-color sliver.
     func ringGradient(for mode: FocusMode) -> AngularGradient {
         let c = color(for: mode)
         return AngularGradient(
-            colors: [c.opacity(0.4), c],
+            colors: [c.opacity(0.4), c, c.opacity(0.4)],
             center: .center,
             startAngle: .degrees(0),
             endAngle: .degrees(360)
@@ -49,7 +53,7 @@ struct AppTheme: Sendable {
     func ringGradient(for mode: FocusMode, phase: FocusPhase) -> AngularGradient {
         let c = color(for: mode, phase: phase)
         return AngularGradient(
-            colors: [c.opacity(0.4), c],
+            colors: [c.opacity(0.4), c, c.opacity(0.4)],
             center: .center,
             startAngle: .degrees(0),
             endAngle: .degrees(360)
