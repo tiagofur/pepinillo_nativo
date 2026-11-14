@@ -14,7 +14,9 @@ import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import androidx.wear.ongoing.OngoingActivity
 import androidx.wear.ongoing.Status
+import androidx.wear.tiles.TileService
 import dev.creapolis.pepinillo.R
+import dev.creapolis.pepinillo.tile.FocusTileService
 import dev.creapolis.pepinillo.data.WearDataStore
 import dev.creapolis.pepinillo.data.WearDayReset
 import dev.creapolis.pepinillo.data.WearSnapshotStore
@@ -63,6 +65,7 @@ internal fun notificationChronometerFor(state: WearTimerState): NotificationChro
 class WearFocusService : Service() {
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var isStarted = false
+    private var tileTickerStarted = false
     private var dayChangeReceiver: BroadcastReceiver? = null
 
     override fun onCreate() {
@@ -86,6 +89,7 @@ class WearFocusService : Service() {
             isStarted = true
             startForegroundWithNotification()
             observeTimerState()
+            startTileRefreshTicker()
         }
         return START_STICKY
     }
@@ -113,6 +117,9 @@ class WearFocusService : Service() {
     private fun observeTimerState() {
         WearDataStore.timerState
             .onEach { timerState ->
+                // Keep the Focus tile in step with every state change, including the
+                // final transition to Idle right before the service stops itself.
+                requestTileRefresh()
                 if (!isForegroundServiceStatus(timerState.status)) {
                     stopSelf()
                 } else {
@@ -122,6 +129,32 @@ class WearFocusService : Service() {
                 }
             }
             .launchIn(serviceScope)
+    }
+
+    /**
+     * Push a tile refresh so the countdown ticks between freshness intervals.
+     * Best-effort: tiles are optional surfaces and must never crash the service.
+     */
+    private fun requestTileRefresh() {
+        runCatching {
+            TileService.getUpdater(applicationContext).requestUpdate(FocusTileService::class.java)
+        }
+    }
+
+    /**
+     * 5s ticker while the service is alive (timer active). The service only runs
+     * for Running/Paused/WaitingForNext, so the ticker stops itself with it.
+     */
+    private fun startTileRefreshTicker() {
+        if (tileTickerStarted) return
+        tileTickerStarted = true
+        serviceScope.launch {
+            while (isActive) {
+                delay(TILE_REFRESH_TICK_MS)
+                val status = WearDataStore.timerState.value.status
+                if (status == "Running" || status == "WaitingForNext") requestTileRefresh()
+            }
+        }
     }
 
     private fun buildNotification(state: WearTimerState): android.app.Notification {
@@ -200,6 +233,7 @@ class WearFocusService : Service() {
     override fun onDestroy() {
         dayChangeReceiver?.let { unregisterReceiver(it) }
         dayChangeReceiver = null
+        tileTickerStarted = false
         serviceScope.cancel()
         super.onDestroy()
     }
@@ -252,6 +286,8 @@ class WearFocusService : Service() {
         private const val CHANNEL_ID = "wear_focus_timer_channel"
         /** Polling interval for the day-change backstop coroutine. */
         private const val DAY_CHANGE_BACKSTOP_INTERVAL_MS = 60_000L
+        /** Tile push cadence while the timer runs (matches tile freshness). */
+        internal const val TILE_REFRESH_TICK_MS = 5_000L
 
         /**
          * Returns true if the given timer status should keep the foreground service alive.
