@@ -1,9 +1,11 @@
 package dev.creapolis.pepinillo.presentation
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import dev.creapolis.pepinillo.tile.FocusTileService
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
@@ -77,6 +79,35 @@ class MainActivity : ComponentActivity() {
         }
         setContent {
             WearApp(viewModel, isAmbient = isAmbient)
+        }
+        handleTileAction(intent)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleTileAction(intent)
+    }
+
+    /**
+     * Tile buttons launch here with [FocusTileService.EXTRA_TILE_ACTION].
+     * The tap always opens the app for a beat on Wear OS 5; we execute the
+     * command immediately so pause/resume/stop feel like tile controls.
+     */
+    private fun handleTileAction(intent: Intent?) {
+        val action = intent?.getStringExtra(FocusTileService.EXTRA_TILE_ACTION) ?: return
+        intent.removeExtra(FocusTileService.EXTRA_TILE_ACTION)
+        when (action) {
+            FocusTileService.ACTION_PAUSE ->
+                if (viewModel.timerState.value.status == "Running") viewModel.pauseTimer()
+            FocusTileService.ACTION_RESUME ->
+                if (viewModel.timerState.value.status == "Paused") viewModel.resumeTimer()
+            FocusTileService.ACTION_STOP -> {
+                val status = viewModel.timerState.value.status
+                if (status == "Running" || status == "Paused" || status == "WaitingForNext") {
+                    viewModel.stopTimer()
+                }
+            }
         }
     }
 
