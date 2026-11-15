@@ -360,7 +360,7 @@ struct SettingsView: View {
     private var privacySection: some View {
         Section {
             Toggle(
-                "Compartir métricas anónimas",
+                "Share anonymous metrics",
                 isOn: Binding(
                     get: { store.hasBackendAccount ? store.metricsOptIn : false },
                     set: { store.send(.setMetricsOptIn($0)) }
@@ -369,7 +369,7 @@ struct SettingsView: View {
             .disabled(!store.hasBackendAccount || store.isUpdatingMetricsOptIn)
 
             if !store.hasBackendAccount {
-                Text("Requiere cuenta con sincronización")
+                Text("Sync account required")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -380,9 +380,9 @@ struct SettingsView: View {
                     .foregroundStyle(.red)
             }
         } header: {
-            Label("Privacidad", systemImage: "hand.raised.fill")
+            Label("Privacy", systemImage: "hand.raised.fill")
         } footer: {
-            Text("Comparte métricas de uso anónimas y agregadas para mejorar Pepinillo: cuántas sesiones de enfoque se completan y en qué modos, minutos totales de enfoque y descanso, y tareas creadas y completadas. Nunca se comparte el contenido de tus tareas, tus horarios individuales ni ningún dato identificable. Puedes cambiarlo cuando quieras.")
+            Text("Share anonymous, aggregated usage metrics to improve Pepinillo: how many focus sessions are completed and in which modes, total focus and break minutes, and tasks created and completed. Your task content, individual schedules, and anything personally identifiable are never shared. You can change this anytime.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }

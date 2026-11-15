@@ -15687,6 +15687,23 @@
         }
       }
     },
+    "Privacy" : {
+      "comment" : "Settings — privacy section header (metrics opt-in).",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Privacidad"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Privacidade"
+          }
+        }
+      }
+    },
     "Privacy Policy" : {
       "localizations" : {
         "es" : {
@@ -17523,6 +17540,40 @@
         }
       }
     },
+    "Share anonymous, aggregated usage metrics to improve Pepinillo: how many focus sessions are completed and in which modes, total focus and break minutes, and tasks created and completed. Your task content, individual schedules, and anything personally identifiable are never shared. You can change this anytime." : {
+      "comment" : "Settings — metrics opt-in footer explaining what is and is not collected.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Comparte métricas de uso anónimas y agregadas para mejorar Pepinillo: cuántas sesiones de enfoque se completan y en qué modos, minutos totales de enfoque y descanso, y tareas creadas y completadas. Nunca se comparte el contenido de tus tareas, tus horarios individuales ni ningún dato identificable. Puedes cambiarlo cuando quieras."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Partilha métricas de uso anónimas e agregadas para melhorar o Pepinillo: quantas sessões de foco são concluídas e em que modos, minutos totais de foco e pausa, e tarefas criadas e concluídas. O conteúdo das tuas tarefas, os teus horários individuais e qualquer dado identificável nunca são partilhados. Podes mudar isto quando quiseres."
+          }
+        }
+      }
+    },
+    "Share anonymous metrics" : {
+      "comment" : "Settings — metrics opt-in toggle.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Compartir métricas anónimas"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Partilhar métricas anónimas"
+          }
+        }
+      }
+    },
     "Short Break" : {
       "localizations" : {
         "en" : {
@@ -19083,6 +19134,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Alterar modo de foco"
+          }
+        }
+      }
+    },
+    "Sync account required" : {
+      "comment" : "Settings — caption shown when the metrics opt-in toggle is disabled.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Requiere cuenta con sincronización"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Requer conta com sincronização"
           }
         }
       }
