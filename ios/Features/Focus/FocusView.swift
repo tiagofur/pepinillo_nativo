@@ -228,10 +228,10 @@ struct FocusView: View {
     private var landscapeFocusColumn: some View {
         if #available(iOS 26.0, macOS 26.0, *) {
             GlassEffectContainer(spacing: 12) {
-                focusCoreBody(timerMaxSize: 500)
+                focusCoreBody(timerMaxSize: 460)
             }
         } else {
-            focusCoreBody(timerMaxSize: 500)
+            focusCoreBody(timerMaxSize: 460)
         }
     }
 
@@ -254,7 +254,7 @@ struct FocusView: View {
     private var focusCoreColumn: some View {
         VStack(spacing: 0) {
             modePickerHeader
-            focusCoreBody(timerMaxSize: sizeClass == .regular ? 540 : 280)
+            focusCoreBody(timerMaxSize: sizeClass == .regular ? 480 : 280)
         }
     }
 
@@ -881,12 +881,26 @@ struct TimerCircleView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+    @Environment(\.horizontalSizeClass) private var sizeClass
 
     @State private var ringScale: CGFloat = 1.0
     // C6: breathe scale for emoji mode icon (SF Symbols use .symbolEffect, emojis use scaleEffect)
     @State private var breatheScale: CGFloat = 1.0
+    /// Resolved ring diameter (measured, so Split View / Stage Manager scale
+    /// the digits with the actual ring, not the layout's static cap).
+    @State private var ringDiameter: CGFloat = 0
 
     private static let countUpRingDisplayFloor: Double = 0.04
+
+    /// iPad (regular): digits keep Apple-Clock proportions against the ring
+    /// ("legible from across the room", .impeccable.md #6) — a 540 pt ring
+    /// with .largeTitle (~34 pt) numerals read as a huge ring with tiny
+    /// numbers. iPhone keeps the Dynamic-Type-driven default.
+    private var resolvedTimerFontSize: CGFloat? {
+        if let timerFontSize { return timerFontSize }
+        guard sizeClass == .regular, ringDiameter > 0 else { return nil }
+        return min(max(ringDiameter * 0.22, 64), 128)
+    }
 
     var body: some View {
         ZStack {
@@ -913,10 +927,21 @@ struct TimerCircleView: View {
                 store: store,
                 breatheScale: $breatheScale,
                 reduceMotion: reduceMotion,
-                timerFontSize: timerFontSize
+                timerFontSize: resolvedTimerFontSize
             )
         }
         .aspectRatio(1, contentMode: .fit)
+        .background(
+            GeometryReader { geo in
+                Color.clear
+                    .onAppear {
+                        ringDiameter = min(geo.size.width, geo.size.height)
+                    }
+                    .onChange(of: geo.size) { _, size in
+                        ringDiameter = min(size.width, size.height)
+                    }
+            }
+        )
         // Phase change (work → break) shifts the ring's hue; crossfade the
         // color journey instead of snapping. Scoped to modeColor so the 4Hz
         // ticks keep their own linear per-tick animation (issue #80 intact).
