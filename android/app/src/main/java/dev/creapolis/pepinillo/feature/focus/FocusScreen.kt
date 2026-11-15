@@ -347,14 +347,10 @@ fun FocusScreen(
 
             Spacer(modifier = Modifier.weight(if (sessionActive) 0.55f else 0.28f))
 
-            val phaseLabel = if (uiState.selectedMode == FocusMode.Pomodoro &&
-                uiState.currentPhase == FocusPhase.Work &&
-                sessionActive
-            ) {
-                stringResource(R.string.phase_focus_numbered, uiState.completedSessions + 1)
-            } else {
-                stringResource(uiState.phaseLabelRes)
-            }
+            // Cycle position is expressed ONCE by the pips below (#776 Batch A —
+            // the numbered label next to them duplicated it, same dedupe as iOS #789).
+            // TalkBack still reads "Session N of M" from the pips' contentDescription.
+            val phaseLabel = stringResource(uiState.phaseLabelRes)
 
             // Single merged, live-region description for the whole timer node (super-review F1):
             // minute-granular time + phase + mode from the low-frequency a11yState, so TalkBack
