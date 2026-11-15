@@ -1277,7 +1277,7 @@ struct AppFeature {
                     guard hasAccount else {
                         return .run { [watchClient] _ in
                             guard watchClient.isSupported() else { return }
-                            await watchClient.sendMetricsOptInState(false, false, "Requiere cuenta con sincronización")
+                            await watchClient.sendMetricsOptInState(false, false, String(localized: "Sync account required"))
                         }
                     }
                     state.settings.hasBackendAccount = true
