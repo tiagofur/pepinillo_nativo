@@ -397,6 +397,25 @@ select {
 
 .pill.active { background: var(--ink); color: var(--bg); border-color: transparent; }
 
+/* ---------- Dashboard ---------- */
+.statgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 14px; }
+
+.stat { margin-bottom: 0; padding: 16px; }
+.stat b { display: block; font-size: 32px; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.stat span { color: var(--ink-2); font-size: 14px; }
+
+/* ---------- Onboarding ---------- */
+.onboarding {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+}
+
+.onboard-card { max-width: 440px; padding: 30px 28px; box-shadow: var(--shadow); }
+.onboard-card h1 { font-size: 30px; letter-spacing: -0.02em; margin: 0 0 8px; }
+.onboard-card .seg { margin: 8px 0 4px; }
+
 /* ---------- Focus & motion ---------- */
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 

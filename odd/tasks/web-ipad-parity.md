@@ -25,8 +25,8 @@ Forecast: ~6 slices (T0 retiro+spec, T1 scaffold, T2 shell, T3 foco, T4 tareas, 
 - [x] **T1** (`S5, S6`, route: `inline`, commit: `0dcaf803`, checks: `cd web && pnpm install && pnpm build` PASS — 20 módulos, dist OK): scaffold `pnpm create vite web --template react-ts`, install, build verde.
 - [x] **T2** (`S1, S2, S7`, route: `inline`, commit: `f65e1a26`, checks: `pnpm build` PASS (tsc + vite, 16 módulos), smoke visual pendiente de T5: shell con sidebar ≥1024px apaisado, pill superior en retrato/angosto, tabs abajo en teléfono + temas light/dark/system + CSS Liquid Glass propio. Nota: T2 ≈470 líneas (un solo comportamiento coherente: sistema CSS + nav + 4 vistas).
 - [x] **T3** (`S3`, route: `inline`, commit: `ca584e6f`, checks: `pnpm vitest run` 10/10 PASS + `pnpm build` PASS): motor de foco 4 modos con defaults y gating free de S3 (engine puro + hook con reloj por timestamps, pausa, saltar descanso, journal en localStorage con aviso visible y reintento).
-- [x] **T4** (`S3`, route: `inline`, commit: `ca584e6f+1 (este commit)`, checks: `pnpm vitest run` 29/29 PASS + `pnpm build` PASS): tareas y plan básico con persistencia local (modelo espejo de TaskItemState, filtros Hoy/energía, sugerencia de energía por hora = misma tabla del iPad, writes con aviso visible; subtareas y recurrencia pendientes).
-- [ ] **T5** (`S3, S4`, route: `inline`, status: `todo`, commit: `-`, checks: `pnpm build` PASS + `pnpm dev` smoke): dashboard, ajustes (3 apariencias), onboarding; cierre y reporte.
+- [x] **T4** (`S3`, route: `inline`, commit: `4b572bb3`, checks: `pnpm vitest run` 29/29 PASS + `pnpm build` PASS): tareas y plan básico con persistencia local (modelo espejo de TaskItemState, filtros Hoy/energía, sugerencia de energía por hora = misma tabla del iPad, writes con aviso visible; subtareas y recurrencia pendientes).
+- [x] **T5** (`S3, S4`, route: `inline`, commit: `(cierre)`, checks: `pnpm vitest run` 34/34 PASS + `pnpm build` PASS + `pnpm dev` smoke HTTP 200): dashboard real (sesiones/minutos/racha de tu journal local), onboarding con modo inicial, borrado de datos en Más; cierre y handoff.
 
 ## Log
 

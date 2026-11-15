@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import "./index.css";
 import { DEFAULTS, MODES, formatClock, phaseLabel, type Mode } from "./focus/engine";
-import { useFocus } from "./focus/useFocus";
+import { loadSessions, useFocus } from "./focus/useFocus";
+import { streakDays, summarizeToday } from "./focus/stats";
 import {
   ENERGY_LABEL,
   PRIORITY_LABEL,
@@ -95,7 +96,13 @@ function useTheme(): [Theme, (t: Theme) => void] {
 
 function FocusView() {
   const f = useFocus();
-  const [mode, setMode] = useState<Mode>("pomodoro");
+  const [mode, setMode] = useState<Mode>(() => {
+    try {
+      return localStorage.getItem("pepinillo:defaultMode") === "stopwatch" ? "stopwatch" : "pomodoro";
+    } catch {
+      return "pomodoro";
+    }
+  });
   const meta = MODES.find((m) => m.id === mode) ?? MODES[0];
   const run = f.run;
   const isBreak =
@@ -364,20 +371,53 @@ function PlanView() {
 }
 
 function DashboardView() {
+  const summary = useMemo(() => {
+    const sessions = loadSessions();
+    const now = new Date();
+    return { ...summarizeToday(sessions, now), streak: streakDays(sessions, now) };
+  }, []);
+  const cards = [
+    { v: String(summary.sessions), l: "Sesiones hoy" },
+    { v: String(summary.focusMin), l: "Minutos de enfoque" },
+    { v: String(summary.streak), l: summary.streak === 1 ? "Día de racha" : "Días de racha" },
+    { v: String(summary.completed), l: "Completadas" },
+  ];
   return (
     <div className="view">
       <h1>Panel</h1>
       <p className="sub">Tu constancia de un vistazo.</p>
-      <div className="empty">
-        <strong>Aquí vivirá tu resumen.</strong>
-        Sesiones de hoy, minutos de enfoque y racha, calculados de tus
-        sesiones reales. Llega con el motor de foco.
+      <div className="statgrid">
+        {cards.map((c) => (
+          <div key={c.l} className="card stat">
+            <b>{c.v}</b>
+            <span>{c.l}</span>
+          </div>
+        ))}
       </div>
+      {summary.sessions === 0 && (
+        <div className="empty">
+          <strong>Todavía no hay sesiones hoy.</strong>
+          Completa un Pomodoro en Enfoque y vuelve: este resumen se calcula
+          de tus sesiones reales.
+        </div>
+      )}
     </div>
   );
 }
 
+function resetAll() {
+  try {
+    Object.keys(localStorage)
+      .filter((k) => k.startsWith("pepinillo:"))
+      .forEach((k) => localStorage.removeItem(k));
+  } catch {
+    /* Private mode: nothing was persisted anyway. */
+  }
+  window.location.reload();
+}
+
 function MoreView({ theme, setTheme }: { theme: Theme; setTheme: (t: Theme) => void }) {
+  const [confirmReset, setConfirmReset] = useState(false);
   return (
     <div className="view">
       <h1>Más</h1>
@@ -402,6 +442,24 @@ function MoreView({ theme, setTheme }: { theme: Theme; setTheme: (t: Theme) => v
         <strong>Cuenta y sincronización.</strong>
         La versión web empieza local en este navegador; la cuenta Pepinillo
         Everywhere llegará después, sin cambiar estas pantallas.
+      </div>
+      <div className="card">
+        <strong>Tus datos</strong>
+        <p className="sub">Sesiones y tareas viven solo en este navegador.</p>
+        {!confirmReset ? (
+          <button className="btn btn--ghost" type="button" onClick={() => setConfirmReset(true)}>
+            Borrar datos locales
+          </button>
+        ) : (
+          <div className="timer-actions" style={{ justifyContent: "flex-start" }}>
+            <button className="btn" type="button" onClick={resetAll}>
+              Sí, borrar todo
+            </button>
+            <button className="btn btn--ghost" type="button" onClick={() => setConfirmReset(false)}>
+              Cancelar
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -431,10 +489,63 @@ function Nav({ tab, setTab, vertical }: { tab: Tab; setTab: (t: Tab) => void; ve
   );
 }
 
+function OnboardingView({ onDone }: { onDone: (mode: Mode) => void }) {
+  const [mode, setMode] = useState<Mode>("pomodoro");
+  return (
+    <div className="onboarding">
+      <div className="card glass onboard-card">
+        <div className="brand">
+          <span className="brand-dot">P</span> Pepinillo
+        </div>
+        <h1>Empieza a enfocarte en un toque</h1>
+        <p className="sub">Elige tu modo para empezar. Podrás cambiarlo cuando quieras.</p>
+        <div className="seg" role="group" aria-label="Modo inicial">
+          <button type="button" aria-pressed={mode === "pomodoro"} onClick={() => setMode("pomodoro")}>
+            🍅 Pomodoro
+          </button>
+          <button type="button" aria-pressed={mode === "stopwatch"} onClick={() => setMode("stopwatch")}>
+            ⏱ Cronómetro
+          </button>
+        </div>
+        <p>
+          <button className="btn" type="button" onClick={() => onDone(mode)}>
+            Empezar
+          </button>
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   const [tab, setTab] = useState<Tab>("focus");
   const layout = useLayout();
   const [theme, setTheme] = useTheme();
+  const [onboarded, setOnboarded] = useState(() => {
+    try {
+      return localStorage.getItem("pepinillo:onboarded") === "1";
+    } catch {
+      return true;
+    }
+  });
+
+  if (!onboarded) {
+    return (
+      <div className="shell shell--topbar">
+        <OnboardingView
+          onDone={(mode) => {
+            try {
+              localStorage.setItem("pepinillo:onboarded", "1");
+              localStorage.setItem("pepinillo:defaultMode", mode);
+            } catch {
+              /* Session-only: still let the user in. */
+            }
+            setOnboarded(true);
+          }}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className={`shell shell--${layout}`}>
