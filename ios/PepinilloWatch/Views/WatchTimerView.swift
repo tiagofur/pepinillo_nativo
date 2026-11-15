@@ -50,20 +50,27 @@ struct WatchTimerView: View {
         VStack(spacing: 6) {
             Spacer(minLength: 0)
 
+            // Full ring + count-up: reads as an intentional connect state,
+            // never as a broken timer. The ring is the real one about to
+            // drain; no fake target duration (the watch cannot know the
+            // user's configured length before the phone confirms).
+            ZStack {
+                Circle()
+                    .stroke(modeColor.opacity(0.2), lineWidth: 8)
+
+                TimelineView(.periodic(from: pending.startedAt, by: 1)) { context in
+                    let elapsed = max(0, context.date.timeIntervalSince(pending.startedAt))
+                    Text(Self.pendingElapsedFormat(elapsed))
+                        .font(.system(.title2, design: .rounded, weight: .semibold))
+                        .monospacedDigit()
+                        .minimumScaleFactor(0.7)
+                }
+            }
+
             Image(systemName: pending.mode.systemImage)
-                .font(.system(size: 20, weight: .medium))
+                .font(.system(size: 17, weight: .medium))
                 .symbolRenderingMode(.hierarchical)
                 .foregroundStyle(modeColor)
-
-            // watchOS has no `.elapsed` Text style — a 1 Hz TimelineView
-            // drives the local count-up (system-scheduled, cheap).
-            TimelineView(.periodic(from: pending.startedAt, by: 1)) { context in
-                let elapsed = max(0, context.date.timeIntervalSince(pending.startedAt))
-                Text(Self.pendingElapsedFormat(elapsed))
-                    .font(.system(.title, design: .rounded, weight: .semibold))
-                    .monospacedDigit()
-                    .minimumScaleFactor(0.7)
-            }
 
             Text(String(localized: "Starting…"))
                 .font(.system(size: 10, weight: .medium))
@@ -245,10 +252,12 @@ struct WatchTimerView: View {
                         .symbolRenderingMode(.hierarchical)
                         .foregroundStyle(modeColor)
 
-                    // Local countdown when the phone is unreachable (#245).
+                    // Wall-clock countdown whenever the phone provides an end
+                    // anchor (#245, now also while connected): the system timer
+                    // ticks itself, so the watch can never drift behind the
+                    // pushed displayTime strings (#790-latency report).
                     if store.countsDown,
                        let end = store.phaseEndDate,
-                       !store.isConnected,
                        !store.isPaused {
                         Text(end, style: .timer)
                             .font(.system(.title, design: .rounded, weight: .semibold))
