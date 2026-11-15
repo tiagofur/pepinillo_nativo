@@ -1108,21 +1108,13 @@ private struct TimerCenterContent: View {
     let reduceMotion: Bool
     let timerFontSize: CGFloat?
 
-    /// Secondary HUD elements inherit the digit scale so the composition
-    /// stays proportional on every surface (Mac's proven ratios: 28pt icon
-    /// over 84pt digits ≈ 0.33; caption ≈ 0.15). The floor keeps iPhone
-    /// (.largeTitle digits, timerFontSize nil) and Mac's small-ring case
-    /// pixel-identical to today.
+    /// The icon inherits the digit scale (Mac's proven 28/84 ≈ 0.33 ratio)
+    /// so the composition stays proportional on every surface; the floor
+    /// keeps iPhone (.largeTitle) and Mac's small-ring case unchanged. The
+    /// cycle position is expressed ONCE — by the phase label under the ring
+    /// ("Focus 2/4"); the numeric counter was visual duplication (#789).
     private var iconSize: CGFloat {
         max(28, (timerFontSize ?? 0) * 0.33)
-    }
-
-    private var counterFont: Font {
-        if let size = timerFontSize, size > 0 {
-            return .system(size: max(12, size * 0.15), weight: .regular)
-                .monospacedDigit()
-        }
-        return .caption
     }
 
     var body: some View {
@@ -1150,13 +1142,6 @@ private struct TimerCenterContent: View {
                 .contentTransition(.numericText())
                 .minimumScaleFactor(0.5)
                 .lineLimit(1)
-
-            // Pomodoro counter
-            if store.activeMode == .pomodoro, let num = store.pomodoroNumber {
-                Text("\(num) / \(store.config.pomodorosPerCycle)")
-                    .font(counterFont)
-                    .foregroundStyle(.secondary)
-            }
         }
     }
 }

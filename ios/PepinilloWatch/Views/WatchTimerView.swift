@@ -262,13 +262,6 @@ struct WatchTimerView: View {
                             .minimumScaleFactor(0.7)
                     }
 
-                    // Pomodoro number
-                    if let num = store.pomodoroNumber {
-                        Text("#\(num)")
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundStyle(.secondary)
-                    }
-
                     // Offline marker in-session: the countdown keeps running
                     // locally (#245); this tells the user why controls may
                     // not reach the phone.
