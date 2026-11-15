@@ -112,9 +112,11 @@ struct WatchTimerView: View {
                     Circle()
                         .stroke(Color.white.opacity(0.15), lineWidth: 8)
 
-                    if let progress = store.progress {
+                    if store.progress != nil {
                         Circle()
-                            .trim(from: 0, to: CGFloat(progress))
+                            .trim(from: 0, to: CGFloat(
+                                WatchSessionState.ringFraction(progress: store.progress, countsDown: store.countsDown)
+                            ))
                             .stroke(
                                 Color.white.opacity(0.75),
                                 style: StrokeStyle(lineWidth: 8, lineCap: .round)
@@ -227,12 +229,13 @@ struct WatchTimerView: View {
                 Circle()
                     .stroke(modeColor.opacity(0.2), lineWidth: 8)
 
-                if let progress = store.progress {
+                if store.progress != nil {
+                    let fraction = WatchSessionState.ringFraction(progress: store.progress, countsDown: store.countsDown)
                     Circle()
-                        .trim(from: 0, to: CGFloat(progress))
+                        .trim(from: 0, to: CGFloat(fraction))
                         .stroke(modeColor, style: StrokeStyle(lineWidth: 8, lineCap: .round))
                         .rotationEffect(.degrees(-90))
-                        .animation(reduceMotion ? nil : .linear(duration: 0.1), value: progress)
+                        .animation(reduceMotion ? nil : .linear(duration: 0.1), value: fraction)
                 }
 
                 VStack(spacing: 2) {
