@@ -607,6 +607,23 @@ schemes:
     archive:
       config: Release
 
+  # Standalone watch app dev loop: gives Xcode a watchOS destination so the
+  # watch app can be run/debugged directly on a watch simulator (the iOS
+  # schemes embed the watch app but only expose iPhone/iPad destinations).
+  PepinilloWatch Dev:
+    build:
+      targets:
+        PepinilloWatch: all
+    run:
+      config: Debug
+      commandLineArguments: {}
+    profile:
+      config: Debug
+    analyze:
+      config: Debug
+    archive:
+      config: Release
+
   PepinilloMac Dev:
     build:
       targets:
