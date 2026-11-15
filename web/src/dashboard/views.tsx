@@ -1,4 +1,6 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { api, ApiError, type AiInsight, type ServerReport } from "../api/client";
+import type { Session } from "../auth/useSession";
 import {
   achievements,
   perDaySeries,
@@ -248,6 +250,121 @@ export function TaskAnalyticsSection({ taskId, title, sessions }: { taskId: stri
         </div>
       )}
     </div>
+  );
+}
+
+function isForbidden(e: unknown): boolean {
+  return e instanceof ApiError && (e.status === 402 || e.status === 403);
+}
+
+/* Server reviews — mirrors WeeklyReviewView + AIReportView with backend
+   truth (all devices). Guests see only the local reviews above; free tiers
+   get the Plus gate like iOS; any other failure hides this card silently
+   because the local reviews already cover the screen. */
+export function ServerReviewsSection({
+  session,
+  isPro,
+  onOpenPaywall,
+}: {
+  session: Session;
+  isPro: boolean;
+  onOpenPaywall: () => void;
+}) {
+  const [state, setState] = useState<
+    | { phase: "off" | "locked" | "loading" }
+    | { phase: "ok"; weekly: ServerReport | null; ai: AiInsight | null }
+  >({ phase: "off" });
+
+  useEffect(() => {
+    if (!session.user) {
+      setState({ phase: "off" });
+      return;
+    }
+    if (!isPro) {
+      setState({ phase: "locked" });
+      return;
+    }
+    let cancelled = false;
+    setState({ phase: "loading" });
+    void (async () => {
+      try {
+        let weekly: ServerReport | null = null;
+        try {
+          weekly = await api.weeklyReport();
+        } catch (e) {
+          if (isForbidden(e)) {
+            if (!cancelled) setState({ phase: "locked" });
+            return;
+          }
+          weekly = null;
+        }
+        let ai: AiInsight | null = null;
+        try {
+          ai = await api.aiWeeklyReport();
+        } catch {
+          ai = null;
+        }
+        if (!cancelled) setState({ phase: "ok", weekly, ai });
+      } catch {
+        if (!cancelled) setState({ phase: "off" });
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [session.status, isPro]);
+
+  if (state.phase !== "ok") {
+    if (state.phase === "off") return null;
+    if (state.phase === "locked") {
+      return (
+        <div className="card">
+          <strong>Reseñas del servidor</strong>
+          <p className="sub">El resumen de todos tus aparatos y los reportes IA requieren Plus.</p>
+          <button className="btn btn--ghost" type="button" onClick={onOpenPaywall}>
+            Ver planes
+          </button>
+        </div>
+      );
+    }
+    return (
+      <div className="card">
+        <strong>Reseñas del servidor</strong>
+        <p className="sub">Cargando…</p>
+      </div>
+    );
+  }
+  const { weekly, ai } = state;
+  return (
+    <>
+      {weekly && (
+        <div className="card">
+          <strong>Reseña semanal del servidor</strong>{" "}
+          <span className="badge">Servidor</span>
+          <p className="sub" style={{ marginBottom: 8 }}>
+            {weekly.totalSessions} sesiones ·{" "}
+            {Math.round(weekly.totalFocusTime / 60)} min ·{" "}
+            {weekly.tasksCompleted} tareas hechas
+          </p>
+          {(weekly.topTasks ?? []).length > 0 && (
+            <ul className="sublist">
+              {(weekly.topTasks ?? []).slice(0, 3).map((t) => (
+                <li key={t.taskId}>
+                  <span className="grow">{t.taskTitle}</span>
+                  <span className="badge">{Math.round(t.focusTime / 60)} min</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+      {ai?.content && (
+        <div className="card">
+          <strong>{ai.title || "Reporte IA"}</strong> <span className="badge">IA</span>
+          <p className="sub">{ai.content}</p>
+        </div>
+      )}
+    </>
   );
 }
 

@@ -36,6 +36,44 @@ export interface AuthSession {
   tokens: AuthTokens;
 }
 
+export interface ModeStats {
+  totalTime: number;
+  sessionCount: number;
+  completed: number;
+  avgDuration: number;
+}
+
+export interface TaskStat {
+  taskId: number;
+  taskTitle: string;
+  focusTime: number;
+  sessionCount: number;
+  completed: boolean;
+}
+
+export interface ServerReport {
+  weekStart?: string;
+  weekEnd?: string;
+  monthStart?: string;
+  monthEnd?: string;
+  totalFocusTime: number;
+  totalSessions: number;
+  pomodoroStats?: ModeStats | null;
+  flowtimeStats?: ModeStats | null;
+  timeblockStats?: ModeStats | null;
+  stopwatchStats?: ModeStats | null;
+  tasksCompleted: number;
+  tasksCreated: number;
+  topTasks?: TaskStat[];
+}
+
+export interface AiInsight {
+  type?: string;
+  title?: string;
+  content?: string;
+  generatedAt?: string;
+}
+
 export class ApiError extends Error {
   status: number;
   code: string;
@@ -190,6 +228,18 @@ export class ApiClient {
       headers: { "X-Device-ID": deviceId },
       body: JSON.stringify(payload),
     });
+  }
+
+  async weeklyReport(): Promise<ServerReport> {
+    return this.authed<ServerReport>("/analytics/weekly-report", { method: "GET" });
+  }
+
+  async monthlyReport(): Promise<ServerReport> {
+    return this.authed<ServerReport>("/analytics/monthly-report", { method: "GET" });
+  }
+
+  async aiWeeklyReport(): Promise<AiInsight> {
+    return this.authed<AiInsight>("/ai/weekly-report", { method: "GET" });
   }
 
   async deleteAccount(): Promise<void> {

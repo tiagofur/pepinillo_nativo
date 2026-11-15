@@ -124,6 +124,40 @@ describe("token refresh", () => {
   });
 });
 
+describe("reports", () => {
+  const WEEKLY = { totalFocusTime: 3600, totalSessions: 4, tasksCompleted: 2, tasksCreated: 3 };
+
+  it("fetches the weekly server report", async () => {
+    localStorage.setItem(
+      "pepinillo:tokens.v1",
+      JSON.stringify({ accessToken: "a1", refreshToken: "r1", expiresIn: 0 }),
+    );
+    const fetchMock = vi.fn(async () => json(WEEKLY));
+    vi.stubGlobal("fetch", fetchMock);
+    const report = await new ApiClient().weeklyReport();
+    expect(fetchMock).toHaveBeenCalledWith(
+      `${BASE}/analytics/weekly-report`,
+      expect.objectContaining({ method: "GET" }),
+    );
+    expect(report.totalSessions).toBe(4);
+  });
+
+  it("fetches the AI weekly insight", async () => {
+    localStorage.setItem(
+      "pepinillo:tokens.v1",
+      JSON.stringify({ accessToken: "a1", refreshToken: "r1", expiresIn: 0 }),
+    );
+    const fetchMock = vi.fn(async () => json({ title: "Tu semana", content: "Bien hecho." }));
+    vi.stubGlobal("fetch", fetchMock);
+    const insight = await new ApiClient().aiWeeklyReport();
+    expect(fetchMock).toHaveBeenCalledWith(
+      `${BASE}/ai/weekly-report`,
+      expect.objectContaining({ method: "GET" }),
+    );
+    expect(insight.title).toBe("Tu semana");
+  });
+});
+
 describe("profile", () => {
   it("updateMe PUTs the patch and returns the user", async () => {
     localStorage.setItem(

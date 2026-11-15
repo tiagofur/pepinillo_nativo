@@ -15,6 +15,7 @@ import {
   CalendarSection,
   ChartsSection,
   ReviewsSection,
+  ServerReviewsSection,
   TaskAnalyticsSection,
   TopTasksSection,
 } from "./dashboard/views";
@@ -917,7 +918,17 @@ function PlanView({
   );
 }
 
-function DashboardView({ tasks }: { tasks: Task[] }) {
+function DashboardView({
+  tasks,
+  session,
+  isPro,
+  onOpenPaywall,
+}: {
+  tasks: Task[];
+  session: Session;
+  isPro: boolean;
+  onOpenPaywall: () => void;
+}) {
   const sessions = useMemo(() => loadSessions(), []);
   const titles = useMemo(() => new Map(tasks.map((x) => [x.id, x.title])), [tasks]);
   const summary = useMemo(() => {
@@ -950,6 +961,7 @@ function DashboardView({ tasks }: { tasks: Task[] }) {
         </div>
       )}
       <ChartsSection sessions={sessions} />
+      <ServerReviewsSection session={session} isPro={isPro} onOpenPaywall={onOpenPaywall} />
       <ReviewsSection sessions={sessions} />
       <TopTasksSection sessions={sessions} titles={titles} />
       <AchievementsSection sessions={sessions} />
@@ -1266,7 +1278,14 @@ export default function App() {
             onViewAnalytics={(taskId, title) => setSheet({ kind: "taskAnalytics", taskId, title })}
           />
         )}
-        {tab === "dashboard" && <DashboardView tasks={tasksApi.tasks} />}
+        {tab === "dashboard" && (
+          <DashboardView
+            tasks={tasksApi.tasks}
+            session={session}
+            isPro={isPro}
+            onOpenPaywall={() => setSheet({ kind: "paywall" })}
+          />
+        )}
         {tab === "more" && (
           <MoreView
             theme={theme}
