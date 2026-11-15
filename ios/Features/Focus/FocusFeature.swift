@@ -93,6 +93,10 @@ struct FocusFeature {
 
         // Persist failure surfaced to the user (issue #75: avoid silent data loss)
         var sessionSaveError: String?
+        /// The session payload whose persistence failed — retained so the
+        /// save-error alert can offer a real "Try Again" instead of an
+        /// acknowledgement-only OK.
+        var failedSessionSave: FocusSessionResult?
     }
 
     // MARK: - Actions
@@ -169,6 +173,7 @@ struct FocusFeature {
         case streakRecordBannerDismiss
 
         // Session save error dismissal (issue #75)
+        case sessionSaveRetryTapped
         case sessionSaveErrorDismissed
 
         // Parent coordination
@@ -176,7 +181,7 @@ struct FocusFeature {
 
         enum Delegate: Equatable {
             case sessionPersisted
-            case sessionSaveFailed(String)
+            case sessionSaveFailed(FocusSessionResult, String)
             case taskProgressChanged
         }
     }
@@ -752,7 +757,7 @@ struct FocusFeature {
                         try await persistence.saveSession(partial)
                         await send(.delegate(.sessionPersisted))
                     } catch {
-                        await send(.delegate(.sessionSaveFailed(error.localizedDescription)))
+                        await send(.delegate(.sessionSaveFailed(partial, error.localizedDescription)))
                     }
                 }
 
@@ -766,7 +771,7 @@ struct FocusFeature {
                         try await persistence.saveSession(backfill)
                         await send(.delegate(.sessionPersisted))
                     } catch {
-                        await send(.delegate(.sessionSaveFailed(error.localizedDescription)))
+                        await send(.delegate(.sessionSaveFailed(backfill, error.localizedDescription)))
                     }
                 }
 
@@ -782,7 +787,7 @@ struct FocusFeature {
                         try await persistence.saveSession(result)
                         await send(.delegate(.sessionPersisted))
                     } catch {
-                        await send(.delegate(.sessionSaveFailed(error.localizedDescription)))
+                        await send(.delegate(.sessionSaveFailed(result, error.localizedDescription)))
                     }
                 }
 
@@ -928,7 +933,7 @@ struct FocusFeature {
                             try await persistence.saveSession(intervalResult)
                             await send(.delegate(.sessionPersisted))
                         } catch {
-                            await send(.delegate(.sessionSaveFailed(error.localizedDescription)))
+                            await send(.delegate(.sessionSaveFailed(intervalResult, error.localizedDescription)))
                         }
                     }
                     healthLogEffect = .run { [healthClient, persistence] _ in
@@ -988,7 +993,7 @@ struct FocusFeature {
                                 try await persistence.saveSession(result)
                                 await send(.delegate(.sessionPersisted))
                             } catch {
-                                await send(.delegate(.sessionSaveFailed(error.localizedDescription)))
+                                await send(.delegate(.sessionSaveFailed(result, error.localizedDescription)))
                             }
                         }
                     } else {
@@ -1004,7 +1009,7 @@ struct FocusFeature {
                                 try await persistence.saveSession(result.withActualDuration(sessionTotal))
                                 await send(.delegate(.sessionPersisted))
                             } catch {
-                                await send(.delegate(.sessionSaveFailed(error.localizedDescription)))
+                                await send(.delegate(.sessionSaveFailed(result.withActualDuration(sessionTotal), error.localizedDescription)))
                             }
                         }
                     }
@@ -1220,16 +1225,32 @@ struct FocusFeature {
                     await focusClient.extendNextPhase(extensionMinutes)
                 }
 
-            case .delegate(.sessionSaveFailed(let message)):
-                // Surface persist failure to the user instead of dropping it silently (issue #75)
+            case .delegate(.sessionSaveFailed(let payload, let message)):
+                // Surface persist failure to the user instead of dropping it silently (issue #75).
+                // The payload is retained so the alert can offer a real retry.
                 state.sessionSaveError = message
+                state.failedSessionSave = payload
                 return .none
+
+            case .sessionSaveRetryTapped:
+                guard let payload = state.failedSessionSave else { return .none }
+                state.sessionSaveError = nil
+                state.failedSessionSave = nil
+                return .run { [persistence] send in
+                    do {
+                        try await persistence.saveSession(payload)
+                        await send(.delegate(.sessionPersisted))
+                    } catch {
+                        await send(.delegate(.sessionSaveFailed(payload, error.localizedDescription)))
+                    }
+                }
 
             case .delegate:
                 return .none
 
             case .sessionSaveErrorDismissed:
                 state.sessionSaveError = nil
+                state.failedSessionSave = nil
                 return .none
 
             // MARK: Task Picker

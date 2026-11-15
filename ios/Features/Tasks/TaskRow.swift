@@ -245,6 +245,8 @@ struct TaskRow: View, Equatable {
             Image(systemName: "play.circle")
                 .font(.title3)
                 .foregroundStyle(.tint)
+                .frame(minWidth: 44, minHeight: 44)  // HIG 44pt — matches completionButton (issue #90)
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityLabel(String(localized: "Start focus session with this task"))
@@ -299,7 +301,9 @@ struct TaskRow: View, Equatable {
     }
 
     private var cardShadowRadius: CGFloat {
-        task.isCompleted ? 1 : 5
+        // Active rows keep a soft lift; lighter than the original 5 so long
+        // lists stay quiet (design-excellence pass #761).
+        task.isCompleted ? 1 : 4
     }
 
     private var cardShadowOffsetY: CGFloat {
@@ -320,16 +324,5 @@ struct TaskRow: View, Equatable {
         case .none:
             return .secondary
         }
-    }
-
-    private func formatDueDate(_ date: Date) -> String {
-        let calendar = Calendar.current
-        if calendar.isDateInToday(date) { return String(localized: "Today") }
-        if calendar.isDateInTomorrow(date) { return String(localized: "Tomorrow") }
-        if calendar.isDateInYesterday(date) { return String(localized: "Yesterday") }
-        let formatter = DateFormatter()
-        formatter.dateStyle = .short
-        formatter.timeStyle = .none
-        return formatter.string(from: date)
     }
 }

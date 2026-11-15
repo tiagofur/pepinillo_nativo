@@ -145,6 +145,12 @@ struct FocusView: View {
                 set: { if !$0 { store.send(.sessionSaveErrorDismissed) } }
             )
         ) {
+            // Real retry: the failed payload is retained in state, so this
+            // re-attempts persistence instead of just acknowledging the loss.
+            Button(String(localized: "Try Again")) {
+                store.send(.sessionSaveRetryTapped)
+                HapticManager.impact(.light)
+            }
             Button("OK", role: .cancel) { store.send(.sessionSaveErrorDismissed) }
         } message: {
             if let sessionSaveError = store.sessionSaveError {
