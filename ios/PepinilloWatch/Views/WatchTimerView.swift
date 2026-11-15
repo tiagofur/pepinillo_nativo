@@ -35,9 +35,13 @@ struct WatchTimerView: View {
         VStack(spacing: 8) {
             Spacer(minLength: 0)
 
-            // Indicate the pending phase with the mode icon
-            Text(store.selectedMode.icon)
-                .font(.system(size: 28))
+            // Indicate the pending phase with the mode symbol — SF Symbol,
+            // same vocabulary as iPhone/Mac, and it follows the synced
+            // theme accent (emoji could not be tinted).
+            Image(systemName: store.selectedMode.systemImage)
+                .font(.system(size: 24, weight: .medium))
+                .symbolRenderingMode(.hierarchical)
+                .foregroundStyle(modeColor)
 
             // phaseLabel here is the pending next phase name (set on .waitingForNextPhase) — tells the user what's next
             Text(store.phaseLabel)
@@ -105,9 +109,11 @@ struct WatchTimerView: View {
                 }
 
                 VStack(spacing: 2) {
-                    // Mode emoji
-                    Text(store.selectedMode.icon)
-                        .font(.system(size: 16))
+                    // Mode symbol (SF — themeable, matches iPhone/Mac)
+                    Image(systemName: store.selectedMode.systemImage)
+                        .font(.system(size: 14, weight: .medium))
+                        .symbolRenderingMode(.hierarchical)
+                        .foregroundStyle(modeColor)
 
                     // Local countdown when the phone is unreachable (#245).
                     if store.countsDown,
@@ -381,8 +387,12 @@ private struct WatchModeChip: View {
         Button(action: onTap) {
             VStack(spacing: 2) {
                 ZStack(alignment: .topTrailing) {
-                    Text(mode.icon)
-                        .font(.body)
+                    Image(systemName: mode.systemImage)
+                        .font(.system(size: 15, weight: .medium))
+                        .symbolRenderingMode(.hierarchical)
+                        // Emoji could not tint; the symbol now carries the
+                        // mode accent on the selected chip.
+                        .foregroundStyle(isSelected ? modeColor : Color.secondary)
                         .opacity(isLocked ? 0.45 : 1)
                     if isLocked {
                         Image(systemName: "lock.fill")

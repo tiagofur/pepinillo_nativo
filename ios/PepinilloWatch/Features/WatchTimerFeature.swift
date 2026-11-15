@@ -211,7 +211,10 @@ struct WatchTimerFeature {
                 // Persist session state for complications
                 let isActive = s.isActive
                 let displayTime = s.displayTime
-                let modeEmoji = FocusMode(rawValue: s.modeID)?.icon ?? "🧠"
+                // SF Symbol name — emoji retired for theme parity with
+                // iPhone/Mac. The legacy `watch.modeEmoji` defaults key
+                // keeps its name (only the key-prefix test reads it).
+                let modeEmoji = FocusMode(rawValue: s.modeID)?.systemImage ?? "brain"
                 let didTransition = s.isPhaseTransition
                 let linkedTaskTitle = s.linkedTaskTitle
                 let phaseName = s.phaseLabel
