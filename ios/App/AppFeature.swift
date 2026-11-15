@@ -1740,10 +1740,15 @@ struct AppFeature {
     /// Post-session streak bookkeeping (#734): milestone overlay first (a record
     /// landing on a milestone day only consumes the latch — one celebration at a
     /// time), otherwise the record routes into the journal sheet or the 8 s
-    /// banner via FocusFeature.
+    /// banner via FocusFeature. Since the celebrations unlock, this also fires
+    /// firstSession / total-session / personal-best overlays (latches in
+    /// UserDefaults keep each one once-ever or once-per-threshold).
     private static func processSessionCompletionStreak(
         days: Int,
         history: [DailyStatsDTO],
+        allTimeSessions: Int,
+        longestTodayMinutes: Int,
+        persistence: PersistenceClient,
         send: Send<Action>
     ) async {
         let recordEnabled = UserDefaults.standard.object(
@@ -1761,7 +1766,42 @@ struct AppFeature {
             enabled: recordEnabled
         )
 
-        if let milestone = CelebrationMilestone.checkStreak(days) {
+        // Personal-best latch: seed silently with the true all-time best the
+        // first time an existing user completes a session, so nobody ever
+        // celebrates a false record after updating.
+        let bestKey = "celebration.lastBestMinutes"
+        var bestLatch = UserDefaults.standard.integer(forKey: bestKey)
+        if bestLatch == 0, allTimeSessions > 1 {
+            let allSessions = (try? await persistence.fetchSessions(Date.distantPast, Date.now)) ?? []
+            bestLatch = allSessions.map { Int($0.actualDuration) / 60 }.max() ?? 0
+            UserDefaults.standard.set(bestLatch, forKey: bestKey)
+        }
+
+        let milestone = CelebrationMilestone.detect(
+            allTimeSessions: allTimeSessions,
+            streakDays: days,
+            longestTodayMinutes: longestTodayMinutes,
+            bestMinutesLatch: bestLatch,
+            sessionCountLatch: UserDefaults.standard.integer(forKey: "celebration.lastSessionCount"),
+            firstSessionLatch: UserDefaults.standard.bool(forKey: "celebration.firstSession")
+        )
+
+        // Persist the latches for whatever fired (before presenting, so a
+        // crash mid-celebration can never re-fire it).
+        switch milestone {
+        case .firstSession:
+            UserDefaults.standard.set(true, forKey: "celebration.firstSession")
+        case .sessionCount:
+            let threshold = CelebrationMilestone.sessionThresholds
+                .last { allTimeSessions >= $0 } ?? 0
+            UserDefaults.standard.set(threshold, forKey: "celebration.lastSessionCount")
+        case .personalBest(let minutes):
+            UserDefaults.standard.set(minutes, forKey: bestKey)
+        default:
+            break
+        }
+
+        if let milestone {
             await send(.celebrationTriggered(milestone))
             if isRecord {
                 UserDefaults.standard.set(days, forKey: "streak.record.celebratedBest")
@@ -1797,15 +1837,22 @@ struct AppFeature {
         isPro: Bool,
         persistence: PersistenceClient
     ) -> Effect<Action> {
-        .run { send in
+        .run { [persistence] send in
             let allStats = (try? await persistence.fetchDailyStatsRange(Date.distantPast, Date.now)) ?? []
             let days = StreakProtectionService.computeProtectedStreak(
                 history: allStats,
                 isPro: isPro
             ).days
+            let allTimeSessions = allStats.reduce(0) { $0 + $1.sessionsCompleted }
+            let startOfDay = Calendar.current.startOfDay(for: .now)
+            let todaySessions = (try? await persistence.fetchSessions(startOfDay, Date.now)) ?? []
+            let longestTodayMinutes = todaySessions.map { Int($0.actualDuration) / 60 }.max() ?? 0
             await Self.processSessionCompletionStreak(
                 days: days,
                 history: allStats,
+                allTimeSessions: allTimeSessions,
+                longestTodayMinutes: longestTodayMinutes,
+                persistence: persistence,
                 send: send
             )
         }
@@ -2118,5 +2165,41 @@ extension CelebrationMilestone {
     static func checkStreak(_ streak: Int) -> CelebrationMilestone? {
         guard [3, 7, 14, 30, 60, 100].contains(streak) else { return nil }
         return .streakDay(streak)
+    }
+
+    static let sessionThresholds = [10, 50, 100]
+
+    /// Full milestone detection for a just-completed session. One
+    /// celebration at a time, priority: first session > streak day >
+    /// total sessions > personal best. Pure — latches are read and
+    /// written by the caller so this stays unit-testable.
+    ///
+    /// - firstSession fires only when the completed session is literally
+    ///   the account's first (== 1), so existing users never see it.
+    /// - sessionCount fires when the all-time total crosses a threshold
+    ///   that has not been celebrated yet.
+    /// - personalBest requires ≥ 30 focused minutes AND beating the
+    ///   latched best, so a 2-minute first session never wears the crown.
+    static func detect(
+        allTimeSessions: Int,
+        streakDays: Int,
+        longestTodayMinutes: Int,
+        bestMinutesLatch: Int,
+        sessionCountLatch: Int,
+        firstSessionLatch: Bool
+    ) -> CelebrationMilestone? {
+        if !firstSessionLatch, allTimeSessions == 1 {
+            return .firstSession
+        }
+        if checkStreak(streakDays) != nil {
+            return .streakDay(streakDays)
+        }
+        if sessionThresholds.contains(where: { allTimeSessions >= $0 && sessionCountLatch < $0 }) {
+            return .sessionCount(allTimeSessions)
+        }
+        if longestTodayMinutes >= 30, longestTodayMinutes > bestMinutesLatch {
+            return .personalBest(longestTodayMinutes)
+        }
+        return nil
     }
 }

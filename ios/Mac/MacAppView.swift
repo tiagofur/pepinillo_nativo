@@ -98,6 +98,18 @@ struct MacAppView: View {
         }
         .frame(minWidth: 960, minHeight: 640)
         .tint(Color.accentColor)
+        // Celebration overlay — same milestone moments as the iPhone/iPad
+        // app (first session, streak days, session count, personal best).
+        .overlay {
+            if let milestone = store.pendingCelebration {
+                CelebrationView(milestone: milestone) {
+                    store.send(.celebrationDismissed)
+                }
+                .transition(.opacity)
+                .zIndex(100)
+            }
+        }
+        .conditionalAnimation(.easeInOut(duration: 0.3), value: store.pendingCelebration)
     }
 
     private var sidebar: some View {
