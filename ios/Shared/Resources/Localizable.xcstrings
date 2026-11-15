@@ -2993,19 +2993,19 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Complete focus sessions to unlock your first badge."
+            "value" : "Every session waters the garden — badges bloom as you grow."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Completa sesiones de enfoque para desbloquear tu primera insignia."
+            "value" : "Cada sesión riega el huerto: las insignias florecen mientras creces."
           }
         },
         "pt" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Conclua sessões de foco para desbloquear sua primeira medalha."
+            "value" : "Cada sessão rega a horta — as medalhas florescem conforme você cresce."
           }
         }
       }
@@ -3016,19 +3016,19 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "No Achievements Yet"
+            "value" : "No Blooms Yet"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sin logros aún"
+            "value" : "Aún sin flores"
           }
         },
         "pt" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sem conquistas ainda"
+            "value" : "Sem flores ainda"
           }
         }
       }
@@ -6552,19 +6552,19 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Complete your first focus session to see your analytics here."
+            "value" : "Complete your first focus session and your garden's story begins here."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Completa tu primera sesión de enfoque para ver tus analíticas aquí."
+            "value" : "Completa tu primera sesión de foco y la historia de tu huerto empieza aquí."
           }
         },
         "pt" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Conclua sua primeira sessão de foco para ver suas análises aqui."
+            "value" : "Conclua sua primeira sessão de foco e a história da sua horta começa aqui."
           }
         }
       }
@@ -6575,19 +6575,19 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "No Data Yet"
+            "value" : "Nothing Harvested Yet"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sin datos aún"
+            "value" : "Aún sin cosecha"
           }
         },
         "pt" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sem dados ainda"
+            "value" : "Nada colhido ainda"
           }
         }
       }
@@ -15234,19 +15234,19 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "All captured tasks are organized. Enjoy the calm."
+            "value" : "Everything captured is planted where it belongs. Enjoy the calm."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Todas las tareas capturadas están organizadas. Disfruta la calma."
+            "value" : "Todo lo capturado está donde corresponde. Disfruta la calma."
           }
         },
         "pt" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Todas as tarefas capturadas estão organizadas. Aproveite a calma."
+            "value" : "Tudo capturado está onde deve estar. Aproveite a calma."
           }
         }
       }
@@ -15257,19 +15257,19 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Inbox Clear"
+            "value" : "The Garden Is Quiet"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Inbox limpio"
+            "value" : "El huerto está en calma"
           }
         },
         "pt" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Caixa limpa"
+            "value" : "A horta está calma"
           }
         }
       }
@@ -15280,19 +15280,19 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Capture what matters — add a task below to plan your day."
+            "value" : "Plant your first task — small seeds grow into deep focus."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Captura lo importante — añade una tarea abajo para planificar tu día."
+            "value" : "Planta tu primera tarea: las semillas pequeñas crecen hasta el foco profundo."
           }
         },
         "pt" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Capture o que importa — adicione uma tarefa abaixo para planejar seu dia."
+            "value" : "Plante sua primeira tarefa — pequenas sementes viram foco profundo."
           }
         }
       }
@@ -15303,19 +15303,19 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nothing for Today"
+            "value" : "Your Garden Awaits"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nada para hoy"
+            "value" : "Tu huerto te espera"
           }
         },
         "pt" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nada para hoje"
+            "value" : "Sua horta te espera"
           }
         }
       }

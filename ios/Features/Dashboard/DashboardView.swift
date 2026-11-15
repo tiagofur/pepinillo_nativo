@@ -49,9 +49,9 @@ struct DashboardView: View {
                     .frame(maxWidth: .infinity)
                 } else if store.chartData.isEmpty && store.sessionsCompleted == 0 {
                     PepinilloEmptyState(
-                        title: String(localized: "dashboard.empty.title", defaultValue: "No Data Yet"),
-                        description: String(localized: "dashboard.empty.description",
-                                             defaultValue: "Complete your first focus session to see your analytics here."),
+                            title: String(localized: "dashboard.empty.title", defaultValue: "Nothing Harvested Yet"),
+                            description: String(localized: "dashboard.empty.description",
+                                                 defaultValue: "Complete your first focus session and your garden's story begins here."),
                         systemImage: "chart.bar",
                         tint: .accentColor
                     )

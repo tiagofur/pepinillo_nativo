@@ -224,8 +224,8 @@ struct PlanTaskList: View {
 
     private var emptyTitle: String {
         switch filter {
-        case .today:     return String(localized: "plan.empty.today.title", defaultValue: "Nothing for Today")
-        case .inbox:     return String(localized: "plan.empty.inbox.title", defaultValue: "Inbox Clear")
+        case .today:     return String(localized: "plan.empty.today.title", defaultValue: "Your Garden Awaits")
+        case .inbox:     return String(localized: "plan.empty.inbox.title", defaultValue: "The Garden Is Quiet")
         case .upcoming:  return String(localized: "plan.empty.upcoming.title", defaultValue: "Nothing Upcoming")
         case .completed: return String(localized: "plan.empty.completed.title", defaultValue: "No Completed Tasks")
         }
@@ -235,10 +235,10 @@ struct PlanTaskList: View {
         switch filter {
         case .today:
             return String(localized: "plan.empty.today.description",
-                          defaultValue: "Capture what matters — add a task below to plan your day.")
+                          defaultValue: "Plant your first task — small seeds grow into deep focus.")
         case .inbox:
             return String(localized: "plan.empty.inbox.description",
-                          defaultValue: "All captured tasks are organized. Enjoy the calm.")
+                          defaultValue: "Everything captured is planted where it belongs. Enjoy the calm.")
         case .upcoming:
             return String(localized: "plan.empty.upcoming.description",
                           defaultValue: "No deadlines on the horizon. Focus on what matters today.")
