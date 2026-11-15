@@ -457,6 +457,9 @@ private struct SidebarRowBackground: View {
                 Color.clear
             }
         }
+        // Reminders-style capsule settle: a snappy crossfade when the
+        // selection moves between rows (Reduce Motion aware).
+        .conditionalAnimation(MotionTokens.snappy, value: isSelected)
     }
 
     private var fillColor: Color {
