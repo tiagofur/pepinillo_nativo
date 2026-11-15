@@ -250,6 +250,7 @@ struct PepinilloWatchComplication: Widget {
         .supportedFamilies([
             .accessoryCircular,
             .accessoryRectangular,
+            .accessoryInline,
             .accessoryCorner,
         ])
     }
@@ -265,6 +266,9 @@ private struct ComplicationContentView: View {
         switch family {
         case .accessoryRectangular:
             RectangularComplicationView(entry: entry)
+        case .accessoryInline:
+            // Smart Stack row: mode + live time in one line.
+            InlineComplicationView(entry: entry)
         case .accessoryCorner:
             CornerComplicationView(entry: entry)
         default:
@@ -297,5 +301,39 @@ struct CornerComplicationView: View {
                     Text(String(localized: "Focus"))
                 }
             }
+    }
+}
+
+
+// MARK: - Smart Stack inline row (#793)
+
+/// Single-line Smart Stack presentation: symbol + countdown / stat.
+private struct InlineComplicationView: View {
+    let entry: FocusComplicationEntry
+
+    private var title: String {
+        entry.isActive ? entry.displayTime : Self.compact(entry.todayMinutes)
+    }
+
+    /// "1h 45m" / "45m" — same notation as the app's shared formatter
+    /// (this target does not compile Shared/Design).
+    private static func compact(_ minutes: Int) -> String {
+        guard minutes >= 60 else { return "\(minutes)m" }
+        let h = minutes / 60, m = minutes % 60
+        return m > 0 ? "\(h)h\(m)m" : "\(h)h"
+    }
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Image(systemName: entry.isActive ? "timer" : "flame.fill")
+                .symbolRenderingMode(.hierarchical)
+            Text(title)
+                .monospacedDigit()
+        }
+        .widgetLabel {
+            Text(entry.isActive
+                 ? String(localized: "Pepinillo")
+                 : String(localized: "\(entry.streakDays) day streak"))
+        }
     }
 }
