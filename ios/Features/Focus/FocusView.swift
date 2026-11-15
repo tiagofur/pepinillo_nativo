@@ -1092,11 +1092,28 @@ private struct TimerCenterContent: View {
     let reduceMotion: Bool
     let timerFontSize: CGFloat?
 
+    /// Secondary HUD elements inherit the digit scale so the composition
+    /// stays proportional on every surface (Mac's proven ratios: 28pt icon
+    /// over 84pt digits ≈ 0.33; caption ≈ 0.15). The floor keeps iPhone
+    /// (.largeTitle digits, timerFontSize nil) and Mac's small-ring case
+    /// pixel-identical to today.
+    private var iconSize: CGFloat {
+        max(28, (timerFontSize ?? 0) * 0.33)
+    }
+
+    private var counterFont: Font {
+        if let size = timerFontSize, size > 0 {
+            return .system(size: max(12, size * 0.15), weight: .regular)
+                .monospacedDigit()
+        }
+        return .caption
+    }
+
     var body: some View {
         VStack(spacing: 4) {
             // Mode icon — hierarchical SF Symbol above digits
             Image(systemName: store.modeIcon)
-                .font(.system(size: 28))
+                .font(.system(size: iconSize))
                 .symbolRenderingMode(.hierarchical)
                 .foregroundStyle(.secondary)
                 .scaleEffect(breatheScale)
@@ -1121,7 +1138,7 @@ private struct TimerCenterContent: View {
             // Pomodoro counter
             if store.activeMode == .pomodoro, let num = store.pomodoroNumber {
                 Text("\(num) / \(store.config.pomodorosPerCycle)")
-                    .font(.caption)
+                    .font(counterFont)
                     .foregroundStyle(.secondary)
             }
         }
