@@ -960,6 +960,22 @@ struct TimerCircleView: View {
                 }
             }
         }
+        // Completion bloom: when a phase lands (the engine holds for the
+        // next one), the ring swells once — the visual half of the
+        // completion chord; sound + success haptic already fire in the
+        // reducer on .phaseCompleted. Outward (1.08), opposite direction
+        // from the mode-change dip (0.92), so the two read differently.
+        .onChange(of: store.isWaitingForNextPhase) { _, waiting in
+            guard waiting, !reduceMotion else { return }
+            withAnimation(MotionTokens.bouncy.speed(1.2)) {
+                ringScale = 1.08
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.14) {
+                withAnimation(MotionTokens.snappy) {
+                    ringScale = 1.0
+                }
+            }
+        }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(timerAccessibilityLabel)
         .accessibilityValue(timerAccessibilityValue)
