@@ -14,6 +14,16 @@ import WidgetKit
 
 // MARK: - WatchTimerFeature
 
+/// Optimistic start payload: the timer screen shows a local count-up the
+/// moment the user taps Start, while the command may still be sitting in
+/// the lazily-delivered transferUserInfo queue (phone locked/backgrounded
+/// — up to the command TTL). Reconciled by the first authoritative
+/// session state (or cleared with a failure haptic on timeout).
+struct WatchPendingStart: Equatable {
+    let mode: FocusMode
+    let startedAt: Date
+}
+
 @Reducer
 struct WatchTimerFeature {
 
@@ -54,6 +64,10 @@ struct WatchTimerFeature {
 
         /// Mirrors AppGroupDefaults.isProUser — phone writes on subscription change (#235).
         var isProUser: Bool = false
+
+        /// Non-nil between tapping Start and the phone's authoritative
+        /// session state arriving.
+        var pendingStart: WatchPendingStart? = nil
     }
 
     // MARK: - Action
@@ -77,11 +91,19 @@ struct WatchTimerFeature {
 
         // System
         case onAppear
+        case pendingStartTimedOut
     }
 
     // MARK: - Dependencies
 
     @Dependency(\.watchConnectivityClient) var watchClient
+
+    private enum CancelID { case pendingStart }
+
+    /// Give-up window for an optimistic start: the phone drops queued
+    /// commands older than `commandTTLSeconds` (S7), so a confirmation has
+    /// TTL + margin seconds to arrive before we admit the start failed.
+    static let pendingStartTimeoutSeconds: TimeInterval = 330
 
     // MARK: - Reducer
 
@@ -92,6 +114,21 @@ struct WatchTimerFeature {
             case .onAppear:
                 state.isProUser = Self.readIsProUser()
                 return .none
+
+            case .pendingStartTimedOut:
+                // No authoritative state within the TTL window — the start
+                // never stuck. Clear the optimistic screen with a failure cue.
+                state.pendingStart = nil
+                #if os(watchOS)
+                return .merge(
+                    .cancel(id: CancelID.pendingStart),
+                    .run { _ in
+                        WKInterfaceDevice.current().play(.failure)
+                    }
+                )
+                #else
+                return .cancel(id: CancelID.pendingStart)
+                #endif
 
             case .startTapped:
                 guard !state.isSessionActive else { return .none }
@@ -105,22 +142,27 @@ struct WatchTimerFeature {
                     return .none
                     #endif
                 }
-                return .run { [watchClient] send in
-                    let delivered = await watchClient.sendCommand(.startSession(mode: mode.rawValue))
-                    await send(.commandSent(.startSession(mode: mode.rawValue)))
-                    #if os(watchOS)
-                    if delivered {
+                // Optimistic start: the command may ride the lazily-delivered
+                // transferUserInfo queue for up to the TTL when the phone is
+                // locked — the timer screen must not stare at idle meanwhile.
+                state.pendingStart = WatchPendingStart(mode: mode, startedAt: Date.now)
+                return .merge(
+                    .run { [watchClient] send in
+                        _ = await watchClient.sendCommand(.startSession(mode: mode.rawValue))
+                        await send(.commandSent(.startSession(mode: mode.rawValue)))
+                        #if os(watchOS)
+                        // Both transports mean "accepted": sendMessage reached
+                        // the phone, transferUserInfo is guaranteed delivery.
                         WKInterfaceDevice.current().play(.start)
-                    } else {
-                        WKInterfaceDevice.current().play(.failure)
-                    }
-                    #endif
-                }
+                        #endif
+                    },
+                    Self.pendingStartTimeoutEffect()
+                )
 
             case .pauseResumeTapped:
                 // No-op during the waiting hold — the engine ignores pause while waiting,
                 // and we must not play a success haptic that implies it worked.
-                guard state.isSessionActive, !state.isWaiting else { return .none }
+                guard state.isSessionActive, state.pendingStart == nil, !state.isWaiting else { return .none }
                 let command: WatchCommand = state.isPaused ? .resumeSession : .pauseSession
                 return .run { [watchClient] send in
                     let delivered = await watchClient.sendCommand(command)
@@ -135,7 +177,7 @@ struct WatchTimerFeature {
                 }
 
             case .startNextPhaseTapped:
-                guard state.isSessionActive, state.isWaiting else { return .none }
+                guard state.isSessionActive, state.pendingStart == nil, state.isWaiting else { return .none }
                 return .run { [watchClient] send in
                     let delivered = await watchClient.sendCommand(.startNextPhase)
                     await send(.commandSent(.startNextPhase))
@@ -149,7 +191,7 @@ struct WatchTimerFeature {
                 }
 
             case .stopTapped:
-                guard state.isSessionActive else { return .none }
+                guard state.isSessionActive, state.pendingStart == nil else { return .none }
                 return .run { [watchClient] send in
                     let delivered = await watchClient.sendCommand(.stopSession)
                     await send(.commandSent(.stopSession))
@@ -163,7 +205,7 @@ struct WatchTimerFeature {
                 }
 
             case .skipTapped:
-                guard state.isSessionActive else { return .none }
+                guard state.isSessionActive, state.pendingStart == nil else { return .none }
                 return .run { [watchClient] send in
                     let delivered = await watchClient.sendCommand(.skipPhase)
                     await send(.commandSent(.skipPhase))
@@ -185,6 +227,12 @@ struct WatchTimerFeature {
             case .sessionStateReceived(let s):
                 guard s.sentAt > state.lastAppliedSentAt else { return .none }
                 state.lastAppliedSentAt = s.sentAt
+
+                // An authoritative update resolves any optimistic start:
+                // active = the start landed (release the give-up timer);
+                // inactive = the queued command was dropped/refused.
+                let wasPendingStart = state.pendingStart != nil
+                state.pendingStart = nil
 
                 let wasActive = state.hadActiveSession
                 state.hadActiveSession = s.isActive
@@ -226,7 +274,7 @@ struct WatchTimerFeature {
                 let isPaused = s.isPaused
                 let sessionCompleted = wasActive && !s.isActive
 
-                return .run { _ in
+                let persistEffect = Effect<Action>.run { _ in
                     Self.persistSessionState(
                         isActive: isActive,
                         displayTime: displayTime,
@@ -251,6 +299,22 @@ struct WatchTimerFeature {
                     }
                     #endif
                 }
+
+                guard wasPendingStart else { return persistEffect }
+                var effects: [Effect<Action>] = [
+                    .cancel(id: CancelID.pendingStart),
+                    persistEffect,
+                ]
+                if !s.isActive {
+                    // The optimistic start did not stick (stale-dropped or
+                    // refused phone-side) — say so.
+                    #if os(watchOS)
+                    effects.append(.run { _ in
+                        WKInterfaceDevice.current().play(.failure)
+                    })
+                    #endif
+                }
+                return .merge(effects)
 
             case .statsReceived(let minutes, let sessions, let streak):
                 state.todayFocusMinutes = minutes
@@ -286,6 +350,16 @@ struct WatchTimerFeature {
     }
 
     /// Mirrors `AppGroupDefaults.isProUser` without pulling SwiftData into the watch target.
+    /// Give-up timer for an optimistic start (command TTL + margin),
+    /// cancelled the moment authoritative state resolves it.
+    private static func pendingStartTimeoutEffect() -> Effect<Action> {
+        .run { send in
+            try? await Task.sleep(for: .seconds(Self.pendingStartTimeoutSeconds))
+            await send(.pendingStartTimedOut)
+        }
+        .cancellable(id: CancelID.pendingStart)
+    }
+
     private static func readIsProUser() -> Bool {
         appGroupDefaults?.bool(forKey: "isProUser") ?? false
     }
