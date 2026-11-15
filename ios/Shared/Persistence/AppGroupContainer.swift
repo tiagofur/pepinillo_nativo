@@ -1213,7 +1213,8 @@ private final class SharedModelContainerCache: @unchecked Sendable {
         persistenceLogger.info(
             "SharedModelContainerCache: Opening extension container for mode \(activeMode.rawValue, privacy: .public) at: \(storeURL.path, privacy: .public)"
         )
-        let newContainer = try makeModelContainer(at: storeURL)
+        // Extension process: no migration plan (see makeExtensionModelContainer).
+        let newContainer = try makeExtensionModelContainer(at: storeURL)
         container = newContainer
         cachedSyncMode = activeMode
         return newContainer
@@ -1275,6 +1276,25 @@ private func makeModelContainer(
     at url: URL,
     cloudKitDatabase: ModelConfiguration.CloudKitDatabase
 ) throws -> ModelContainer {
+    try makeModelContainer(at: url, cloudKitDatabase: cloudKitDatabase, migrationPlan: PepinilloMigrationPlan.self)
+}
+
+/// Extension-process container (#674): opens the store WITHOUT a migration
+/// plan. SwiftData's staged-migration evaluator asserts (uncatchable
+/// SIGTRAP, EXC_BREAKPOINT) when it runs inside a WidgetKit extension on
+/// macOS 27 — every timeline render killed the process and the widget froze
+/// on App Store builds. Without the plan, a schema mismatch surfaces as a
+/// normal thrown error the providers already catch, rendering a fail-safe
+/// idle entry until the main app next runs and migrates the store.
+private func makeExtensionModelContainer(at url: URL) throws -> ModelContainer {
+    try makeModelContainer(at: url, cloudKitDatabase: .none, migrationPlan: nil)
+}
+
+private func makeModelContainer(
+    at url: URL,
+    cloudKitDatabase: ModelConfiguration.CloudKitDatabase,
+    migrationPlan: (any SchemaMigrationPlan.Type)?
+) throws -> ModelContainer {
     let schema = Schema(versionedSchema: SchemaV6.self)
 
     let config = ModelConfiguration(
@@ -1285,7 +1305,7 @@ private func makeModelContainer(
 
     return try ModelContainer(
         for: schema,
-        migrationPlan: PepinilloMigrationPlan.self,
+        migrationPlan: migrationPlan,
         configurations: [config]
     )
 }
