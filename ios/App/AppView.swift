@@ -226,6 +226,10 @@ struct AppView: View {
             }
         }
         .conditionalAnimation(.easeInOut(duration: 0.3), value: store.pendingCelebration)
+        // Tapping the weekly recap notification lands on the Dashboard (#735).
+        .onReceive(NotificationCenter.default.publisher(for: NotificationDelegate.openDashboardFromRecap)) { _ in
+            store.send(.tabSelected(.dashboard))
+        }
         // MARK: - Handoff: Donate current activity
         .userActivity(HandoffActivity.focusSession) { activity in
             let modeID = (store.focus.activeMode ?? store.focus.selectedMode).rawValue
