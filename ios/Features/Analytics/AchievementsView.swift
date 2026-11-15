@@ -17,9 +17,9 @@ struct AchievementsSection: View {
 
             if achievements.isEmpty {
                 PepinilloEmptyState(
-                    title: String(localized: "achievements.empty.title", defaultValue: "No Achievements Yet"),
+                    title: String(localized: "achievements.empty.title", defaultValue: "No Blooms Yet"),
                     description: String(localized: "achievements.empty.description",
-                                         defaultValue: "Complete focus sessions to unlock your first badge."),
+                                         defaultValue: "Every session waters the garden — badges bloom as you grow."),
                     systemImage: "trophy",
                     tint: .accentColor,
                     cornerRadius: GlassCornerRadius.card
