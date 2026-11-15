@@ -3,6 +3,8 @@ import "./index.css";
 import { DEFAULTS, MODES, formatClock, phaseLabel, type Mode } from "./focus/engine";
 import { loadSessions, useFocus } from "./focus/useFocus";
 import { streakDays, summarizeToday } from "./focus/stats";
+import { useSession, type Session } from "./auth/useSession";
+import { AuthView, tierLabel, type AuthMode } from "./auth/AuthView";
 import {
   ENERGY_LABEL,
   PRIORITY_LABEL,
@@ -416,12 +418,73 @@ function resetAll() {
   window.location.reload();
 }
 
-function MoreView({ theme, setTheme }: { theme: Theme; setTheme: (t: Theme) => void }) {
+function MoreView({
+  theme,
+  setTheme,
+  session,
+  onOpenAuth,
+}: {
+  theme: Theme;
+  setTheme: (t: Theme) => void;
+  session: Session;
+  onOpenAuth: (mode: AuthMode) => void;
+}) {
   const [confirmReset, setConfirmReset] = useState(false);
   return (
     <div className="view">
       <h1>Más</h1>
       <p className="sub">Ajustes, cuenta y apariencia.</p>
+      <div className="card">
+        {session.status === "checking" ? (
+          <div className="account-row">
+            <span className="grow">
+              <b>Cuenta Pepinillo</b>
+              <span>Comprobando sesión…</span>
+            </span>
+          </div>
+        ) : !session.configured ? (
+          <div className="account-row">
+            <span className="avatar" aria-hidden="true">P</span>
+            <span className="grow">
+              <b>Cuenta Pepinillo</b>
+              <span>Servidor no configurado: modo local. Define VITE_API_BASE_URL y recarga.</span>
+            </span>
+          </div>
+        ) : !session.user ? (
+          <div className="account-row">
+            <span className="avatar" aria-hidden="true">?</span>
+            <span className="grow">
+              <b>Cuenta Pepinillo</b>
+              <span>Sincroniza tus datos y desbloquea Plus</span>
+            </span>
+            <button className="btn" type="button" onClick={() => onOpenAuth("login")}>
+              Entrar
+            </button>
+          </div>
+        ) : (
+          <div>
+            <div className="account-row">
+              <span className="avatar" aria-hidden="true">
+                {(session.user.name.trim()[0] ?? "?").toUpperCase()}
+              </span>
+              <span className="grow">
+                <b>{session.user.name}</b>
+                <span>{session.user.email} · {tierLabel(session.user.subscriptionTier)}</span>
+              </span>
+              <button className="btn btn--ghost" type="button" onClick={() => void session.logout()}>
+                Salir
+              </button>
+            </div>
+            {!session.user.emailVerified && (
+              <p style={{ marginBottom: 0 }}>
+                <button type="button" className="linkbtn" onClick={() => onOpenAuth("verify")}>
+                  Verifica tu correo para sincronizar →
+                </button>
+              </p>
+            )}
+          </div>
+        )}
+      </div>
       <div className="card">
         <strong>Apariencia</strong>
         <p className="sub">Igual que en el iPad: clara, oscura o el sistema.</p>
@@ -521,6 +584,15 @@ export default function App() {
   const [tab, setTab] = useState<Tab>("focus");
   const layout = useLayout();
   const [theme, setTheme] = useTheme();
+  const session = useSession();
+  const [authOpen, setAuthOpen] = useState(false);
+  const [authMode, setAuthMode] = useState<AuthMode>("login");
+  const [authEmail, setAuthEmail] = useState("");
+  const openAuth = (mode: AuthMode) => {
+    setAuthMode(mode);
+    setAuthEmail(session.user?.email ?? "");
+    setAuthOpen(true);
+  };
   const [onboarded, setOnboarded] = useState(() => {
     try {
       return localStorage.getItem("pepinillo:onboarded") === "1";
@@ -563,12 +635,38 @@ export default function App() {
         {tab === "focus" && <FocusView />}
         {tab === "plan" && <PlanView />}
         {tab === "dashboard" && <DashboardView />}
-        {tab === "more" && <MoreView theme={theme} setTheme={setTheme} />}
+        {tab === "more" && (
+          <MoreView theme={theme} setTheme={setTheme} session={session} onOpenAuth={openAuth} />
+        )}
       </main>
       {layout === "tabbar" && (
         <nav className="tabbar glass" aria-label="Principal">
           <Nav tab={tab} setTab={setTab} vertical={false} />
         </nav>
+      )}
+      {authOpen && (
+        <div className="sheet-backdrop" onClick={() => setAuthOpen(false)}>
+          <div
+            className="sheet glass"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Cuenta"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p style={{ textAlign: "right", margin: "0 0 4px" }}>
+              <button type="button" className="linkbtn" onClick={() => setAuthOpen(false)}>
+                Cerrar
+              </button>
+            </p>
+            <AuthView
+              session={session}
+              initialMode={authMode}
+              initialEmail={authEmail}
+              onAuthed={() => setAuthOpen(false)}
+              onGuest={() => setAuthOpen(false)}
+            />
+          </div>
+        </div>
       )}
     </div>
   );
