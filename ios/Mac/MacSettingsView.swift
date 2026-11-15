@@ -260,7 +260,7 @@ struct MacSettingsView: View {
                 )
 
                 Toggle(
-                    "Compartir métricas anónimas",
+                    "Share anonymous metrics",
                     isOn: Binding(
                         get: { store.settings.hasBackendAccount ? store.settings.metricsOptIn : false },
                         set: { store.send(.settings(.setMetricsOptIn($0))) }
@@ -269,7 +269,7 @@ struct MacSettingsView: View {
                 .disabled(!store.settings.hasBackendAccount || store.settings.isUpdatingMetricsOptIn)
 
                 if !store.settings.hasBackendAccount {
-                    Text("Requiere cuenta con sincronización")
+                    Text("Sync account required")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -285,7 +285,7 @@ struct MacSettingsView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Counts which apps are frontmost while a focus session runs. App names never leave this Mac.")
                         .foregroundStyle(.secondary)
-                    Text("Comparte métricas de uso anónimas y agregadas para mejorar Pepinillo: cuántas sesiones de enfoque se completan y en qué modos, minutos totales de enfoque y descanso, y tareas creadas y completadas. Nunca se comparte el contenido de tus tareas, tus horarios individuales ni ningún dato identificable. Puedes cambiarlo cuando quieras.")
+                    Text("Share anonymous, aggregated usage metrics to improve Pepinillo: how many focus sessions are completed and in which modes, total focus and break minutes, and tasks created and completed. Your task content, individual schedules, and anything personally identifiable are never shared. You can change this anytime.")
                         .foregroundStyle(.secondary)
                 }
             }

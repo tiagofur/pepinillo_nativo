@@ -65,13 +65,13 @@ struct WatchDashboardView: View {
 
     private var privacySection: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("Privacidad")
+            Text("Privacy")
                 .font(.system(size: 10, weight: .semibold))
                 .foregroundStyle(.secondary)
                 .padding(.leading, 4)
 
             Toggle(
-                "Compartir métricas anónimas",
+                "Share anonymous metrics",
                 isOn: Binding(
                     get: { effectiveMetricsOptIn },
                     set: { newValue in
@@ -83,7 +83,7 @@ struct WatchDashboardView: View {
             .disabled(!hasBackendAccount)
 
             if !hasBackendAccount {
-                Text("Requiere cuenta con sincronización")
+                Text("Sync account required")
                     .font(.system(size: 9))
                     .foregroundStyle(.secondary)
             }
@@ -94,7 +94,7 @@ struct WatchDashboardView: View {
                     .foregroundStyle(.red)
             }
 
-            Text("Comparte métricas de uso anónimas y agregadas para mejorar Pepinillo: cuántas sesiones de enfoque se completan y en qué modos, minutos totales de enfoque y descanso, y tareas creadas y completadas. Nunca se comparte el contenido de tus tareas, tus horarios individuales ni ningún dato identificable. Puedes cambiarlo cuando quieras.")
+            Text("Share anonymous, aggregated usage metrics to improve Pepinillo: how many focus sessions are completed and in which modes, total focus and break minutes, and tasks created and completed. Your task content, individual schedules, and anything personally identifiable are never shared. You can change this anytime.")
                 .font(.system(size: 9))
                 .foregroundStyle(.secondary)
         }
