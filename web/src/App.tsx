@@ -8,6 +8,8 @@ import { AuthView, tierLabel, type AuthMode } from "./auth/AuthView";
 import { ProfileView } from "./auth/ProfileView";
 import { SettingsView } from "./auth/SettingsView";
 import { PaywallView } from "./auth/PaywallView";
+import { HelpView } from "./auth/HelpView";
+import { AboutView } from "./auth/AboutView";
 import { isProTier } from "./auth/entitlements";
 import { useSync, type SyncApi } from "./sync/useSync";
 import {
@@ -991,6 +993,7 @@ function MoreView({
   isPro,
   focusConfig,
   onFocusConfig,
+  onOpenInfo,
   sync,
 }: {
   theme: Theme;
@@ -1002,6 +1005,7 @@ function MoreView({
   isPro: boolean;
   focusConfig: FocusConfig;
   onFocusConfig: (patch: Partial<FocusConfig>) => void;
+  onOpenInfo: (kind: "help" | "about") => void;
   sync: SyncApi;
 }) {
   const [confirmReset, setConfirmReset] = useState(false);
@@ -1120,6 +1124,26 @@ function MoreView({
         onOpenPaywall={onOpenPaywall}
       />
       <div className="card">
+        <div className="account-row">
+          <span className="grow">
+            <b>Ayuda y soporte</b>
+            <span>Guías, consejos y contacto</span>
+          </span>
+          <button className="btn btn--ghost" type="button" onClick={() => onOpenInfo("help")}>
+            Abrir
+          </button>
+        </div>
+        <div className="account-row" style={{ marginTop: 12 }}>
+          <span className="grow">
+            <b>Acerca de Pepinillo</b>
+            <span>Versión, suscripción y legal</span>
+          </span>
+          <button className="btn btn--ghost" type="button" onClick={() => onOpenInfo("about")}>
+            Abrir
+          </button>
+        </div>
+      </div>
+      <div className="card">
         <strong>Tus datos</strong>
         <p className="sub">Sesiones y tareas viven solo en este navegador.</p>
         {!confirmReset ? (
@@ -1165,28 +1189,80 @@ function Nav({ tab, setTab, vertical }: { tab: Tab; setTab: (t: Tab) => void; ve
   );
 }
 
+/* Onboarding — mirrors OnboardingView: 3 pages + final mode card. */
+const ONBOARD_PAGES = [
+  {
+    glyph: "🍅",
+    title: "Elige tu enfoque",
+    sub: "Pomodoro, Flowtime, Bloque o Cronómetro. Un toque y a trabajar.",
+  },
+  {
+    glyph: "✅",
+    title: "Organiza tu día",
+    sub: "Tareas con energía, listas Hoy y Bandeja, subtareas, fechas y notas.",
+  },
+  {
+    glyph: "📊",
+    title: "Mide tu constancia",
+    sub: "Panel con racha, calendario, reseñas semanales y logros.",
+  },
+];
+
 function OnboardingView({ onDone }: { onDone: (mode: Mode) => void }) {
+  const [page, setPage] = useState(0);
   const [mode, setMode] = useState<Mode>("pomodoro");
+  const last = page >= ONBOARD_PAGES.length;
   return (
     <div className="onboarding">
       <div className="card glass onboard-card">
         <div className="brand">
           <span className="brand-dot">P</span> Pepinillo
         </div>
-        <h1>Empieza a enfocarte en un toque</h1>
-        <p className="sub">Elige tu modo para empezar. Podrás cambiarlo cuando quieras.</p>
-        <div className="seg" role="group" aria-label="Modo inicial">
-          <button type="button" aria-pressed={mode === "pomodoro"} onClick={() => setMode("pomodoro")}>
-            🍅 Pomodoro
-          </button>
-          <button type="button" aria-pressed={mode === "stopwatch"} onClick={() => setMode("stopwatch")}>
-            ⏱ Cronómetro
-          </button>
+        {!last ? (
+          <>
+            <div className="mode-glyph" style={{ width: 64, height: 64, fontSize: 32 }} aria-hidden="true">
+              {ONBOARD_PAGES[page].glyph}
+            </div>
+            <h1>{ONBOARD_PAGES[page].title}</h1>
+            <p className="sub">{ONBOARD_PAGES[page].sub}</p>
+          </>
+        ) : (
+          <>
+            <h1>Elige tu modo para empezar</h1>
+            <p className="sub">Podrás cambiarlo cuando quieras.</p>
+            <div className="seg" role="group" aria-label="Modo inicial">
+              <button type="button" aria-pressed={mode === "pomodoro"} onClick={() => setMode("pomodoro")}>
+                🍅 Pomodoro
+              </button>
+              <button type="button" aria-pressed={mode === "stopwatch"} onClick={() => setMode("stopwatch")}>
+                ⏱ Cronómetro
+              </button>
+            </div>
+          </>
+        )}
+        <div className="timer-actions" style={{ justifyContent: "flex-start", marginTop: 18 }}>
+          {!last ? (
+            <>
+              <button className="btn" type="button" onClick={() => setPage(page + 1)}>
+                Continuar
+              </button>
+              <button className="btn btn--ghost" type="button" onClick={() => onDone(mode)}>
+                Omitir
+              </button>
+            </>
+          ) : (
+            <>
+              <button className="btn" type="button" onClick={() => onDone(mode)}>
+                Empezar
+              </button>
+              <button className="btn btn--ghost" type="button" onClick={() => setPage(page - 1)}>
+                Atrás
+              </button>
+            </>
+          )}
         </div>
-        <p>
-          <button className="btn" type="button" onClick={() => onDone(mode)}>
-            Empezar
-          </button>
+        <p className="sub" aria-label={`Paso ${Math.min(page + 1, 4)} de 4`}>
+          {[0, 1, 2, 3].map((i) => (i <= page ? "●" : "○")).join(" ")}
         </p>
       </div>
     </div>
@@ -1214,6 +1290,8 @@ export default function App() {
     | { kind: "profile" }
     | { kind: "paywall" }
     | { kind: "taskAnalytics"; taskId: string; title: string }
+    | { kind: "help" }
+    | { kind: "about" }
   >(null);
   const openAuth = (mode: AuthMode) => {
     setSheet({ kind: "auth", mode, email: session.user?.email ?? "" });
@@ -1297,6 +1375,7 @@ export default function App() {
             isPro={isPro}
             focusConfig={focusConfig}
             onFocusConfig={updateFocusConfig}
+            onOpenInfo={(kind) => setSheet({ kind })}
             sync={sync}
           />
         )}
@@ -1335,8 +1414,12 @@ export default function App() {
                 tier={session.user?.subscriptionTier ?? null}
                 onRefresh={() => void session.reload().catch(() => {})}
               />
-            ) : (
+            ) : sheet.kind === "taskAnalytics" ? (
               <TaskAnalyticsSection taskId={sheet.taskId} title={sheet.title} sessions={loadSessions()} />
+            ) : sheet.kind === "help" ? (
+              <HelpView />
+            ) : (
+              <AboutView session={session} />
             )}
           </div>
         </div>
