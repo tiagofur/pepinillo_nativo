@@ -321,7 +321,10 @@ struct AppView: View {
         }
         .tabViewStyle(.sidebarAdaptable)
         .conditionalTabBarMinimize()
-        .tint(sizeClass == .regular ? Color.accentColor : .primary)
+        // Unified brand accent on the selected tab across iPhone and iPad
+        // (critique #761: monochrome-on-iPhone read as an oversight, and the
+        // green is the brand's home in the navigation).
+        .tint(Color.accentColor)
         .animation(.snappy(duration: 0.25), value: store.selectedTab)
         .focusedValue(\.appStore, store)
     }
