@@ -121,6 +121,11 @@ struct AppFeature {
 
         // Watch bridge throttle — last elapsed value sent to Watch (1Hz gate)
         var lastWatchSentElapsed: TimeInterval = -1
+        /// Phase carried by the last watch push — a change (auto-advanced
+        /// break, session start) must publish applicationContext, not just
+        /// the reachability-gated sendMessage, or an unreachable watch
+        /// misses the new phase entirely (#785).
+        var lastWatchSentPhase: FocusPhase? = nil
         var profileSummaryUser: CachedUserDTO? {
             func normalized(_ value: String?) -> String? {
                 guard let value = value?.trimmingCharacters(in: .whitespacesAndNewlines), !value.isEmpty else {
@@ -1320,12 +1325,31 @@ struct AppFeature {
                 // and send immediately via their own dedicated cases below.
                 let currentElapsed = state.focus.elapsedSeconds
                 let lastSent = state.lastWatchSentElapsed
-                guard currentElapsed - lastSent >= 1.0 else { return .none }
+                // Elapsed is per-phase and restarts at 0 on every phase/session
+                // boundary; without the wrap check the throttle stays silent for
+                // the PREVIOUS phase's full duration after each boundary (#785 —
+                // the watch froze at 0:00 through auto-started breaks and for the
+                // first half hour of the next session).
+                let elapsedWrapped = currentElapsed < lastSent
+                guard elapsedWrapped || currentElapsed - lastSent >= 1.0 else { return .none }
                 state.lastWatchSentElapsed = currentElapsed
                 let watchState = WatchSessionState(from: state.focus)
-                return .run { [watchClient, watchState] _ in
-                    await watchClient.sendSessionState(watchState, false)
+                // A phase the watch has not seen yet (auto-advance, fresh start)
+                // must also publish applicationContext: sendMessage alone only
+                // lands when the watch is reachable this instant.
+                let phaseChanged = state.lastWatchSentPhase != state.focus.phase
+                state.lastWatchSentPhase = state.focus.phase
+                return .run { [watchClient, watchState, phaseChanged] _ in
+                    await watchClient.sendSessionState(watchState, phaseChanged)
                 }
+
+            case .focus(.startTapped):
+                // Phone-initiated start: push the fresh session immediately
+                // with context so the watch leaves idle/waiting even if the
+                // first tick races its reachability (#785).
+                state.lastWatchSentElapsed = -1
+                state.lastWatchSentPhase = nil
+                return pushWatchSessionSnapshot(from: state, publishContext: true)
 
             case .focus(.phaseCompleted):
                 var watchState = WatchSessionState(from: state.focus)
@@ -1359,6 +1383,8 @@ struct AppFeature {
                 }
 
             case .focus(.stopTapped), .focus(.sessionCompleted):
+                state.lastWatchSentElapsed = -1
+                state.lastWatchSentPhase = nil
                 let watchState = WatchSessionState(from: state.focus)
                 return .merge(
                     .run { [watchClient, watchState] _ in
