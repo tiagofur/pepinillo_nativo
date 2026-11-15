@@ -103,13 +103,16 @@ class FocusStateTest {
     }
 
     @Test
-    fun `phase label running pomodoro shows session number`() {
+    fun `phase label running pomodoro is plain - pips carry the position`() {
+        // #776 Batch A: the numbered label duplicated the pips (same dedupe
+        // as iOS #789); the plain label also fixes callers that passed no
+        // format argument and rendered a raw "%1$d" pattern.
         val state = FocusTimerState(
             mode = FocusMode.Pomodoro,
             status = TimerStatus.Running,
             completedSessions = 2,
         )
-        assertEquals(R.string.phase_focus_numbered, state.phaseLabelRes)
+        assertEquals(R.string.phase_focus, state.phaseLabelRes)
     }
 
     @Test

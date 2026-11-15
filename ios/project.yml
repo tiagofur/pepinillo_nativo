@@ -192,6 +192,7 @@ targets:
         WS_BASE_URL: "$(WS_BASE_URL)"
         APP_ENVIRONMENT: "$(APP_ENVIRONMENT)"
         SENTRY_DSN: "$(SENTRY_DSN)"
+        REVENUECAT_API_KEY: "$(REVENUECAT_API_KEY)"
         NSUserNotificationUsageDescription: >
           Pepinillo sends reminders to start your focus sessions and notifies
           you when a Pomodoro or break is complete.

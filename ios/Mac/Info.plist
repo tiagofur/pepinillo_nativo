@@ -80,6 +80,8 @@
 	<key>NSUserNotificationUsageDescription</key>
 	<string>Pepinillo sends reminders to start your focus sessions and notifies you when a Pomodoro or break is complete.
 </string>
+	<key>REVENUECAT_API_KEY</key>
+	<string>$(REVENUECAT_API_KEY)</string>
 	<key>SENTRY_DSN</key>
 	<string>$(SENTRY_DSN)</string>
 	<key>WS_BASE_URL</key>

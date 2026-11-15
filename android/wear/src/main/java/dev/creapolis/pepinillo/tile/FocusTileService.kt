@@ -284,7 +284,9 @@ class FocusTileService : TileService() {
     ): LayoutElementBuilders.LayoutElement {
         val color = modeColor(state.mode, colors)
         val totalSessions = state.sessionsBeforeLongBreak.coerceAtLeast(1)
-        val sessionLabel = "${state.phaseLabel} \u00b7 ${state.completedSessions + 1}/$totalSessions"
+        // phaseLabel already carries the cycle position ("Focus 2"); the
+        // "· 2/4" suffix duplicated it (#776 Batch A, same dedupe as iOS #789).
+        val sessionLabel = state.phaseLabel
 
         val infoColumn = LayoutElementBuilders.Column.Builder()
             .setHorizontalAlignment(HORIZONTAL_ALIGN_CENTER)

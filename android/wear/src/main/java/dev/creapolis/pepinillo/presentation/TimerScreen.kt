@@ -281,17 +281,16 @@ private fun TimerActiveLayout(
             verticalArrangement = Arrangement.Center,
         ) {
             // Mode + pomodoro number (#508: localize)
-            val modeLabel = if (state.mode == "Pomodoro" && state.completedSessions >= 0) {
-                stringResource(R.string.phase_focus_numbered, state.completedSessions + 1)
-            } else {
-                stringResource(when(state.mode) {
-                    "Pomodoro" -> R.string.mode_pomodoro
-                    "Flow" -> R.string.mode_flow
-                    "Blocks" -> R.string.mode_blocks
-                    "Chrono" -> R.string.mode_chrono
-                    else -> R.string.mode_pomodoro
-                })
-            }
+            // Mode identity (colored). The cycle POSITION is expressed once, by
+            // the pushed phase label below the time ("Focus 2") — the numbered
+            // local label above duplicated it (#776 Batch A, same dedupe as iOS #789).
+            val modeLabel = stringResource(when(state.mode) {
+                "Pomodoro" -> R.string.mode_pomodoro
+                "Flow" -> R.string.mode_flow
+                "Blocks" -> R.string.mode_blocks
+                "Chrono" -> R.string.mode_chrono
+                else -> R.string.mode_pomodoro
+            })
             Text(
                 text = modeLabel,
                 style = MaterialTheme.typography.labelSmall,
