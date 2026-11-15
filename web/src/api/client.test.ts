@@ -21,6 +21,9 @@ const USER = {
   emailVerified: true,
   aiCreditsBalance: 100,
   metricsOptIn: false,
+  pendingEmail: null,
+  createdAt: "2026-11-15T10:00:00.000Z",
+  updatedAt: "2026-11-15T10:00:00.000Z",
 };
 
 function memoryStorage(): Storage {
@@ -117,6 +120,36 @@ describe("token refresh", () => {
       ),
     );
     await expect(new ApiClient().me()).rejects.toMatchObject({ code: "session_expired" });
+    expect(localStorage.getItem("pepinillo:tokens.v1")).toBeNull();
+  });
+});
+
+describe("profile", () => {
+  it("updateMe PUTs the patch and returns the user", async () => {
+    localStorage.setItem(
+      "pepinillo:tokens.v1",
+      JSON.stringify({ accessToken: "a1", refreshToken: "r1", expiresIn: 0 }),
+    );
+    const fetchMock = vi.fn(async () => json({ ...USER, name: "Ana Nueva" }));
+    vi.stubGlobal("fetch", fetchMock);
+    const user = await new ApiClient().updateMe({ name: "Ana Nueva" });
+    expect(fetchMock).toHaveBeenCalledWith(
+      `${BASE}/users/me`,
+      expect.objectContaining({
+        method: "PUT",
+        body: JSON.stringify({ name: "Ana Nueva" }),
+      }),
+    );
+    expect(user.name).toBe("Ana Nueva");
+  });
+
+  it("deleteAccount clears tokens even when the server fails", async () => {
+    localStorage.setItem(
+      "pepinillo:tokens.v1",
+      JSON.stringify({ accessToken: "a1", refreshToken: "r1", expiresIn: 0 }),
+    );
+    vi.stubGlobal("fetch", vi.fn(async () => json({ error: "boom" }, 500)));
+    await expect(new ApiClient().deleteAccount()).rejects.toMatchObject({ status: 500 });
     expect(localStorage.getItem("pepinillo:tokens.v1")).toBeNull();
   });
 });

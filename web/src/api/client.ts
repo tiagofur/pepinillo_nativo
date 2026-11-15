@@ -26,6 +26,9 @@ export interface User {
   emailVerified: boolean;
   aiCreditsBalance: number;
   metricsOptIn: boolean;
+  pendingEmail: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface AuthSession {
@@ -154,6 +157,40 @@ export class ApiClient {
 
   async me(): Promise<User> {
     return this.authed<User>("/users/me", { method: "GET" });
+  }
+
+  async updateMe(patch: { name?: string; imageUrl?: string; metricsOptIn?: boolean }): Promise<User> {
+    return this.authed<User>("/users/me", { method: "PUT", body: JSON.stringify(patch) });
+  }
+
+  async requestEmailChange(newEmail: string): Promise<void> {
+    await this.authed("/auth/request-email-change", {
+      method: "POST",
+      body: JSON.stringify({ newEmail }),
+    });
+  }
+
+  async confirmEmailChange(code: string): Promise<User> {
+    return this.authed<User>("/auth/confirm-email-change", {
+      method: "POST",
+      body: JSON.stringify({ code }),
+    });
+  }
+
+  async cancelEmailChange(): Promise<void> {
+    await this.authed("/auth/cancel-email-change", { method: "POST" });
+  }
+
+  async deleteAccount(): Promise<void> {
+    const tokens = loadTokens();
+    try {
+      await this.authed("/auth/account", {
+        method: "DELETE",
+        body: JSON.stringify({ refreshToken: tokens?.refreshToken ?? "" }),
+      });
+    } finally {
+      saveTokens(null);
+    }
   }
 
   async logout(): Promise<void> {

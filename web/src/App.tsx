@@ -5,6 +5,7 @@ import { loadSessions, useFocus } from "./focus/useFocus";
 import { streakDays, summarizeToday } from "./focus/stats";
 import { useSession, type Session } from "./auth/useSession";
 import { AuthView, tierLabel, type AuthMode } from "./auth/AuthView";
+import { ProfileView } from "./auth/ProfileView";
 import {
   ENERGY_LABEL,
   PRIORITY_LABEL,
@@ -423,11 +424,13 @@ function MoreView({
   setTheme,
   session,
   onOpenAuth,
+  onOpenProfile,
 }: {
   theme: Theme;
   setTheme: (t: Theme) => void;
   session: Session;
   onOpenAuth: (mode: AuthMode) => void;
+  onOpenProfile: () => void;
 }) {
   const [confirmReset, setConfirmReset] = useState(false);
   return (
@@ -471,6 +474,9 @@ function MoreView({
                 <b>{session.user.name}</b>
                 <span>{session.user.email} · {tierLabel(session.user.subscriptionTier)}</span>
               </span>
+              <button className="btn btn--ghost" type="button" onClick={onOpenProfile}>
+                Perfil
+              </button>
               <button className="btn btn--ghost" type="button" onClick={() => void session.logout()}>
                 Salir
               </button>
@@ -585,13 +591,11 @@ export default function App() {
   const layout = useLayout();
   const [theme, setTheme] = useTheme();
   const session = useSession();
-  const [authOpen, setAuthOpen] = useState(false);
-  const [authMode, setAuthMode] = useState<AuthMode>("login");
-  const [authEmail, setAuthEmail] = useState("");
+  const [sheet, setSheet] = useState<
+    null | { kind: "auth"; mode: AuthMode; email: string } | { kind: "profile" }
+  >(null);
   const openAuth = (mode: AuthMode) => {
-    setAuthMode(mode);
-    setAuthEmail(session.user?.email ?? "");
-    setAuthOpen(true);
+    setSheet({ kind: "auth", mode, email: session.user?.email ?? "" });
   };
   const [onboarded, setOnboarded] = useState(() => {
     try {
@@ -636,7 +640,13 @@ export default function App() {
         {tab === "plan" && <PlanView />}
         {tab === "dashboard" && <DashboardView />}
         {tab === "more" && (
-          <MoreView theme={theme} setTheme={setTheme} session={session} onOpenAuth={openAuth} />
+          <MoreView
+            theme={theme}
+            setTheme={setTheme}
+            session={session}
+            onOpenAuth={openAuth}
+            onOpenProfile={() => setSheet({ kind: "profile" })}
+          />
         )}
       </main>
       {layout === "tabbar" && (
@@ -644,8 +654,8 @@ export default function App() {
           <Nav tab={tab} setTab={setTab} vertical={false} />
         </nav>
       )}
-      {authOpen && (
-        <div className="sheet-backdrop" onClick={() => setAuthOpen(false)}>
+      {sheet && (
+        <div className="sheet-backdrop" onClick={() => setSheet(null)}>
           <div
             className="sheet glass"
             role="dialog"
@@ -654,17 +664,21 @@ export default function App() {
             onClick={(e) => e.stopPropagation()}
           >
             <p style={{ textAlign: "right", margin: "0 0 4px" }}>
-              <button type="button" className="linkbtn" onClick={() => setAuthOpen(false)}>
+              <button type="button" className="linkbtn" onClick={() => setSheet(null)}>
                 Cerrar
               </button>
             </p>
-            <AuthView
-              session={session}
-              initialMode={authMode}
-              initialEmail={authEmail}
-              onAuthed={() => setAuthOpen(false)}
-              onGuest={() => setAuthOpen(false)}
-            />
+            {sheet.kind === "auth" ? (
+              <AuthView
+                session={session}
+                initialMode={sheet.mode}
+                initialEmail={sheet.email}
+                onAuthed={() => setSheet(null)}
+                onGuest={() => setSheet(null)}
+              />
+            ) : (
+              <ProfileView session={session} />
+            )}
           </div>
         </div>
       )}
