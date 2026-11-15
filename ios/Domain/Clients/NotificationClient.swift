@@ -309,7 +309,7 @@ extension NotificationClient {
                 content.body = NotificationCopy.weeklyRecapBody(minutes: minutes, sessionCount: sessionCount)
                 content.sound = .default
                 content.interruptionLevel = .active
-                content.categoryIdentifier = "WEEKLY_RECAP"
+                content.categoryIdentifier = NotificationDelegate.weeklyRecapCategoryID
 
                 let fireComponents = calendar.dateComponents(
                     [.year, .month, .day, .hour, .minute],

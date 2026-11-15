@@ -24,6 +24,13 @@ final class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate, @u
 
     static let shared = NotificationDelegate()
 
+    /// Category of the opt-in weekly recap (#735) — tapping it should land on
+    /// the Dashboard (never the Weekly Review behind the paywall).
+    static let weeklyRecapCategoryID = "WEEKLY_RECAP"
+
+    /// Posted when the user taps the weekly recap notification itself.
+    static let openDashboardFromRecap = Notification.Name("pepinillo.recap.openDashboard")
+
     private let (stream, continuation) = AsyncStream<NotificationAction>.makeStream()
 
     /// AsyncStream of notification actions for TCA to observe.
@@ -58,7 +65,12 @@ final class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate, @u
         case UNNotificationDismissActionIdentifier:
             continuation.yield(.dismissed)
         default:
-            break
+            // A plain tap on the weekly recap lands on the Dashboard (#735);
+            // plain taps on other notifications keep system behavior.
+            if response.actionIdentifier == UNNotificationDefaultActionIdentifier,
+               response.notification.request.content.categoryIdentifier == Self.weeklyRecapCategoryID {
+                NotificationCenter.default.post(name: Self.openDashboardFromRecap, object: nil)
+            }
         }
     }
 
