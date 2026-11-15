@@ -469,6 +469,17 @@ select {
 .onboard-card h1 { font-size: 30px; letter-spacing: -0.02em; margin: 0 0 8px; }
 .onboard-card .seg { margin: 8px 0 4px; }
 
+/* ---------- Focus split (timer + companion side panel) ---------- */
+.focuswrap { display: grid; gap: 0; }
+
+@media (min-width: 1024px) {
+  .focuswrap.split {
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.75fr);
+    gap: 16px;
+    align-items: start;
+  }
+}
+
 /* ---------- Plan split view (iPad sidebar+detail parity) ---------- */
 .planwrap { display: grid; gap: 0; }
 

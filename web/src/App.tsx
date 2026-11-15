@@ -8,6 +8,7 @@ import { AuthView, tierLabel, type AuthMode } from "./auth/AuthView";
 import { ProfileView } from "./auth/ProfileView";
 import { SettingsView } from "./auth/SettingsView";
 import { PaywallView } from "./auth/PaywallView";
+import { parseSoundscape, SOUNDSCAPES, startAmbience, type Soundscape } from "./focus/sound";
 import { HelpView } from "./auth/HelpView";
 import { AboutView } from "./auth/AboutView";
 import { isProTier } from "./auth/entitlements";
@@ -263,6 +264,74 @@ function agoCopy(savedAt: number): string {
   return `hace ${Math.round(mins / 60)} h`;
 }
 
+/* Break activities — mirrors BreakActivity (ADHDBreakView.swift:107),
+   translated to Spanish. */
+const BREAK_ACTIVITIES = [
+  {
+    id: "breathe",
+    glyph: "🫁",
+    title: "Respirar",
+    sub: "Respiración en caja",
+    instructions:
+      "Inhala 4 tiempos, sostén 4, exhala 4, sostén 4. Repite hasta que termine tu descanso.",
+  },
+  {
+    id: "stretch",
+    glyph: "🧘",
+    title: "Estirar",
+    sub: "Cuello y hombros",
+    instructions:
+      "Rota los hombros atrás 5 veces. Inclina la cabeza lado a lado. Estira los brazos arriba.",
+  },
+  {
+    id: "hydrate",
+    glyph: "💧",
+    title: "Hidratarse",
+    sub: "Toma agua",
+    instructions: "Levántate y toma un vaso de agua. Hidratarte ayuda a mantener el enfoque.",
+  },
+  {
+    id: "movement",
+    glyph: "🚶",
+    title: "Moverse",
+    sub: "Camina",
+    instructions: "Levántate y camina por tu espacio. Mira algo lejano para descansar la vista.",
+  },
+];
+
+/* Companion panel — mirrors FocusCompanionView cards with live data. */
+function CompanionCard({
+  tasks,
+  runTaskId,
+  linkedTaskId,
+}: {
+  tasks: Task[];
+  runTaskId: string | null;
+  linkedTaskId: string | null;
+}) {
+  const journal = loadSessions();
+  const today = summarizeToday(journal, new Date());
+  const streak = streakDays(journal, new Date());
+  const activeId = runTaskId ?? linkedTaskId;
+  const active = tasks.find((x) => x.id === activeId);
+  const next = tasks.find((x) => x.today && !x.done && x.id !== activeId);
+  return (
+    <div className="card">
+      <strong>Hoy</strong>
+      <p className="sub" style={{ marginBottom: 8 }}>
+        {today.sessions} {today.sessions === 1 ? "sesión" : "sesiones"} · {today.focusMin} min ·
+        racha {streak} {streak === 1 ? "día" : "días"}
+      </p>
+      <span className="detail-label">Tarea activa</span>
+      <p className="sub">{active ? active.title : "Sin vincular"}</p>
+      <span className="detail-label">Siguiente</span>
+      <p className="sub" style={{ marginBottom: 0 }}>
+        {next ? next.title : "Nada pendiente. Bien hecho."}
+      </p>
+    </div>
+  );
+}
+
 function FocusView({
   tasks,
   isPro,
@@ -276,7 +345,16 @@ function FocusView({
 }) {
   const f = useFocus(config);
   const [linkedTaskId, setLinkedTaskId] = useState<string | null>(null);
+  const [breakActivity, setBreakActivity] = useState<string | null>(null);
+  const [soundscape, setSoundscape] = useState<Soundscape>(() => {
+    try {
+      return parseSoundscape(localStorage.getItem("pepinillo:soundscape"));
+    } catch {
+      return "none";
+    }
+  });
   const openTasks = tasks.filter((x) => x.today && !x.done);
+  const activeBreak = BREAK_ACTIVITIES.find((a) => a.id === breakActivity) ?? null;
   const phaseRef = useRef<string | null>(null);
 
   // Phase-change feedback: sound, haptics, notification. All guarded.
@@ -337,6 +415,13 @@ function FocusView({
       if (lock) void lock.release().catch(() => {});
     };
   }, [config.keepScreenOn, f.run != null]);
+
+  // Generated ambience while a session runs (stops with it).
+  useEffect(() => {
+    if (soundscape === "none" || !f.run) return;
+    const stop = startAmbience(soundscape);
+    return stop;
+  }, [soundscape, f.run != null]);
   const [mode, setMode] = useState<Mode>(() => {
     try {
       return localStorage.getItem("pepinillo:defaultMode") === "stopwatch" ? "stopwatch" : "pomodoro";
@@ -422,8 +507,32 @@ function FocusView({
       )}
       {!run && !f.pending && <RecordBanner celebrate={config.celebrateRecords} />}
       {!run && !f.pending && <ModeTipBanner />}
+      <div className="seg" role="group" aria-label="Ambiente" style={{ marginBottom: 4 }}>
+        {SOUNDSCAPES.map((s) => (
+          <button
+            key={s.id}
+            type="button"
+            aria-pressed={soundscape === s.id}
+            onClick={() => {
+              setSoundscape(s.id);
+              try {
+                localStorage.setItem("pepinillo:soundscape", s.id);
+              } catch {
+                /* session-only */
+              }
+            }}
+          >
+            {s.name}
+          </button>
+        ))}
+      </div>
+      {soundscape !== "none" && (
+        <p className="sub">Ambiente generado en tu navegador, sin archivos.</p>
+      )}
 
       {meta.free || isPro ? (
+        <>
+        <div className="focuswrap split">
         <div className="card timer-wrap">
           <div className="ring" style={{ ["--p" as string]: `${progress * 100}%` }}>
             <b>{formatClock(shown)}</b>
@@ -479,6 +588,33 @@ function FocusView({
             </div>
           )}
         </div>
+        <CompanionCard tasks={tasks} runTaskId={run?.taskId ?? null} linkedTaskId={linkedTaskId} />
+        </div>
+      {run && isBreak && (
+        <div className="card">
+          <strong>Descanso guiado</strong>
+          <p className="sub">Elige una actividad para tu descanso.</p>
+          <ul className="modelist">
+            {BREAK_ACTIVITIES.map((a) => (
+              <li
+                key={a.id}
+                className="card"
+                style={breakActivity === a.id ? { outline: "2px solid var(--accent)" } : undefined}
+              >
+                <span className="mode-glyph" aria-hidden="true">{a.glyph}</span>
+                <span className="grow">
+                  <button type="button" className="rowtitle" onClick={() => setBreakActivity(a.id)}>
+                    <b>{a.title}</b>
+                  </button>
+                  <span>{a.sub}</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+          {activeBreak && <p className="sub">{activeBreak.instructions}</p>}
+        </div>
+      )}
+        </>
       ) : (
         <div className="card timer-wrap">
           <p className="timer-phase">
