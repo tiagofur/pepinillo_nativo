@@ -123,6 +123,7 @@ struct PepinilloTasksComplication: Widget {
         .supportedFamilies([
             .accessoryCircular,
             .accessoryRectangular,
+            .accessoryInline,
             .accessoryCorner,
         ])
     }
@@ -138,6 +139,9 @@ private struct TasksComplicationContentView: View {
         switch family {
         case .accessoryRectangular:
             TasksRectangularView(entry: entry)
+        case .accessoryInline:
+            // Smart Stack row: today's task count in one line.
+            TasksInlineView(entry: entry)
         case .accessoryCorner:
             TasksCornerView(entry: entry)
         default:
@@ -244,5 +248,24 @@ struct TasksCornerView: View {
                     Text(String(localized: "Tasks"))
                 }
             }
+    }
+}
+
+
+// MARK: - Smart Stack inline row (#793)
+
+private struct TasksInlineView: View {
+    let entry: TasksComplicationEntry
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Image(systemName: "checklist")
+                .symbolRenderingMode(.hierarchical)
+            Text("\(entry.completedCount)/\(entry.totalCount)")
+                .monospacedDigit()
+        }
+        .widgetLabel {
+            Text(String(localized: "Tasks today"))
+        }
     }
 }
