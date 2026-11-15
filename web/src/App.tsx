@@ -6,6 +6,8 @@ import { bestDayMinutes, streakDays, suggestBestMode, summarizeToday } from "./f
 import { useSession, type Session } from "./auth/useSession";
 import { AuthView, tierLabel, type AuthMode } from "./auth/AuthView";
 import { ProfileView } from "./auth/ProfileView";
+import { PaywallView } from "./auth/PaywallView";
+import { isProTier } from "./auth/entitlements";
 import { useSync, type SyncApi } from "./sync/useSync";
 import {
   ENERGY_LABEL,
@@ -216,7 +218,15 @@ function agoCopy(savedAt: number): string {
   return `hace ${Math.round(mins / 60)} h`;
 }
 
-function FocusView({ tasks }: { tasks: Task[] }) {
+function FocusView({
+  tasks,
+  isPro,
+  onOpenPaywall,
+}: {
+  tasks: Task[];
+  isPro: boolean;
+  onOpenPaywall: () => void;
+}) {
   const f = useFocus();
   const [linkedTaskId, setLinkedTaskId] = useState<string | null>(null);
   const openTasks = tasks.filter((x) => x.today && !x.done);
@@ -306,7 +316,7 @@ function FocusView({ tasks }: { tasks: Task[] }) {
       {!run && !f.pending && <RecordBanner />}
       {!run && !f.pending && <ModeTipBanner />}
 
-      {meta.free ? (
+      {meta.free || isPro ? (
         <div className="card timer-wrap">
           <div className="ring" style={{ ["--p" as string]: `${progress * 100}%` }}>
             <b>{formatClock(shown)}</b>
@@ -369,10 +379,13 @@ function FocusView({ tasks }: { tasks: Task[] }) {
           </p>
           <p>
             <strong>{meta.name} es parte de Pepinillo Plus,</strong> igual que
-            en el iPad. La cuenta y el pago llegan más adelante.
+            en el iPad.
           </p>
           <div className="timer-actions">
-            <button className="btn" type="button" onClick={() => setMode("pomodoro")}>
+            <button className="btn" type="button" onClick={onOpenPaywall}>
+              Ver planes
+            </button>
+            <button className="btn btn--ghost" type="button" onClick={() => setMode("pomodoro")}>
               Usar Pomodoro
             </button>
           </div>
@@ -399,11 +412,16 @@ function FocusView({ tasks }: { tasks: Task[] }) {
               <span>{m.detail}</span>
             </span>
             {!m.free && <span className="lock">Plus</span>}
-            {m.id !== mode && (
-              <button className="btn btn--ghost" type="button" onClick={() => { f.stop(); setMode(m.id); }}>
-                Elegir
-              </button>
-            )}
+            {m.id !== mode &&
+              (!m.free && !isPro ? (
+                <button className="btn btn--ghost" type="button" onClick={onOpenPaywall}>
+                  Plus
+                </button>
+              ) : (
+                <button className="btn btn--ghost" type="button" onClick={() => { f.stop(); setMode(m.id); }}>
+                  Elegir
+                </button>
+              ))}
           </li>
         ))}
       </ul>
@@ -425,11 +443,15 @@ type TasksApi = ReturnType<typeof useTasks>;
 function TaskDetail({
   task,
   t,
+  isPro,
+  onOpenPaywall,
   onClose,
   onDeleted,
 }: {
   task: Task;
   t: TasksApi;
+  isPro: boolean;
+  onOpenPaywall: () => void;
   onClose: () => void;
   onDeleted: () => void;
 }) {
@@ -507,7 +529,17 @@ function TaskDetail({
       </div>
 
       <span className="detail-label">Repetición</span>
-      <select value={task.recurrence ?? ""} onChange={(e) => t.update(task.id, { recurrence: e.target.value || null })} aria-label="Repetición">
+      <select
+        value={task.recurrence ?? ""}
+        onChange={(e) => {
+          if (e.target.value && !isPro) {
+            onOpenPaywall();
+            return;
+          }
+          t.update(task.id, { recurrence: e.target.value || null });
+        }}
+        aria-label="Repetición"
+      >
         <option value="">Nunca</option>
         <option value="daily">Diaria</option>
         <option value="weekly">Semanal</option>
@@ -528,6 +560,16 @@ function TaskDetail({
       <span className="detail-label">
         Subtareas{task.subtasks.length > 0 && ` · ${doneSubs}/${task.subtasks.length}`}
       </span>
+      {!isPro ? (
+        <div className="empty">
+          <strong>Las subtareas son Plus.</strong>
+          <p className="sub" style={{ marginBottom: 0 }}>
+            <button type="button" className="linkbtn" onClick={onOpenPaywall}>
+              Ver planes
+            </button>
+          </p>
+        </div>
+      ) : (
       <div className="composer">
         <input
           className="textinput"
@@ -541,6 +583,7 @@ function TaskDetail({
           Añadir
         </button>
       </div>
+      )}
       {task.subtasks.length > 0 && (
         <ul className="sublist">
           {task.subtasks.map((s) => (
@@ -597,7 +640,7 @@ function TaskDetail({
   );
 }
 
-function PlanView({ t }: { t: TasksApi }) {
+function PlanView({ t, isPro, onOpenPaywall }: { t: TasksApi; isPro: boolean; onOpenPaywall: () => void }) {
   const [title, setTitle] = useState("");
   const [energy, setEnergy] = useState<Energy>(() =>
     suggestedEnergyForHour(new Date().getHours()),
@@ -737,6 +780,8 @@ function PlanView({ t }: { t: TasksApi }) {
           <TaskDetail
             task={selected}
             t={t}
+            isPro={isPro}
+            onOpenPaywall={onOpenPaywall}
             onClose={() => setSelectedId(null)}
             onDeleted={() => setSelectedId(null)}
           />
@@ -798,6 +843,8 @@ function MoreView({
   session,
   onOpenAuth,
   onOpenProfile,
+  onOpenPaywall,
+  isPro,
   sync,
 }: {
   theme: Theme;
@@ -805,6 +852,8 @@ function MoreView({
   session: Session;
   onOpenAuth: (mode: AuthMode) => void;
   onOpenProfile: () => void;
+  onOpenPaywall: () => void;
+  isPro: boolean;
   sync: SyncApi;
 }) {
   const [confirmReset, setConfirmReset] = useState(false);
@@ -849,6 +898,11 @@ function MoreView({
                 <b>{session.user.name}</b>
                 <span>{session.user.email} · {tierLabel(session.user.subscriptionTier)}</span>
               </span>
+              {!isPro && (
+                <button className="btn" type="button" onClick={onOpenPaywall}>
+                  Plus
+                </button>
+              )}
               <button className="btn btn--ghost" type="button" onClick={onOpenProfile}>
                 Perfil
               </button>
@@ -992,8 +1046,9 @@ export default function App() {
   const tasksApi = useTasks();
   const sync = useSync(tasksApi.tasks, tasksApi.replaceAll, session);
   const online = useOnline();
+  const isPro = session.user ? isProTier(session.user.subscriptionTier) : false;
   const [sheet, setSheet] = useState<
-    null | { kind: "auth"; mode: AuthMode; email: string } | { kind: "profile" }
+    null | { kind: "auth"; mode: AuthMode; email: string } | { kind: "profile" } | { kind: "paywall" }
   >(null);
   const openAuth = (mode: AuthMode) => {
     setSheet({ kind: "auth", mode, email: session.user?.email ?? "" });
@@ -1042,8 +1097,12 @@ export default function App() {
         </nav>
       )}
       <main className="content">
-        {tab === "focus" && <FocusView tasks={tasksApi.tasks} />}
-        {tab === "plan" && <PlanView t={tasksApi} />}
+        {tab === "focus" && (
+          <FocusView tasks={tasksApi.tasks} isPro={isPro} onOpenPaywall={() => setSheet({ kind: "paywall" })} />
+        )}
+        {tab === "plan" && (
+          <PlanView t={tasksApi} isPro={isPro} onOpenPaywall={() => setSheet({ kind: "paywall" })} />
+        )}
         {tab === "dashboard" && <DashboardView />}
         {tab === "more" && (
           <MoreView
@@ -1052,6 +1111,8 @@ export default function App() {
             session={session}
             onOpenAuth={openAuth}
             onOpenProfile={() => setSheet({ kind: "profile" })}
+            onOpenPaywall={() => setSheet({ kind: "paywall" })}
+            isPro={isPro}
             sync={sync}
           />
         )}
@@ -1083,8 +1144,13 @@ export default function App() {
                 onAuthed={() => setSheet(null)}
                 onGuest={() => setSheet(null)}
               />
-            ) : (
+            ) : sheet.kind === "profile" ? (
               <ProfileView session={session} />
+            ) : (
+              <PaywallView
+                tier={session.user?.subscriptionTier ?? null}
+                onRefresh={() => void session.reload().catch(() => {})}
+              />
             )}
           </div>
         </div>
