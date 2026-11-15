@@ -16,16 +16,83 @@ struct WatchTimerView: View {
     /// Per-mode accents come from the theme instead of the hardcoded ModeColors palette
     /// so Forest/Ocean/Sunset on the phone propagate to the watch (#533).
     @Environment(\.appTheme) private var appTheme
+    /// Always-on (#766): with the wrist down the UI reduces to what earns
+    /// pixels — the countdown and a monochrome progress trace. Colors,
+    /// chips, task rows and controls return on wrist raise with a short
+    /// crossfade (no flicker).
+    @Environment(\.isLuminanceReduced) private var isLuminanceReduced
 
     var body: some View {
-        if store.isSessionActive {
-            if store.isWaiting {
-                waitingView
+        Group {
+            if isLuminanceReduced {
+                reducedView
+                    .transition(.opacity)
+            } else if store.isSessionActive {
+                if store.isWaiting {
+                    waitingView
+                } else {
+                    activeSessionView
+                }
             } else {
-                activeSessionView
+                idleView
+            }
+        }
+        .animation(.easeInOut(duration: 0.18), value: isLuminanceReduced)
+    }
+
+    /// Wrist-down variant shared by every state: time digits (or pending
+    /// phase when waiting), a monochrome ring trace, nothing else.
+    @ViewBuilder
+    private var reducedView: some View {
+        if store.isSessionActive, !store.isWaiting {
+            VStack(spacing: 4) {
+                Spacer(minLength: 0)
+
+                ZStack {
+                    Circle()
+                        .stroke(Color.white.opacity(0.15), lineWidth: 8)
+
+                    if let progress = store.progress {
+                        Circle()
+                            .trim(from: 0, to: CGFloat(progress))
+                            .stroke(
+                                Color.white.opacity(0.75),
+                                style: StrokeStyle(lineWidth: 8, lineCap: .round)
+                            )
+                            .rotationEffect(.degrees(-90))
+                    }
+
+                    Text(store.displayTime)
+                        .font(.system(.title2, design: .rounded, weight: .semibold))
+                        .monospacedDigit()
+                        .foregroundStyle(.white)
+                        .minimumScaleFactor(0.7)
+                }
+
+                Text(store.phaseLabel)
+                    .font(.system(size: 10))
+                    .foregroundStyle(.white.opacity(0.55))
+                    .lineLimit(1)
+
+                Spacer(minLength: 0)
             }
         } else {
-            idleView
+            // Waiting or idle: the pending phase / mode symbol with the
+            // essential caption only.
+            VStack(spacing: 6) {
+                Spacer(minLength: 0)
+
+                Image(systemName: store.selectedMode.systemImage)
+                    .font(.system(size: 22, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.7))
+
+                Text(store.isWaiting ? store.phaseLabel : String(localized: "Ready"))
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.55))
+                    .lineLimit(1)
+
+                Spacer(minLength: 0)
+            }
         }
     }
 
