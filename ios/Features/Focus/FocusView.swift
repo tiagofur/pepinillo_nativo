@@ -917,6 +917,10 @@ struct TimerCircleView: View {
             )
         }
         .aspectRatio(1, contentMode: .fit)
+        // Phase change (work → break) shifts the ring's hue; crossfade the
+        // color journey instead of snapping. Scoped to modeColor so the 4Hz
+        // ticks keep their own linear per-tick animation (issue #80 intact).
+        .conditionalAnimation(.smooth(duration: 0.45), value: modeColor)
         // P2 item 5: spring scale on mode change
         .scaleEffect(ringScale)
         .onChange(of: store.selectedMode) { _, _ in

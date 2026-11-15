@@ -144,6 +144,8 @@ struct TaskRow: View, Equatable {
                 .font(.title3)
                 .foregroundStyle(checkboxColor)
                 .contentTransition(.symbolEffect(.replace))
+                // Completion micro-celebration: single bounce on the check.
+                .symbolEffect(.bounce, value: task.isCompleted)
                 .frame(minWidth: 44, minHeight: 44)  // HIG 44pt minimum (issue #90)
                 .contentShape(Rectangle())
         }

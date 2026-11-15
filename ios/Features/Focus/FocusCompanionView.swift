@@ -189,6 +189,8 @@ struct FocusCompanionView: View {
                         Text("\(sessionsToday)")
                             .font(.system(.title, design: .rounded, weight: .bold))
                             .foregroundStyle(.primary)
+                            .contentTransition(.numericText())
+                            .conditionalAnimation(.snappy, value: sessionsToday)
                         Text(sessionsToday == 1
                              ? String(localized: "session")
                              : String(localized: "sessions"))
@@ -206,6 +208,8 @@ struct FocusCompanionView: View {
                             Text(FocusTimeFormatting.compact(totalFocusMinutesToday))
                                 .font(.system(.title, design: .rounded, weight: .bold))
                                 .foregroundStyle(.primary)
+                                .contentTransition(.numericText())
+                                .conditionalAnimation(.snappy, value: totalFocusMinutesToday)
                             Text(String(localized: "focused"))
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
@@ -231,11 +235,15 @@ struct FocusCompanionView: View {
                 .font(.largeTitle)
                 .foregroundStyle(theme.streakColor)
                 .contentTransition(.symbolEffect(.replace))
+                // Quiet celebration: one bounce when the streak grows.
+                .symbolEffect(.bounce, value: streakDays)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text("\(streakDays)")
                     .font(NumericFont.heroStat())
                     .foregroundStyle(.primary)
+                    .contentTransition(.numericText())
+                    .conditionalAnimation(.snappy, value: streakDays)
                 Text(streakDays == 1
                      ? String(localized: "day streak")
                      : String(localized: "days streak"))
