@@ -1,5 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { bestDayMinutes, streakDays, suggestBestMode, summarizeToday } from "./stats";
+import {
+  achievements,
+  bestDayMinutes,
+  perDaySeries,
+  streakDays,
+  suggestBestMode,
+  summarizeRange,
+  summarizeToday,
+  taskBreakdown,
+  trendPct,
+} from "./stats";
 import type { SessionRecord } from "./engine";
 
 function rec(day: string, durationSec: number, completed = true): SessionRecord {
@@ -69,5 +79,60 @@ describe("suggestBestMode", () => {
   it("stays quiet without enough history", () => {
     expect(suggestBestMode([rec("2026-11-15", 1500)])).toBeNull();
     expect(suggestBestMode([])).toBeNull();
+  });
+});
+
+describe("perDaySeries", () => {
+  it("returns oldest-first points with zeros", () => {
+    const pts = perDaySeries([rec("2026-11-15", 600)], 3, NOW);
+    expect(pts).toHaveLength(3);
+    expect(pts[2]).toEqual({ day: "2026-11-15", minutes: 10, sessions: 1 });
+    expect(pts[0]).toEqual({ day: "2026-11-13", minutes: 0, sessions: 0 });
+  });
+});
+
+describe("summarizeRange", () => {
+  it("aggregates the window with per-mode minutes", () => {
+    const sessions = [
+      { ...rec("2026-11-15", 1500), mode: "pomodoro" as const },
+      { ...rec("2026-11-15", 900), mode: "flowtime" as const },
+      { ...rec("2026-11-10", 1500), mode: "pomodoro" as const },
+    ];
+    const sum = summarizeRange(sessions, "2026-11-14T00:00:00", "2026-11-16T00:00:00");
+    expect(sum).toMatchObject({ sessions: 2, completed: 2, focusMin: 40, activeDays: 1 });
+    expect(sum.perMode.pomodoro).toBe(25);
+    expect(sum.perMode.flowtime).toBe(15);
+  });
+});
+
+describe("trendPct", () => {
+  it("computes change and stays null without baseline", () => {
+    expect(trendPct(150, 100)).toBe(50);
+    expect(trendPct(50, 100)).toBe(-50);
+    expect(trendPct(10, 0)).toBeNull();
+  });
+});
+
+describe("achievements", () => {
+  it("unlocks by thresholds", () => {
+    const none = achievements([], 0, NOW);
+    expect(none.every((a) => !a.earned)).toBe(true);
+    const some = achievements([rec("2026-11-15", 1500)], 0, NOW);
+    expect(some.find((a) => a.id === "first")?.earned).toBe(true);
+    expect(some.find((a) => a.id === "century")?.earned).toBe(false);
+  });
+});
+
+describe("taskBreakdown", () => {
+  it("groups linked sessions best-first, skipping unlinked", () => {
+    const sessions = [
+      { ...rec("2026-11-15", 600), id: "a", taskId: "t1" },
+      { ...rec("2026-11-15", 1200), id: "b", taskId: "t2" },
+      { ...rec("2026-11-15", 600), id: "c", taskId: null },
+    ];
+    expect(taskBreakdown(sessions)).toEqual([
+      { taskId: "t2", sessions: 1, minutes: 20 },
+      { taskId: "t1", sessions: 1, minutes: 10 },
+    ]);
   });
 });

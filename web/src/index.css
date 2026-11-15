@@ -397,6 +397,59 @@ select {
 
 .pill.active { background: var(--ink); color: var(--bg); border-color: transparent; }
 
+/* ---------- Dashboard: charts, calendar, achievements ---------- */
+.bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 120px;
+  margin: 12px 0 8px;
+}
+
+.bars .bar {
+  flex: 1;
+  min-width: 2px;
+  background: var(--accent);
+  border-radius: 4px 4px 0 0;
+  opacity: 0.85;
+}
+
+.bars .bar.dim { opacity: 0.18; }
+
+.calgrid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-top: 10px; }
+
+.caldow { text-align: center; font-size: 12px; font-weight: 700; color: var(--ink-2); }
+
+.calday {
+  aspect-ratio: 1;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--bg-elevated);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  cursor: pointer;
+  padding: 0;
+  min-width: 0;
+}
+
+.calday.out { opacity: 0.35; }
+.calday.today { outline: 2px solid var(--accent); }
+.calday .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+.calday .badge { font-size: 10px; padding: 0 6px; }
+
+.achgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-top: 10px; }
+
+.ach { margin-bottom: 0; padding: 14px; }
+.ach b { display: block; font-size: 15px; margin-bottom: 4px; }
+.ach span { color: var(--ink-2); font-size: 13px; }
+.ach.locked { opacity: 0.55; }
+
 /* ---------- Dashboard ---------- */
 .statgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 14px; }
 

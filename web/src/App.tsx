@@ -11,6 +11,14 @@ import { PaywallView } from "./auth/PaywallView";
 import { isProTier } from "./auth/entitlements";
 import { useSync, type SyncApi } from "./sync/useSync";
 import {
+  AchievementsSection,
+  CalendarSection,
+  ChartsSection,
+  ReviewsSection,
+  TaskAnalyticsSection,
+  TopTasksSection,
+} from "./dashboard/views";
+import {
   loadBrowserConfig,
   normalizeConfig,
   saveBrowserConfig,
@@ -541,6 +549,7 @@ function TaskDetail({
   t,
   isPro,
   onOpenPaywall,
+  onViewAnalytics,
   onClose,
   onDeleted,
 }: {
@@ -548,6 +557,7 @@ function TaskDetail({
   t: TasksApi;
   isPro: boolean;
   onOpenPaywall: () => void;
+  onViewAnalytics: () => void;
   onClose: () => void;
   onDeleted: () => void;
 }) {
@@ -712,9 +722,16 @@ function TaskDetail({
         }
         const mins = Math.round(mine.reduce((m, s) => m + s.durationSec, 0) / 60);
         return (
-          <p className="sub">
-            {mine.length} {mine.length === 1 ? "sesión vinculada" : "sesiones vinculadas"} · {mins} min de enfoque.
-          </p>
+          <>
+            <p className="sub">
+              {mine.length} {mine.length === 1 ? "sesión vinculada" : "sesiones vinculadas"} · {mins} min de enfoque.
+            </p>
+            <p>
+              <button type="button" className="linkbtn" onClick={onViewAnalytics}>
+                Ver analítica →
+              </button>
+            </p>
+          </>
         );
       })()}
 
@@ -736,7 +753,17 @@ function TaskDetail({
   );
 }
 
-function PlanView({ t, isPro, onOpenPaywall }: { t: TasksApi; isPro: boolean; onOpenPaywall: () => void }) {
+function PlanView({
+  t,
+  isPro,
+  onOpenPaywall,
+  onViewAnalytics,
+}: {
+  t: TasksApi;
+  isPro: boolean;
+  onOpenPaywall: () => void;
+  onViewAnalytics: (taskId: string, title: string) => void;
+}) {
   const [title, setTitle] = useState("");
   const [energy, setEnergy] = useState<Energy>(() =>
     suggestedEnergyForHour(new Date().getHours()),
@@ -878,6 +905,9 @@ function PlanView({ t, isPro, onOpenPaywall }: { t: TasksApi; isPro: boolean; on
             t={t}
             isPro={isPro}
             onOpenPaywall={onOpenPaywall}
+            onViewAnalytics={() =>
+              isPro ? onViewAnalytics(selected.id, selected.title) : onOpenPaywall()
+            }
             onClose={() => setSelectedId(null)}
             onDeleted={() => setSelectedId(null)}
           />
@@ -887,12 +917,13 @@ function PlanView({ t, isPro, onOpenPaywall }: { t: TasksApi; isPro: boolean; on
   );
 }
 
-function DashboardView() {
+function DashboardView({ tasks }: { tasks: Task[] }) {
+  const sessions = useMemo(() => loadSessions(), []);
+  const titles = useMemo(() => new Map(tasks.map((x) => [x.id, x.title])), [tasks]);
   const summary = useMemo(() => {
-    const sessions = loadSessions();
     const now = new Date();
     return { ...summarizeToday(sessions, now), streak: streakDays(sessions, now) };
-  }, []);
+  }, [sessions]);
   const cards = [
     { v: String(summary.sessions), l: "Sesiones hoy" },
     { v: String(summary.focusMin), l: "Minutos de enfoque" },
@@ -918,6 +949,11 @@ function DashboardView() {
           de tus sesiones reales.
         </div>
       )}
+      <ChartsSection sessions={sessions} />
+      <ReviewsSection sessions={sessions} />
+      <TopTasksSection sessions={sessions} titles={titles} />
+      <AchievementsSection sessions={sessions} />
+      <CalendarSection sessions={sessions} tasks={tasks} />
     </div>
   );
 }
@@ -1161,7 +1197,11 @@ export default function App() {
   const updateFocusConfig = (patch: Partial<FocusConfig>) =>
     setFocusConfig((prev) => normalizeConfig({ ...prev, ...patch }));
   const [sheet, setSheet] = useState<
-    null | { kind: "auth"; mode: AuthMode; email: string } | { kind: "profile" } | { kind: "paywall" }
+    | null
+    | { kind: "auth"; mode: AuthMode; email: string }
+    | { kind: "profile" }
+    | { kind: "paywall" }
+    | { kind: "taskAnalytics"; taskId: string; title: string }
   >(null);
   const openAuth = (mode: AuthMode) => {
     setSheet({ kind: "auth", mode, email: session.user?.email ?? "" });
@@ -1219,9 +1259,14 @@ export default function App() {
           />
         )}
         {tab === "plan" && (
-          <PlanView t={tasksApi} isPro={isPro} onOpenPaywall={() => setSheet({ kind: "paywall" })} />
+          <PlanView
+            t={tasksApi}
+            isPro={isPro}
+            onOpenPaywall={() => setSheet({ kind: "paywall" })}
+            onViewAnalytics={(taskId, title) => setSheet({ kind: "taskAnalytics", taskId, title })}
+          />
         )}
-        {tab === "dashboard" && <DashboardView />}
+        {tab === "dashboard" && <DashboardView tasks={tasksApi.tasks} />}
         {tab === "more" && (
           <MoreView
             theme={theme}
@@ -1266,11 +1311,13 @@ export default function App() {
               />
             ) : sheet.kind === "profile" ? (
               <ProfileView session={session} />
-            ) : (
+            ) : sheet.kind === "paywall" ? (
               <PaywallView
                 tier={session.user?.subscriptionTier ?? null}
                 onRefresh={() => void session.reload().catch(() => {})}
               />
+            ) : (
+              <TaskAnalyticsSection taskId={sheet.taskId} title={sheet.title} sessions={loadSessions()} />
             )}
           </div>
         </div>
