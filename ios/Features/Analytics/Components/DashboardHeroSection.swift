@@ -138,12 +138,7 @@ struct DashboardHeroSection: View {
     // MARK: - Helpers
 
     private var formattedFocusTime: String {
-        if totalFocusMinutes >= 60 {
-            let hours = totalFocusMinutes / 60
-            let mins  = totalFocusMinutes % 60
-            return mins > 0 ? "\(hours)h\(mins)m" : "\(hours)h"
-        }
-        return "\(totalFocusMinutes)m"
+        FocusTimeFormatting.compact(totalFocusMinutes)
     }
 
     private func heroMetric(icon: String, value: String, label: String, color: Color) -> some View {

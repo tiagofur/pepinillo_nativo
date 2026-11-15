@@ -388,12 +388,7 @@ struct WatchTimerView: View {
     }
 
     private func formatMinutes(_ minutes: Int) -> String {
-        if minutes >= 60 {
-            let h = minutes / 60
-            let m = minutes % 60
-            return m > 0 ? "\(h)h\(m)m" : "\(h)h"
-        }
-        return "\(minutes)m"
+        FocusTimeFormatting.compact(minutes)
     }
 }
 
