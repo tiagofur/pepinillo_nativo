@@ -18,6 +18,10 @@ struct WatchDashboardView: View {
     /// Phone-synced theme (#533). Per-mode accents resolve from the theme so
     /// Forest/Ocean/Sunset on the phone propagate to the watch dashboard.
     @Environment(\.appTheme) private var appTheme
+    /// Always-on (#766): wrist-down reduces the page to the date and the
+    /// two numbers that matter; cards and decorative content return on
+    /// wrist raise.
+    @Environment(\.isLuminanceReduced) private var isLuminanceReduced
 
     private var pomodoroAccent: Color { appTheme.color(for: .pomodoro) }
     private var flowtimeAccent: Color { appTheme.color(for: .flowtime) }
@@ -26,6 +30,27 @@ struct WatchDashboardView: View {
     private var streakAccent: Color { appTheme.streakColor }
 
     var body: some View {
+        Group {
+            if isLuminanceReduced {
+                VStack(spacing: 10) {
+                    headerView
+                    Text("\(FocusTimeFormatting.compact(store.todayFocusMinutes)) · \(store.streakDays)d")
+                        .font(.system(.title3, design: .rounded, weight: .semibold))
+                        .monospacedDigit()
+                        .foregroundStyle(.white.opacity(0.75))
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .transition(.opacity)
+            } else {
+                fullDashboard
+                    .transition(.opacity)
+            }
+        }
+        .animation(.easeInOut(duration: 0.18), value: isLuminanceReduced)
+        .onAppear { store.send(.onAppear) }
+    }
+
+    private var fullDashboard: some View {
         ScrollView {
             VStack(spacing: 8) {
                 // Header with date
@@ -53,7 +78,6 @@ struct WatchDashboardView: View {
             .padding(.horizontal, 4)
             .padding(.top, 4)
         }
-        .onAppear { store.send(.onAppear) }
     }
 
     // MARK: - Privacy Section
