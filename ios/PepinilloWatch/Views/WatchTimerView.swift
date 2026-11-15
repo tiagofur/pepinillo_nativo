@@ -33,6 +33,9 @@ struct WatchTimerView: View {
                 } else {
                     activeSessionView
                 }
+            } else if let pending = store.pendingStart {
+                pendingStartView(pending)
+                    .transition(.opacity)
             } else {
                 idleView
             }
@@ -40,11 +43,68 @@ struct WatchTimerView: View {
         .animation(.easeInOut(duration: 0.18), value: isLuminanceReduced)
     }
 
+    /// Optimistic start: the command may ride the phone's lazy delivery
+    /// queue for up to the TTL — the timer runs locally from the tap and
+    /// reconciles when the authoritative state lands.
+    private func pendingStartView(_ pending: WatchPendingStart) -> some View {
+        VStack(spacing: 6) {
+            Spacer(minLength: 0)
+
+            Image(systemName: pending.mode.systemImage)
+                .font(.system(size: 20, weight: .medium))
+                .symbolRenderingMode(.hierarchical)
+                .foregroundStyle(modeColor)
+
+            // watchOS has no `.elapsed` Text style — a 1 Hz TimelineView
+            // drives the local count-up (system-scheduled, cheap).
+            TimelineView(.periodic(from: pending.startedAt, by: 1)) { context in
+                let elapsed = max(0, context.date.timeIntervalSince(pending.startedAt))
+                Text(Self.pendingElapsedFormat(elapsed))
+                    .font(.system(.title, design: .rounded, weight: .semibold))
+                    .monospacedDigit()
+                    .minimumScaleFactor(0.7)
+            }
+
+            Text(String(localized: "Starting…"))
+                .font(.system(size: 10, weight: .medium))
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+
+            Spacer(minLength: 0)
+        }
+    }
+
+    /// m:ss for the optimistic window (counts up; hours are not a case —
+    /// the TTL gives up long before).
+    private static func pendingElapsedFormat(_ interval: TimeInterval) -> String {
+        let total = Int(interval)
+        let minutes = total / 60
+        let seconds = total % 60
+        return "\(minutes):\(String(format: "%02d", seconds))"
+    }
+
     /// Wrist-down variant shared by every state: time digits (or pending
     /// phase when waiting), a monochrome ring trace, nothing else.
     @ViewBuilder
     private var reducedView: some View {
-        if store.isSessionActive, !store.isWaiting {
+        if let pending = store.pendingStart {
+            // Optimistic start, dimmed: mode symbol + local count-up.
+            VStack(spacing: 6) {
+                Spacer(minLength: 0)
+                Image(systemName: pending.mode.systemImage)
+                    .font(.system(size: 20, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.7))
+                TimelineView(.periodic(from: pending.startedAt, by: 1)) { context in
+                    let elapsed = max(0, context.date.timeIntervalSince(pending.startedAt))
+                    Text(Self.pendingElapsedFormat(elapsed))
+                        .font(.system(.title2, design: .rounded, weight: .semibold))
+                        .monospacedDigit()
+                        .foregroundStyle(.white)
+                        .minimumScaleFactor(0.7)
+                }
+                Spacer(minLength: 0)
+            }
+        } else if store.isSessionActive, !store.isWaiting {
             VStack(spacing: 4) {
                 Spacer(minLength: 0)
 

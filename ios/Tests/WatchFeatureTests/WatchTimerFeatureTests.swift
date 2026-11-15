@@ -831,3 +831,70 @@ struct WatchTimerFeatureTests {
         #expect(sawPause)
     }
 }
+
+// MARK: - Optimistic Start (#watch-latency)
+
+@MainActor
+@Suite
+struct WatchOptimisticStartTests {
+
+    @Test("queued start shows the optimistic timer immediately")
+    func queuedStartShowsPending() async {
+        let store = TestStore(initialState: WatchTimerFeature.State()) {
+            WatchTimerFeature()
+        } withDependencies: {
+            // Phone locked/backgrounded: command rides the lazy queue.
+            $0.watchConnectivityClient.sendCommand = { _ in false }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.startTapped)
+        await store.receive(.commandSent(.startSession(mode: "pomodoro")))
+
+        #expect(store.state.pendingStart?.mode == .pomodoro)
+    }
+
+    @Test("authoritative active state resolves the optimistic start")
+    func activeStateResolvesPending() async {
+        let store = TestStore(initialState: WatchTimerFeature.State()) {
+            WatchTimerFeature()
+        } withDependencies: {
+            $0.watchConnectivityClient.sendCommand = { _ in false }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.startTapped)
+        await store.receive(.commandSent(.startSession(mode: "pomodoro")))
+
+        let active = WatchSessionState(
+            isActive: true, isPaused: false, modeID: "pomodoro",
+            displayTime: "24:59", phaseLabel: "Focus",
+            sentAt: Date.now.timeIntervalSince1970 + 10
+        )
+        await store.send(.sessionStateReceived(active))
+
+        #expect(store.state.pendingStart == nil)
+        #expect(store.state.isSessionActive)
+    }
+
+    @Test("inactive authoritative state clears the optimistic start")
+    func inactiveStateClearsPending() async {
+        let store = TestStore(initialState: WatchTimerFeature.State()) {
+            WatchTimerFeature()
+        } withDependencies: {
+            $0.watchConnectivityClient.sendCommand = { _ in false }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.startTapped)
+        await store.receive(.commandSent(.startSession(mode: "pomodoro")))
+
+        // Phone dropped the stale/refused command and reported idle.
+        var refused = WatchSessionState.idle
+        refused.sentAt = Date.now.timeIntervalSince1970 + 10
+        await store.send(.sessionStateReceived(refused))
+
+        #expect(store.state.pendingStart == nil)
+        #expect(!store.state.isSessionActive)
+    }
+}
