@@ -2,6 +2,15 @@ import { useEffect, useState } from "react";
 import "./index.css";
 import { DEFAULTS, MODES, formatClock, phaseLabel, type Mode } from "./focus/engine";
 import { useFocus } from "./focus/useFocus";
+import {
+  ENERGY_LABEL,
+  PRIORITY_LABEL,
+  sortForList,
+  suggestedEnergyForHour,
+  useTasks,
+  type Energy,
+  type Priority,
+} from "./tasks/tasks";
 
 /* Tabs mirror AppFeature.Tab (ios/App/AppFeature.swift:178): same four
    destinations, same order. Glyphs are hand-drawn SVG strokes standing in
@@ -223,16 +232,133 @@ function FocusView() {
   );
 }
 
+type Scope = "today" | "all";
+
 function PlanView() {
+  const t = useTasks();
+  const [title, setTitle] = useState("");
+  const [energy, setEnergy] = useState<Energy>(() =>
+    suggestedEnergyForHour(new Date().getHours()),
+  );
+  const [priority, setPriority] = useState<Priority>("none");
+  const [scope, setScope] = useState<Scope>("today");
+  const [energyFilter, setEnergyFilter] = useState<Energy | "all">("all");
+  const nowEnergy = suggestedEnergyForHour(new Date().getHours());
+
+  const visible = sortForList(t.tasks).filter(
+    (task) =>
+      (scope === "all" || task.today || !task.done) &&
+      (energyFilter === "all" || task.energy === energyFilter),
+  );
+
+  const submit = () => {
+    if (!title.trim()) return;
+    t.add({ title, energy, priority, today: scope === "today" });
+    setTitle("");
+  };
+
   return (
     <div className="view">
       <h1>Plan</h1>
       <p className="sub">Tareas, energía y filtros por día.</p>
-      <div className="empty">
-        <strong>Aquí vivirá tu lista de tareas.</strong>
-        Crear, completar y filtrar tareas con niveles de energía, igual que en
-        el iPad. Llega en el paso de tareas.
+
+      {t.storeError && (
+        <div className="card" role="alert">
+          <strong>No se pudieron guardar tus tareas en este navegador.</strong>
+          <p className="sub">La lista en pantalla sigue funcionando.</p>
+          <button className="btn btn--ghost" type="button" onClick={t.retry}>
+            Reintentar
+          </button>
+        </div>
+      )}
+
+      <div className="card">
+        <div className="composer">
+          <input
+            className="textinput"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && submit()}
+            placeholder="Nueva tarea…"
+            aria-label="Título de la tarea"
+          />
+          <button className="btn" type="button" onClick={submit} disabled={!title.trim()}>
+            Añadir
+          </button>
+        </div>
+        <div className="composer-row">
+          <div className="seg" role="group" aria-label="Energía">
+            {(["deep", "shallow", "admin"] as Energy[]).map((e) => (
+              <button key={e} type="button" aria-pressed={energy === e} onClick={() => setEnergy(e)}>
+                {ENERGY_LABEL[e]}
+              </button>
+            ))}
+          </div>
+          <label className="sub" style={{ margin: 0 }}>
+            Prioridad{" "}
+            <select value={priority} onChange={(e) => setPriority(e.target.value as Priority)}>
+              {(["none", "low", "medium", "high"] as Priority[]).map((p) => (
+                <option key={p} value={p}>{PRIORITY_LABEL[p]}</option>
+              ))}
+            </select>
+          </label>
+        </div>
       </div>
+
+      <div className="pills" role="group" aria-label="Filtros">
+        {(["today", "all"] as Scope[]).map((s) => (
+          <button key={s} type="button" className={scope === s ? "pill active" : "pill"} onClick={() => setScope(s)}>
+            {s === "today" ? "Hoy" : "Todas"}
+          </button>
+        ))}
+        {(["all", "deep", "shallow", "admin"] as const).map((e) => (
+          <button key={e} type="button" className={energyFilter === e ? "pill active" : "pill"} onClick={() => setEnergyFilter(e)}>
+            {e === "all" ? "Toda energía" : ENERGY_LABEL[e]}
+          </button>
+        ))}
+      </div>
+
+      <div className="empty">
+        <strong>Tu energía ahora: {ENERGY_LABEL[nowEnergy].toLowerCase()}.</strong>
+        {nowEnergy === "deep"
+          ? " Buen momento para lo difícil."
+          : " Guarda lo profundo para tu próxima ventana de energía alta."}
+      </div>
+
+      {visible.length === 0 ? (
+        <div className="empty">
+          <strong>Nada por aquí.</strong>
+          Añade tu primera tarea arriba y empieza en un toque.
+        </div>
+      ) : (
+        <ul className="tasklist">
+          {visible.map((task) => (
+            <li key={task.id} className={task.done ? "card taskrow done" : "card taskrow"}>
+              <button
+                type="button"
+                className="check"
+                role="checkbox"
+                aria-checked={task.done}
+                aria-label={task.done ? `Reabrir ${task.title}` : `Completar ${task.title}`}
+                onClick={() => t.toggle(task.id)}
+              >
+                {task.done ? "✓" : ""}
+              </button>
+              <span className="grow">
+                <b className={task.done ? "strike" : undefined}>{task.title}</b>
+                <span className="badges">
+                  <span className="badge">{ENERGY_LABEL[task.energy]}</span>
+                  {task.priority !== "none" && <span className="badge">⚑ {PRIORITY_LABEL[task.priority]}</span>}
+                  {task.today && <span className="badge">Hoy</span>}
+                </span>
+              </span>
+              <button type="button" className="iconbtn" aria-label={`Eliminar ${task.title}`} onClick={() => t.remove(task.id)}>
+                ×
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
