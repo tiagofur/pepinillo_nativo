@@ -9,11 +9,13 @@ import { ProfileView } from "./auth/ProfileView";
 import {
   ENERGY_LABEL,
   PRIORITY_LABEL,
-  sortForList,
+  filterTasks,
   suggestedEnergyForHour,
   useTasks,
   type Energy,
   type Priority,
+  type Task,
+  type TaskScope,
 } from "./tasks/tasks";
 
 /* Tabs mirror AppFeature.Tab (ios/App/AppFeature.swift:178): same four
@@ -242,7 +244,180 @@ function FocusView() {
   );
 }
 
-type Scope = "today" | "all";
+const SCOPES: { id: TaskScope; label: string }[] = [
+  { id: "today", label: "Hoy" },
+  { id: "inbox", label: "Bandeja" },
+  { id: "upcoming", label: "Próximas" },
+  { id: "done", label: "Hechas" },
+];
+
+type TasksApi = ReturnType<typeof useTasks>;
+
+/* Task detail — mirrors TaskDetailView sections: title+toggle, scheduling,
+   energy+priority, recurrence, notes, subtasks, delete with confirm. */
+function TaskDetail({
+  task,
+  t,
+  onClose,
+  onDeleted,
+}: {
+  task: Task;
+  t: TasksApi;
+  onClose: () => void;
+  onDeleted: () => void;
+}) {
+  const [subTitle, setSubTitle] = useState("");
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const doneSubs = task.subtasks.filter((s) => s.done).length;
+  const addSub = () => {
+    if (!subTitle.trim()) return;
+    t.addSub(task.id, subTitle);
+    setSubTitle("");
+  };
+  return (
+    <div className="card plandetail">
+      <div className="detail-head">
+        <button
+          type="button"
+          className="check"
+          role="checkbox"
+          aria-checked={task.done}
+          aria-label={task.done ? "Reabrir" : "Completar"}
+          onClick={() => t.toggle(task.id)}
+        >
+          {task.done ? "✓" : ""}
+        </button>
+        <input
+          className="textinput"
+          style={{ flex: 1, minWidth: 0 }}
+          value={task.title}
+          onChange={(e) => t.update(task.id, { title: e.target.value })}
+          aria-label="Título"
+        />
+        <button type="button" className="iconbtn" aria-label="Cerrar detalle" onClick={onClose}>
+          ×
+        </button>
+      </div>
+
+      <span className="detail-label">Fecha</span>
+      <div className="composer-row" style={{ marginTop: 0 }}>
+        <input
+          type="date"
+          className="textinput"
+          style={{ flex: "none" }}
+          value={task.dueISO?.slice(0, 10) ?? ""}
+          onChange={(e) =>
+            t.update(task.id, {
+              dueISO: e.target.value ? new Date(`${e.target.value}T12:00:00`).toISOString() : null,
+            })
+          }
+          aria-label="Fecha límite"
+        />
+        <label className="sub" style={{ margin: 0 }}>
+          <input
+            type="checkbox"
+            checked={task.today}
+            onChange={(e) => t.update(task.id, { today: e.target.checked })}
+          />{" "}
+          Hoy
+        </label>
+      </div>
+
+      <span className="detail-label">Energía y prioridad</span>
+      <div className="composer-row" style={{ marginTop: 0 }}>
+        <div className="seg" role="group" aria-label="Energía">
+          {(["deep", "shallow", "admin"] as Energy[]).map((e) => (
+            <button key={e} type="button" aria-pressed={task.energy === e} onClick={() => t.update(task.id, { energy: e })}>
+              {ENERGY_LABEL[e]}
+            </button>
+          ))}
+        </div>
+        <select value={task.priority} onChange={(e) => t.update(task.id, { priority: e.target.value as Priority })} aria-label="Prioridad">
+          {(["none", "low", "medium", "high"] as Priority[]).map((p) => (
+            <option key={p} value={p}>{PRIORITY_LABEL[p]}</option>
+          ))}
+        </select>
+      </div>
+
+      <span className="detail-label">Repetición</span>
+      <select value={task.recurrence ?? ""} onChange={(e) => t.update(task.id, { recurrence: e.target.value || null })} aria-label="Repetición">
+        <option value="">Nunca</option>
+        <option value="daily">Diaria</option>
+        <option value="weekly">Semanal</option>
+      </select>
+      <p className="sub">La repetición automática llega con la sincronización.</p>
+
+      <span className="detail-label">Notas</span>
+      <textarea
+        className="textinput"
+        rows={3}
+        style={{ width: "100%" }}
+        value={task.notes}
+        onChange={(e) => t.update(task.id, { notes: e.target.value })}
+        placeholder="Detalles…"
+        aria-label="Notas"
+      />
+
+      <span className="detail-label">
+        Subtareas{task.subtasks.length > 0 && ` · ${doneSubs}/${task.subtasks.length}`}
+      </span>
+      <div className="composer">
+        <input
+          className="textinput"
+          value={subTitle}
+          onChange={(e) => setSubTitle(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && addSub()}
+          placeholder="Nueva subtarea…"
+          aria-label="Nueva subtarea"
+        />
+        <button className="btn btn--ghost" type="button" onClick={addSub} disabled={!subTitle.trim()}>
+          Añadir
+        </button>
+      </div>
+      {task.subtasks.length > 0 && (
+        <ul className="sublist">
+          {task.subtasks.map((s) => (
+            <li key={s.id}>
+              <button
+                type="button"
+                className="check"
+                role="checkbox"
+                aria-checked={s.done}
+                aria-label={s.title}
+                onClick={() => t.toggleSub(task.id, s.id)}
+                style={{ width: 22, height: 22, fontSize: 12 }}
+              >
+                {s.done ? "✓" : ""}
+              </button>
+              <span className={s.done ? "grow strike" : "grow"}>{s.title}</span>
+              <button type="button" className="iconbtn" aria-label={`Quitar ${s.title}`} onClick={() => t.removeSub(task.id, s.id)} style={{ fontSize: 18 }}>
+                ×
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <span className="detail-label">Sesiones</span>
+      <p className="sub">Vincula sesiones desde el temporizador — llega en el próximo paso.</p>
+
+      {!confirmDelete ? (
+        <button className="btn btn--ghost" type="button" onClick={() => setConfirmDelete(true)}>
+          Eliminar tarea
+        </button>
+      ) : (
+        <div className="timer-actions" style={{ justifyContent: "flex-start" }}>
+          <button className="btn" type="button" onClick={() => { t.remove(task.id); onDeleted(); }}>
+            Sí, eliminar
+          </button>
+          <button className="btn btn--ghost" type="button" onClick={() => setConfirmDelete(false)}>
+            Cancelar
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
 
 function PlanView() {
   const t = useTasks();
@@ -251,15 +426,13 @@ function PlanView() {
     suggestedEnergyForHour(new Date().getHours()),
   );
   const [priority, setPriority] = useState<Priority>("none");
-  const [scope, setScope] = useState<Scope>("today");
+  const [scope, setScope] = useState<TaskScope>("today");
   const [energyFilter, setEnergyFilter] = useState<Energy | "all">("all");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const nowEnergy = suggestedEnergyForHour(new Date().getHours());
 
-  const visible = sortForList(t.tasks).filter(
-    (task) =>
-      (scope === "all" || task.today || !task.done) &&
-      (energyFilter === "all" || task.energy === energyFilter),
-  );
+  const visible = filterTasks(t.tasks, scope, energyFilter);
+  const selected = t.tasks.find((x) => x.id === selectedId) ?? null;
 
   const submit = () => {
     if (!title.trim()) return;
@@ -315,12 +488,14 @@ function PlanView() {
         </div>
       </div>
 
-      <div className="pills" role="group" aria-label="Filtros">
-        {(["today", "all"] as Scope[]).map((s) => (
-          <button key={s} type="button" className={scope === s ? "pill active" : "pill"} onClick={() => setScope(s)}>
-            {s === "today" ? "Hoy" : "Todas"}
+      <div className="pills" role="group" aria-label="Listas">
+        {SCOPES.map((s) => (
+          <button key={s.id} type="button" className={scope === s.id ? "pill active" : "pill"} onClick={() => setScope(s.id)}>
+            {s.label}
           </button>
         ))}
+      </div>
+      <div className="pills" role="group" aria-label="Filtros">
         {(["all", "deep", "shallow", "admin"] as const).map((e) => (
           <button key={e} type="button" className={energyFilter === e ? "pill active" : "pill"} onClick={() => setEnergyFilter(e)}>
             {e === "all" ? "Toda energía" : ENERGY_LABEL[e]}
@@ -335,40 +510,61 @@ function PlanView() {
           : " Guarda lo profundo para tu próxima ventana de energía alta."}
       </div>
 
-      {visible.length === 0 ? (
-        <div className="empty">
-          <strong>Nada por aquí.</strong>
-          Añade tu primera tarea arriba y empieza en un toque.
+      <div className={selected ? "planwrap split" : "planwrap"}>
+        <div>
+          {visible.length === 0 ? (
+            <div className="empty">
+              <strong>Nada por aquí.</strong>
+              Añade tu primera tarea arriba y empieza en un toque.
+            </div>
+          ) : (
+            <ul className="tasklist">
+              {visible.map((task) => (
+                <li
+                  key={task.id}
+                  className={task.done ? "card taskrow done" : "card taskrow"}
+                  style={selected?.id === task.id ? { outline: "2px solid var(--accent)" } : undefined}
+                >
+                  <button
+                    type="button"
+                    className="check"
+                    role="checkbox"
+                    aria-checked={task.done}
+                    aria-label={task.done ? `Reabrir ${task.title}` : `Completar ${task.title}`}
+                    onClick={() => t.toggle(task.id)}
+                  >
+                    {task.done ? "✓" : ""}
+                  </button>
+                  <span className="grow">
+                    <button type="button" className="rowtitle" onClick={() => setSelectedId(task.id)}>
+                      <b className={task.done ? "strike" : undefined}>{task.title}</b>
+                    </button>
+                    <span className="badges">
+                      <span className="badge">{ENERGY_LABEL[task.energy]}</span>
+                      {task.priority !== "none" && <span className="badge">⚑ {PRIORITY_LABEL[task.priority]}</span>}
+                      {task.today && <span className="badge">Hoy</span>}
+                      {task.dueISO && <span className="badge">{task.dueISO.slice(0, 10)}</span>}
+                      {task.subtasks.length > 0 && (
+                        <span className="badge">
+                          {task.subtasks.filter((s) => s.done).length}/{task.subtasks.length}
+                        </span>
+                      )}
+                    </span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
-      ) : (
-        <ul className="tasklist">
-          {visible.map((task) => (
-            <li key={task.id} className={task.done ? "card taskrow done" : "card taskrow"}>
-              <button
-                type="button"
-                className="check"
-                role="checkbox"
-                aria-checked={task.done}
-                aria-label={task.done ? `Reabrir ${task.title}` : `Completar ${task.title}`}
-                onClick={() => t.toggle(task.id)}
-              >
-                {task.done ? "✓" : ""}
-              </button>
-              <span className="grow">
-                <b className={task.done ? "strike" : undefined}>{task.title}</b>
-                <span className="badges">
-                  <span className="badge">{ENERGY_LABEL[task.energy]}</span>
-                  {task.priority !== "none" && <span className="badge">⚑ {PRIORITY_LABEL[task.priority]}</span>}
-                  {task.today && <span className="badge">Hoy</span>}
-                </span>
-              </span>
-              <button type="button" className="iconbtn" aria-label={`Eliminar ${task.title}`} onClick={() => t.remove(task.id)}>
-                ×
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
+        {selected && (
+          <TaskDetail
+            task={selected}
+            t={t}
+            onClose={() => setSelectedId(null)}
+            onDeleted={() => setSelectedId(null)}
+          />
+        )}
+      </div>
     </div>
   );
 }

@@ -8,6 +8,12 @@ import { useState } from "react";
 export type Energy = "deep" | "shallow" | "admin";
 export type Priority = "none" | "low" | "medium" | "high";
 
+export interface Subtask {
+  id: string;
+  title: string;
+  done: boolean;
+}
+
 export interface Task {
   id: string;
   title: string;
@@ -18,8 +24,34 @@ export interface Task {
   energy: Energy;
   pomodoros: number;
   today: boolean;
+  dueISO: string | null;
+  recurrence: string | null;
+  subtasks: Subtask[];
   createdAtISO: string;
   order: number;
+}
+
+export type TaskScope = "today" | "inbox" | "upcoming" | "done";
+
+/** Fill defaults for tasks stored before these fields existed. */
+export function normalizeTask(raw: Partial<Task> & { id: string; title: string }): Task {
+  return {
+    notes: "",
+    done: false,
+    doneAtISO: null,
+    priority: "none",
+    energy: "deep",
+    pomodoros: 0,
+    today: true,
+    dueISO: null,
+    recurrence: null,
+    subtasks: [],
+    createdAtISO: new Date().toISOString(),
+    order: 0,
+    ...raw,
+    id: raw.id,
+    title: raw.title,
+  };
 }
 
 export interface StorageLike {
@@ -57,7 +89,9 @@ export function parseTasks(raw: string | null): Task[] {
   try {
     const parsed: unknown = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
-    return (parsed as Task[]).filter((t) => typeof t?.id === "string" && typeof t?.title === "string");
+    return (parsed as Partial<Task>[])
+      .filter((t) => typeof t?.id === "string" && typeof t?.title === "string")
+      .map((t) => normalizeTask(t as Partial<Task> & { id: string; title: string }));
   } catch {
     return [];
   }
@@ -85,6 +119,9 @@ export function addTask(
       energy: input.energy,
       pomodoros: 0,
       today: input.today,
+      dueISO: null,
+      recurrence: null,
+      subtasks: [],
       createdAtISO: nowISO,
       order: maxOrder + 1,
     },
@@ -101,6 +138,54 @@ export function toggleTask(tasks: Task[], id: string, nowISO: string): Task[] {
 
 export function removeTask(tasks: Task[], id: string): Task[] {
   return tasks.filter((t) => t.id !== id);
+}
+
+export function updateTask(tasks: Task[], id: string, patch: Partial<Task>): Task[] {
+  return tasks.map((t) => (t.id === id ? { ...t, ...patch, id: t.id } : t));
+}
+
+let subSeq = 0;
+export function addSubtask(tasks: Task[], id: string, title: string): Task[] {
+  const clean = title.trim();
+  if (!clean) return tasks;
+  subSeq += 1;
+  return tasks.map((t) =>
+    t.id === id
+      ? { ...t, subtasks: [...t.subtasks, { id: `${Date.now()}-s${subSeq}`, title: clean, done: false }] }
+      : t,
+  );
+}
+
+export function toggleSubtask(tasks: Task[], id: string, subId: string): Task[] {
+  return tasks.map((t) =>
+    t.id === id
+      ? { ...t, subtasks: t.subtasks.map((s) => (s.id === subId ? { ...s, done: !s.done } : s)) }
+      : t,
+  );
+}
+
+export function removeSubtask(tasks: Task[], id: string, subId: string): Task[] {
+  return tasks.map((t) =>
+    t.id === id ? { ...t, subtasks: t.subtasks.filter((s) => s.id !== subId) } : t,
+  );
+}
+
+/** Smart lists mirror PlanFilter (PlanFilter.swift): today / inbox / upcoming / done. */
+export function filterTasks(tasks: Task[], scope: TaskScope, energy: Energy | "all"): Task[] {
+  const now = new Date().toISOString().slice(0, 10);
+  return sortForList(tasks).filter((t) => {
+    if (energy !== "all" && t.energy !== energy) return false;
+    switch (scope) {
+      case "today":
+        return (t.today || (t.dueISO != null && t.dueISO.slice(0, 10) <= now)) && !t.done;
+      case "inbox":
+        return !t.today && t.dueISO == null && !t.done;
+      case "upcoming":
+        return t.dueISO != null && t.dueISO.slice(0, 10) > now && !t.done;
+      case "done":
+        return t.done;
+    }
+  });
 }
 
 /** Open tasks first (manual order), done at the end. */
@@ -160,6 +245,10 @@ export function useTasks(storage: StorageLike = defaultStorage()) {
       commit(addTask(tasks, input, new Date().toISOString())),
     toggle: (id: string) => commit(toggleTask(tasks, id, new Date().toISOString())),
     remove: (id: string) => commit(removeTask(tasks, id)),
+    update: (id: string, patch: Partial<Task>) => commit(updateTask(tasks, id, patch)),
+    addSub: (id: string, title: string) => commit(addSubtask(tasks, id, title)),
+    toggleSub: (id: string, subId: string) => commit(toggleSubtask(tasks, id, subId)),
+    removeSub: (id: string, subId: string) => commit(removeSubtask(tasks, id, subId)),
     retry: () => commit(tasks),
   };
 }
