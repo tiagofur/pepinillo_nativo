@@ -181,6 +181,17 @@ export class ApiClient {
     await this.authed("/auth/cancel-email-change", { method: "POST" });
   }
 
+  async initialUpload(
+    payload: { deviceId: string; tasks: unknown[]; sessions: unknown[]; settings: unknown[] },
+    deviceId: string,
+  ): Promise<{ tasks: unknown[]; sessions: unknown[]; settings: unknown[]; serverTimestamp: string; hasExistingData: boolean }> {
+    return this.authed("/sync/initial-upload", {
+      method: "POST",
+      headers: { "X-Device-ID": deviceId },
+      body: JSON.stringify(payload),
+    });
+  }
+
   async deleteAccount(): Promise<void> {
     const tokens = loadTokens();
     try {

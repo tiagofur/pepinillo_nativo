@@ -249,6 +249,7 @@ export function useTasks(storage: StorageLike = defaultStorage()) {
     addSub: (id: string, title: string) => commit(addSubtask(tasks, id, title)),
     toggleSub: (id: string, subId: string) => commit(toggleSubtask(tasks, id, subId)),
     removeSub: (id: string, subId: string) => commit(removeSubtask(tasks, id, subId)),
+    replaceAll: (next: Task[]) => commit(next),
     retry: () => commit(tasks),
   };
 }

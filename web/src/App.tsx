@@ -6,6 +6,7 @@ import { streakDays, summarizeToday } from "./focus/stats";
 import { useSession, type Session } from "./auth/useSession";
 import { AuthView, tierLabel, type AuthMode } from "./auth/AuthView";
 import { ProfileView } from "./auth/ProfileView";
+import { useSync, type SyncApi } from "./sync/useSync";
 import {
   ENERGY_LABEL,
   PRIORITY_LABEL,
@@ -419,8 +420,7 @@ function TaskDetail({
   );
 }
 
-function PlanView() {
-  const t = useTasks();
+function PlanView({ t }: { t: TasksApi }) {
   const [title, setTitle] = useState("");
   const [energy, setEnergy] = useState<Energy>(() =>
     suggestedEnergyForHour(new Date().getHours()),
@@ -621,12 +621,14 @@ function MoreView({
   session,
   onOpenAuth,
   onOpenProfile,
+  sync,
 }: {
   theme: Theme;
   setTheme: (t: Theme) => void;
   session: Session;
   onOpenAuth: (mode: AuthMode) => void;
   onOpenProfile: () => void;
+  sync: SyncApi;
 }) {
   const [confirmReset, setConfirmReset] = useState(false);
   return (
@@ -684,6 +686,29 @@ function MoreView({
                 </button>
               </p>
             )}
+            <div style={{ marginTop: 12 }}>
+              <p className="sub" style={{ margin: "0 0 8px" }}>
+                {sync.phase === "working"
+                  ? "Sincronizando…"
+                  : sync.lastSyncISO
+                    ? `Última sync: ${new Date(sync.lastSyncISO).toLocaleString()}`
+                    : "Sin sincronizar todavía."}
+              </p>
+              {sync.phase === "error" && sync.error && (
+                <div className="card" role="alert">
+                  <strong>{sync.error}</strong>
+                </div>
+              )}
+              {sync.phase === "ok" && <p className="sub">Al día con el servidor.</p>}
+              <button
+                className="btn btn--ghost"
+                type="button"
+                disabled={sync.phase === "working"}
+                onClick={() => void sync.upload()}
+              >
+                {sync.phase === "working" ? "Sincronizando…" : "Sincronizar ahora"}
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -787,6 +812,8 @@ export default function App() {
   const layout = useLayout();
   const [theme, setTheme] = useTheme();
   const session = useSession();
+  const tasksApi = useTasks();
+  const sync = useSync(tasksApi.tasks, tasksApi.replaceAll, session);
   const [sheet, setSheet] = useState<
     null | { kind: "auth"; mode: AuthMode; email: string } | { kind: "profile" }
   >(null);
@@ -833,7 +860,7 @@ export default function App() {
       )}
       <main className="content">
         {tab === "focus" && <FocusView />}
-        {tab === "plan" && <PlanView />}
+        {tab === "plan" && <PlanView t={tasksApi} />}
         {tab === "dashboard" && <DashboardView />}
         {tab === "more" && (
           <MoreView
@@ -842,6 +869,7 @@ export default function App() {
             session={session}
             onOpenAuth={openAuth}
             onOpenProfile={() => setSheet({ kind: "profile" })}
+            sync={sync}
           />
         )}
       </main>
