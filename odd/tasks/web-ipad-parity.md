@@ -21,8 +21,8 @@ Forecast: ~6 slices (T0 retiro+spec, T1 scaffold, T2 shell, T3 foco, T4 tareas, 
 
 ## Tasks
 
-- [ ] **T0** (`S4, S5`, route: `inline`, status: `todo`, commit: `-`, checks: `git status` limpio de legacy salvo lo nuevo): rama + retirar web legacy + este documento con commit.
-- [ ] **T1** (`S5, S6`, route: `inline`, status: `todo`, commit: `-`, checks: `cd web && pnpm install && pnpm build` PASS): scaffold `pnpm create vite web --template react-ts`, install, build verde.
+- [x] **T0** (`S4, S5`, route: `inline`, commit: `d7e7545c`, checks: `git status` limpio PASS, recovery `refs/tbh/recovery/before-discard/20261115T175547Z-95083`): rama + retirar web legacy + este documento con commit.
+- [x] **T1** (`S5, S6`, route: `inline`, commit: `0dcaf803`, checks: `cd web && pnpm install && pnpm build` PASS — 20 módulos, dist OK): scaffold `pnpm create vite web --template react-ts`, install, build verde.
 - [ ] **T2** (`S1, S2, S7`, route: `inline`, status: `todo`, commit: `-`, checks: `pnpm build` PASS + smoke visual 3 breakpoints): shell responsive sidebar/top-bar/bottom-tabs + temas + CSS Liquid Glass.
 - [ ] **T3** (`S3`, route: `inline`, status: `todo`, commit: `-`, checks: `pnpm build` PASS): motor de foco 4 modos con defaults y gating free de S3.
 - [ ] **T4** (`S3`, route: `inline`, status: `todo`, commit: `-`, checks: `pnpm build` PASS): tareas y plan básico con persistencia local.
