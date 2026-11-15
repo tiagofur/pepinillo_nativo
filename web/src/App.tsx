@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import "./index.css";
+import { DEFAULTS, MODES, formatClock, phaseLabel, type Mode } from "./focus/engine";
+import { useFocus } from "./focus/useFocus";
 
 /* Tabs mirror AppFeature.Tab (ios/App/AppFeature.swift:178): same four
    destinations, same order. Glyphs are hand-drawn SVG strokes standing in
@@ -82,48 +84,141 @@ function useTheme(): [Theme, (t: Theme) => void] {
   return [theme, setTheme];
 }
 
-/* Focus modes mirror FocusMode (ios/Features/Focus/FocusModels.swift:13):
-   same names, countdown vs count-up direction, same free-tier gating. */
-const MODES = [
-  { name: "Pomodoro", detail: "25 min de enfoque · descansos de 5 y 15", glyph: "🍅", free: true },
-  { name: "Flowtime", detail: "Cuenta ascendente · descanso sugerido", glyph: "🌊", free: false },
-  { name: "Bloque", detail: "Un bloque continuo de 60 min", glyph: "📦", free: false },
-  { name: "Cronómetro", detail: "Enfoque libre sin objetivo", glyph: "⏱", free: true },
-];
-
 function FocusView() {
+  const f = useFocus();
+  const [mode, setMode] = useState<Mode>("pomodoro");
+  const meta = MODES.find((m) => m.id === mode) ?? MODES[0];
+  const run = f.run;
+  const isBreak =
+    run?.phase === "shortBreak" || run?.phase === "longBreak" || run?.phase === "flowBreak";
+
+  const shown = run
+    ? run.targetSec != null
+      ? Math.max(0, run.targetSec - run.elapsedSec)
+      : run.elapsedSec
+    : meta.id === "pomodoro"
+      ? DEFAULTS.pomodoroSec
+      : meta.id === "timeBlock"
+        ? DEFAULTS.blockSec
+        : 0;
+  const progress =
+    run?.targetSec != null ? Math.min(1, run.elapsedSec / run.targetSec) : 0;
+
   return (
     <div className="view">
       <h1>Enfoque</h1>
       <p className="sub">Elige un modo y empieza en un toque.</p>
-      <div className="card timer-wrap">
-        <div className="ring" style={{ ["--p" as string]: "0%" }}>
-          <b>25:00</b>
-        </div>
-        <p className="timer-phase">Listo · Pomodoro 1/4</p>
-        <div className="timer-actions">
-          <button className="btn" type="button" disabled>
-            Empezar
+
+      {f.saveError && (
+        <div className="card" role="alert">
+          <strong>No se pudo guardar tu sesión en este navegador.</strong>
+          <p className="sub">Tu temporizador sigue funcionando; nada se perdió.</p>
+          <button className="btn btn--ghost" type="button" onClick={f.retrySave}>
+            Reintentar
           </button>
         </div>
-      </div>
+      )}
+      {f.flash && (
+        <div className="card" role="status">
+          <strong>{f.flash}</strong>
+          <p className="sub">
+            <button
+              type="button"
+              className="btn btn--ghost"
+              onClick={f.dismissFlash}
+              style={{ padding: "6px 14px", fontSize: 14 }}
+            >
+              Vale
+            </button>
+          </p>
+        </div>
+      )}
+
+      {meta.free ? (
+        <div className="card timer-wrap">
+          <div className="ring" style={{ ["--p" as string]: `${progress * 100}%` }}>
+            <b>{formatClock(shown)}</b>
+          </div>
+          <p className="timer-phase">
+            {f.paused ? "En pausa" : phaseLabel(run, f.pending?.pomo ?? 1)}
+          </p>
+          <div className="timer-actions">
+            {!run && !f.pending && (
+              <button className="btn" type="button" onClick={() => f.start(meta.id)}>
+                Empezar
+              </button>
+            )}
+            {!run && f.pending && (
+              <button className="btn" type="button" onClick={f.startPending}>
+                Empezar enfoque {f.pending.pomo}/{f.pending.pomoTotal}
+              </button>
+            )}
+            {run && !f.paused && (
+              <button className="btn btn--ghost" type="button" onClick={f.pause}>
+                Pausar
+              </button>
+            )}
+            {run && f.paused && (
+              <button className="btn" type="button" onClick={f.resume}>
+                Seguir
+              </button>
+            )}
+            {run && isBreak && !f.paused && (
+              <button className="btn btn--ghost" type="button" onClick={f.skipBreak}>
+                Saltar descanso
+              </button>
+            )}
+            {run && (
+              <button className="btn btn--ghost" type="button" onClick={f.stop}>
+                Terminar
+              </button>
+            )}
+          </div>
+          {f.suggestBreak && (
+            <div className="empty" style={{ marginTop: 18 }}>
+              <strong>Llevas un buen ritmo. ¿Tomamos un descanso?</strong>
+              <p className="sub">
+                <button className="btn" type="button" onClick={f.takeFlowBreak}>
+                  Descansar
+                </button>
+              </p>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="card timer-wrap">
+          <p className="timer-phase">
+            <span className="lock">Plus</span>
+          </p>
+          <p>
+            <strong>{meta.name} es parte de Pepinillo Plus,</strong> igual que
+            en el iPad. La cuenta y el pago llegan más adelante.
+          </p>
+          <div className="timer-actions">
+            <button className="btn" type="button" onClick={() => setMode("pomodoro")}>
+              Usar Pomodoro
+            </button>
+          </div>
+        </div>
+      )}
+
       <ul className="modelist">
         {MODES.map((m) => (
-          <li key={m.name} className="card">
+          <li key={m.id} className="card" style={m.id === mode ? { outline: "2px solid var(--accent)" } : undefined}>
             <span className="mode-glyph" aria-hidden="true">{m.glyph}</span>
             <span className="grow">
               <b>{m.name}</b>
               <span>{m.detail}</span>
             </span>
             {!m.free && <span className="lock">Plus</span>}
+            {m.id !== mode && (
+              <button className="btn btn--ghost" type="button" onClick={() => { f.stop(); setMode(m.id); }}>
+                Elegir
+              </button>
+            )}
           </li>
         ))}
       </ul>
-      <div className="empty">
-        <strong>El temporizador en vivo llega en el siguiente paso.</strong>
-        Modos, fases y duraciones ya están definidos como en el iPad; falta
-        conectar el motor (inicio, pausa, descansos automáticos).
-      </div>
     </div>
   );
 }

@@ -23,8 +23,8 @@ Forecast: ~6 slices (T0 retiro+spec, T1 scaffold, T2 shell, T3 foco, T4 tareas, 
 
 - [x] **T0** (`S4, S5`, route: `inline`, commit: `d7e7545c`, checks: `git status` limpio PASS, recovery `refs/tbh/recovery/before-discard/20261115T175547Z-95083`): rama + retirar web legacy + este documento con commit.
 - [x] **T1** (`S5, S6`, route: `inline`, commit: `0dcaf803`, checks: `cd web && pnpm install && pnpm build` PASS — 20 módulos, dist OK): scaffold `pnpm create vite web --template react-ts`, install, build verde.
-- [ ] **T2** (`S1, S2, S7`, route: `inline`, status: `todo`, commit: `-`, checks: `pnpm build` PASS + smoke visual 3 breakpoints): shell responsive sidebar/top-bar/bottom-tabs + temas + CSS Liquid Glass.
-- [ ] **T3** (`S3`, route: `inline`, status: `todo`, commit: `-`, checks: `pnpm build` PASS): motor de foco 4 modos con defaults y gating free de S3.
+- [x] **T2** (`S1, S2, S7`, route: `inline`, commit: `f65e1a26`, checks: `pnpm build` PASS (tsc + vite, 16 módulos), smoke visual pendiente de T5: shell con sidebar ≥1024px apaisado, pill superior en retrato/angosto, tabs abajo en teléfono + temas light/dark/system + CSS Liquid Glass propio. Nota: T2 ≈470 líneas (un solo comportamiento coherente: sistema CSS + nav + 4 vistas).
+- [x] **T3** (`S3`, route: `inline`, commit: `(este commit)`, checks: `pnpm vitest run` 10/10 PASS + `pnpm build` PASS): motor de foco 4 modos con defaults y gating free de S3 (engine puro + hook con reloj por timestamps, pausa, saltar descanso, journal en localStorage con aviso visible y reintento).
 - [ ] **T4** (`S3`, route: `inline`, status: `todo`, commit: `-`, checks: `pnpm build` PASS): tareas y plan básico con persistencia local.
 - [ ] **T5** (`S3, S4`, route: `inline`, status: `todo`, commit: `-`, checks: `pnpm build` PASS + `pnpm dev` smoke): dashboard, ajustes (3 apariencias), onboarding; cierre y reporte.
 
