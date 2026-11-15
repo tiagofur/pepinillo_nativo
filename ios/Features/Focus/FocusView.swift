@@ -1033,11 +1033,21 @@ private struct TimerProgressArc: View {
 
     var body: some View {
         if let ringProgress {
+            // A closed stroke has no visible ends, so right before full
+            // closure the round caps switch to butt: at 100% the two caps
+            // otherwise land on the same point at the top and composite
+            // into a darker seam dot (countdown rings begin full, so this
+            // was the "sliver at session start"). The symmetric gradient
+            // keeps the color continuous across the join.
+            let isClosed = ringProgress >= 0.999
             Circle()
-                .trim(from: 0, to: CGFloat(ringProgress))
+                .trim(from: 0, to: isClosed ? 1 : CGFloat(ringProgress))
                 .stroke(
                     gradient,
-                    style: StrokeStyle(lineWidth: 13, lineCap: .round)
+                    style: StrokeStyle(
+                        lineWidth: 13,
+                        lineCap: isClosed ? .butt : .round
+                    )
                 )
                 .rotationEffect(.degrees(-90))
                 .conditionalAnimation(.linear(duration: 0.1), value: ringProgress)
