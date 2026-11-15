@@ -201,10 +201,12 @@ struct FocusCompanionView: View {
                             .frame(height: 36)
 
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("\(totalFocusMinutesToday)")
+                            // Same compact notation as the dashboard hero
+                            // ("2h 5m"), not raw minutes.
+                            Text(FocusTimeFormatting.compact(totalFocusMinutesToday))
                                 .font(.system(.title, design: .rounded, weight: .bold))
                                 .foregroundStyle(.primary)
-                            Text(String(localized: "minutes"))
+                            Text(String(localized: "focused"))
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
