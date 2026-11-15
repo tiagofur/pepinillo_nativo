@@ -64,6 +64,9 @@ export interface SessionRecord {
   startedAtISO: string;
   durationSec: number;
   completed: boolean;
+  /** Post-session reflection (journal). Absent until the user writes it. */
+  rating?: number;
+  note?: string;
 }
 
 export function startRun(mode: Mode, nowISO: string): Run {

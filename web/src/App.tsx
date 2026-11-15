@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import "./index.css";
 import { DEFAULTS, MODES, formatClock, phaseLabel, type Mode } from "./focus/engine";
 import { loadSessions, useFocus } from "./focus/useFocus";
-import { streakDays, summarizeToday } from "./focus/stats";
+import { bestDayMinutes, streakDays, suggestBestMode, summarizeToday } from "./focus/stats";
 import { useSession, type Session } from "./auth/useSession";
 import { AuthView, tierLabel, type AuthMode } from "./auth/AuthView";
 import { ProfileView } from "./auth/ProfileView";
@@ -100,6 +100,116 @@ function useTheme(): [Theme, (t: Theme) => void] {
   return [theme, setTheme];
 }
 
+const RATINGS = [
+  { v: 1, glyph: "😞", label: "Fatal" },
+  { v: 2, glyph: "😐", label: "Floja" },
+  { v: 3, glyph: "🙂", label: "Bien" },
+  { v: 4, glyph: "😄", label: "Muy bien" },
+  { v: 5, glyph: "🤩", label: "Increíble" },
+];
+
+/* Post-session reflection — mirrors SessionJournalView (rating + notes). */
+function JournalCard({
+  record,
+  onSave,
+  onSkip,
+}: {
+  record: { id: string; mode: string; durationSec: number; completed: boolean };
+  onSave: (rating: number | null, note: string) => void;
+  onSkip: () => void;
+}) {
+  const [rating, setRating] = useState<number | null>(null);
+  const [note, setNote] = useState("");
+  const meta = MODES.find((m) => m.id === record.mode);
+  return (
+    <div className="card" role="dialog" aria-label="Diario de sesión">
+      <strong>¿Cómo estuvo?</strong>
+      <p className="sub">
+        {formatClock(record.durationSec)} de {meta?.name ?? record.mode} ·{" "}
+        {record.completed ? "completada" : "detenida"}
+      </p>
+      <div className="seg" role="group" aria-label="Valoración">
+        {RATINGS.map((r) => (
+          <button
+            key={r.v}
+            type="button"
+            aria-pressed={rating === r.v}
+            aria-label={`${r.v}: ${r.label}`}
+            onClick={() => setRating(r.v)}
+            style={{ fontSize: 20 }}
+          >
+            {r.glyph}
+          </button>
+        ))}
+      </div>
+      <div style={{ marginTop: 10 }}>
+        <textarea
+          className="textinput"
+          rows={2}
+          style={{ width: "100%" }}
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          placeholder="Una nota para tu yo futuro…"
+          aria-label="Nota de sesión"
+        />
+      </div>
+      <div className="timer-actions" style={{ justifyContent: "flex-start", marginTop: 10 }}>
+        <button className="btn" type="button" onClick={() => onSave(rating, note)}>
+          Guardar
+        </button>
+        <button className="btn btn--ghost" type="button" onClick={onSkip}>
+          Omitir
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* Record banner — mirrors StreakRecordBanner: only when today is the best. */
+function RecordBanner() {
+  const journal = loadSessions();
+  const best = bestDayMinutes(journal);
+  if (!best) return null;
+  const todayMin = summarizeToday(journal, new Date()).focusMin;
+  if (todayMin <= 0 || todayMin < best.minutes) return null;
+  return (
+    <div className="empty">
+      <strong>¡Ritmo de récord! Llevas {todayMin} min hoy.</strong>
+      {todayMin === best.minutes ? " Igualas tu mejor día." : " Nuevo récord personal."}
+    </div>
+  );
+}
+
+/* Mode intelligence — mirrors ModeIntelligenceBanner, data-driven only. */
+function ModeTipBanner() {
+  const tip = suggestBestMode(loadSessions());
+  if (!tip) return null;
+  const meta = MODES.find((m) => m.id === tip.mode);
+  return (
+    <div className="empty">
+      <strong>Tu mejor modo: {meta?.name ?? tip.mode}.</strong>
+      {" "}Completas el {Math.round(tip.rate * 100)}% de esas sesiones ({tip.sessions} registradas).
+    </div>
+  );
+}
+
+function useOnline(): boolean {
+  const [online, setOnline] = useState(
+    () => typeof navigator === "undefined" || navigator.onLine,
+  );
+  useEffect(() => {
+    const on = () => setOnline(true);
+    const off = () => setOnline(false);
+    window.addEventListener("online", on);
+    window.addEventListener("offline", off);
+    return () => {
+      window.removeEventListener("online", on);
+      window.removeEventListener("offline", off);
+    };
+  }, []);
+  return online;
+}
+
 function FocusView() {
   const f = useFocus();
   const [mode, setMode] = useState<Mode>(() => {
@@ -155,6 +265,15 @@ function FocusView() {
           </p>
         </div>
       )}
+      {f.pendingJournal && (
+        <JournalCard
+          record={f.pendingJournal}
+          onSave={(rating, note) => f.completeJournal(rating, note)}
+          onSkip={f.skipJournal}
+        />
+      )}
+      {!run && !f.pending && <RecordBanner />}
+      {!run && !f.pending && <ModeTipBanner />}
 
       {meta.free ? (
         <div className="card timer-wrap">
@@ -814,6 +933,7 @@ export default function App() {
   const session = useSession();
   const tasksApi = useTasks();
   const sync = useSync(tasksApi.tasks, tasksApi.replaceAll, session);
+  const online = useOnline();
   const [sheet, setSheet] = useState<
     null | { kind: "auth"; mode: AuthMode; email: string } | { kind: "profile" }
   >(null);
@@ -848,6 +968,11 @@ export default function App() {
 
   return (
     <div className={`shell shell--${layout}`}>
+      {!online && (
+        <div className="offlinebar glass" role="alert">
+          Sin conexión — tus datos siguen en este navegador.
+        </div>
+      )}
       {layout === "sidebar" && (
         <nav className="sidebar glass" aria-label="Principal">
           <Nav tab={tab} setTab={setTab} vertical />

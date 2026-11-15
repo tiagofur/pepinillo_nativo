@@ -9,9 +9,29 @@ import {
   type Run,
   type SessionRecord,
 } from "./engine";
+import { streakDays } from "./stats";
 
 const JOURNAL_KEY = "pepinillo:sessions.v1";
 const MAX_JOURNAL = 500;
+
+/** Update one saved record with its post-session reflection. */
+export function saveJournalEntry(id: string, rating: number | null, note: string): boolean {
+  try {
+    const journal = loadSessions();
+    const next = journal.map((s) =>
+      s.id === id ? { ...s, ...(rating != null ? { rating } : {}), note } : s,
+    );
+    localStorage.setItem(JOURNAL_KEY, JSON.stringify(next.slice(-MAX_JOURNAL)));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function streakCopy(): string {
+  const n = streakDays(loadSessions(), new Date());
+  return `${n} ${n === 1 ? "día" : "días"}`;
+}
 
 export function loadSessions(): SessionRecord[] {
   try {
@@ -32,6 +52,7 @@ export interface FocusApi {
   saveError: boolean;
   flash: string | null;
   suggestBreak: boolean;
+  pendingJournal: SessionRecord | null;
   start: (mode: Mode) => void;
   startPending: () => void;
   pause: () => void;
@@ -41,6 +62,8 @@ export interface FocusApi {
   skipBreak: () => void;
   retrySave: () => void;
   dismissFlash: () => void;
+  completeJournal: (rating: number | null, note: string) => void;
+  skipJournal: () => void;
 }
 
 export function useFocus(): FocusApi {
@@ -50,6 +73,7 @@ export function useFocus(): FocusApi {
   const [saveError, setSaveError] = useState(false);
   const [flash, setFlash] = useState<string | null>(null);
   const [failedRecord, setFailedRecord] = useState<SessionRecord | null>(null);
+  const [pendingJournal, setPendingJournal] = useState<SessionRecord | null>(null);
   /** Elapsed seconds banked before the current running stretch. */
   const baseRef = useRef(0);
   /** Timestamp (ms) when the current stretch started; null while paused. */
@@ -109,6 +133,8 @@ export function useFocus(): FocusApi {
           break;
         case "workComplete":
           persist(out.record);
+          setPendingJournal(out.record);
+          setFlash(`¡Enfoque completado! Racha: ${streakCopy()}. A descansar.`);
           if (out.autostart) {
             baseRef.current = 0;
             sinceRef.current = Date.now();
@@ -128,22 +154,26 @@ export function useFocus(): FocusApi {
           break;
         case "blockComplete":
           persist(out.record);
+          setPendingJournal(out.record);
           sinceRef.current = null;
           setRun(null);
-          setFlash("¡Bloque completado! Buen trabajo.");
+          setFlash(`¡Bloque completado! Racha: ${streakCopy()}.`);
           break;
-        case "flowBreakComplete":
-          persist({
+        case "flowBreakComplete": {
+          const rec: SessionRecord = {
             id: `${Date.now()}-${Math.floor(Math.random() * 1e6)}`,
             mode: prev.mode,
             startedAtISO: prev.startedAtISO,
             durationSec: Math.round(out.flowDurationSec),
             completed: out.flowDurationSec >= DEFAULTS.flowMinSec,
-          });
+          };
+          persist(rec);
+          setPendingJournal(rec);
           sinceRef.current = null;
           setRun(null);
           setFlash("Descanso terminado. Vuelve cuando quieras.");
           break;
+        }
       }
     }, 250);
     return () => window.clearInterval(id);
@@ -209,7 +239,10 @@ export function useFocus(): FocusApi {
       { ...prev, elapsedSec: effectiveElapsed(prev) },
       new Date().toISOString(),
     );
-    if (record) persist(record);
+    if (record) {
+      persist(record);
+      setPendingJournal(record);
+    }
     sinceRef.current = null;
     setPaused(false);
     setRun(null);
@@ -253,6 +286,18 @@ export function useFocus(): FocusApi {
     }
   }, [failedRecord, persist]);
 
+  const completeJournal = useCallback((rating: number | null, note: string) => {
+    const pj = pendingJournal;
+    if (pj && (rating != null || note.trim())) {
+      if (!saveJournalEntry(pj.id, rating, note)) setSaveError(true);
+    }
+    setPendingJournal(null);
+  }, [pendingJournal]);
+
+  const skipJournal = useCallback(() => {
+    setPendingJournal(null);
+  }, []);
+
   const suggestBreak =
     run?.mode === "flowtime" && run.phase === "flow" && run.elapsedSec >= DEFAULTS.flowMinSec;
 
@@ -263,6 +308,7 @@ export function useFocus(): FocusApi {
     saveError,
     flash,
     suggestBreak,
+    pendingJournal,
     start,
     startPending,
     pause,
@@ -272,5 +318,7 @@ export function useFocus(): FocusApi {
     skipBreak,
     retrySave,
     dismissFlash: () => setFlash(null),
+    completeJournal,
+    skipJournal,
   };
 }

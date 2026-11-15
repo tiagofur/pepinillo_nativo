@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { streakDays, summarizeToday } from "./stats";
+import { bestDayMinutes, streakDays, suggestBestMode, summarizeToday } from "./stats";
 import type { SessionRecord } from "./engine";
 
 function rec(day: string, durationSec: number, completed = true): SessionRecord {
@@ -42,5 +42,31 @@ describe("streakDays", () => {
 
   it("is zero with no sessions", () => {
     expect(streakDays([], NOW)).toBe(0);
+  });
+});
+
+describe("bestDayMinutes", () => {
+  it("finds the best day", () => {
+    const sessions = [rec("2026-11-15", 900), rec("2026-11-14", 1800), rec("2026-11-14", 600)];
+    expect(bestDayMinutes(sessions)).toEqual({ day: "2026-11-14", minutes: 40 });
+    expect(bestDayMinutes([])).toBeNull();
+  });
+});
+
+describe("suggestBestMode", () => {
+  it("picks the best completion rate with enough history", () => {
+    const sessions = [
+      { ...rec("2026-11-15", 1500), mode: "pomodoro" as const },
+      { ...rec("2026-11-14", 1500), mode: "pomodoro" as const },
+      { ...rec("2026-11-13", 1500, false), mode: "pomodoro" as const },
+      { ...rec("2026-11-15", 900), mode: "stopwatch" as const },
+      { ...rec("2026-11-14", 900), mode: "stopwatch" as const },
+    ];
+    expect(suggestBestMode(sessions)).toEqual({ mode: "stopwatch", rate: 1, sessions: 2 });
+  });
+
+  it("stays quiet without enough history", () => {
+    expect(suggestBestMode([rec("2026-11-15", 1500)])).toBeNull();
+    expect(suggestBestMode([])).toBeNull();
   });
 });

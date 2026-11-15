@@ -447,6 +447,22 @@ textarea.textinput { resize: vertical; min-height: 70px; }
 
 .rowtitle:hover { text-decoration: underline; }
 
+/* ---------- Offline banner (iPad OfflineBanner parity) ---------- */
+.offlinebar {
+  position: sticky;
+  top: 8px;
+  z-index: 15;
+  width: fit-content;
+  max-width: 92vw;
+  margin: 8px auto 0;
+  padding: 8px 18px;
+  border-radius: var(--radius-pill);
+  font-size: 14px;
+  font-weight: 600;
+  box-shadow: var(--shadow);
+  text-align: center;
+}
+
 /* ---------- Sheets (auth & dialogs, iPad sheet parity) ---------- */
 .sheet-backdrop {
   position: fixed;

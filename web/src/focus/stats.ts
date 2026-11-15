@@ -23,6 +23,49 @@ export function summarizeToday(sessions: SessionRecord[], now: Date): TodaySumma
   };
 }
 
+/** Best single-day focus minutes across the whole journal. */
+export function bestDayMinutes(sessions: SessionRecord[]): { day: string; minutes: number } | null {
+  const perDay = new Map<string, number>();
+  for (const s of sessions) {
+    const day = dayKey(new Date(s.startedAtISO));
+    perDay.set(day, (perDay.get(day) ?? 0) + s.durationSec);
+  }
+  let best: { day: string; minutes: number } | null = null;
+  for (const [day, sec] of perDay) {
+    const minutes = Math.round(sec / 60);
+    if (!best || minutes > best.minutes) best = { day, minutes };
+  }
+  return best;
+}
+
+export interface ModeTip {
+  mode: SessionRecord["mode"];
+  rate: number;
+  sessions: number;
+}
+
+/** Mode with the best completion rate (min 2 sessions ≥60 s). Null when
+    there isn't enough history — the UI then stays quiet, no generic tip. */
+export function suggestBestMode(sessions: SessionRecord[]): ModeTip | null {
+  const byMode = new Map<SessionRecord["mode"], { total: number; done: number }>();
+  for (const s of sessions) {
+    if (s.durationSec < 60) continue;
+    const cur = byMode.get(s.mode) ?? { total: 0, done: 0 };
+    cur.total += 1;
+    if (s.completed) cur.done += 1;
+    byMode.set(s.mode, cur);
+  }
+  let tip: ModeTip | null = null;
+  for (const [mode, { total, done }] of byMode) {
+    if (total < 2) continue;
+    const rate = done / total;
+    if (!tip || rate > tip.rate || (rate === tip.rate && total > tip.sessions)) {
+      tip = { mode, rate, sessions: total };
+    }
+  }
+  return tip;
+}
+
 /** Consecutive active days ending today (or yesterday, so the streak
     survives until tonight). A day counts with >= 1 session of 60 s+. */
 export function streakDays(sessions: SessionRecord[], now: Date): number {
