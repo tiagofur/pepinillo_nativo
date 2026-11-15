@@ -9,6 +9,7 @@ function rec(day: string, durationSec: number, completed = true): SessionRecord 
     startedAtISO: `${day}T10:00:00.000Z`,
     durationSec,
     completed,
+    taskId: null,
   };
 }
 

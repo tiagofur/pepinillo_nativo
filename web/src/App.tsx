@@ -210,8 +210,16 @@ function useOnline(): boolean {
   return online;
 }
 
-function FocusView() {
+function agoCopy(savedAt: number): string {
+  const mins = Math.max(1, Math.round((Date.now() - savedAt) / 60000));
+  if (mins < 60) return `hace ${mins} min`;
+  return `hace ${Math.round(mins / 60)} h`;
+}
+
+function FocusView({ tasks }: { tasks: Task[] }) {
   const f = useFocus();
+  const [linkedTaskId, setLinkedTaskId] = useState<string | null>(null);
+  const openTasks = tasks.filter((x) => x.today && !x.done);
   const [mode, setMode] = useState<Mode>(() => {
     try {
       return localStorage.getItem("pepinillo:defaultMode") === "stopwatch" ? "stopwatch" : "pomodoro";
@@ -240,6 +248,29 @@ function FocusView() {
     <div className="view">
       <h1>Enfoque</h1>
       <p className="sub">Elige un modo y empieza en un toque.</p>
+
+      {f.ghost && !run && (
+        <div className="card" role="dialog" aria-label="Retomar sesión">
+          <strong>¿Retomar sesión?</strong>
+          <p className="sub">
+            {MODES.find((m) => m.id === f.ghost!.snapshot.run.mode)?.name} ·{" "}
+            {formatClock(
+              f.ghost.snapshot.run.targetSec != null
+                ? Math.max(0, f.ghost.snapshot.run.targetSec - f.ghost.elapsedSec)
+                : f.ghost.elapsedSec,
+            )}{" "}
+            · {agoCopy(f.ghost.snapshot.savedAt)}
+          </p>
+          <div className="timer-actions" style={{ justifyContent: "flex-start" }}>
+            <button className="btn" type="button" onClick={f.resumeGhost}>
+              Retomar
+            </button>
+            <button className="btn btn--ghost" type="button" onClick={f.discardGhost}>
+              Descartar
+            </button>
+          </div>
+        </div>
+      )}
 
       {f.saveError && (
         <div className="card" role="alert">
@@ -283,9 +314,14 @@ function FocusView() {
           <p className="timer-phase">
             {f.paused ? "En pausa" : phaseLabel(run, f.pending?.pomo ?? 1)}
           </p>
+          {run?.taskId && (
+            <p className="timer-phase">
+              Vinculada: {tasks.find((x) => x.id === run.taskId)?.title ?? "tarea"}
+            </p>
+          )}
           <div className="timer-actions">
             {!run && !f.pending && (
-              <button className="btn" type="button" onClick={() => f.start(meta.id)}>
+              <button className="btn" type="button" onClick={() => f.start(meta.id, linkedTaskId)}>
                 Empezar
               </button>
             )}
@@ -343,6 +379,17 @@ function FocusView() {
         </div>
       )}
 
+      {openTasks.length > 0 && !run && !f.pending && (
+        <label className="sub" style={{ display: "block", margin: "0 0 12px" }}>
+          Vincular tarea{" "}
+          <select value={linkedTaskId ?? ""} onChange={(e) => setLinkedTaskId(e.target.value || null)}>
+            <option value="">Sin vincular</option>
+            {openTasks.map((x) => (
+              <option key={x.id} value={x.id}>{x.title}</option>
+            ))}
+          </select>
+        </label>
+      )}
       <ul className="modelist">
         {MODES.map((m) => (
           <li key={m.id} className="card" style={m.id === mode ? { outline: "2px solid var(--accent)" } : undefined}>
@@ -519,7 +566,18 @@ function TaskDetail({
       )}
 
       <span className="detail-label">Sesiones</span>
-      <p className="sub">Vincula sesiones desde el temporizador — llega en el próximo paso.</p>
+      {(() => {
+        const mine = loadSessions().filter((s) => s.taskId === task.id);
+        if (mine.length === 0) {
+          return <p className="sub">Sin sesiones vinculadas. Vincúlalas desde el temporizador.</p>;
+        }
+        const mins = Math.round(mine.reduce((m, s) => m + s.durationSec, 0) / 60);
+        return (
+          <p className="sub">
+            {mine.length} {mine.length === 1 ? "sesión vinculada" : "sesiones vinculadas"} · {mins} min de enfoque.
+          </p>
+        );
+      })()}
 
       {!confirmDelete ? (
         <button className="btn btn--ghost" type="button" onClick={() => setConfirmDelete(true)}>
@@ -984,7 +1042,7 @@ export default function App() {
         </nav>
       )}
       <main className="content">
-        {tab === "focus" && <FocusView />}
+        {tab === "focus" && <FocusView tasks={tasksApi.tasks} />}
         {tab === "plan" && <PlanView t={tasksApi} />}
         {tab === "dashboard" && <DashboardView />}
         {tab === "more" && (

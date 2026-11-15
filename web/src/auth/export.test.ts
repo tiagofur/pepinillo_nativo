@@ -23,7 +23,7 @@ const TASKS: Task[] = [
 ];
 
 const SESSIONS: SessionRecord[] = [
-  { id: "s1", mode: "pomodoro", startedAtISO: "2026-11-15T10:00:00.000Z", durationSec: 1500, completed: true },
+  { id: "s1", mode: "pomodoro", startedAtISO: "2026-11-15T10:00:00.000Z", durationSec: 1500, completed: true, taskId: null },
 ];
 
 describe("export JSON", () => {

@@ -46,6 +46,8 @@ export const DEFAULTS = {
 export interface Run {
   mode: Mode;
   phase: Phase;
+  /** Linked task id (TaskPicker parity). Null when the session is free. */
+  taskId: string | null;
   /** Pomodoro work number within the cycle (1-based). */
   pomo: number;
   pomoTotal: number;
@@ -64,21 +66,22 @@ export interface SessionRecord {
   startedAtISO: string;
   durationSec: number;
   completed: boolean;
+  taskId: string | null;
   /** Post-session reflection (journal). Absent until the user writes it. */
   rating?: number;
   note?: string;
 }
 
-export function startRun(mode: Mode, nowISO: string): Run {
+export function startRun(mode: Mode, nowISO: string, taskId: string | null = null): Run {
   switch (mode) {
     case "pomodoro":
-      return { mode, phase: "work", pomo: 1, pomoTotal: DEFAULTS.pomodorosPerCycle, elapsedSec: 0, targetSec: DEFAULTS.pomodoroSec, startedAtISO: nowISO };
+      return { mode, phase: "work", taskId, pomo: 1, pomoTotal: DEFAULTS.pomodorosPerCycle, elapsedSec: 0, targetSec: DEFAULTS.pomodoroSec, startedAtISO: nowISO };
     case "timeBlock":
-      return { mode, phase: "block", pomo: 1, pomoTotal: 1, elapsedSec: 0, targetSec: DEFAULTS.blockSec, startedAtISO: nowISO };
+      return { mode, phase: "block", taskId, pomo: 1, pomoTotal: 1, elapsedSec: 0, targetSec: DEFAULTS.blockSec, startedAtISO: nowISO };
     case "flowtime":
-      return { mode, phase: "flow", pomo: 1, pomoTotal: 1, elapsedSec: 0, targetSec: null, startedAtISO: nowISO };
+      return { mode, phase: "flow", taskId, pomo: 1, pomoTotal: 1, elapsedSec: 0, targetSec: null, startedAtISO: nowISO };
     case "stopwatch":
-      return { mode, phase: "freeform", pomo: 1, pomoTotal: 1, elapsedSec: 0, targetSec: null, startedAtISO: nowISO };
+      return { mode, phase: "freeform", taskId, pomo: 1, pomoTotal: 1, elapsedSec: 0, targetSec: null, startedAtISO: nowISO };
   }
 }
 
@@ -106,6 +109,7 @@ function makeRecord(run: Run, durationSec: number, completed: boolean): SessionR
     startedAtISO: run.startedAtISO,
     durationSec: Math.round(durationSec),
     completed,
+    taskId: run.taskId ?? null,
   };
 }
 
@@ -165,6 +169,7 @@ export function stopEarly(run: Run, nowISO: string): SessionRecord | null {
     startedAtISO: run.startedAtISO,
     durationSec: Math.round(run.elapsedSec),
     completed: false,
+    taskId: run.taskId ?? null,
   };
 }
 

@@ -10,6 +10,13 @@ import {
   type SessionRecord,
 } from "./engine";
 import { streakDays } from "./stats";
+import {
+  clearActiveRun,
+  elapsedAt,
+  loadGhost,
+  saveActiveRun,
+  type ActiveSnapshot,
+} from "./ghost";
 
 const JOURNAL_KEY = "pepinillo:sessions.v1";
 const MAX_JOURNAL = 500;
@@ -33,6 +40,14 @@ function streakCopy(): string {
   return `${n} ${n === 1 ? "día" : "días"}`;
 }
 
+function browserStorage(): Storage | null {
+  try {
+    return typeof localStorage !== "undefined" ? localStorage : null;
+  } catch {
+    return null;
+  }
+}
+
 export function loadSessions(): SessionRecord[] {
   try {
     const raw = localStorage.getItem(JOURNAL_KEY);
@@ -53,7 +68,8 @@ export interface FocusApi {
   flash: string | null;
   suggestBreak: boolean;
   pendingJournal: SessionRecord | null;
-  start: (mode: Mode) => void;
+  start: (mode: Mode, taskId?: string | null) => void;
+  ghost: { snapshot: ActiveSnapshot; elapsedSec: number } | null;
   startPending: () => void;
   pause: () => void;
   resume: () => void;
@@ -64,6 +80,8 @@ export interface FocusApi {
   dismissFlash: () => void;
   completeJournal: (rating: number | null, note: string) => void;
   skipJournal: () => void;
+  resumeGhost: () => void;
+  discardGhost: () => void;
 }
 
 export function useFocus(): FocusApi {
@@ -109,6 +127,76 @@ export function useFocus(): FocusApi {
     setPaused(false);
     sinceRef.current = null;
     setPending({ ...next, elapsedSec: 0 });
+    const storage = browserStorage();
+    if (storage) clearActiveRun(storage);
+  }, []);
+
+  const snapshotNow = useCallback((r: Run | null, pausedNow: boolean) => {
+    const storage = browserStorage();
+    if (!storage) return;
+    if (!r) {
+      clearActiveRun(storage);
+      return;
+    }
+    saveActiveRun(storage, {
+      run: r,
+      base: baseRef.current,
+      since: sinceRef.current,
+      paused: pausedNow,
+      savedAt: Date.now(),
+    });
+  }, []);
+
+  const [ghost, setGhost] = useState<{ snapshot: ActiveSnapshot; elapsedSec: number } | null>(null);
+  const ghostInitRef = useRef(false);
+
+  // Ghost offer: an unfinished snapshot left by a previous visit.
+  useEffect(() => {
+    if (ghostInitRef.current) return;
+    ghostInitRef.current = true;
+    const storage = browserStorage();
+    if (!storage) return;
+    const loaded = loadGhost(storage, Date.now());
+    if (loaded.kind === "offer") {
+      setGhost({ snapshot: loaded.snapshot, elapsedSec: loaded.elapsedSec });
+    } else if (loaded.kind === "stale") {
+      if (loaded.elapsedSec >= 60) {
+        persist({
+          id: `ghost-${Date.now()}`,
+          mode: loaded.snapshot.run.mode,
+          startedAtISO: loaded.snapshot.run.startedAtISO,
+          durationSec: Math.round(loaded.elapsedSec),
+          completed: false,
+          taskId: loaded.snapshot.run.taskId ?? null,
+        });
+      }
+      clearActiveRun(storage);
+    } else {
+      clearActiveRun(storage);
+    }
+  }, [persist]);
+
+  // Snapshot the live run so a closed tab can offer resume later.
+  useEffect(() => {
+    const onUnload = () => {
+      const storage = browserStorage();
+      if (!storage) return;
+      const r = runRef.current;
+      if (!r) {
+        clearActiveRun(storage);
+        return;
+      }
+      const since = sinceRef.current;
+      saveActiveRun(storage, {
+        run: r,
+        base: baseRef.current,
+        since,
+        paused: since == null,
+        savedAt: Date.now(),
+      });
+    };
+    window.addEventListener("beforeunload", onUnload);
+    return () => window.removeEventListener("beforeunload", onUnload);
   }, []);
 
   const active = run != null && !paused;
@@ -139,6 +227,7 @@ export function useFocus(): FocusApi {
             baseRef.current = 0;
             sinceRef.current = Date.now();
             setRun(out.next);
+            snapshotNow(out.next, false);
           } else {
             park(out.next);
           }
@@ -148,6 +237,7 @@ export function useFocus(): FocusApi {
             baseRef.current = 0;
             sinceRef.current = Date.now();
             setRun(out.next);
+            snapshotNow(out.next, false);
           } else {
             park(out.next);
           }
@@ -157,6 +247,7 @@ export function useFocus(): FocusApi {
           setPendingJournal(out.record);
           sinceRef.current = null;
           setRun(null);
+          snapshotNow(null, false);
           setFlash(`¡Bloque completado! Racha: ${streakCopy()}.`);
           break;
         case "flowBreakComplete": {
@@ -166,11 +257,13 @@ export function useFocus(): FocusApi {
             startedAtISO: prev.startedAtISO,
             durationSec: Math.round(out.flowDurationSec),
             completed: out.flowDurationSec >= DEFAULTS.flowMinSec,
+            taskId: prev.taskId ?? null,
           };
           persist(rec);
           setPendingJournal(rec);
           sinceRef.current = null;
           setRun(null);
+          snapshotNow(null, false);
           setFlash("Descanso terminado. Vuelve cuando quieras.");
           break;
         }
@@ -197,15 +290,21 @@ export function useFocus(): FocusApi {
     document.title = `${clock} · Pepinillo`;
   }, [run]);
 
-  const start = useCallback((mode: Mode) => {
-    const now = new Date();
-    baseRef.current = 0;
-    sinceRef.current = now.getTime();
-    setPending(null);
-    setFlash(null);
-    setPaused(false);
-    setRun(startRun(mode, now.toISOString()));
-  }, []);
+  const start = useCallback(
+    (mode: Mode, taskId: string | null = null) => {
+      const now = new Date();
+      baseRef.current = 0;
+      sinceRef.current = now.getTime();
+      setPending(null);
+      setFlash(null);
+      setPaused(false);
+      setGhost(null);
+      const r = startRun(mode, now.toISOString(), taskId);
+      setRun(r);
+      snapshotNow(r, false);
+    },
+    [snapshotNow],
+  );
 
   const startPending = useCallback(() => {
     const p = pending;
@@ -223,14 +322,17 @@ export function useFocus(): FocusApi {
     if (!prev) return;
     baseRef.current = effectiveElapsed(prev);
     sinceRef.current = null;
-    setRun({ ...prev, elapsedSec: baseRef.current });
+    const frozen = { ...prev, elapsedSec: baseRef.current };
+    setRun(frozen);
     setPaused(true);
-  }, [effectiveElapsed]);
+    snapshotNow(frozen, true);
+  }, [effectiveElapsed, snapshotNow]);
 
   const resume = useCallback(() => {
     sinceRef.current = Date.now();
     setPaused(false);
-  }, []);
+    snapshotNow(runRef.current, false);
+  }, [snapshotNow]);
 
   const stop = useCallback(() => {
     const prev = runRef.current;
@@ -246,7 +348,8 @@ export function useFocus(): FocusApi {
     sinceRef.current = null;
     setPaused(false);
     setRun(null);
-  }, [effectiveElapsed, persist]);
+    snapshotNow(null, false);
+  }, [effectiveElapsed, persist, snapshotNow]);
 
   const takeFlowBreak = useCallback(() => {
     const prev = runRef.current;
@@ -254,14 +357,16 @@ export function useFocus(): FocusApi {
     const flowSec = effectiveElapsed(prev);
     baseRef.current = 0;
     sinceRef.current = Date.now();
-    setRun({
+    const r = {
       ...prev,
-      phase: "flowBreak",
+      phase: "flowBreak" as const,
       elapsedSec: 0,
       targetSec: suggestedBreakSec(flowSec),
       flowSec,
-    });
-  }, [effectiveElapsed]);
+    };
+    setRun(r);
+    snapshotNow(r, false);
+  }, [effectiveElapsed, snapshotNow]);
 
   const skipBreak = useCallback(() => {
     // Ending a break early parks the next work unit for the user to start.
@@ -298,6 +403,37 @@ export function useFocus(): FocusApi {
     setPendingJournal(null);
   }, []);
 
+  const resumeGhost = useCallback(() => {
+    const g = ghost;
+    if (!g || runRef.current) return;
+    const elapsed = elapsedAt(g.snapshot, Date.now());
+    const r = { ...g.snapshot.run, elapsedSec: elapsed };
+    baseRef.current = elapsed;
+    sinceRef.current = g.snapshot.paused ? null : Date.now();
+    setRun(r);
+    setPaused(g.snapshot.paused);
+    setGhost(null);
+    snapshotNow(r, g.snapshot.paused);
+  }, [ghost, snapshotNow]);
+
+  const discardGhost = useCallback(() => {
+    const g = ghost;
+    if (!g) return;
+    if (g.elapsedSec >= 60) {
+      persist({
+        id: `ghost-${Date.now()}`,
+        mode: g.snapshot.run.mode,
+        startedAtISO: g.snapshot.run.startedAtISO,
+        durationSec: Math.round(g.elapsedSec),
+        completed: false,
+        taskId: g.snapshot.run.taskId ?? null,
+      });
+    }
+    const storage = browserStorage();
+    if (storage) clearActiveRun(storage);
+    setGhost(null);
+  }, [ghost, persist]);
+
   const suggestBreak =
     run?.mode === "flowtime" && run.phase === "flow" && run.elapsedSec >= DEFAULTS.flowMinSec;
 
@@ -320,5 +456,8 @@ export function useFocus(): FocusApi {
     dismissFlash: () => setFlash(null),
     completeJournal,
     skipJournal,
+    ghost,
+    resumeGhost,
+    discardGhost,
   };
 }

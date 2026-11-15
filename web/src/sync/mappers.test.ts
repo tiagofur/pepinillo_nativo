@@ -38,6 +38,7 @@ const SES: SessionRecord = {
   startedAtISO: "2026-11-15T10:00:00.000Z",
   durationSec: 3600,
   completed: true,
+  taskId: "abc",
 };
 
 describe("task mapping", () => {
@@ -98,7 +99,7 @@ describe("session mapping", () => {
       {},
     ]);
     expect(adopted).toEqual([
-      { id: "a", mode: "flowtime", startedAtISO: "2026-11-15T10:00:00.000Z", durationSec: 600, completed: false },
+      { id: "a", mode: "flowtime", startedAtISO: "2026-11-15T10:00:00.000Z", durationSec: 600, completed: false, taskId: null },
     ]);
   });
 

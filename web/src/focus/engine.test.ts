@@ -76,6 +76,16 @@ describe("other modes", () => {
     expect(suggestedBreakSec(200 * 60)).toBe(15 * 60);
   });
 
+  it("carries the linked task id into records", () => {
+    const run = startRun("pomodoro", ISO, "t-9");
+    expect(run.taskId).toBe("t-9");
+    expect(startRun("pomodoro", ISO).taskId).toBeNull();
+    const out = tick({ ...run, elapsedSec: DEFAULTS.pomodoroSec }, 0);
+    expect(out.kind).toBe("workComplete");
+    if (out.kind !== "workComplete") return;
+    expect(out.record.taskId).toBe("t-9");
+  });
+
   it("stop before 30s records nothing", () => {
     const run = { ...startRun("stopwatch", ISO), elapsedSec: 29 };
     expect(stopEarly(run, ISO)).toBeNull();

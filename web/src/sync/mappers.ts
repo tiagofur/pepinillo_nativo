@@ -98,6 +98,7 @@ export function taskFromServer(s: ServerTask): Task | null {
 export interface ServerSession {
   id?: unknown;
   mode?: unknown;
+  taskSyncId?: unknown;
   startedAt?: unknown;
   durationSeconds?: unknown;
   elapsedSeconds?: unknown;
@@ -110,6 +111,7 @@ export function sessionToServer(s: SessionRecord, nowISO: string): Record<string
   return {
     id: s.id,
     mode: modeToServer(s.mode),
+    taskSyncId: s.taskId,
     phase: countdown ? "work" : "freeform",
     startedAt: s.startedAtISO,
     endedAt: ended,
@@ -135,6 +137,7 @@ export function sessionFromServer(s: ServerSession): SessionRecord | null {
     startedAtISO: s.startedAt,
     durationSec: duration,
     completed: s.wasCompleted === true,
+    taskId: typeof s.taskSyncId === "string" ? s.taskSyncId : null,
   };
 }
 
