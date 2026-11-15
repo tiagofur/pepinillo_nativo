@@ -898,3 +898,29 @@ struct WatchOptimisticStartTests {
         #expect(!store.state.isSessionActive)
     }
 }
+
+// MARK: - Ring Direction (#watch-ring)
+
+@MainActor
+@Suite
+struct WatchRingDirectionTests {
+
+    @Test("countdown phases drain — full at start, empty at the end")
+    func countdownDrains() {
+        #expect(WatchSessionState.ringFraction(progress: 0, countsDown: true) == 1)
+        #expect(WatchSessionState.ringFraction(progress: 0.5, countsDown: true) == 0.5)
+        #expect(WatchSessionState.ringFraction(progress: 1, countsDown: true) == 0)
+    }
+
+    @Test("count-up modes fill")
+    func countUpFills() {
+        #expect(WatchSessionState.ringFraction(progress: 0, countsDown: false) == 0)
+        #expect(WatchSessionState.ringFraction(progress: 1, countsDown: false) == 1)
+    }
+
+    @Test("clamps out-of-range progress and nil")
+    func clamps() {
+        #expect(WatchSessionState.ringFraction(progress: 1.3, countsDown: true) == 0)
+        #expect(WatchSessionState.ringFraction(progress: nil, countsDown: true) == 0)
+    }
+}

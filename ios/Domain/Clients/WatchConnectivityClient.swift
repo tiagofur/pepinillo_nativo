@@ -48,6 +48,17 @@ struct WatchSessionState: Equatable, Sendable {
     /// When false, complications should not treat phaseEnd as a countdown target.
     var countsDown: Bool = true
 
+    /// Ring direction shared by every watch surface: countdown phases drain
+    /// (full → empty, matching iPhone/Mac); count-up modes fill. `progress`
+    /// is the engine's fraction ELAPSED. Same math as the iOS widget's
+    /// visibleProgress — the watch ring previously rendered it raw and
+    /// filled during Pomodoros (#787).
+    static func ringFraction(progress: Double?, countsDown: Bool) -> Double {
+        guard let progress else { return 0 }
+        let clamped = min(max(progress, 0), 1)
+        return countsDown ? 1 - clamped : clamped
+    }
+
     static let idle = WatchSessionState(
         isActive: false, isPaused: false, modeID: "pomodoro",
         displayTime: "25:00", phaseLabel: "Ready"
