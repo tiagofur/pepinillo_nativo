@@ -132,6 +132,16 @@ struct WatchTimerView: View {
                             .font(.system(size: 11, weight: .medium))
                             .foregroundStyle(.secondary)
                     }
+
+                    // Offline marker in-session: the countdown keeps running
+                    // locally (#245); this tells the user why controls may
+                    // not reach the phone.
+                    if !store.isConnected {
+                        Image(systemName: "iphone.slash")
+                            .font(.system(size: 8))
+                            .foregroundStyle(.tertiary)
+                            .accessibilityLabel(String(localized: "iPhone disconnected"))
+                    }
                 }
             }
             .frame(maxWidth: .infinity)
@@ -167,17 +177,20 @@ struct WatchTimerView: View {
 
             // Controls
             HStack(spacing: 12) {
-                // Stop (with confirmation)
+                // Stop (with confirmation) — 44pt per watchOS HIG, matching
+                // pause; the destructive button must not be the smallest.
                 Button {
                     showStopConfirmation = true
                 } label: {
                     Image(systemName: "stop.fill")
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(.system(size: 13, weight: .semibold))
                         .foregroundStyle(.red)
-                        .frame(width: 36, height: 36)
+                        .frame(width: 44, height: 44)
                         .background(.red.opacity(0.15), in: Circle())
+                        .contentShape(Circle())
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel(String(localized: "Stop session"))
 
                 // Pause / Resume
                 Button {
@@ -188,8 +201,10 @@ struct WatchTimerView: View {
                         .foregroundStyle(.white)
                         .frame(width: 44, height: 44)
                         .background(modeColor, in: Circle())
+                        .contentShape(Circle())
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel(store.isPaused ? String(localized: "Resume session") : String(localized: "Pause session"))
 
                 // Skip phase (only during break phases)
                 if store.isBreakPhase {
@@ -197,12 +212,14 @@ struct WatchTimerView: View {
                         store.send(.skipTapped)
                     } label: {
                         Image(systemName: "forward.fill")
-                            .font(.system(size: 12, weight: .semibold))
+                            .font(.system(size: 13, weight: .semibold))
                             .foregroundStyle(.white.opacity(0.8))
-                            .frame(width: 36, height: 36)
+                            .frame(width: 44, height: 44)
                             .background(.ultraThinMaterial, in: Circle())
+                            .contentShape(Circle())
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel(String(localized: "Skip to next phase"))
                 }
             }
             .padding(.bottom, 2)
@@ -259,20 +276,26 @@ struct WatchTimerView: View {
             HStack(spacing: 10) {
                 WatchStatPill(
                     icon: "timer",
-                    value: formatMinutes(store.todayFocusMinutes)
+                    value: formatMinutes(store.todayFocusMinutes),
+                    accessibilityText: String(
+                        localized: "\(formatMinutes(store.todayFocusMinutes)) focused")
                 )
                 if store.todaySessionsCompleted > 0 {
                     WatchStatPill(
                         icon: "checkmark.circle",
                         value: "\(store.todaySessionsCompleted)",
-                        color: .green
+                        color: .green,
+                        accessibilityText: String(
+                            localized: "\(store.todaySessionsCompleted) sessions")
                     )
                 }
                 if store.currentStreakDays > 0 {
                     WatchStatPill(
                         icon: "flame.fill",
                         value: "\(store.currentStreakDays)d",
-                        color: .orange
+                        color: .orange,
+                        accessibilityText: String(
+                            localized: "\(store.currentStreakDays) day streak")
                     )
                 }
             }
@@ -397,7 +420,9 @@ private struct WatchModeChip: View {
                     .opacity(isLocked ? 0.45 : 1)
             }
             .padding(.horizontal, 10)
-            .padding(.vertical, 6)
+            // Vertical padding sizes the chip to the 44pt watchOS HIG
+            // minimum (emoji + label + spacing ≈ 26pt of content).
+            .padding(.vertical, 9)
             .background(
                 isSelected
                     ? AnyShapeStyle(modeColor.opacity(isLocked ? 0.12 : 0.25))
@@ -410,9 +435,14 @@ private struct WatchModeChip: View {
                         .stroke(modeColor.opacity(isLocked ? 0.2 : 0.5), lineWidth: 1)
                     : nil
             )
+            .contentShape(RoundedRectangle(cornerRadius: 8))
         }
         .buttonStyle(.plain)
         .disabled(isLocked)
+        .accessibilityLabel(isLocked
+            ? String(localized: "\(mode.displayName) (Pepinillo+)")
+            : String(localized: "\(mode.displayName) mode"))
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 }
 
@@ -420,6 +450,8 @@ struct WatchStatPill: View {
     let icon: String
     let value: String
     var color: Color = .accentColor
+    /// Optional VoiceOver description; falls back to the raw value.
+    var accessibilityText: String?
 
     var body: some View {
         HStack(spacing: 3) {
@@ -432,6 +464,8 @@ struct WatchStatPill: View {
         .padding(.horizontal, 8)
         .padding(.vertical, 4)
         .background(.ultraThinMaterial, in: Capsule())
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(accessibilityText ?? value)
     }
 }
 
