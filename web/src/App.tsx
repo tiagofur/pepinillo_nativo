@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import "./index.css";
 import { DEFAULTS, MODES, formatClock, phaseLabel, type Mode } from "./focus/engine";
 import { loadSessions, useFocus } from "./focus/useFocus";
@@ -6,9 +6,16 @@ import { bestDayMinutes, streakDays, suggestBestMode, summarizeToday } from "./f
 import { useSession, type Session } from "./auth/useSession";
 import { AuthView, tierLabel, type AuthMode } from "./auth/AuthView";
 import { ProfileView } from "./auth/ProfileView";
+import { SettingsView } from "./auth/SettingsView";
 import { PaywallView } from "./auth/PaywallView";
 import { isProTier } from "./auth/entitlements";
 import { useSync, type SyncApi } from "./sync/useSync";
+import {
+  loadBrowserConfig,
+  normalizeConfig,
+  saveBrowserConfig,
+  type FocusConfig,
+} from "./focus/config";
 import {
   ENERGY_LABEL,
   PRIORITY_LABEL,
@@ -168,8 +175,9 @@ function JournalCard({
 }
 
 /* Record banner — mirrors StreakRecordBanner: only when today is the best. */
-function RecordBanner() {
+function RecordBanner({ celebrate }: { celebrate: boolean }) {
   const journal = loadSessions();
+  if (!celebrate) return null;
   const best = bestDayMinutes(journal);
   if (!best) return null;
   const todayMin = summarizeToday(journal, new Date()).focusMin;
@@ -212,6 +220,32 @@ function useOnline(): boolean {
   return online;
 }
 
+/** Short UI blip (no audio assets needed). Silent on devices without WebAudio. */
+function beep(freq: number): void {
+  try {
+    const w = window as unknown as {
+      AudioContext?: typeof AudioContext;
+      webkitAudioContext?: typeof AudioContext;
+    };
+    const Ctor = w.AudioContext ?? w.webkitAudioContext;
+    if (!Ctor) return;
+    const ctx = new Ctor();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.frequency.value = freq;
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    gain.gain.setValueAtTime(0.001, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.2, ctx.currentTime + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.25);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.3);
+    osc.onended = () => void ctx.close().catch(() => {});
+  } catch {
+    /* silent device */
+  }
+}
+
 function agoCopy(savedAt: number): string {
   const mins = Math.max(1, Math.round((Date.now() - savedAt) / 60000));
   if (mins < 60) return `hace ${mins} min`;
@@ -222,14 +256,76 @@ function FocusView({
   tasks,
   isPro,
   onOpenPaywall,
+  config,
 }: {
   tasks: Task[];
   isPro: boolean;
   onOpenPaywall: () => void;
+  config: FocusConfig;
 }) {
-  const f = useFocus();
+  const f = useFocus(config);
   const [linkedTaskId, setLinkedTaskId] = useState<string | null>(null);
   const openTasks = tasks.filter((x) => x.today && !x.done);
+  const phaseRef = useRef<string | null>(null);
+
+  // Phase-change feedback: sound, haptics, notification. All guarded.
+  useEffect(() => {
+    const phase = f.run?.phase ?? null;
+    const prev = phaseRef.current;
+    phaseRef.current = phase;
+    if (!phase || phase === prev || !f.run) return;
+    const isBreak = phase.endsWith("Break");
+    if (config.hapticsEnabled) {
+      try {
+        navigator.vibrate?.(isBreak ? [40, 40, 40] : 60);
+      } catch {
+        /* silent device */
+      }
+    }
+    if (config.soundEnabled && (!isBreak || config.completionSound)) {
+      beep(isBreak ? 880 : 660);
+    }
+    if (
+      config.sessionAlerts &&
+      typeof Notification !== "undefined" &&
+      Notification.permission === "granted"
+    ) {
+      try {
+        new Notification(isBreak ? "A descansar" : "¡A enfocar!", {
+          body: phaseLabel(f.run, f.run.pomo),
+        });
+      } catch {
+        /* denied */
+      }
+    }
+  }, [config, f.run]);
+
+  // Keep the screen on while a session runs (when enabled).
+  useEffect(() => {
+    if (!config.keepScreenOn || !f.run) return;
+    let lock: { release: () => Promise<void> } | null = null;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const nav = navigator as Navigator & {
+          wakeLock?: { request: (kind: string) => Promise<{ release: () => Promise<void> }> };
+        };
+        if (!nav.wakeLock) return;
+        const l = await nav.wakeLock.request("screen");
+        if (cancelled) {
+          await l.release();
+          return;
+        }
+        lock = l;
+      } catch {
+        /* unsupported or denied */
+      }
+    })();
+    return () => {
+      cancelled = true;
+      if (lock) void lock.release().catch(() => {});
+    };
+  }, [config.keepScreenOn, f.run != null]);
   const [mode, setMode] = useState<Mode>(() => {
     try {
       return localStorage.getItem("pepinillo:defaultMode") === "stopwatch" ? "stopwatch" : "pomodoro";
@@ -313,7 +409,7 @@ function FocusView({
           onSkip={f.skipJournal}
         />
       )}
-      {!run && !f.pending && <RecordBanner />}
+      {!run && !f.pending && <RecordBanner celebrate={config.celebrateRecords} />}
       {!run && !f.pending && <ModeTipBanner />}
 
       {meta.free || isPro ? (
@@ -845,6 +941,8 @@ function MoreView({
   onOpenProfile,
   onOpenPaywall,
   isPro,
+  focusConfig,
+  onFocusConfig,
   sync,
 }: {
   theme: Theme;
@@ -854,6 +952,8 @@ function MoreView({
   onOpenProfile: () => void;
   onOpenPaywall: () => void;
   isPro: boolean;
+  focusConfig: FocusConfig;
+  onFocusConfig: (patch: Partial<FocusConfig>) => void;
   sync: SyncApi;
 }) {
   const [confirmReset, setConfirmReset] = useState(false);
@@ -964,6 +1064,13 @@ function MoreView({
         La versión web empieza local en este navegador; la cuenta Pepinillo
         Everywhere llegará después, sin cambiar estas pantallas.
       </div>
+      <SettingsView
+        config={focusConfig}
+        onChange={onFocusConfig}
+        session={session}
+        isPro={isPro}
+        onOpenPaywall={onOpenPaywall}
+      />
       <div className="card">
         <strong>Tus datos</strong>
         <p className="sub">Sesiones y tareas viven solo en este navegador.</p>
@@ -1047,6 +1154,12 @@ export default function App() {
   const sync = useSync(tasksApi.tasks, tasksApi.replaceAll, session);
   const online = useOnline();
   const isPro = session.user ? isProTier(session.user.subscriptionTier) : false;
+  const [focusConfig, setFocusConfig] = useState<FocusConfig>(loadBrowserConfig);
+  useEffect(() => {
+    saveBrowserConfig(focusConfig);
+  }, [focusConfig]);
+  const updateFocusConfig = (patch: Partial<FocusConfig>) =>
+    setFocusConfig((prev) => normalizeConfig({ ...prev, ...patch }));
   const [sheet, setSheet] = useState<
     null | { kind: "auth"; mode: AuthMode; email: string } | { kind: "profile" } | { kind: "paywall" }
   >(null);
@@ -1098,7 +1211,12 @@ export default function App() {
       )}
       <main className="content">
         {tab === "focus" && (
-          <FocusView tasks={tasksApi.tasks} isPro={isPro} onOpenPaywall={() => setSheet({ kind: "paywall" })} />
+          <FocusView
+            tasks={tasksApi.tasks}
+            isPro={isPro}
+            onOpenPaywall={() => setSheet({ kind: "paywall" })}
+            config={focusConfig}
+          />
         )}
         {tab === "plan" && (
           <PlanView t={tasksApi} isPro={isPro} onOpenPaywall={() => setSheet({ kind: "paywall" })} />
@@ -1113,6 +1231,8 @@ export default function App() {
             onOpenProfile={() => setSheet({ kind: "profile" })}
             onOpenPaywall={() => setSheet({ kind: "paywall" })}
             isPro={isPro}
+            focusConfig={focusConfig}
+            onFocusConfig={updateFocusConfig}
             sync={sync}
           />
         )}

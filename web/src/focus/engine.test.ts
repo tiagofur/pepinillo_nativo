@@ -76,6 +76,23 @@ describe("other modes", () => {
     expect(suggestedBreakSec(200 * 60)).toBe(15 * 60);
   });
 
+  it("honors a custom auto-start config", () => {
+    const cfg = { ...DEFAULTS, autoStartBreaks: false };
+    const run = startRun("pomodoro", ISO);
+    const out = tick({ ...run, elapsedSec: DEFAULTS.pomodoroSec }, 0, cfg);
+    expect(out.kind).toBe("workComplete");
+    if (out.kind !== "workComplete") return;
+    expect(out.autostart).toBe(false);
+    expect(out.next.targetSec).toBe(DEFAULTS.shortBreakSec);
+  });
+
+  it("starts pomodoros with a custom duration", () => {
+    const cfg = { ...DEFAULTS, pomodoroSec: 50 * 60, pomodorosPerCycle: 2 };
+    const run = startRun("pomodoro", ISO, null, cfg);
+    expect(run.targetSec).toBe(50 * 60);
+    expect(run.pomoTotal).toBe(2);
+  });
+
   it("carries the linked task id into records", () => {
     const run = startRun("pomodoro", ISO, "t-9");
     expect(run.taskId).toBe("t-9");

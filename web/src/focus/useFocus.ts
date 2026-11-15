@@ -17,6 +17,7 @@ import {
   saveActiveRun,
   type ActiveSnapshot,
 } from "./ghost";
+import type { FocusConfig } from "./config";
 
 const JOURNAL_KEY = "pepinillo:sessions.v1";
 const MAX_JOURNAL = 500;
@@ -84,7 +85,7 @@ export interface FocusApi {
   discardGhost: () => void;
 }
 
-export function useFocus(): FocusApi {
+export function useFocus(config: FocusConfig): FocusApi {
   const [run, setRun] = useState<Run | null>(null);
   const [paused, setPaused] = useState(false);
   const [pending, setPending] = useState<Run | null>(null);
@@ -212,7 +213,7 @@ export function useFocus(): FocusApi {
         setRun({ ...prev, elapsedSec: eff });
         return;
       }
-      const out = tick({ ...prev, elapsedSec: prev.targetSec }, 0);
+      const out = tick({ ...prev, elapsedSec: prev.targetSec }, 0, config);
       switch (out.kind) {
         case "tick":
           baseRef.current = out.run.elapsedSec;
@@ -221,8 +222,12 @@ export function useFocus(): FocusApi {
           break;
         case "workComplete":
           persist(out.record);
-          setPendingJournal(out.record);
-          setFlash(`¡Enfoque completado! Racha: ${streakCopy()}. A descansar.`);
+          if (config.reflectionEnabled) setPendingJournal(out.record);
+          setFlash(
+            config.celebrateRecords
+              ? `¡Enfoque completado! Racha: ${streakCopy()}. A descansar.`
+              : "Enfoque completado. A descansar.",
+          );
           if (out.autostart) {
             baseRef.current = 0;
             sinceRef.current = Date.now();
@@ -244,11 +249,15 @@ export function useFocus(): FocusApi {
           break;
         case "blockComplete":
           persist(out.record);
-          setPendingJournal(out.record);
+          if (config.reflectionEnabled) setPendingJournal(out.record);
           sinceRef.current = null;
           setRun(null);
           snapshotNow(null, false);
-          setFlash(`¡Bloque completado! Racha: ${streakCopy()}.`);
+          setFlash(
+            config.celebrateRecords
+              ? `¡Bloque completado! Racha: ${streakCopy()}.`
+              : "Bloque completado.",
+          );
           break;
         case "flowBreakComplete": {
           const rec: SessionRecord = {
@@ -260,7 +269,7 @@ export function useFocus(): FocusApi {
             taskId: prev.taskId ?? null,
           };
           persist(rec);
-          setPendingJournal(rec);
+          if (config.reflectionEnabled) setPendingJournal(rec);
           sinceRef.current = null;
           setRun(null);
           snapshotNow(null, false);
@@ -270,7 +279,7 @@ export function useFocus(): FocusApi {
       }
     }, 250);
     return () => window.clearInterval(id);
-  }, [active, effectiveElapsed, park, persist]);
+  }, [active, config, effectiveElapsed, park, persist]);
 
   // Live tab title while running (restored when idle).
   useEffect(() => {
@@ -299,7 +308,7 @@ export function useFocus(): FocusApi {
       setFlash(null);
       setPaused(false);
       setGhost(null);
-      const r = startRun(mode, now.toISOString(), taskId);
+      const r = startRun(mode, now.toISOString(), taskId, config);
       setRun(r);
       snapshotNow(r, false);
     },
@@ -343,7 +352,7 @@ export function useFocus(): FocusApi {
     );
     if (record) {
       persist(record);
-      setPendingJournal(record);
+      if (config.reflectionEnabled) setPendingJournal(record);
     }
     sinceRef.current = null;
     setPaused(false);
@@ -379,9 +388,9 @@ export function useFocus(): FocusApi {
       phase: "work",
       pomo: finishedCycle ? 1 : prev.pomo + 1,
       elapsedSec: 0,
-      targetSec: DEFAULTS.pomodoroSec,
+      targetSec: config.pomodoroSec,
     });
-  }, [park]);
+  }, [park, config]);
 
   const retrySave = useCallback(() => {
     const rec = failedRecord;

@@ -32,16 +32,13 @@ export const MODES: ModeMeta[] = [
   { id: "stopwatch", name: "Cronómetro", detail: "Enfoque libre sin objetivo", glyph: "⏱", free: true, countsDown: false },
 ];
 
-export const DEFAULTS = {
-  pomodoroSec: 25 * 60,
-  shortBreakSec: 5 * 60,
-  longBreakSec: 15 * 60,
-  pomodorosPerCycle: 4,
-  autoStartBreaks: true,
-  autoStartWork: false,
-  blockSec: 60 * 60,
-  flowMinSec: 5 * 60,
-} as const;
+import { DEFAULT_CONFIG, type FocusConfig } from "./config";
+
+export type { FocusConfig };
+
+/** Engine defaults = the iPad FocusConfig defaults. Slices that accept a
+    user config take `cfg: FocusConfig = DEFAULTS`. */
+export const DEFAULTS = { ...DEFAULT_CONFIG };
 
 export interface Run {
   mode: Mode;
@@ -72,12 +69,17 @@ export interface SessionRecord {
   note?: string;
 }
 
-export function startRun(mode: Mode, nowISO: string, taskId: string | null = null): Run {
+export function startRun(
+  mode: Mode,
+  nowISO: string,
+  taskId: string | null = null,
+  cfg: FocusConfig = DEFAULTS,
+): Run {
   switch (mode) {
     case "pomodoro":
-      return { mode, phase: "work", taskId, pomo: 1, pomoTotal: DEFAULTS.pomodorosPerCycle, elapsedSec: 0, targetSec: DEFAULTS.pomodoroSec, startedAtISO: nowISO };
+      return { mode, phase: "work", taskId, pomo: 1, pomoTotal: cfg.pomodorosPerCycle, elapsedSec: 0, targetSec: cfg.pomodoroSec, startedAtISO: nowISO };
     case "timeBlock":
-      return { mode, phase: "block", taskId, pomo: 1, pomoTotal: 1, elapsedSec: 0, targetSec: DEFAULTS.blockSec, startedAtISO: nowISO };
+      return { mode, phase: "block", taskId, pomo: 1, pomoTotal: 1, elapsedSec: 0, targetSec: cfg.blockSec, startedAtISO: nowISO };
     case "flowtime":
       return { mode, phase: "flow", taskId, pomo: 1, pomoTotal: 1, elapsedSec: 0, targetSec: null, startedAtISO: nowISO };
     case "stopwatch":
@@ -114,7 +116,7 @@ function makeRecord(run: Run, durationSec: number, completed: boolean): SessionR
 }
 
 /** Advance one second. Pure: same input always yields the same output. */
-export function tick(run: Run, dtSec = 1): TickResult {
+export function tick(run: Run, dtSec = 1, cfg: FocusConfig = DEFAULTS): TickResult {
   const elapsedSec = run.elapsedSec + dtSec;
   if (run.targetSec == null) return { kind: "tick", run: { ...run, elapsedSec } };
   if (elapsedSec < run.targetSec) return { kind: "tick", run: { ...run, elapsedSec } };
@@ -125,14 +127,14 @@ export function tick(run: Run, dtSec = 1): TickResult {
       const breakPhase: Phase = isLast ? "longBreak" : "shortBreak";
       return {
         kind: "workComplete",
-        record: makeRecord(run, DEFAULTS.pomodoroSec, true),
+        record: makeRecord(run, cfg.pomodoroSec, true),
         next: {
           ...run,
           phase: breakPhase,
           elapsedSec: 0,
-          targetSec: isLast ? DEFAULTS.longBreakSec : DEFAULTS.shortBreakSec,
+          targetSec: isLast ? cfg.longBreakSec : cfg.shortBreakSec,
         },
-        autostart: DEFAULTS.autoStartBreaks,
+        autostart: cfg.autoStartBreaks,
       };
     }
     case "shortBreak":
@@ -145,9 +147,9 @@ export function tick(run: Run, dtSec = 1): TickResult {
           phase: "work",
           pomo: finishedCycle ? 1 : run.pomo + 1,
           elapsedSec: 0,
-          targetSec: DEFAULTS.pomodoroSec,
+          targetSec: cfg.pomodoroSec,
         },
-        autostart: DEFAULTS.autoStartWork && !finishedCycle,
+        autostart: cfg.autoStartWork && !finishedCycle,
       };
     }
     case "block":

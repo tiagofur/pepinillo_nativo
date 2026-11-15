@@ -463,6 +463,67 @@ textarea.textinput { resize: vertical; min-height: 70px; }
   text-align: center;
 }
 
+/* ---------- Settings rows ---------- */
+.setrow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
+}
+
+.setrow .grow { flex: 1; min-width: 0; }
+.setrow b { display: block; font-size: 16px; font-weight: 500; }
+.setrow span span { color: var(--ink-2); font-size: 13px; }
+
+.switch {
+  width: 51px;
+  height: 31px;
+  flex: none;
+  border: 0;
+  border-radius: 999px;
+  background: rgb(120 120 128 / 0.32);
+  position: relative;
+  cursor: pointer;
+  padding: 0;
+}
+
+.switch[data-on="true"] { background: var(--accent); }
+
+.switch .knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 27px;
+  height: 27px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 6px rgb(0 0 0 / 0.25);
+  transition: transform 0.18s ease-out;
+}
+
+.switch[data-on="true"] .knob { transform: translateX(20px); }
+
+.stepper { display: inline-flex; align-items: center; gap: 10px; }
+
+.stepper button {
+  width: 32px;
+  height: 32px;
+  flex: none;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: var(--bg-elevated);
+  color: var(--accent);
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.stepper button[disabled] { opacity: 0.35; cursor: default; }
+.stepper b { min-width: 64px; text-align: center; font-variant-numeric: tabular-nums; }
+
 /* ---------- Sheets (auth & dialogs, iPad sheet parity) ---------- */
 .sheet-backdrop {
   position: fixed;
