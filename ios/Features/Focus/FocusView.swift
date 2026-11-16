@@ -254,7 +254,9 @@ struct FocusView: View {
     private var focusCoreColumn: some View {
         VStack(spacing: 0) {
             modePickerHeader
-            focusCoreBody(timerMaxSize: sizeClass == .regular ? 480 : 280)
+            // 300pt: a touch larger on iPhone — parity with the Android ring's visual
+            // weight (Tiago's side-by-side, #776 Batch B feedback).
+            focusCoreBody(timerMaxSize: sizeClass == .regular ? 480 : 300)
         }
     }
 

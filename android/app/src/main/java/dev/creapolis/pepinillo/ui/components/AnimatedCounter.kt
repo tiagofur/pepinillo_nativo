@@ -1,10 +1,9 @@
 package dev.creapolis.pepinillo.ui.components
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -27,12 +26,11 @@ fun AnimatedCounter(
     color: Color = MaterialTheme.colorScheme.onSurface,
     fontWeight: FontWeight? = null,
 ) {
+    // Fade-only, deliberately subtle (#776 Batch B feedback): a timer must
+    // never demand attention — the user is focusing. No slide, ~150 ms.
     AnimatedContent(
         targetState = text,
-        transitionSpec = {
-            (slideInVertically { it / 3 } + fadeIn()) togetherWith
-                (slideOutVertically { -it / 3 } + fadeOut())
-        },
+        transitionSpec = { fadeIn(tween(150)) togetherWith fadeOut(tween(150)) },
         label = "counter",
         modifier = modifier,
     ) { value ->
