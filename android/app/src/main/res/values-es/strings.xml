@@ -893,4 +893,19 @@
     <string name="paywall_guest_nudge_desc">Compraste como invitado. Cre\u00e1 tu cuenta gratis ahora para que tu suscripci\u00f3n te acompa\u00f1e en todos tus dispositivos, sin perder nada.</string>
     <string name="paywall_guest_nudge_cta">Crear cuenta gratis</string>
     <string name="paywall_guest_nudge_later">Ahora no</string>
+
+    <!-- Milestone celebrations (#776 Batch D) -->
+    <string name="celebration_keep_going">¡Sigue así!</string>
+    <string name="celebration_first_title">¡Primera sesión!</string>
+    <string name="celebration_first_subtitle">Lo más difícil es empezar. ¡Lo lograste!</string>
+    <string name="celebration_streak_title">¡Racha de %d días!</string>
+    <string name="celebration_streak_7_subtitle">¡Una semana completa! La constancia es tu superpoder.</string>
+    <string name="celebration_streak_14_subtitle">Dos semanas fuertes. Tu músculo de foco crece.</string>
+    <string name="celebration_streak_30_subtitle">Un mes completo de trabajo profundo. Eres imparable.</string>
+    <string name="celebration_sessions_title">¡%d sesiones!</string>
+    <string name="celebration_sessions_10_subtitle">Cada sesión cuenta. Sigue sumando.</string>
+    <string name="celebration_sessions_50_subtitle">¡Medio centenar de foco!</string>
+    <string name="celebration_sessions_100_subtitle">Eres maestro del trabajo profundo.</string>
+    <string name="celebration_best_title">Récord personal: %dm</string>
+    <string name="celebration_best_subtitle">¡%d minutos de foco ininterrumpido. Impresionante!</string>
 </resources>

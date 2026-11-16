@@ -102,6 +102,7 @@ import dev.creapolis.pepinillo.feature.focus.components.CircularTimerRing
 import dev.creapolis.pepinillo.feature.focus.components.ModeChip
 import dev.creapolis.pepinillo.feature.focus.components.TimerMorph
 import dev.creapolis.pepinillo.feature.focus.components.SessionJournalSheet
+import dev.creapolis.pepinillo.feature.focus.components.MilestoneCelebrationOverlay
 import dev.creapolis.pepinillo.feature.focus.components.StreakRecordBanner
 import dev.creapolis.pepinillo.feature.focus.components.TaskPickerDialog
 import dev.creapolis.pepinillo.feature.soundscape.SoundscapePickerSheet
@@ -136,6 +137,7 @@ fun FocusScreen(
     val activeTasks by viewModel.activeTasks.collectAsState()
     // New streak-record celebration value, or null when there is nothing to celebrate (#729).
     val streakRecordCelebration by viewModel.streakRecordCelebration.collectAsState()
+    val milestoneCelebration by viewModel.milestoneCelebration.collectAsState()
     val modeColors = uiState.selectedMode.colorScheme(uiState.currentPhase)
     val haptic = LocalHapticFeedback.current
 
@@ -646,6 +648,15 @@ fun FocusScreen(
                 },
                 onClick = { viewModel.onSoundscapePickerClick() },
             )
+
+            // Milestone celebration overlay (#776 Batch D) — full-screen, one
+            // celebration at a time; consumes the record banner's slot.
+            milestoneCelebration?.let { milestone ->
+                MilestoneCelebrationOverlay(
+                    milestone = milestone,
+                    onDismiss = { viewModel.consumeMilestoneCelebration() },
+                )
+            }
 
             // Journal-disabled path: quiet record banner below the controls (#729).
             streakRecordCelebration?.let { record ->

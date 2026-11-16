@@ -74,6 +74,11 @@ data class UserPreferences(
      * when the current streak exceeds max(previousBest, this). Device-local.
      */
     val streakRecordCelebrated: Int = 0,
+    // Milestone celebration latches (#776 Batch D — device-local like the
+    // streak-record latch; see domain/celebration/MilestoneCelebration.kt).
+    val milestoneFirstSessionDone: Boolean = false,
+    val milestoneLastSessionCount: Int = 0,
+    val milestoneLastBestMinutes: Int = 0,
     /** Opt-in weekly focus summary notification. Device-local. */
     val weeklyRecapEnabled: Boolean = false,
     /** java.util.Calendar day-of-week constant (1-based, [Calendar.SUNDAY]=1). */
@@ -125,6 +130,9 @@ class UserPreferencesRepository @Inject constructor(
         val COMPLETED_SESSIONS_COUNT = intPreferencesKey("completed_sessions_count")
         val CELEBRATE_STREAK_RECORDS = booleanPreferencesKey("celebrate_streak_records")
         val STREAK_RECORD_CELEBRATED = intPreferencesKey("streak_record_celebrated")
+        val MILESTONE_FIRST_SESSION_DONE = booleanPreferencesKey("milestone_first_session_done")
+        val MILESTONE_LAST_SESSION_COUNT = intPreferencesKey("milestone_last_session_count")
+        val MILESTONE_LAST_BEST_MINUTES = intPreferencesKey("milestone_last_best_minutes")
         val WEEKLY_RECAP_ENABLED = booleanPreferencesKey("weekly_recap_enabled")
         val WEEKLY_RECAP_DAY_OF_WEEK = intPreferencesKey("weekly_recap_day_of_week")
         val WEEKLY_RECAP_HOUR = intPreferencesKey("weekly_recap_hour")
@@ -164,6 +172,9 @@ class UserPreferencesRepository @Inject constructor(
             completedSessionsCount = prefs[Keys.COMPLETED_SESSIONS_COUNT] ?: 0,
             celebrateStreakRecords = prefs[Keys.CELEBRATE_STREAK_RECORDS] ?: true,
             streakRecordCelebrated = prefs[Keys.STREAK_RECORD_CELEBRATED] ?: 0,
+            milestoneFirstSessionDone = prefs[Keys.MILESTONE_FIRST_SESSION_DONE] ?: false,
+            milestoneLastSessionCount = prefs[Keys.MILESTONE_LAST_SESSION_COUNT] ?: 0,
+            milestoneLastBestMinutes = prefs[Keys.MILESTONE_LAST_BEST_MINUTES] ?: 0,
             weeklyRecapEnabled = prefs[Keys.WEEKLY_RECAP_ENABLED] ?: false,
             weeklyRecapDayOfWeek = prefs[Keys.WEEKLY_RECAP_DAY_OF_WEEK] ?: Calendar.SUNDAY,
             weeklyRecapHour = prefs[Keys.WEEKLY_RECAP_HOUR] ?: 18,
@@ -211,6 +222,15 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun markReviewPrompted() = update { it[Keys.HAS_PROMPTED_FOR_REVIEW] = true }
     suspend fun updateCelebrateStreakRecords(value: Boolean) = update { it[Keys.CELEBRATE_STREAK_RECORDS] = value }
     suspend fun updateStreakRecordCelebrated(value: Int) = update { it[Keys.STREAK_RECORD_CELEBRATED] = value }
+    suspend fun updateMilestoneLatches(
+        firstSessionDone: Boolean? = null,
+        lastSessionCount: Int? = null,
+        lastBestMinutes: Int? = null,
+    ) = update {
+        firstSessionDone?.let { v -> it[Keys.MILESTONE_FIRST_SESSION_DONE] = v }
+        lastSessionCount?.let { v -> it[Keys.MILESTONE_LAST_SESSION_COUNT] = v }
+        lastBestMinutes?.let { v -> it[Keys.MILESTONE_LAST_BEST_MINUTES] = v }
+    }
     suspend fun updateWeeklyRecapEnabled(value: Boolean) = update { it[Keys.WEEKLY_RECAP_ENABLED] = value }
     suspend fun updateWeeklyRecapDayOfWeek(value: Int) = update { it[Keys.WEEKLY_RECAP_DAY_OF_WEEK] = value }
     suspend fun updateWeeklyRecapHour(value: Int) = update { it[Keys.WEEKLY_RECAP_HOUR] = value }
