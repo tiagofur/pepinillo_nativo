@@ -28,6 +28,7 @@ type RouteHandlers struct {
 	AI           *AIHandler
 	Billing      *BillingHandler
 	RevenueCat   *RevenueCatHandler
+	Stripe       *StripeHandler
 	Push         *PushHandler
 	WebSocket    *WebSocketHandler
 	Analytics    *AnalyticsHandler
@@ -48,6 +49,20 @@ func RegisterAPIRoutes(api fiber.Router, deps RouteHandlers) {
 	// because Fiber v2 applies empty-prefix group middleware to all subsequent routes on api.
 	webhooks := api.Group("/webhooks")
 	webhooks.Post("/revenuecat", deps.RevenueCat.Webhook)
+
+	// Stripe webhook (no JWT auth - verified via Stripe signature header).
+	// Same ordering rule as above.
+	stripeWebhook := api.Group("/billing/stripe")
+	stripeWebhook.Post("/webhook", deps.Stripe.Webhook)
+
+	// WebSocket endpoint: authenticated by the WebSocketUpgrade middleware
+	// itself (Authorization header or Sec-WebSocket-Protocol sub-protocol for
+	// browsers). MUST be registered BEFORE protected := api.Group("",
+	// middleware.JWT(...)) — the bare JWT middleware only reads the
+	// Authorization header and would kill browser sub-protocol handshakes
+	// (missing_auth_header), making the browser path dead code.
+	api.Use("/ws", deps.WebSocket.WebSocketUpgrade)
+	api.Get("/ws", fiberws.New(deps.WebSocket.HandleWebSocket))
 
 	auth := api.Group("/auth")
 	authLimiter := limiter.New(limiter.Config{Max: 60})
@@ -180,6 +195,8 @@ func RegisterAPIRoutes(api fiber.Router, deps RouteHandlers) {
 
 	billing := protected.Group("/billing")
 	billing.Post("/verify-receipt", deps.Billing.VerifyReceipt)
+	billing.Post("/stripe/checkout-session", deps.Stripe.CheckoutSession)
+	billing.Post("/stripe/portal-session", deps.Stripe.PortalSession)
 
 	push := verified.Group("/push")
 	push.Post("/devices", deps.Push.RegisterDevice)
@@ -214,11 +231,6 @@ func RegisterAPIRoutes(api fiber.Router, deps RouteHandlers) {
 	sync.Post("/sessions", subMw, syncGate, deps.Sync.SyncSessions)
 	sync.Post("/initial-upload", subMw, syncGate, deps.Sync.InitialUpload)
 
-	// WebSocket endpoint: JWT validated via Authorization header (or
-	// Sec-WebSocket-Protocol sub-protocol) before upgrade. Query param is a
-	// deprecated fallback gated by DEPRECATED_WS_QUERY_AUTH.
-	api.Use("/ws", deps.WebSocket.WebSocketUpgrade)
-	api.Get("/ws", fiberws.New(deps.WebSocket.HandleWebSocket))
 }
 
 // emailKeyGenerator returns a Fiber limiter KeyGenerator that keys by the

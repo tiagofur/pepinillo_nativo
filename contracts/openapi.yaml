@@ -42,7 +42,7 @@ tags:
   - name: users
     description: Perfil de usuario autenticado e imagen de avatar.
   - name: billing
-    description: Verificación server-side de recibos App Store y Google Play.
+    description: Verificación server-side de recibos App Store y Google Play + Stripe (compras web).
   - name: tasks
     description: Tareas, recurrencias, seguimiento por modo de foco y sincronización LWW.
   - name: subtasks
@@ -784,6 +784,99 @@ paths:
           $ref: "#/components/responses/UnauthorizedError"
         "409":
           $ref: "#/components/responses/ConflictError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailableError"
+
+  /billing/stripe/checkout-session:
+    post:
+      operationId: createStripeCheckoutSession
+      tags: [billing]
+      summary: Abrir Stripe Checkout para comprar Pepinillo+ (pago único) o Everywhere/AI+ (suscripción)
+      description: |
+        Devuelve `checkoutUrl` para redirigir el navegador. Requiere JWT.
+        `pepinillo_plus` usa mode=payment (compra única); `everywhere_*` usa
+        mode=subscription. Vincula el Stripe customer al usuario.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StripeCheckoutRequest"
+      responses:
+        "200":
+          description: URL de Checkout creada.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StripeCheckoutResponse"
+        "400":
+          $ref: "#/components/responses/BadRequestError"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "502":
+          $ref: "#/components/responses/BadGatewayError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailableError"
+
+  /billing/stripe/portal-session:
+    post:
+      operationId: createStripePortalSession
+      tags: [billing]
+      summary: Abrir el Billing Portal de Stripe para gestionar la suscripción web
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: URL del portal.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StripePortalResponse"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
+        "502":
+          $ref: "#/components/responses/BadGatewayError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailableError"
+
+  /billing/stripe/webhook:
+    post:
+      operationId: stripeWebhook
+      tags: [webhooks]
+      summary: Webhook de Stripe (público, verificación de firma Stripe-Signature)
+      description: |
+        Procesa `checkout.session.completed`, `customer.subscription.updated`
+        y `customer.subscription.deleted` con dedupe por event id. Responde
+        400 ante firma inválida/stale; 503 si no está configurado.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Evento Stripe crudo (envelope con id, type, data).
+      parameters:
+        - name: Stripe-Signature
+          in: header
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Evento procesado o ignorado (siempre 2xx para eventos no aplicables).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  received:
+                    type: boolean
+        "400":
+          $ref: "#/components/responses/BadRequestError"
         "503":
           $ref: "#/components/responses/ServiceUnavailableError"
 
@@ -2789,6 +2882,33 @@ components:
           type: boolean
           description: Opt-in/out de métricas de uso agregadas. Si se omite, no cambia.
 
+    StripeCheckoutRequest:
+      type: object
+      required: [plan]
+      properties:
+        plan:
+          type: string
+          enum: [pepinillo_plus, everywhere_monthly, everywhere_annual]
+        successUrl:
+          type: string
+          format: uri
+        cancelUrl:
+          type: string
+          format: uri
+    StripeCheckoutResponse:
+      type: object
+      required: [checkoutUrl]
+      properties:
+        checkoutUrl:
+          type: string
+          format: uri
+    StripePortalResponse:
+      type: object
+      required: [portalUrl]
+      properties:
+        portalUrl:
+          type: string
+          format: uri
     VerifyReceiptInput:
       type: object
       required: [platform, productId]

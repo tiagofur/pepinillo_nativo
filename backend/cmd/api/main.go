@@ -130,7 +130,9 @@ func main() {
 	}
 	app.Use(cors.New(cors.Config{
 		AllowOrigins: corsOrigins,
-		AllowHeaders: "Origin, Content-Type, Accept, Authorization",
+		// X-Device-ID: sent by every client on authenticated calls (excludes
+		// the device from WS broadcasts). Stripe-Signature: webhook endpoint.
+		AllowHeaders: "Origin, Content-Type, Accept, Authorization, X-Device-ID, Stripe-Signature",
 		AllowMethods: "GET,POST,PUT,DELETE,PATCH,OPTIONS",
 	}))
 	app.Use(limiter.New(limiter.Config{
@@ -296,6 +298,17 @@ func main() {
 		APIBaseURL:       cfg.RevenueCatAPIBaseURL,
 	}, behaviorLog)
 	billingService.SetRevenueCatService(revenuecatService)
+
+	// Stripe billing (web purchases, epic #809 W6)
+	stripeService := services.NewStripeService(userRepo, services.StripeConfig{
+		SecretKey:              cfg.StripeSecretKey,
+		WebhookSecret:          cfg.StripeWebhookSecret,
+		PricePepinilloPlus:     cfg.StripePricePepinilloPlus,
+		PriceEverywhereMonthly: cfg.StripePriceEverywhereMonthly,
+		PriceEverywhereAnnual:  cfg.StripePriceEverywhereAnnual,
+		SuccessURL:             cfg.StripeSuccessURL,
+		CancelURL:              cfg.StripeCancelURL,
+	}, behaviorLog, slog.Default())
 	noopProvider := noopPush.NewProvider()
 	fcmProvider := fcmPush.NewProvider(fcmPush.Config{
 		ProjectID:                cfg.FCMProjectID,
@@ -373,6 +386,7 @@ func main() {
 		AI:         handlers.NewAIHandler(aiService),
 		Billing:    handlers.NewBillingHandler(billingService),
 		RevenueCat: handlers.NewRevenueCatHandler(revenuecatService),
+		Stripe:     handlers.NewStripeHandler(stripeService),
 		Push:       handlers.NewPushHandler(pushService),
 		WebSocket:  handlers.NewWebSocketHandler(wsManager, cfg.JWTSecret, cfg.DeprecatedWSQueryAuth),
 		Analytics:   handlers.NewAnalyticsHandler(analyticsService),
