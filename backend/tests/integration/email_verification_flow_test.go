@@ -242,6 +242,18 @@ func (r *integrationUserRepo) ClaimWebhookEvent(_ context.Context, _, _ string) 
 	return true, nil
 }
 
+func (r *integrationUserRepo) SetStripeCustomer(_ context.Context, _, _ string) error {
+	return nil
+}
+
+func (r *integrationUserRepo) UpdateStripeState(_ context.Context, _ string, _ *string, _ *time.Time) error {
+	return nil
+}
+
+func (r *integrationUserRepo) GetByStripeCustomerID(_ context.Context, _ string) (*domain.User, error) {
+	return nil, nil
+}
+
 func newTestAuthService(repo *integrationUserRepo, notifier *capturingNotifier) *services.AuthService {
 	return services.NewAuthService(
 		repo,
