@@ -143,7 +143,92 @@ export type MessageKey =
 	| 'landing.openApp'
 	| 'landing.wipNote'
 	| 'common.wip.title'
-	| 'common.wip.body';
+	| 'common.wip.body'
+	| 'common.proLocked'
+	| 'focus.phase.work'
+	| 'focus.phase.shortBreak'
+	| 'focus.phase.longBreak'
+	| 'focus.waitingBreak'
+	| 'focus.waitingWork'
+	| 'focus.startBreak'
+	| 'focus.startWork'
+	| 'focus.takeBreak'
+	| 'focus.ghost.title'
+	| 'focus.ghost.body'
+	| 'focus.ghost.resume'
+	| 'focus.ghost.discard'
+	| 'celebration.firstSession.title'
+	| 'celebration.firstSession.body'
+	| 'celebration.streak.title'
+	| 'celebration.streak.body'
+	| 'celebration.sessionCount.title'
+	| 'celebration.sessionCount.body'
+	| 'celebration.personalBest.title'
+	| 'celebration.personalBest.body'
+	| 'celebration.keepGoing'
+	| 'celebration.record.title'
+	| 'celebration.record.dismiss'
+	| 'journal.title'
+	| 'journal.subtitle'
+	| 'journal.rating.1'
+	| 'journal.rating.2'
+	| 'journal.rating.3'
+	| 'journal.rating.4'
+	| 'journal.rating.5'
+	| 'journal.placeholder'
+	| 'journal.save'
+	| 'journal.skip'
+	| 'taskPicker.title'
+	| 'taskPicker.empty'
+	| 'taskPicker.unlink'
+	| 'soundscape.title'
+	| 'soundscape.none'
+	| 'soundscape.rain'
+	| 'soundscape.forest'
+	| 'soundscape.cafe'
+	| 'soundscape.whiteNoise'
+	| 'soundscape.ocean'
+	| 'soundscape.fireplace'
+	| 'soundscape.binaural'
+	| 'soundscape.lofi'
+	| 'soundscape.volume'
+	| 'soundscape.hint'
+	| 'companion.focusToday'
+	| 'companion.sessionsToday'
+	| 'companion.streak'
+	| 'companion.pomodoroNumber'
+	| 'companion.activeTask'
+	| 'companion.suggest.title'
+	| 'companion.suggest.apply'
+	| 'adhd.breathe'
+	| 'adhd.stretch'
+	| 'adhd.hydrate'
+	| 'adhd.move'
+	| 'adhd.subtitle'
+	| 'settings.focus.title'
+	| 'settings.pomodoro.work'
+	| 'settings.pomodoro.break'
+	| 'settings.pomodoro.longBreak'
+	| 'settings.pomodoro.sessions'
+	| 'settings.autoStartBreaks'
+	| 'settings.autoStartWork'
+	| 'settings.flowtime.min'
+	| 'settings.timeblock.minutes'
+	| 'settings.timeblock.midpoint'
+	| 'settings.sound.title'
+	| 'settings.sound.enabled'
+	| 'settings.behavior.title'
+	| 'sound.classic'
+	| 'sound.chime'
+	| 'sound.bell'
+	| 'sound.digital'
+	| 'sound.woodblock'
+	| 'settings.haptics'
+	| 'settings.keepScreenOn'
+	| 'settings.journal'
+	| 'settings.adhd'
+	| 'settings.notifications'
+	| 'settings.notifications.hint';
 
 type Dict = Record<MessageKey, string>;
 
@@ -290,6 +375,91 @@ const en: Dict = {
 	'landing.wipNote': 'The new web app is being built with everything from the native apps.',
 	'common.wip.title': 'It arrives in the next batch',
 	'common.wip.body': 'This surface is being rebuilt with everything from the native apps.',
+	'common.proLocked': 'Pepinillo+ feature',
+	'focus.phase.work': 'Focus',
+	'focus.phase.shortBreak': 'Short break',
+	'focus.phase.longBreak': 'Long break',
+	'focus.waitingBreak': 'Break ready when you are.',
+	'focus.waitingWork': 'Next focus phase is ready when you are.',
+	'focus.startBreak': 'Start break',
+	'focus.startWork': 'Start focus',
+	'focus.takeBreak': 'Take a break',
+	'focus.ghost.title': 'Unfinished session',
+	'focus.ghost.body': 'You left a {mode} session running ({time} recorded). Resume it or discard it.',
+	'focus.ghost.resume': 'Resume',
+	'focus.ghost.discard': 'Discard',
+	'celebration.firstSession.title': 'First session!',
+	'celebration.firstSession.body': 'The hardest part is starting. You did it.',
+	'celebration.streak.title': '{days}-day streak!',
+	'celebration.streak.body': 'Showing up day after day is how gardens grow.',
+	'celebration.sessionCount.title': '{count} sessions!',
+	'celebration.sessionCount.body': 'Momentum is real. Keep harvesting.',
+	'celebration.personalBest.title': 'Personal best: {minutes}m',
+	'celebration.personalBest.body': 'Your longest focus stretch yet. Deep work suits you.',
+	'celebration.keepGoing': 'Keep going',
+	'celebration.record.title': 'New streak record: {days} days',
+	'celebration.record.dismiss': 'Dismiss record banner',
+	'journal.title': 'How did it go?',
+	'journal.subtitle': 'A quick note helps your weekly review.',
+	'journal.rating.1': 'Rough',
+	'journal.rating.2': 'Meh',
+	'journal.rating.3': 'Okay',
+	'journal.rating.4': 'Good',
+	'journal.rating.5': 'Great',
+	'journal.placeholder': 'What did you focus on? Anything to remember?',
+	'journal.save': 'Save',
+	'journal.skip': 'Skip',
+	'taskPicker.title': 'Focus on a task',
+	'taskPicker.empty': 'No active tasks yet — create some in Plan.',
+	'taskPicker.unlink': 'No linked task',
+	'soundscape.title': 'Soundscapes',
+	'soundscape.none': 'None',
+	'soundscape.rain': 'Rain',
+	'soundscape.forest': 'Forest',
+	'soundscape.cafe': 'Café',
+	'soundscape.whiteNoise': 'White noise',
+	'soundscape.ocean': 'Ocean',
+	'soundscape.fireplace': 'Fireplace',
+	'soundscape.binaural': 'Binaural',
+	'soundscape.lofi': 'Lo-fi',
+	'soundscape.volume': 'Volume',
+	'soundscape.hint': 'Procedurally generated audio — synthesized live in your browser.',
+	'companion.focusToday': 'Focus today',
+	'companion.sessionsToday': 'Sessions today',
+	'companion.streak': 'Streak',
+	'companion.pomodoroNumber': 'Pomodoro #',
+	'companion.activeTask': 'Active task',
+	'companion.suggest.title': 'Suggested for now',
+	'companion.suggest.apply': 'Tap to apply',
+	'adhd.breathe': 'Breathe slowly',
+	'adhd.stretch': 'Stretch a little',
+	'adhd.hydrate': 'Drink some water',
+	'adhd.move': 'Move around',
+	'adhd.subtitle': 'Guided break',
+	'settings.focus.title': 'Focus',
+	'settings.pomodoro.work': 'Work (min)',
+	'settings.pomodoro.break': 'Short break (min)',
+	'settings.pomodoro.longBreak': 'Long break (min)',
+	'settings.pomodoro.sessions': 'Sessions before long break',
+	'settings.autoStartBreaks': 'Auto-start breaks',
+	'settings.autoStartWork': 'Auto-start next focus',
+	'settings.flowtime.min': 'Flowtime: suggest break after (min)',
+	'settings.timeblock.minutes': 'Time block (min)',
+	'settings.timeblock.midpoint': 'Midpoint check-in',
+	'settings.sound.title': 'Sound',
+	'settings.sound.enabled': 'Completion sound',
+	'settings.behavior.title': 'Behavior',
+	'sound.classic': 'Classic',
+	'sound.chime': 'Chime',
+	'sound.bell': 'Bell',
+	'sound.digital': 'Digital',
+	'sound.woodblock': 'Woodblock',
+	'settings.haptics': 'Vibration (if supported)',
+	'settings.keepScreenOn': 'Keep screen on while focusing',
+	'settings.journal': 'Journal after each session',
+	'settings.adhd': 'Guided breaks (ADHD-friendly)',
+	'settings.notifications': 'Phase notifications',
+	'settings.notifications.hint': 'Browser notifications between phases. You will be asked for permission.',
 	'account.tier': 'Plan',
 	'account.tierFree': 'Free · local browser only',
 	'account.locale': 'Language',
@@ -467,7 +637,92 @@ const es: Dict = {
 	'landing.openApp': 'Abrir la app',
 	'landing.wipNote': 'La nueva web se está construyendo con todo de las apps nativas.',
 	'common.wip.title': 'Llega en el próximo lote',
-	'common.wip.body': 'Esta superficie se está reconstruyendo con todo de las apps nativas.'
+	'common.wip.body': 'Esta superficie se está reconstruyendo con todo de las apps nativas.',
+	'common.proLocked': 'Función de Pepinillo+',
+	'focus.phase.work': 'Enfoque',
+	'focus.phase.shortBreak': 'Descanso corto',
+	'focus.phase.longBreak': 'Descanso largo',
+	'focus.waitingBreak': 'El descanso está listo cuando vos lo estés.',
+	'focus.waitingWork': 'El próximo enfoque está listo cuando vos lo estés.',
+	'focus.startBreak': 'Comenzar descanso',
+	'focus.startWork': 'Comenzar enfoque',
+	'focus.takeBreak': 'Tomar un descanso',
+	'focus.ghost.title': 'Sesión inconclusa',
+	'focus.ghost.body': 'Dejaste una sesión de {mode} corriendo ({time} registrados). Retomalá o descartala.',
+	'focus.ghost.resume': 'Retomar',
+	'focus.ghost.discard': 'Descartar',
+	'celebration.firstSession.title': '¡Primera sesión!',
+	'celebration.firstSession.body': 'Lo más difícil es empezar. ¡Lo lograste!',
+	'celebration.streak.title': '¡Racha de {days} días!',
+	'celebration.streak.body': 'Presentarse día tras día es como crece el huerto.',
+	'celebration.sessionCount.title': '¡{count} sesiones!',
+	'celebration.sessionCount.body': 'El impulso es real. Seguí cosechando.',
+	'celebration.personalBest.title': 'Récord personal: {minutes}m',
+	'celebration.personalBest.body': 'Tu tramo de enfoque más largo hasta ahora. El deep work te queda.',
+	'celebration.keepGoing': '¡Seguí así!',
+	'celebration.record.title': 'Nuevo récord de racha: {days} días',
+	'celebration.record.dismiss': 'Cerrar aviso de récord',
+	'journal.title': '¿Cómo te fue?',
+	'journal.subtitle': 'Una nota rápida ayuda a tu repaso semanal.',
+	'journal.rating.1': 'Duro',
+	'journal.rating.2': 'Meh',
+	'journal.rating.3': 'Okay',
+	'journal.rating.4': 'Bien',
+	'journal.rating.5': '¡Genial!',
+	'journal.placeholder': '¿En qué te enfocaste? ¿Algo para recordar?',
+	'journal.save': 'Guardar',
+	'journal.skip': 'Omitir',
+	'taskPicker.title': 'Enfocate en una tarea',
+	'taskPicker.empty': 'Todavía no hay tareas activas — crealas en Plan.',
+	'taskPicker.unlink': 'Sin tarea vinculada',
+	'soundscape.title': 'Paisajes sonoros',
+	'soundscape.none': 'Ninguno',
+	'soundscape.rain': 'Lluvia',
+	'soundscape.forest': 'Bosque',
+	'soundscape.cafe': 'Café',
+	'soundscape.whiteNoise': 'Ruido blanco',
+	'soundscape.ocean': 'Océano',
+	'soundscape.fireplace': 'Fogata',
+	'soundscape.binaural': 'Binaural',
+	'soundscape.lofi': 'Lo-fi',
+	'soundscape.volume': 'Volumen',
+	'soundscape.hint': 'Audio generado por síntesis en tu navegador, sin descargas.',
+	'companion.focusToday': 'Enfoque hoy',
+	'companion.sessionsToday': 'Sesiones hoy',
+	'companion.streak': 'Racha',
+	'companion.pomodoroNumber': 'Pomodoro n.º',
+	'companion.activeTask': 'Tarea activa',
+	'companion.suggest.title': 'Sugerido para ahora',
+	'companion.suggest.apply': 'Tocá para aplicarlo',
+	'adhd.breathe': 'Respirá lento',
+	'adhd.stretch': 'Estiráte un poco',
+	'adhd.hydrate': 'Tomá agua',
+	'adhd.move': 'Movete un poco',
+	'adhd.subtitle': 'Descanso guiado',
+	'settings.focus.title': 'Enfoque',
+	'settings.pomodoro.work': 'Trabajo (min)',
+	'settings.pomodoro.break': 'Descanso corto (min)',
+	'settings.pomodoro.longBreak': 'Descanso largo (min)',
+	'settings.pomodoro.sessions': 'Sesiones antes del descanso largo',
+	'settings.autoStartBreaks': 'Auto-iniciar descansos',
+	'settings.autoStartWork': 'Auto-iniciar el próximo enfoque',
+	'settings.flowtime.min': 'Flowtime: sugerir descanso tras (min)',
+	'settings.timeblock.minutes': 'Bloque de tiempo (min)',
+	'settings.timeblock.midpoint': 'Check-in a mitad',
+	'settings.sound.title': 'Sonido',
+	'settings.sound.enabled': 'Sonido de finalización',
+	'settings.behavior.title': 'Comportamiento',
+	'sound.classic': 'Clásico',
+	'sound.chime': 'Campanillas',
+	'sound.bell': 'Campana',
+	'sound.digital': 'Digital',
+	'sound.woodblock': 'Madera',
+	'settings.haptics': 'Vibración (si está soportada)',
+	'settings.keepScreenOn': 'Mantener pantalla encendida al enfocar',
+	'settings.journal': 'Journal tras cada sesión',
+	'settings.adhd': 'Descansos guiados (modo TDAH)',
+	'settings.notifications': 'Notificaciones de fase',
+	'settings.notifications.hint': 'Notificaciones del navegador entre fases. Se pedirá permiso.'
 };
 
 const pt: Dict = {
@@ -629,7 +884,92 @@ const pt: Dict = {
 	'landing.openApp': 'Abrir o app',
 	'landing.wipNote': 'A nova web está sendo construída com tudo dos apps nativos.',
 	'common.wip.title': 'Chega no próximo lote',
-	'common.wip.body': 'Esta superfície está sendo reconstruída com tudo dos apps nativos.'
+	'common.wip.body': 'Esta superfície está sendo reconstruída com tudo dos apps nativos.',
+	'common.proLocked': 'Recurso do Pepinillo+',
+	'focus.phase.work': 'Foco',
+	'focus.phase.shortBreak': 'Pausa curta',
+	'focus.phase.longBreak': 'Pausa longa',
+	'focus.waitingBreak': 'A pausa fica pronta quando você estiver pronto.',
+	'focus.waitingWork': 'O próximo foco fica pronto quando você estiver pronto.',
+	'focus.startBreak': 'Iniciar pausa',
+	'focus.startWork': 'Iniciar foco',
+	'focus.takeBreak': 'Fazer uma pausa',
+	'focus.ghost.title': 'Sessão inacabada',
+	'focus.ghost.body': 'Você deixou uma sessão de {mode} rodando ({time} registrados). Retome ou descarte.',
+	'focus.ghost.resume': 'Retomar',
+	'focus.ghost.discard': 'Descartar',
+	'celebration.firstSession.title': 'Primeira sessão!',
+	'celebration.firstSession.body': 'A parte mais difícil é começar. Você conseguiu!',
+	'celebration.streak.title': 'Sequência de {days} dias!',
+	'celebration.streak.body': 'Aparecer dia após dia é assim que a horta cresce.',
+	'celebration.sessionCount.title': '{count} sessões!',
+	'celebration.sessionCount.body': 'O impulso é real. Continue colhendo.',
+	'celebration.personalBest.title': 'Recorde pessoal: {minutes}m',
+	'celebration.personalBest.body': 'Seu maior período de foco até agora. Deep work combina com você.',
+	'celebration.keepGoing': 'Continue assim!',
+	'celebration.record.title': 'Novo recorde de sequência: {days} dias',
+	'celebration.record.dismiss': 'Fechar aviso de recorde',
+	'journal.title': 'Como foi?',
+	'journal.subtitle': 'Uma nota rápida ajuda na sua revisão semanal.',
+	'journal.rating.1': 'Puxado',
+	'journal.rating.2': 'Meh',
+	'journal.rating.3': 'Ok',
+	'journal.rating.4': 'Bom',
+	'journal.rating.5': 'Ótimo!',
+	'journal.placeholder': 'No que você se concentrou? Algo para lembrar?',
+	'journal.save': 'Salvar',
+	'journal.skip': 'Pular',
+	'taskPicker.title': 'Focar em uma tarefa',
+	'taskPicker.empty': 'Ainda não há tarefas ativas — crie-as no Plano.',
+	'taskPicker.unlink': 'Sem tarefa vinculada',
+	'soundscape.title': 'Paisagens sonoras',
+	'soundscape.none': 'Nenhuma',
+	'soundscape.rain': 'Chuva',
+	'soundscape.forest': 'Floresta',
+	'soundscape.cafe': 'Café',
+	'soundscape.whiteNoise': 'Ruído branco',
+	'soundscape.ocean': 'Oceano',
+	'soundscape.fireplace': 'Lareira',
+	'soundscape.binaural': 'Binaural',
+	'soundscape.lofi': 'Lo-fi',
+	'soundscape.volume': 'Volume',
+	'soundscape.hint': 'Áudio gerado por síntese no seu navegador, sem downloads.',
+	'companion.focusToday': 'Foco hoje',
+	'companion.sessionsToday': 'Sessões hoje',
+	'companion.streak': 'Sequência',
+	'companion.pomodoroNumber': 'Pomodoro n.º',
+	'companion.activeTask': 'Tarefa ativa',
+	'companion.suggest.title': 'Sugerido para agora',
+	'companion.suggest.apply': 'Toque para aplicar',
+	'adhd.breathe': 'Respire devagar',
+	'adhd.stretch': 'Alongue-se um pouco',
+	'adhd.hydrate': 'Beba água',
+	'adhd.move': 'Movimente-se',
+	'adhd.subtitle': 'Pausa guiada',
+	'settings.focus.title': 'Foco',
+	'settings.pomodoro.work': 'Trabalho (min)',
+	'settings.pomodoro.break': 'Pausa curta (min)',
+	'settings.pomodoro.longBreak': 'Pausa longa (min)',
+	'settings.pomodoro.sessions': 'Sessões antes da pausa longa',
+	'settings.autoStartBreaks': 'Iniciar pausas automaticamente',
+	'settings.autoStartWork': 'Iniciar o próximo foco automaticamente',
+	'settings.flowtime.min': 'Flowtime: sugerir pausa após (min)',
+	'settings.timeblock.minutes': 'Bloco de tempo (min)',
+	'settings.timeblock.midpoint': 'Check-in na metade',
+	'settings.sound.title': 'Som',
+	'settings.sound.enabled': 'Som de conclusão',
+	'settings.behavior.title': 'Comportamento',
+	'sound.classic': 'Clássico',
+	'sound.chime': 'Sinos',
+	'sound.bell': 'Campainha',
+	'sound.digital': 'Digital',
+	'sound.woodblock': 'Madeira',
+	'settings.haptics': 'Vibração (se suportada)',
+	'settings.keepScreenOn': 'Manter a tela ligada ao focar',
+	'settings.journal': 'Diário após cada sessão',
+	'settings.adhd': 'Pausas guiadas (modo TDAH)',
+	'settings.notifications': 'Notificações de fase',
+	'settings.notifications.hint': 'Notificações do navegador entre fases. A permissão será solicitada.'
 };
 
 const catalogs: Record<LocaleCode, Dict> = { en, es, pt };

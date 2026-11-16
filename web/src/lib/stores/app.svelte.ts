@@ -24,6 +24,7 @@ import {
 	type FocusMode,
 	type FocusSession,
 	type Preferences,
+	type SoundscapeName,
 	type ThemePreference
 } from '$lib/domain/entities/types';
 import type { EntitlementTier } from '$lib/domain/gates/freeLimits';
@@ -100,6 +101,20 @@ class AppStore {
 				/* ignore */
 			}
 		}
+	}
+
+	/** Generic preference patch — persists to IndexedDB (snapshot: $state proxies are not cloneable). */
+	updatePrefs(patch: Partial<Preferences>): void {
+		this.prefs = { ...this.prefs, ...patch };
+		void savePreferences($state.snapshot(this.prefs));
+	}
+
+	setSoundscape(name: SoundscapeName): void {
+		this.updatePrefs({ soundscape: name });
+	}
+
+	setSoundscapeVolume(volume: number): void {
+		this.updatePrefs({ soundscapeVolume: Math.min(1, Math.max(0, volume)) });
 	}
 
 	canUseTheme(theme: ThemeName): boolean {

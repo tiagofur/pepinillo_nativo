@@ -3,6 +3,7 @@
 	import { t } from '$lib/i18n/i18n.svelte';
 	import { LOCALES, type MessageKey } from '$lib/i18n/messages';
 	import Icon from '$lib/design/Icon.svelte';
+	import FocusSettings from '$lib/features/settings/FocusSettings.svelte';
 	import type { LocaleCode, ThemePreference } from '$lib/domain/entities/types';
 
 	const LOCALE_LABELS: Record<LocaleCode, string> = {
@@ -92,6 +93,8 @@
 		<h2>{t('account.deviceId')}</h2>
 		<code class="mono nums">{app.deviceId ?? '—'}</code>
 	</div>
+
+	<FocusSettings />
 </section>
 
 <style>
