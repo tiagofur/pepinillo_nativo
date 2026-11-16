@@ -134,7 +134,18 @@ struct MacFocusView: View {
 
             phaseSection
             linkedTaskChip
-            primaryAction
+            // Duration steppers flank Start on Time Block, mirroring the
+            // iPhone stage (issue #820 — focus engine parity invariant).
+            HStack(spacing: 16) {
+                if showsDurationSteppers {
+                    durationStepButton(systemName: "minus", delta: -5)
+                }
+                primaryAction
+                if showsDurationSteppers {
+                    durationStepButton(systemName: "plus", delta: 5)
+                }
+            }
+            .animation(MotionTokens.snappy, value: store.selectedMode)
             secondaryControls
                 .animation(MotionTokens.snappy, value: store.isRunning)
             todayStats
@@ -277,6 +288,47 @@ struct MacFocusView: View {
             .keyboardShortcut(.defaultAction)
             .accessibilityHint(primaryActionHint)
         }
+    }
+
+    /// Time Block idle only, matching the iPhone stage: the quick ±5 min
+    /// step hides once a session runs or the engine waits for the next
+    /// phase, exactly where iOS shows its steppers.
+    private var showsDurationSteppers: Bool {
+        guard store.selectedMode == .timeBlock,
+              !store.isRunning,
+              !store.isWaitingForNextPhase else { return false }
+        return true
+    }
+
+    /// Same bounds (5…480 min), same reducer action and same a11y labels as
+    /// `FocusView.durationStepButton` on iOS; sized for the Mac stage
+    /// density with a 36pt touch rect (guide R2).
+    @ViewBuilder
+    private func durationStepButton(systemName: String, delta: Int) -> some View {
+        let projected = store.customDurationMinutes + delta
+        let isAtBoundary = projected < 5 || projected > 480
+        Button {
+            let target = store.customDurationMinutes + delta
+            guard target >= 5, target <= 480 else { return }
+            store.send(.customDurationChanged(target))
+        } label: {
+            Image(systemName: systemName)
+                .font(.title3.weight(.semibold))
+                .foregroundStyle(.primary)
+                .frame(width: 44, height: 44)
+                .adaptiveGlassCircle(id: "duration-\(systemName)-button", namespace: glassNS)
+                .frame(minWidth: TouchTargets.macMinimum, minHeight: TouchTargets.macMinimum)
+                .contentShape(Circle())
+        }
+        .buttonStyle(.plain)
+        .opacity(isAtBoundary ? 0.4 : 1)
+        .disabled(isAtBoundary)
+        .help(delta < 0
+              ? String(localized: "Decrease duration by 5 minutes")
+              : String(localized: "Increase duration by 5 minutes"))
+        .accessibilityLabel(delta < 0
+            ? String(localized: "Decrease duration by 5 minutes")
+            : String(localized: "Increase duration by 5 minutes"))
     }
 
     private var todayStats: some View {
