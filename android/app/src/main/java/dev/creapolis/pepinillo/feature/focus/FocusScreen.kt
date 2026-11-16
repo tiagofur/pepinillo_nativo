@@ -27,6 +27,7 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
+import dev.creapolis.pepinillo.ui.components.AnimatedCounter
 import dev.creapolis.pepinillo.ui.theme.isAppInDarkTheme
 import dev.creapolis.pepinillo.ui.theme.isReduceMotionEnabled
 import androidx.compose.foundation.clickable
@@ -407,7 +408,7 @@ fun FocusScreen(
                             .scale(breatheScale),
                     )
                     Spacer(modifier = Modifier.height(10.dp))
-                    Text(
+                    AnimatedCounter(
                         // #505: read the 4Hz displayTime so the digits stay in lockstep with the ring.
                         text = ringState.displayTime,
                         // Hero timer numeral tokens (see Type.kt) — 62sp while a session is

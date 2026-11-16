@@ -1,5 +1,18 @@
 package dev.creapolis.pepinillo.presentation
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateTo
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
+import androidx.compose.ui.graphics.graphicsLayer
 import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -7,9 +20,7 @@ import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -32,10 +43,8 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -139,6 +148,7 @@ fun TimerScreen(
         }
 
         state.status == "Running" || state.status == "Paused" -> TimerActiveLayout(
+            isAmbient = isAmbient,
             state = state,
             modeColor = modeColor,
             onPause = {
@@ -194,6 +204,7 @@ fun TimerScreen(
 private fun TimerActiveLayout(
     state: WearTimerState,
     modeColor: Color,
+    isAmbient: Boolean,
     onPause: () -> Unit,
     onResume: () -> Unit,
     onStop: () -> Unit,
@@ -305,17 +316,42 @@ private fun TimerActiveLayout(
                 append(localDisplayTime)
                 state.linkedTaskName?.let { append(", ").append(it) }
             }
-            Text(
-                text = localDisplayTime,
-                fontSize = 32.sp,
-                fontWeight = FontWeight.Light,
-                color = MaterialTheme.colorScheme.onSurface,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.clearAndSetSemantics {
-                    contentDescription = timeAnnouncement
-                    liveRegion = androidx.compose.ui.semantics.LiveRegionMode.Polite
-                },
-            )
+            // Number roll (#776 Batch B — Material counterpart of iOS numericText).
+            // Static in ambient: dim content must not move.
+            if (isAmbient) {
+                Text(
+                    text = localDisplayTime,
+                    fontSize = 32.sp,
+                    fontWeight = FontWeight.Light,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.clearAndSetSemantics {
+                        contentDescription = timeAnnouncement
+                        liveRegion = androidx.compose.ui.semantics.LiveRegionMode.Polite
+                    },
+                )
+            } else {
+                AnimatedContent(
+                    targetState = localDisplayTime,
+                    transitionSpec = {
+                        (slideInVertically { it / 3 } + fadeIn()) togetherWith
+                            (slideOutVertically { -it / 3 } + fadeOut())
+                    },
+                    label = "wearTime",
+                    modifier = Modifier.clearAndSetSemantics {
+                        contentDescription = timeAnnouncement
+                        liveRegion = androidx.compose.ui.semantics.LiveRegionMode.Polite
+                    },
+                ) { value ->
+                    Text(
+                        text = value,
+                        fontSize = 32.sp,
+                        fontWeight = FontWeight.Light,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        textAlign = TextAlign.Center,
+                    )
+                }
+            }
 
             // Phase label (#508: Phase label is already localized from ViewModel/Push)
             Text(
@@ -426,6 +462,19 @@ private fun WaitingForNextLayout(
 ) {
     val isBreakNext = state.phase == "ShortBreak" || state.phase == "LongBreak"
     val completionEmoji = if (isBreakNext) "✅" else "☕"
+    // Completion pop (#776 Batch B): one spring settle when the phase lands —
+    // the visual half of the chord; vibration already fires from the sync
+    // listener. Static if motion is reduced (system animation scale 0).
+    val completionPulse = remember { Animatable(0.6f) }
+    LaunchedEffect(Unit) {
+        completionPulse.animateTo(
+            targetValue = 1f,
+            animationSpec = spring(
+                dampingRatio = Spring.DampingRatioMediumBouncy,
+                stiffness = Spring.StiffnessMedium,
+            ),
+        )
+    }
     val completionTitle = if (isBreakNext) stringResource(R.string.focus_complete) else stringResource(R.string.break_finished)
     val actionLabel = if (isBreakNext) stringResource(R.string.start_break) else stringResource(R.string.start_focus)
 
@@ -446,6 +495,13 @@ private fun WaitingForNextLayout(
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
+            modifier = Modifier
+                .graphicsLayer {
+                    val pulse = completionPulse.value
+                    scaleX = pulse
+                    scaleY = pulse
+                    alpha = pulse.coerceIn(0f, 1f)
+                },
         ) {
             Text(
                 text = completionEmoji,
