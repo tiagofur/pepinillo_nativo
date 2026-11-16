@@ -42,6 +42,12 @@ export function canUseSync(tier: EntitlementTier): boolean {
 	return tier === 'everywhere';
 }
 
+/** Free analytics cover today + last 7 days; longer periods are premium. */
+export function canUseAnalyticsPeriod(days: 7 | 30 | 365, tier: EntitlementTier): boolean {
+	if (tier !== 'free') return true;
+	return days <= FREE_ANALYTICS_DAYS;
+}
+
 export function canUsePremiumTheme(tier: EntitlementTier): boolean {
 	return tier === 'everywhere';
 }
