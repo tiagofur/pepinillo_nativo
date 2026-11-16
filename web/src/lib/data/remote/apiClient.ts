@@ -25,9 +25,9 @@ export type TokenProvider = {
 	getDeviceId: () => string;
 };
 
+/** Baked at build time via the explicit `define` in vite.config.ts. */
 function baseUrl(): string {
-	const raw = import.meta.env.PUBLIC_API_BASE_URL as string | undefined;
-	return (raw || '').replace(/\/$/, '');
+	return (__PUBLIC_API_BASE_URL__ || '').replace(/\/$/, '');
 }
 
 export function isApiConfigured(): boolean {
@@ -67,6 +67,28 @@ export class ApiClient {
 
 	async me(): Promise<AuthUser> {
 		return this.request<AuthUser>('/api/v1/users/me', { method: 'GET' });
+	}
+
+	async forgotPassword(email: string): Promise<void> {
+		await this.requestUnauthed<void>('/api/v1/auth/forgot-password', {
+			method: 'POST',
+			body: JSON.stringify({ email })
+		});
+	}
+
+	async resetPassword(token: string, newPassword: string): Promise<void> {
+		await this.requestUnauthed<void>('/api/v1/auth/reset-password', {
+			method: 'POST',
+			body: JSON.stringify({ token, newPassword })
+		});
+	}
+
+	/** Does this account already have cloud data? Drives the merge dialog. */
+	async hasData(): Promise<boolean> {
+		const res = await this.request<{ hasData: boolean }>('/api/v1/sync/has-data', {
+			method: 'GET'
+		});
+		return res.hasData;
 	}
 
 	async initialUpload(payload: InitialUploadRequest): Promise<InitialUploadResponse> {
