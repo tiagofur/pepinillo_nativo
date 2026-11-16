@@ -396,7 +396,8 @@ fun FocusScreen(
                 CircularTimerRing(
                     progress = animatedProgress,
                     ringColor = animatedAccentColor,
-                    trackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f),
+                    // 0.18 = iOS track tint parity (#776 Batch B feedback side-by-side).
+                    trackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.18f),
                     strokeWidth = if (sessionActive) 13.dp else 11.dp,
                     modifier = Modifier.size(timerSize.dp),
                     isRunning = uiState.isRunning,
@@ -436,9 +437,9 @@ fun FocusScreen(
                 style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.Bold,
                 letterSpacing = 2.sp,
-                // Full-alpha content color: the old 0.72 alpha failed contrast on light accents
-                // (super-review P2e).
-                color = animatedContentColor,
+                // Secondary parity with iOS (#789-followup): the phase label is a
+                // quiet caption — the ring is the only element in mode color.
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 14.dp),
             )
 

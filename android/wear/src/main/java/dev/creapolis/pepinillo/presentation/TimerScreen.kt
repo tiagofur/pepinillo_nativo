@@ -2,13 +2,12 @@ package dev.creapolis.pepinillo.presentation
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateTo
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
@@ -334,8 +333,7 @@ private fun TimerActiveLayout(
                 AnimatedContent(
                     targetState = localDisplayTime,
                     transitionSpec = {
-                        (slideInVertically { it / 3 } + fadeIn()) togetherWith
-                            (slideOutVertically { -it / 3 } + fadeOut())
+                        fadeIn(tween(150)) togetherWith fadeOut(tween(150))
                     },
                     label = "wearTime",
                     modifier = Modifier.clearAndSetSemantics {
