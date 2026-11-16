@@ -309,7 +309,41 @@ export type MessageKey =
 	| 'review.trendFlat'
 	| 'review.topTasks'
 	| 'review.modes'
-	| 'review.bestDay';
+	| 'review.bestDay'
+	| 'auth.title'
+	| 'auth.subtitle'
+	| 'auth.signIn'
+	| 'auth.signUp'
+	| 'auth.nameField'
+	| 'auth.emailField'
+	| 'auth.passwordField'
+	| 'auth.working'
+	| 'auth.needAccount'
+	| 'auth.haveAccount'
+	| 'auth.forgot.link'
+	| 'auth.forgot.submit'
+	| 'auth.forgot.sent'
+	| 'auth.error.generic'
+	| 'auth.error.invalidCredentials'
+	| 'auth.error.invalidEmail'
+	| 'auth.error.emailTaken'
+	| 'auth.error.weakPassword'
+	| 'auth.error.apiMissing'
+	| 'auth.syncHint'
+	| 'auth.verifyPending'
+	| 'auth.apiMissing'
+	| 'auth.dangerTitle'
+	| 'auth.deleteConfirm'
+	| 'auth.deleteAccount'
+	| 'sync.title'
+	| 'sync.hint'
+	| 'sync.last'
+	| 'sync.live'
+	| 'sync.offline'
+	| 'sync.mergeTitle'
+	| 'sync.mergeBody'
+	| 'sync.mergePull'
+	| 'sync.mergeUpload';
 
 type Dict = Record<MessageKey, string>;
 
@@ -622,6 +656,40 @@ const en: Dict = {
 	'review.topTasks': 'Top tasks',
 	'review.modes': 'Modes',
 	'review.bestDay': 'Best day:',
+	'auth.title': 'Account',
+	'auth.subtitle': 'Sign in to sync your garden across devices.',
+	'auth.signIn': 'Sign in',
+	'auth.signUp': 'Create account',
+	'auth.nameField': 'Name',
+	'auth.emailField': 'Email',
+	'auth.passwordField': 'Password (8+ characters)',
+	'auth.working': 'Working…',
+	'auth.needAccount': 'Need an account?',
+	'auth.haveAccount': 'I have an account',
+	'auth.forgot.link': 'Forgot password?',
+	'auth.forgot.submit': 'Send reset link',
+	'auth.forgot.sent': 'If the email exists, a reset link is on its way.',
+	'auth.error.generic': 'Something went wrong. Try again.',
+	'auth.error.invalidCredentials': 'Wrong email or password.',
+	'auth.error.invalidEmail': 'That email does not look valid.',
+	'auth.error.emailTaken': 'That email already has an account.',
+	'auth.error.weakPassword': 'Use at least 8 characters.',
+	'auth.error.apiMissing': 'The sync API is not configured for this build.',
+	'auth.syncHint': 'Sync requires Everywhere/AI+. Your data always stays on this device first.',
+	'auth.verifyPending': 'Check your inbox to verify your email — sync activates after that.',
+	'auth.apiMissing': 'Cloud sync is not configured in this build (PUBLIC_API_BASE_URL empty). Everything works offline.',
+	'auth.dangerTitle': 'Session',
+	'auth.deleteConfirm': 'This removes your cloud account. Your email, to confirm:',
+	'auth.deleteAccount': 'Delete account',
+	'sync.title': 'Cloud sync',
+	'sync.hint': 'Last-Write-Wins with the server clock, like the native apps.',
+	'sync.last': 'Last sync',
+	'sync.live': 'Live updates connected',
+	'sync.offline': 'Live updates off',
+	'sync.mergeTitle': 'We found cloud data',
+	'sync.mergeBody': 'This account already has data in the cloud. Keep the cloud version, or overwrite the cloud with what is on this device?',
+	'sync.mergePull': 'Use the cloud data',
+	'sync.mergeUpload': 'Upload this device',
 	'account.tier': 'Plan',
 	'account.tierFree': 'Free · local browser only',
 	'account.locale': 'Language',
@@ -965,7 +1033,41 @@ const es: Dict = {
 	'review.trendFlat': 'Igual que el período anterior',
 	'review.topTasks': 'Tareas top',
 	'review.modes': 'Modos',
-	'review.bestDay': 'Mejor día:'
+	'review.bestDay': 'Mejor día:',
+	'auth.title': 'Cuenta',
+	'auth.subtitle': 'Iniciá sesión para sincronizar tu huerto entre dispositivos.',
+	'auth.signIn': 'Iniciar sesión',
+	'auth.signUp': 'Crear cuenta',
+	'auth.nameField': 'Nombre',
+	'auth.emailField': 'Email',
+	'auth.passwordField': 'Contraseña (8+ caracteres)',
+	'auth.working': 'Un momento…',
+	'auth.needAccount': '¿No tenés cuenta?',
+	'auth.haveAccount': 'Ya tengo cuenta',
+	'auth.forgot.link': '¿Olvidaste la contraseña?',
+	'auth.forgot.submit': 'Enviar link de recuperación',
+	'auth.forgot.sent': 'Si el email existe, el link va en camino.',
+	'auth.error.generic': 'Algo salió mal. Probá de nuevo.',
+	'auth.error.invalidCredentials': 'Email o contraseña incorrectos.',
+	'auth.error.invalidEmail': 'Ese email no parece válido.',
+	'auth.error.emailTaken': 'Ese email ya tiene una cuenta.',
+	'auth.error.weakPassword': 'Usá al menos 8 caracteres.',
+	'auth.error.apiMissing': 'El API de sync no está configurado en este build.',
+	'auth.syncHint': 'La sync requiere Everywhere/AI+. Tus datos siempre viven primero en este dispositivo.',
+	'auth.verifyPending': 'Revisá tu inbox para verificar el email — la sync se activa después.',
+	'auth.apiMissing': 'La sync cloud no está configurada en este build (PUBLIC_API_BASE_URL vacío). Todo funciona offline.',
+	'auth.dangerTitle': 'Sesión',
+	'auth.deleteConfirm': 'Esto elimina tu cuenta en la nube. Tu email, para confirmar:',
+	'auth.deleteAccount': 'Eliminar cuenta',
+	'sync.title': 'Sync cloud',
+	'sync.hint': 'Last-Write-Wins con el reloj del servidor, como en las apps nativas.',
+	'sync.last': 'Última sync',
+	'sync.live': 'Actualizaciones en vivo conectadas',
+	'sync.offline': 'Actualizaciones en vivo apagadas',
+	'sync.mergeTitle': 'Encontramos datos en la nube',
+	'sync.mergeBody': 'Esta cuenta ya tiene datos en la nube. ¿Te quedás con la versión de la nube o pisás la nube con lo que hay en este dispositivo?',
+	'sync.mergePull': 'Usar los datos de la nube',
+	'sync.mergeUpload': 'Subir este dispositivo'
 };
 
 const pt: Dict = {
@@ -1293,7 +1395,41 @@ const pt: Dict = {
 	'review.trendFlat': 'Igual ao período anterior',
 	'review.topTasks': 'Tarefas top',
 	'review.modes': 'Modos',
-	'review.bestDay': 'Melhor dia:'
+	'review.bestDay': 'Melhor dia:',
+	'auth.title': 'Conta',
+	'auth.subtitle': 'Entre para sincronizar sua horta entre dispositivos.',
+	'auth.signIn': 'Entrar',
+	'auth.signUp': 'Criar conta',
+	'auth.nameField': 'Nome',
+	'auth.emailField': 'Email',
+	'auth.passwordField': 'Senha (8+ caracteres)',
+	'auth.working': 'Um momento…',
+	'auth.needAccount': 'Não tem conta?',
+	'auth.haveAccount': 'Já tenho conta',
+	'auth.forgot.link': 'Esqueceu a senha?',
+	'auth.forgot.submit': 'Enviar link de recuperação',
+	'auth.forgot.sent': 'Se o email existir, o link está a caminho.',
+	'auth.error.generic': 'Algo deu errado. Tente de novo.',
+	'auth.error.invalidCredentials': 'Email ou senha incorretos.',
+	'auth.error.invalidEmail': 'Esse email não parece válido.',
+	'auth.error.emailTaken': 'Esse email já tem uma conta.',
+	'auth.error.weakPassword': 'Use pelo menos 8 caracteres.',
+	'auth.error.apiMissing': 'O API de sync não está configurado neste build.',
+	'auth.syncHint': 'A sync requer Everywhere/AI+. Seus dados sempre vivem primeiro neste dispositivo.',
+	'auth.verifyPending': 'Verifique seu email na caixa de entrada — a sync ativa depois disso.',
+	'auth.apiMissing': 'A sync cloud não está configurada neste build (PUBLIC_API_BASE_URL vazio). Tudo funciona offline.',
+	'auth.dangerTitle': 'Sessão',
+	'auth.deleteConfirm': 'Isso remove sua conta na nuvem. Seu email, para confirmar:',
+	'auth.deleteAccount': 'Excluir conta',
+	'sync.title': 'Sync cloud',
+	'sync.hint': 'Last-Write-Wins com o relógio do servidor, como nos apps nativos.',
+	'sync.last': 'Última sync',
+	'sync.live': 'Atualizações ao vivo conectadas',
+	'sync.offline': 'Atualizações ao vivo desligadas',
+	'sync.mergeTitle': 'Encontramos dados na nuvem',
+	'sync.mergeBody': 'Esta conta já tem dados na nuvem. Fica com a versão da nuvem ou sobrescreve a nuvem com o que há neste dispositivo?',
+	'sync.mergePull': 'Usar os dados da nuvem',
+	'sync.mergeUpload': 'Enviar deste dispositivo'
 };
 
 const catalogs: Record<LocaleCode, Dict> = { en, es, pt };

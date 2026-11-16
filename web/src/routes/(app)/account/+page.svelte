@@ -1,10 +1,18 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import { app, PREMIUM_THEMES, type ThemeName } from '$lib/stores/app.svelte';
+	import { auth } from '$lib/stores/auth.svelte';
 	import { t } from '$lib/i18n/i18n.svelte';
 	import { LOCALES, type MessageKey } from '$lib/i18n/messages';
 	import Icon from '$lib/design/Icon.svelte';
 	import FocusSettings from '$lib/features/settings/FocusSettings.svelte';
+	import AuthPanel from '$lib/features/auth/AuthPanel.svelte';
+	import AccountServer from '$lib/features/auth/AccountServer.svelte';
 	import type { LocaleCode, ThemePreference } from '$lib/domain/entities/types';
+
+	onMount(() => {
+		void auth.init();
+	});
 
 	const LOCALE_LABELS: Record<LocaleCode, string> = {
 		es: 'Español',
@@ -35,6 +43,18 @@
 <section class="account rise-in">
 	<h1>{t('account.title')}</h1>
 	<p class="subtitle">{t('account.subtitle')}</p>
+
+	{#if auth.configured}
+		{#if auth.user}
+			<AccountServer />
+		{:else}
+			<AuthPanel />
+		{/if}
+	{:else}
+		<div class="card section">
+			<p class="muted">🔌 {t('auth.apiMissing')}</p>
+		</div>
+	{/if}
 
 	<div class="card section">
 		<h2>{t('account.locale')}</h2>
