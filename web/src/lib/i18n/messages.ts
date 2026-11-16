@@ -264,7 +264,143 @@ export type MessageKey =
 	| 'plan.empty.body'
 	| 'quickCapture.title'
 	| 'quickCapture.placeholder'
-	| 'quickCapture.hint';
+	| 'quickCapture.hint'
+	| 'period.7'
+	| 'period.30'
+	| 'period.365'
+	| 'chart.week'
+	| 'chart.modes'
+	| 'chart.day.sun'
+	| 'chart.day.mon'
+	| 'chart.day.tue'
+	| 'chart.day.wed'
+	| 'chart.day.thu'
+	| 'chart.day.fri'
+	| 'chart.day.sat'
+	| 'dash.best'
+	| 'dash.focusScore'
+	| 'dash.peakHour'
+	| 'dash.completion'
+	| 'dash.longest'
+	| 'dash.periodFocus'
+	| 'score.exceptional'
+	| 'score.strong'
+	| 'score.steady'
+	| 'score.warming'
+	| 'score.rest'
+	| 'achievements.title'
+	| 'achievements.firstFocus.title'
+	| 'achievements.weekWarrior.title'
+	| 'achievements.pomodoroMaster.title'
+	| 'achievements.deepDiver.title'
+	| 'achievements.centuryClub.title'
+	| 'achievements.earlyBird.title'
+	| 'sessions.recent'
+	| 'sessions.empty'
+	| 'review.weekly'
+	| 'review.monthly'
+	| 'review.dataTab'
+	| 'review.aiTab'
+	| 'review.aiSoon'
+	| 'review.focus'
+	| 'review.sessions'
+	| 'review.trendUp'
+	| 'review.trendDown'
+	| 'review.trendFlat'
+	| 'review.topTasks'
+	| 'review.modes'
+	| 'review.bestDay'
+	| 'auth.title'
+	| 'auth.subtitle'
+	| 'auth.signIn'
+	| 'auth.signUp'
+	| 'auth.nameField'
+	| 'auth.emailField'
+	| 'auth.passwordField'
+	| 'auth.working'
+	| 'auth.needAccount'
+	| 'auth.haveAccount'
+	| 'auth.forgot.link'
+	| 'auth.forgot.submit'
+	| 'auth.forgot.sent'
+	| 'auth.error.generic'
+	| 'auth.error.invalidCredentials'
+	| 'auth.error.invalidEmail'
+	| 'auth.error.emailTaken'
+	| 'auth.error.weakPassword'
+	| 'auth.error.apiMissing'
+	| 'auth.syncHint'
+	| 'auth.verifyPending'
+	| 'auth.apiMissing'
+	| 'auth.dangerTitle'
+	| 'auth.deleteConfirm'
+	| 'auth.deleteAccount'
+	| 'sync.title'
+	| 'sync.hint'
+	| 'sync.last'
+	| 'sync.live'
+	| 'sync.offline'
+	| 'sync.mergeTitle'
+	| 'sync.mergeBody'
+	| 'sync.mergePull'
+	| 'sync.mergeUpload'
+	| 'upgrade.title'
+	| 'upgrade.meta'
+	| 'upgrade.headline'
+	| 'upgrade.sub'
+	| 'upgrade.signedIn'
+	| 'upgrade.signInFirst'
+	| 'upgrade.plan.free'
+	| 'upgrade.plan.plus'
+	| 'upgrade.plan.everywhere'
+	| 'upgrade.price.free'
+	| 'upgrade.price.plus'
+	| 'upgrade.price.everywhere'
+	| 'upgrade.note.free'
+	| 'upgrade.note.plus'
+	| 'upgrade.note.everywhere'
+	| 'upgrade.flag.best'
+	| 'upgrade.free.pomodoro'
+	| 'upgrade.free.stopwatch'
+	| 'upgrade.free.tasks'
+	| 'upgrade.free.analytics'
+	| 'upgrade.plus.modes'
+	| 'upgrade.plus.tasks'
+	| 'upgrade.plus.subtasks'
+	| 'upgrade.plus.themes'
+	| 'upgrade.plus.analytics'
+	| 'upgrade.plus.soundscapes'
+	| 'upgrade.everywhere.plusIncluded'
+	| 'upgrade.everywhere.sync'
+	| 'upgrade.everywhere.ai'
+	| 'upgrade.everywhere.recovery'
+	| 'upgrade.everywhere.web'
+	| 'upgrade.cta.free'
+	| 'upgrade.cta.plus'
+	| 'upgrade.cta.everywhere'
+	| 'upgrade.working'
+	| 'upgrade.checkoutError'
+	| 'upgrade.portalError'
+	| 'upgrade.storesTitle'
+	| 'upgrade.storesBody'
+	| 'upgrade.storeApp'
+	| 'upgrade.storePlay'
+	| 'upgrade.manageTitle'
+	| 'upgrade.manageBody'
+	| 'upgrade.manageCta'
+	| 'legal.privacy'
+	| 'legal.terms'
+	| 'auth.deleteFailed'
+	| 'ai.cardTitle'
+	| 'ai.gated'
+	| 'ai.upgradeCta'
+	| 'ai.loading'
+	| 'ai.error'
+	| 'ai.empty'
+	| 'ai.highlights'
+	| 'ai.insights'
+	| 'ai.optimalHours'
+	| 'ai.burnout';
 
 type Dict = Record<MessageKey, string>;
 
@@ -532,6 +668,142 @@ const en: Dict = {
 	'quickCapture.title': 'Quick Capture',
 	'quickCapture.placeholder': 'Capture a task…',
 	'quickCapture.hint': '⌘K / Ctrl+K from anywhere',
+	'period.7': '7D',
+	'period.30': '30D',
+	'period.365': '1Y',
+	'chart.week': 'This week',
+	'chart.modes': 'Modes',
+	'chart.day.sun': 'Sun',
+	'chart.day.mon': 'Mon',
+	'chart.day.tue': 'Tue',
+	'chart.day.wed': 'Wed',
+	'chart.day.thu': 'Thu',
+	'chart.day.fri': 'Fri',
+	'chart.day.sat': 'Sat',
+	'dash.best': 'Best: {days}',
+	'dash.focusScore': 'Focus score',
+	'dash.peakHour': 'Peak hour',
+	'dash.completion': 'Completion',
+	'dash.longest': 'Longest session',
+	'dash.periodFocus': 'Period focus',
+	'score.exceptional': 'Exceptional week',
+	'score.strong': 'Strong rhythm',
+	'score.steady': 'Steady',
+	'score.warming': 'Warming up',
+	'score.rest': 'Rest week',
+	'achievements.title': 'Achievements',
+	'achievements.firstFocus.title': 'First Focus',
+	'achievements.weekWarrior.title': 'Week Warrior',
+	'achievements.pomodoroMaster.title': 'Pomodoro Master',
+	'achievements.deepDiver.title': 'Deep Diver',
+	'achievements.centuryClub.title': 'Century Club',
+	'achievements.earlyBird.title': 'Early Bird',
+	'sessions.recent': 'Recent sessions',
+	'sessions.empty': 'Complete your first session to see it here.',
+	'review.weekly': 'Weekly review',
+	'review.monthly': 'Monthly review',
+	'review.dataTab': 'Data',
+	'review.aiTab': 'AI Insights',
+	'review.aiSoon': 'AI insights arrive with Everywhere+ (coming to web).',
+	'review.focus': 'Focus',
+	'review.sessions': 'Sessions',
+	'review.trendUp': 'Up {pct}% vs previous period',
+	'review.trendDown': 'Down {pct}% vs previous period',
+	'review.trendFlat': 'Same as previous period',
+	'review.topTasks': 'Top tasks',
+	'review.modes': 'Modes',
+	'review.bestDay': 'Best day:',
+	'auth.title': 'Account',
+	'auth.subtitle': 'Sign in to sync your garden across devices.',
+	'auth.signIn': 'Sign in',
+	'auth.signUp': 'Create account',
+	'auth.nameField': 'Name',
+	'auth.emailField': 'Email',
+	'auth.passwordField': 'Password (8+ characters)',
+	'auth.working': 'Working…',
+	'auth.needAccount': 'Need an account?',
+	'auth.haveAccount': 'I have an account',
+	'auth.forgot.link': 'Forgot password?',
+	'auth.forgot.submit': 'Send reset link',
+	'auth.forgot.sent': 'If the email exists, a reset link is on its way.',
+	'auth.error.generic': 'Something went wrong. Try again.',
+	'auth.error.invalidCredentials': 'Wrong email or password.',
+	'auth.error.invalidEmail': 'That email does not look valid.',
+	'auth.error.emailTaken': 'That email already has an account.',
+	'auth.error.weakPassword': 'Use at least 8 characters.',
+	'auth.error.apiMissing': 'The sync API is not configured for this build.',
+	'auth.syncHint': 'Sync requires Everywhere/AI+. Your data always stays on this device first.',
+	'auth.verifyPending': 'Check your inbox to verify your email — sync activates after that.',
+	'auth.apiMissing': 'Cloud sync is not configured in this build (PUBLIC_API_BASE_URL empty). Everything works offline.',
+	'auth.dangerTitle': 'Session',
+	'auth.deleteConfirm': 'This removes your cloud account. Your email, to confirm:',
+	'auth.deleteAccount': 'Delete account',
+	'upgrade.title': 'Pricing',
+	'upgrade.meta': 'Pepinillo pricing: free forever, Pepinillo+ one-time purchase, Everywhere/AI+ subscription with cloud sync and AI.',
+	'upgrade.headline': 'Grow your focus, your way',
+	'upgrade.sub': 'Start free forever. Pepinillo+ is one purchase, yours forever — no subscription. Everywhere/AI+ adds cloud sync and AI across every screen you own.',
+	'upgrade.signedIn': 'Signed in as {email}',
+	'upgrade.signInFirst': 'Sign in first to purchase on the web',
+	'upgrade.plan.free': 'Free',
+	'upgrade.plan.plus': 'Pepinillo+',
+	'upgrade.plan.everywhere': 'Everywhere/AI+',
+	'upgrade.price.free': '$0',
+	'upgrade.price.plus': '$19.99 once',
+	'upgrade.price.everywhere': '$4.99/mo · $34.99/yr',
+	'upgrade.note.free': 'Everything to start a habit',
+	'upgrade.note.plus': 'One purchase. Yours forever. Not a subscription.',
+	'upgrade.note.everywhere': 'Everything in Pepinillo+, across every screen you own.',
+	'upgrade.flag.best': 'Most complete',
+	'upgrade.free.pomodoro': 'Pomodoro + Stopwatch',
+	'upgrade.free.stopwatch': '3 active tasks',
+	'upgrade.free.tasks': 'Analytics: today + 7 days',
+	'upgrade.free.analytics': 'Complete offline, no account needed',
+	'upgrade.plus.modes': 'Flowtime + Time Block',
+	'upgrade.plus.tasks': 'Unlimited tasks',
+	'upgrade.plus.subtasks': 'Subtasks + recurrence',
+	'upgrade.plus.themes': 'Forest, Ocean and Sunset themes',
+	'upgrade.plus.analytics': 'Full analytics (30 days + 1 year)',
+	'upgrade.plus.soundscapes': 'All soundscapes',
+	'upgrade.everywhere.plusIncluded': 'Everything in Pepinillo+',
+	'upgrade.everywhere.sync': 'Cloud sync between devices (LWW, like the native apps)',
+	'upgrade.everywhere.ai': 'AI insights: reviews, tips and predictions',
+	'upgrade.everywhere.recovery': 'Account recovery — your data is safe even if you lose a device',
+	'upgrade.everywhere.web': 'Full access to this web app',
+	'upgrade.cta.free': 'Open the app',
+	'upgrade.cta.plus': 'Buy once',
+	'upgrade.cta.everywhere': 'Subscribe',
+	'upgrade.working': 'Opening…',
+	'upgrade.checkoutError': 'Could not open checkout. Try again in a moment.',
+	'upgrade.portalError': 'Could not open the billing portal. Do you have a web subscription?',
+	'upgrade.storesTitle': 'Prefer the native apps?',
+	'upgrade.storesBody': 'Pepinillo lives natively on iPhone, iPad, Mac, Android and Wear OS — with widgets, watch complications and Live Activities.',
+	'upgrade.storeApp': 'App Store',
+	'upgrade.storePlay': 'Google Play',
+	'upgrade.manageTitle': 'Manage your web subscription',
+	'upgrade.manageBody': 'Change plan, update payment method or cancel — straight in the Stripe portal.',
+	'upgrade.manageCta': 'Open billing portal',
+	'legal.privacy': 'Privacy',
+	'legal.terms': 'Terms',
+	'auth.deleteFailed': 'Could not delete the account right now. Try again or contact support.',
+	'ai.cardTitle': 'AI insights',
+	'ai.gated': 'AI insights are an Everywhere/AI+ feature.',
+	'ai.upgradeCta': 'Upgrade',
+	'ai.loading': 'Thinking…',
+	'ai.error': 'AI is unavailable right now. Try again later.',
+	'ai.empty': 'No AI insights for this period yet — complete a few sessions first.',
+	'ai.highlights': 'Highlights',
+	'ai.insights': 'Insights',
+	'ai.optimalHours': 'Optimal hours',
+	'ai.burnout': 'Burnout risk',
+	'sync.title': 'Cloud sync',
+	'sync.hint': 'Last-Write-Wins with the server clock, like the native apps.',
+	'sync.last': 'Last sync',
+	'sync.live': 'Live updates connected',
+	'sync.offline': 'Live updates off',
+	'sync.mergeTitle': 'We found cloud data',
+	'sync.mergeBody': 'This account already has data in the cloud. Keep the cloud version, or overwrite the cloud with what is on this device?',
+	'sync.mergePull': 'Use the cloud data',
+	'sync.mergeUpload': 'Upload this device',
 	'account.tier': 'Plan',
 	'account.tierFree': 'Free · local browser only',
 	'account.locale': 'Language',
@@ -830,7 +1102,143 @@ const es: Dict = {
 	'plan.empty.body': 'Agregá tu primera tarea arriba — tu huerto empieza acá.',
 	'quickCapture.title': 'Captura rápida',
 	'quickCapture.placeholder': 'Capturar una tarea…',
-	'quickCapture.hint': '⌘K / Ctrl+K desde cualquier lugar'
+	'quickCapture.hint': '⌘K / Ctrl+K desde cualquier lugar',
+	'period.7': '7D',
+	'period.30': '30D',
+	'period.365': '1A',
+	'chart.week': 'Esta semana',
+	'chart.modes': 'Modos',
+	'chart.day.sun': 'Dom',
+	'chart.day.mon': 'Lun',
+	'chart.day.tue': 'Mar',
+	'chart.day.wed': 'Mié',
+	'chart.day.thu': 'Jue',
+	'chart.day.fri': 'Vie',
+	'chart.day.sat': 'Sáb',
+	'dash.best': 'Récord: {days}',
+	'dash.focusScore': 'Puntaje de foco',
+	'dash.peakHour': 'Hora pico',
+	'dash.completion': 'Finalización',
+	'dash.longest': 'Sesión más larga',
+	'dash.periodFocus': 'Foco del período',
+	'score.exceptional': 'Semana excepcional',
+	'score.strong': 'Ritmo sólido',
+	'score.steady': 'Constante',
+	'score.warming': 'Calentando',
+	'score.rest': 'Semana de descanso',
+	'achievements.title': 'Logros',
+	'achievements.firstFocus.title': 'Primer Foco',
+	'achievements.weekWarrior.title': 'Guerrero Semanal',
+	'achievements.pomodoroMaster.title': 'Maestro Pomodoro',
+	'achievements.deepDiver.title': 'Buzo Profundo',
+	'achievements.centuryClub.title': 'Club de los Cien',
+	'achievements.earlyBird.title': 'Madrugador',
+	'sessions.recent': 'Sesiones recientes',
+	'sessions.empty': 'Completá tu primera sesión para verla acá.',
+	'review.weekly': 'Repaso semanal',
+	'review.monthly': 'Repaso mensual',
+	'review.dataTab': 'Datos',
+	'review.aiTab': 'Insights IA',
+	'review.aiSoon': 'Los insights de IA llegan con Everywhere+ (pronto en web).',
+	'review.focus': 'Foco',
+	'review.sessions': 'Sesiones',
+	'review.trendUp': 'Subiste {pct}% vs el período anterior',
+	'review.trendDown': 'Bajaste {pct}% vs el período anterior',
+	'review.trendFlat': 'Igual que el período anterior',
+	'review.topTasks': 'Tareas top',
+	'review.modes': 'Modos',
+	'review.bestDay': 'Mejor día:',
+	'auth.title': 'Cuenta',
+	'auth.subtitle': 'Iniciá sesión para sincronizar tu huerto entre dispositivos.',
+	'auth.signIn': 'Iniciar sesión',
+	'auth.signUp': 'Crear cuenta',
+	'auth.nameField': 'Nombre',
+	'auth.emailField': 'Email',
+	'auth.passwordField': 'Contraseña (8+ caracteres)',
+	'auth.working': 'Un momento…',
+	'auth.needAccount': '¿No tenés cuenta?',
+	'auth.haveAccount': 'Ya tengo cuenta',
+	'auth.forgot.link': '¿Olvidaste la contraseña?',
+	'auth.forgot.submit': 'Enviar link de recuperación',
+	'auth.forgot.sent': 'Si el email existe, el link va en camino.',
+	'auth.error.generic': 'Algo salió mal. Probá de nuevo.',
+	'auth.error.invalidCredentials': 'Email o contraseña incorrectos.',
+	'auth.error.invalidEmail': 'Ese email no parece válido.',
+	'auth.error.emailTaken': 'Ese email ya tiene una cuenta.',
+	'auth.error.weakPassword': 'Usá al menos 8 caracteres.',
+	'auth.error.apiMissing': 'El API de sync no está configurado en este build.',
+	'auth.syncHint': 'La sync requiere Everywhere/AI+. Tus datos siempre viven primero en este dispositivo.',
+	'auth.verifyPending': 'Revisá tu inbox para verificar el email — la sync se activa después.',
+	'auth.apiMissing': 'La sync cloud no está configurada en este build (PUBLIC_API_BASE_URL vacío). Todo funciona offline.',
+	'auth.dangerTitle': 'Sesión',
+	'auth.deleteConfirm': 'Esto elimina tu cuenta en la nube. Tu email, para confirmar:',
+	'auth.deleteAccount': 'Eliminar cuenta',
+	'upgrade.title': 'Precios',
+	'upgrade.meta': 'Precios de Pepinillo: free para siempre, Pepinillo+ compra única, Everywhere/AI+ suscripción con sync cloud e IA.',
+	'upgrade.headline': 'Cultivá tu foco, a tu manera',
+	'upgrade.sub': 'Empezá gratis para siempre. Pepinillo+ es una compra, tuya para siempre — no es una suscripción. Everywhere/AI+ suma sync cloud e IA en todas tus pantallas.',
+	'upgrade.signedIn': 'Sesión iniciada como {email}',
+	'upgrade.signInFirst': 'Iniciá sesión primero para comprar en la web',
+	'upgrade.plan.free': 'Free',
+	'upgrade.plan.plus': 'Pepinillo+',
+	'upgrade.plan.everywhere': 'Everywhere/AI+',
+	'upgrade.price.free': '$0',
+	'upgrade.price.plus': '$19.99 una vez',
+	'upgrade.price.everywhere': '$4.99/mes · $34.99/año',
+	'upgrade.note.free': 'Todo para empezar el hábito',
+	'upgrade.note.plus': 'Una compra. Tuya para siempre. No es una suscripción.',
+	'upgrade.note.everywhere': 'Todo lo de Pepinillo+, en todas tus pantallas.',
+	'upgrade.flag.best': 'El más completo',
+	'upgrade.free.pomodoro': 'Pomodoro + Cronómetro',
+	'upgrade.free.stopwatch': '3 tareas activas',
+	'upgrade.free.tasks': 'Analítica: hoy + 7 días',
+	'upgrade.free.analytics': 'Offline completo, sin cuenta',
+	'upgrade.plus.modes': 'Flowtime + Bloques de tiempo',
+	'upgrade.plus.tasks': 'Tareas ilimitadas',
+	'upgrade.plus.subtasks': 'Subtareas + recurrencia',
+	'upgrade.plus.themes': 'Temas Bosque, Océano y Atardecer',
+	'upgrade.plus.analytics': 'Analítica completa (30 días + 1 año)',
+	'upgrade.plus.soundscapes': 'Todos los paisajes sonoros',
+	'upgrade.everywhere.plusIncluded': 'Todo lo de Pepinillo+',
+	'upgrade.everywhere.sync': 'Sync cloud entre dispositivos (LWW, como en las apps nativas)',
+	'upgrade.everywhere.ai': 'Insights de IA: repasos, tips y predicciones',
+	'upgrade.everywhere.recovery': 'Recuperación de cuenta — tus datos a salvo aunque pierdas un dispositivo',
+	'upgrade.everywhere.web': 'Acceso completo a esta app web',
+	'upgrade.cta.free': 'Abrir la app',
+	'upgrade.cta.plus': 'Comprar una vez',
+	'upgrade.cta.everywhere': 'Suscribirme',
+	'upgrade.working': 'Abriendo…',
+	'upgrade.checkoutError': 'No pudimos abrir el checkout. Probá en un momento.',
+	'upgrade.portalError': 'No pudimos abrir el portal de pagos. ¿Tenés una suscripción web?',
+	'upgrade.storesTitle': '¿Preferís las apps nativas?',
+	'upgrade.storesBody': 'Pepinillo vive nativo en iPhone, iPad, Mac, Android y Wear OS — con widgets, complicaciones de reloj y Live Activities.',
+	'upgrade.storeApp': 'App Store',
+	'upgrade.storePlay': 'Google Play',
+	'upgrade.manageTitle': 'Gestioná tu suscripción web',
+	'upgrade.manageBody': 'Cambiá de plan, actualizá el medio de pago o cancelá — directo en el portal de Stripe.',
+	'upgrade.manageCta': 'Abrir portal de pagos',
+	'legal.privacy': 'Privacidad',
+	'legal.terms': 'Términos',
+	'auth.deleteFailed': 'No pudimos eliminar la cuenta ahora. Probá de nuevo o contactá soporte.',
+	'ai.cardTitle': 'Insights de IA',
+	'ai.gated': 'Los insights de IA son de Everywhere/AI+.',
+	'ai.upgradeCta': 'Mejorar',
+	'ai.loading': 'Pensando…',
+	'ai.error': 'La IA no está disponible ahora. Probá más tarde.',
+	'ai.empty': 'Sin insights de IA para este período — completá unas sesiones primero.',
+	'ai.highlights': 'Lo destacado',
+	'ai.insights': 'Insights',
+	'ai.optimalHours': 'Horas óptimas',
+	'ai.burnout': 'Riesgo de burnout',
+	'sync.title': 'Sync cloud',
+	'sync.hint': 'Last-Write-Wins con el reloj del servidor, como en las apps nativas.',
+	'sync.last': 'Última sync',
+	'sync.live': 'Actualizaciones en vivo conectadas',
+	'sync.offline': 'Actualizaciones en vivo apagadas',
+	'sync.mergeTitle': 'Encontramos datos en la nube',
+	'sync.mergeBody': 'Esta cuenta ya tiene datos en la nube. ¿Te quedás con la versión de la nube o pisás la nube con lo que hay en este dispositivo?',
+	'sync.mergePull': 'Usar los datos de la nube',
+	'sync.mergeUpload': 'Subir este dispositivo'
 };
 
 const pt: Dict = {
@@ -1113,7 +1521,143 @@ const pt: Dict = {
 	'plan.empty.body': 'Adicione sua primeira tarefa acima — sua horta começa aqui.',
 	'quickCapture.title': 'Captura rápida',
 	'quickCapture.placeholder': 'Capturar uma tarefa…',
-	'quickCapture.hint': '⌘K / Ctrl+K de qualquer lugar'
+	'quickCapture.hint': '⌘K / Ctrl+K de qualquer lugar',
+	'period.7': '7D',
+	'period.30': '30D',
+	'period.365': '1A',
+	'chart.week': 'Esta semana',
+	'chart.modes': 'Modos',
+	'chart.day.sun': 'Dom',
+	'chart.day.mon': 'Seg',
+	'chart.day.tue': 'Ter',
+	'chart.day.wed': 'Qua',
+	'chart.day.thu': 'Qui',
+	'chart.day.fri': 'Sex',
+	'chart.day.sat': 'Sáb',
+	'dash.best': 'Recorde: {days}',
+	'dash.focusScore': 'Pontuação de foco',
+	'dash.peakHour': 'Hora de pico',
+	'dash.completion': 'Conclusão',
+	'dash.longest': 'Sessão mais longa',
+	'dash.periodFocus': 'Foco do período',
+	'score.exceptional': 'Semana excepcional',
+	'score.strong': 'Ritmo forte',
+	'score.steady': 'Constante',
+	'score.warming': 'Aquecendo',
+	'score.rest': 'Semana de descanso',
+	'achievements.title': 'Conquistas',
+	'achievements.firstFocus.title': 'Primeiro Foco',
+	'achievements.weekWarrior.title': 'Guerreiro Semanal',
+	'achievements.pomodoroMaster.title': 'Mestre Pomodoro',
+	'achievements.deepDiver.title': 'Mergulhador Profundo',
+	'achievements.centuryClub.title': 'Clube dos Cem',
+	'achievements.earlyBird.title': 'Madrugador',
+	'sessions.recent': 'Sessões recentes',
+	'sessions.empty': 'Complete sua primeira sessão para vê-la aqui.',
+	'review.weekly': 'Revisão semanal',
+	'review.monthly': 'Revisão mensual',
+	'review.dataTab': 'Dados',
+	'review.aiTab': 'Insights IA',
+	'review.aiSoon': 'Insights de IA chegam com Everywhere+ (em breve na web).',
+	'review.focus': 'Foco',
+	'review.sessions': 'Sessões',
+	'review.trendUp': 'Você subiu {pct}% vs o período anterior',
+	'review.trendDown': 'Você caiu {pct}% vs o período anterior',
+	'review.trendFlat': 'Igual ao período anterior',
+	'review.topTasks': 'Tarefas top',
+	'review.modes': 'Modos',
+	'review.bestDay': 'Melhor dia:',
+	'auth.title': 'Conta',
+	'auth.subtitle': 'Entre para sincronizar sua horta entre dispositivos.',
+	'auth.signIn': 'Entrar',
+	'auth.signUp': 'Criar conta',
+	'auth.nameField': 'Nome',
+	'auth.emailField': 'Email',
+	'auth.passwordField': 'Senha (8+ caracteres)',
+	'auth.working': 'Um momento…',
+	'auth.needAccount': 'Não tem conta?',
+	'auth.haveAccount': 'Já tenho conta',
+	'auth.forgot.link': 'Esqueceu a senha?',
+	'auth.forgot.submit': 'Enviar link de recuperação',
+	'auth.forgot.sent': 'Se o email existir, o link está a caminho.',
+	'auth.error.generic': 'Algo deu errado. Tente de novo.',
+	'auth.error.invalidCredentials': 'Email ou senha incorretos.',
+	'auth.error.invalidEmail': 'Esse email não parece válido.',
+	'auth.error.emailTaken': 'Esse email já tem uma conta.',
+	'auth.error.weakPassword': 'Use pelo menos 8 caracteres.',
+	'auth.error.apiMissing': 'O API de sync não está configurado neste build.',
+	'auth.syncHint': 'A sync requer Everywhere/AI+. Seus dados sempre vivem primeiro neste dispositivo.',
+	'auth.verifyPending': 'Verifique seu email na caixa de entrada — a sync ativa depois disso.',
+	'auth.apiMissing': 'A sync cloud não está configurada neste build (PUBLIC_API_BASE_URL vazio). Tudo funciona offline.',
+	'auth.dangerTitle': 'Sessão',
+	'auth.deleteConfirm': 'Isso remove sua conta na nuvem. Seu email, para confirmar:',
+	'auth.deleteAccount': 'Excluir conta',
+	'upgrade.title': 'Preços',
+	'upgrade.meta': 'Preços do Pepinillo: free para sempre, Pepinillo+ compra única, Everywhere/AI+ assinatura com sync cloud e IA.',
+	'upgrade.headline': 'Cultive seu foco, do seu jeito',
+	'upgrade.sub': 'Comece grátis para sempre. Pepinillo+ é uma compra, sua para sempre — não é assinatura. Everywhere/AI+ adiciona sync cloud e IA em todas as suas telas.',
+	'upgrade.signedIn': 'Conectado como {email}',
+	'upgrade.signInFirst': 'Entre primeiro para comprar na web',
+	'upgrade.plan.free': 'Free',
+	'upgrade.plan.plus': 'Pepinillo+',
+	'upgrade.plan.everywhere': 'Everywhere/AI+',
+	'upgrade.price.free': '$0',
+	'upgrade.price.plus': '$19.99 uma vez',
+	'upgrade.price.everywhere': '$4.99/mês · $34.99/ano',
+	'upgrade.note.free': 'Tudo para começar o hábito',
+	'upgrade.note.plus': 'Uma compra. Sua para sempre. Não é assinatura.',
+	'upgrade.note.everywhere': 'Tudo do Pepinillo+, em todas as suas telas.',
+	'upgrade.flag.best': 'O mais completo',
+	'upgrade.free.pomodoro': 'Pomodoro + Cronômetro',
+	'upgrade.free.stopwatch': '3 tarefas ativas',
+	'upgrade.free.tasks': 'Métricas: hoje + 7 dias',
+	'upgrade.free.analytics': 'Offline completo, sem conta',
+	'upgrade.plus.modes': 'Flowtime + Blocos de tempo',
+	'upgrade.plus.tasks': 'Tarefas ilimitadas',
+	'upgrade.plus.subtasks': 'Subtarefas + recorrência',
+	'upgrade.plus.themes': 'Temas Floresta, Oceano e Pôr do sol',
+	'upgrade.plus.analytics': 'Métricas completas (30 dias + 1 ano)',
+	'upgrade.plus.soundscapes': 'Todas as paisagens sonoras',
+	'upgrade.everywhere.plusIncluded': 'Tudo do Pepinillo+',
+	'upgrade.everywhere.sync': 'Sync cloud entre dispositivos (LWW, como nos apps nativos)',
+	'upgrade.everywhere.ai': 'Insights de IA: revisões, dicas e previsões',
+	'upgrade.everywhere.recovery': 'Recuperação de conta — seus dados a salvo mesmo se perder um dispositivo',
+	'upgrade.everywhere.web': 'Acesso completo a este app web',
+	'upgrade.cta.free': 'Abrir o app',
+	'upgrade.cta.plus': 'Comprar uma vez',
+	'upgrade.cta.everywhere': 'Assinar',
+	'upgrade.working': 'Abrindo…',
+	'upgrade.checkoutError': 'Não conseguimos abrir o checkout. Tente em instantes.',
+	'upgrade.portalError': 'Não conseguimos abrir o portal de pagos. Você tem uma assinatura web?',
+	'upgrade.storesTitle': 'Prefere os apps nativos?',
+	'upgrade.storesBody': 'O Pepinillo vive nativo no iPhone, iPad, Mac, Android e Wear OS — com widgets, complicações de relógio e Live Activities.',
+	'upgrade.storeApp': 'App Store',
+	'upgrade.storePlay': 'Google Play',
+	'upgrade.manageTitle': 'Gerencie sua assinatura web',
+	'upgrade.manageBody': 'Mude de plano, atualize o meio de pagamento ou cancele — direto no portal do Stripe.',
+	'upgrade.manageCta': 'Abrir portal de pagos',
+	'legal.privacy': 'Privacidade',
+	'legal.terms': 'Termos',
+	'auth.deleteFailed': 'Não conseguimos excluir a conta agora. Tente de novo ou contate o suporte.',
+	'ai.cardTitle': 'Insights de IA',
+	'ai.gated': 'Insights de IA são um recurso do Everywhere/AI+.',
+	'ai.upgradeCta': 'Fazer upgrade',
+	'ai.loading': 'Pensando…',
+	'ai.error': 'A IA não está disponível agora. Tente mais tarde.',
+	'ai.empty': 'Sem insights de IA para este período — complete algumas sessões primeiro.',
+	'ai.highlights': 'Destaques',
+	'ai.insights': 'Insights',
+	'ai.optimalHours': 'Horas ideais',
+	'ai.burnout': 'Risco de burnout',
+	'sync.title': 'Sync cloud',
+	'sync.hint': 'Last-Write-Wins com o relógio do servidor, como nos apps nativos.',
+	'sync.last': 'Última sync',
+	'sync.live': 'Atualizações ao vivo conectadas',
+	'sync.offline': 'Atualizações ao vivo desligadas',
+	'sync.mergeTitle': 'Encontramos dados na nuvem',
+	'sync.mergeBody': 'Esta conta já tem dados na nuvem. Fica com a versão da nuvem ou sobrescreve a nuvem com o que há neste dispositivo?',
+	'sync.mergePull': 'Usar os dados da nuvem',
+	'sync.mergeUpload': 'Enviar deste dispositivo'
 };
 
 const catalogs: Record<LocaleCode, Dict> = { en, es, pt };

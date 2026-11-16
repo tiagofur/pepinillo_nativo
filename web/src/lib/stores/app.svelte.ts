@@ -113,6 +113,11 @@ class AppStore {
 		this.updatePrefs({ soundscape: name });
 	}
 
+	/** Tier comes from the server session (W5 auth); runtime-only. */
+	setTier(tier: EntitlementTier): void {
+		this.tier = tier;
+	}
+
 	setSoundscapeVolume(volume: number): void {
 		this.updatePrefs({ soundscapeVolume: Math.min(1, Math.max(0, volume)) });
 	}
