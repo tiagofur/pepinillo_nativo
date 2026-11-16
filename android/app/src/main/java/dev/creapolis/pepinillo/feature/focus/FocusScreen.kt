@@ -251,8 +251,11 @@ fun FocusScreen(
         sessionActive = morphSessionActive,
         reduceMotion = reduceMotion,
     )
+    // Ring parity with iOS: the squircle urgency morph is retired — the ring is
+    // always a circle on every platform (#794-followup). rawMorphTarget keeps
+    // computing for the seam, but the animated value is pinned to 0.
     val morphProgress by animateFloatAsState(
-        targetValue = rawMorphTarget,
+        targetValue = 0f,
         animationSpec = NavigationTransitions.expressiveSpring(),
         label = "morphProgress",
     )

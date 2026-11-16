@@ -1,16 +1,10 @@
 package dev.creapolis.pepinillo.feature.focus.components
 
 import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
@@ -53,22 +47,6 @@ fun CircularTimerRing(
     val dashPx = with(LocalDensity.current) { 4.dp.toPx() }
     val gapPx = with(LocalDensity.current) { 10.dp.toPx() }
 
-    // Ring pulse — disabled when reduce-motion is on (#401).
-    val pulseAlpha by if (isReduceMotionEnabled()) {
-        remember { mutableStateOf(0.5f) }
-    } else {
-        val infiniteTransition = rememberInfiniteTransition(label = "ringPulse")
-        infiniteTransition.animateFloat(
-            initialValue = 0.3f,
-            targetValue = 0.7f,
-            animationSpec = infiniteRepeatable(
-                animation = tween(MotionScheme.DURATION_RING_PULSE, easing = FastOutSlowInEasing),
-                repeatMode = RepeatMode.Reverse
-            ),
-            label = "pulseAlpha"
-        )
-    }
-
     // Reduce Motion also disables morphing — the ring stays perfectly circular (#492).
     val reduceMotion = isReduceMotionEnabled()
     val actualMorph = if (reduceMotion) 0f else morphProgress
@@ -84,11 +62,12 @@ fun CircularTimerRing(
         // reads as idle. Mirrors the iOS "ensure count-up ring reads active" fix.
         val displayProgress = if (isRunning && progress < 0.02f) 0.02f else progress
 
-        // When morphProgress > 0, the ring is a rounded rectangle inscribed in the canvas.
-        // cornerRadius interpolates from diameter/2 (a perfect circle inscribed in the canvas)
-        // down to ~0.22·diameter (a perceptible squircle). Going below the inscribed-circle
-        // radius is what produces the visible corner flattening of the squircle.
-        if (actualMorph > 0.01f) {
+        // Ring parity with iOS (#794-followup): the ring is ALWAYS a circle — the
+        // Sprint 6 squircle urgency morph existed only on Android and broke
+        // cross-platform brand coherence (Tiago's call: "the rings must look as
+        // alike as possible, each platform with its native accent"). morphProgress
+        // stays in the signature for call-site compatibility but is ignored.
+        if (false && actualMorph > 0.01f) {
             // Linear interpolation: start + (end - start) * amount.
             // circleRadius (inscribed circle) → squircleRadius as actualMorph goes 0 → 1.
             val circleRadius = diameter / 2f
@@ -127,7 +106,7 @@ fun CircularTimerRing(
             if (isRunning && displayProgress > 0f && displayProgress < 1f) {
                 drawPath(
                     path = ringPath,
-                    color = ringColor.copy(alpha = pulseAlpha * 0.4f),
+                    color = trackColor,
                     style = Stroke(width = strokeWidthPx * 1.4f, cap = StrokeCap.Round),
                 )
             }
@@ -182,7 +161,7 @@ fun CircularTimerRing(
             // Subtle pulse glow behind the progress arc
             if (isRunning && displayProgress > 0f && displayProgress < 1f) {
                 drawArc(
-                    color = ringColor.copy(alpha = pulseAlpha * 0.4f),
+                    color = trackColor,
                     startAngle = -90f,
                     sweepAngle = 360f * displayProgress.coerceIn(0f, 1f),
                     useCenter = false,
