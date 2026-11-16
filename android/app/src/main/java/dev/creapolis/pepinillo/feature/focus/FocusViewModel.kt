@@ -15,6 +15,8 @@ import dev.creapolis.pepinillo.core.billing.FeatureGate
 import dev.creapolis.pepinillo.data.local.preferences.UserPreferencesRepository
 import dev.creapolis.pepinillo.data.repository.SessionRepository
 import dev.creapolis.pepinillo.domain.streak.StreakProtectionService
+import dev.creapolis.pepinillo.domain.celebration.Milestone
+import dev.creapolis.pepinillo.domain.celebration.MilestoneCelebration
 import dev.creapolis.pepinillo.domain.streak.StreakRecordCelebration
 import dev.creapolis.pepinillo.data.repository.TaskRepository
 import dev.creapolis.pepinillo.domain.soundscape.Soundscape
@@ -149,6 +151,11 @@ class FocusViewModel @Inject constructor(
     /** Streak value to celebrate as a new record, or null. Cleared on journal dismiss. */
     private val _streakRecordCelebration = MutableStateFlow<Int?>(null)
     val streakRecordCelebration: StateFlow<Int?> = _streakRecordCelebration.asStateFlow()
+
+    // Milestone celebration pending display (#776 Batch D — first session /
+    // streak day / session count / personal best; one at a time).
+    private val _milestoneCelebration = MutableStateFlow<Milestone?>(null)
+    val milestoneCelebration: StateFlow<Milestone?> = _milestoneCelebration.asStateFlow()
     private val _selectedSoundscape = MutableStateFlow<Soundscape?>(null)
     private val _soundscapeVolume = MutableStateFlow(0.5f)
     private val _showSoundscapePicker = MutableStateFlow(false)
@@ -278,7 +285,12 @@ class FocusViewModel @Inject constructor(
                 } else {
                     checkReviewEligibility()
                 }
-                evaluateStreakRecordCelebration(prefs)
+                evaluateMilestoneCelebration(prefs)
+                if (_milestoneCelebration.value == null) {
+                    // One celebration per completion: a milestone consumes the
+                    // moment (the record banner fires on the next one).
+                    evaluateStreakRecordCelebration(prefs)
+                }
             }
         }
 
@@ -594,6 +606,62 @@ class FocusViewModel @Inject constructor(
     /** Haptic trigger fired by the celebration UI once the record block has appeared (#729). */
     fun onStreakRecordShown() {
         viewModelScope.launch { feedbackManager.onStreakRecordCelebration() }
+    }
+
+    /**
+     * Milestone detection after a completed work session (#776 Batch D —
+     * the Android twin of iOS #774). Latches persist BEFORE the state flips
+     * (crash can never re-fire a milestone), and the personal-best latch
+     * seeds SILENTLY from the all-time best the first time an existing
+     * user completes a session — nobody celebrates a false record.
+     */
+    private suspend fun evaluateMilestoneCelebration(prefs: dev.creapolis.pepinillo.data.local.preferences.UserPreferences) {
+        val allDays = sessionRepository.getAllDaysWithSessions().first()
+        val allTimeSessions = allDays.sumOf { it.sessionsCompleted }
+        val longestTodayMinutes = sessionRepository.getTodayStats().first()?.longestSessionMinutes ?: 0
+        val streakDays = StreakProtectionService.computeProtectedStreak(
+            history = allDays,
+            isPro = featureGate.isPro,
+        ).days
+
+        var lastBestMinutes = prefs.milestoneLastBestMinutes
+        if (lastBestMinutes == 0 && allTimeSessions > 1) {
+            // Existing user: seed with the true all-time best before comparing.
+            lastBestMinutes = allDays.maxOfOrNull { it.longestSessionMinutes } ?: 0
+            prefsRepo.updateMilestoneLatches(lastBestMinutes = lastBestMinutes)
+        }
+
+        val milestone = MilestoneCelebration.detect(
+            allTimeSessions = allTimeSessions,
+            streakDays = streakDays,
+            longestTodayMinutes = longestTodayMinutes,
+            latches = Milestone.Latches(
+                firstSessionDone = prefs.milestoneFirstSessionDone,
+                lastSessionCount = prefs.milestoneLastSessionCount,
+                lastBestMinutes = lastBestMinutes,
+            ),
+        ) ?: return
+
+        // Persist the latch for whatever fired before presenting.
+        when (milestone) {
+            is Milestone.FirstSession ->
+                prefsRepo.updateMilestoneLatches(firstSessionDone = true)
+            is Milestone.SessionCount ->
+                prefsRepo.updateMilestoneLatches(
+                    lastSessionCount = MilestoneCelebration.SESSION_THRESHOLDS
+                        .lastOrNull { allTimeSessions >= it } ?: 0,
+                )
+            is Milestone.PersonalBest ->
+                prefsRepo.updateMilestoneLatches(lastBestMinutes = longestTodayMinutes)
+            is Milestone.StreakDay -> Unit // daily granularity self-latches
+        }
+
+        _milestoneCelebration.value = milestone
+        viewModelScope.launch { feedbackManager.onMilestoneCelebration() }
+    }
+
+    fun consumeMilestoneCelebration() {
+        _milestoneCelebration.value = null
     }
 
     /**

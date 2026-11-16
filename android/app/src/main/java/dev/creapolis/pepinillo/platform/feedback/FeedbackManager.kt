@@ -102,6 +102,17 @@ class FeedbackManager @Inject constructor(
         vibrateCelebrate()
     }
 
+    /**
+     * "Ta-da" haptic for milestone celebrations (#776 Batch D): first session,
+     * session count, personal best, streak-day thresholds. Same quiet waveform
+     * as the streak-record moment.
+     */
+    suspend fun onMilestoneCelebration() {
+        val prefs = prefsRepo.preferences.first()
+        if (!prefs.vibrationEnabled) return
+        vibrateCelebrate()
+    }
+
     private fun showCompletionNotification(mode: FocusMode, phase: FocusPhase) {
         val (titleRes, textRes) = completionMessageRes(mode, phase)
         val title = context.getString(titleRes)
