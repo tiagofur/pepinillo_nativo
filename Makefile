@@ -1,4 +1,4 @@
-.PHONY: help preflight test test-factory test-backend test-android contracts-lint contracts-diff handoff bootstrap labels
+.PHONY: help preflight test test-factory test-backend test-android test-web contracts-lint contracts-diff handoff bootstrap labels
 
 help: ## Show available Software Factory commands
 	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n\nTargets:\n"} /^[a-zA-Z0-9_-]+:.*?##/ { printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
@@ -18,6 +18,9 @@ test-backend: ## Run backend unit tests
 
 test-android: ## Run Android & Wear unit tests
 	cd android && ./gradlew :app:testDebugUnitTest :wear:testDebugUnitTest
+
+test-web: ## Run web unit tests (no-op until web/ lands in W1, epic #809)
+	@if [ -d web ]; then (cd web && pnpm test); else echo "web/ not present yet (epic #809 W1) — skipping"; fi
 
 contracts-lint: ## Lint OpenAPI 3.1 contract with Spectral (C2)
 	$(MAKE) -C contracts lint
