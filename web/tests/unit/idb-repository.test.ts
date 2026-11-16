@@ -80,7 +80,7 @@ function makeTask(id: string, title: string, status: Task['status'] = 'active'):
 		title,
 		status,
 		priority: 'medium',
-		energy: 'medium',
+		energy: 'shallow',
 		estimatedPomodoros: 1,
 		list: 'inbox',
 		order: 0,

@@ -8,7 +8,7 @@ function makeTask(overrides: Partial<Task>): Task {
 		title: 'task',
 		status: 'active',
 		priority: 'medium',
-		energy: 'medium',
+		energy: 'shallow',
 		estimatedPomodoros: 1,
 		list: 'today',
 		order: 0,

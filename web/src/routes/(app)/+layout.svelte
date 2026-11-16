@@ -5,6 +5,7 @@
 	import { t } from '$lib/i18n/i18n.svelte';
 	import type { MessageKey } from '$lib/i18n/messages';
 	import Icon from '$lib/design/Icon.svelte';
+	import QuickCapture from '$lib/features/plan/QuickCapture.svelte';
 	import logoUrl from '$lib/assets/logo.svg';
 
 	onMount(() => {
@@ -65,6 +66,8 @@
 		{@render children?.()}
 	</main>
 </div>
+
+<QuickCapture />
 
 <!-- Mobile bottom tab bar -->
 <nav class="tabbar tabbar-fixed" aria-label={t('app.name')}>

@@ -2,11 +2,20 @@
 
 export type FocusMode = 'pomodoro' | 'stopwatch' | 'flowtime' | 'timeblock';
 
-export type TaskPriority = 'low' | 'medium' | 'high';
-export type TaskEnergy = 'low' | 'medium' | 'high';
+export type TaskPriority = 'none' | 'low' | 'medium' | 'high';
+export type TaskEnergy = 'deep' | 'shallow' | 'admin';
 export type TaskList = 'inbox' | 'today' | 'upcoming';
 
 export type TaskStatus = 'active' | 'completed' | 'archived';
+
+/** Subtask embedded in the Task record (Pepinillo+ feature). */
+export interface SubTask {
+	id: string;
+	title: string;
+	isCompleted: boolean;
+	sortOrder: number;
+	createdAt: string;
+}
 
 export interface Task {
 	id: string;
@@ -19,9 +28,16 @@ export interface Task {
 	order: number;
 	createdAt: string;
 	updatedAt: string;
-	/** Free: always empty / undefined */
-	subtasks?: never;
-	recurrence?: never;
+	/* ---- W3 parity fields (Room v14 / SchemaV6) ---- */
+	notes?: string;
+	completedPomodoros?: number;
+	dueDate?: string | null;
+	scheduledForToday?: boolean;
+	completedAt?: string | null;
+	subtasks?: SubTask[];
+	recurrenceRule?: string | null;
+	/** Recurring series: when this occurrence was last completed. */
+	lastCompletedAt?: string | null;
 }
 
 export type SessionStatus = 'idle' | 'running' | 'paused' | 'completed' | 'skipped';
