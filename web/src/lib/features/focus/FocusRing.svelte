@@ -19,7 +19,7 @@
 
 <div class="stage mode-stage" class:is-running={focus.running}>
 	<svg class="ring" viewBox="0 0 280 280" role="img" aria-label={focus.displayTime}>
-		<circle class="ring-track" cx="140" cy="140" r={R} />
+		<circle class="ring-track" cx="140" cy="140" r={R} style="stroke: color-mix(in srgb, {focus.phaseColor} 14%, transparent)" />
 		<circle
 			class="ring-fill"
 			cx="140"
@@ -30,7 +30,7 @@
 	</svg>
 	<div class="readout">
 		<span class="phase">{t(phaseKey)}</span>
-		<span class="time nums">{focus.displayTime}</span>
+		<span class="time nums" style="color: {focus.running || focus.paused ? focus.phaseColor : 'var(--ink)'}">{focus.displayTime}</span>
 		{#if focus.mode === 'pomodoro' && focus.phase === 'work'}
 			<span class="pips" aria-hidden="true">
 				{#each { length: focus.beforeLongBreak } as _, i (i)}

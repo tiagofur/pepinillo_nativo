@@ -198,6 +198,7 @@ export type MessageKey =
 	| 'companion.streak'
 	| 'companion.pomodoroNumber'
 	| 'companion.activeTask'
+	| 'companion.streakEmpty'
 	| 'companion.suggest.title'
 	| 'companion.suggest.apply'
 	| 'adhd.breathe'
@@ -269,6 +270,7 @@ export type MessageKey =
 	| 'period.30'
 	| 'period.365'
 	| 'chart.week'
+	| 'chart.window'
 	| 'chart.modes'
 	| 'chart.day.sun'
 	| 'chart.day.mon'
@@ -401,6 +403,18 @@ export type MessageKey =
 	| 'ai.insights'
 	| 'ai.optimalHours'
 	| 'ai.burnout'
+	| 'settings.dailyReminder'
+	| 'settings.reminderHour'
+	| 'settings.reminderMinute'
+	| 'settings.reminderNext'
+	| 'settings.weeklyRecap'
+	| 'settings.streak.title'
+	| 'settings.celebrateRecords'
+	| 'settings.privacy.title'
+	| 'settings.analytics'
+	| 'settings.analytics.hint'
+	| 'settings.startup.title'
+	| 'settings.startup.hint'
 	| 'landing.nav.guides'
 	| 'landing.nav.pricing'
 	| 'landing.nav.open'
@@ -651,6 +665,7 @@ const en: Dict = {
 	'companion.focusToday': 'Focus today',
 	'companion.sessionsToday': 'Sessions today',
 	'companion.streak': 'Streak',
+	'companion.streakEmpty': 'Start your streak',
 	'companion.pomodoroNumber': 'Pomodoro #',
 	'companion.activeTask': 'Active task',
 	'companion.suggest.title': 'Suggested for now',
@@ -724,6 +739,7 @@ const en: Dict = {
 	'period.30': '30D',
 	'period.365': '1Y',
 	'chart.week': 'This week',
+	'chart.window': 'Last {days} days',
 	'chart.modes': 'Modes',
 	'chart.day.sun': 'Sun',
 	'chart.day.mon': 'Mon',
@@ -847,6 +863,18 @@ const en: Dict = {
 	'ai.insights': 'Insights',
 	'ai.optimalHours': 'Optimal hours',
 	'ai.burnout': 'Burnout risk',
+	'settings.dailyReminder': 'Daily reminder',
+	'settings.reminderHour': 'Hour',
+	'settings.reminderMinute': 'Minute',
+	'settings.reminderNext': 'next in {time}',
+	'settings.weeklyRecap': 'Weekly recap notification',
+	'settings.streak.title': 'Streak',
+	'settings.celebrateRecords': 'Celebrate new records',
+	'settings.privacy.title': 'Privacy',
+	'settings.analytics': 'Share anonymous usage metrics',
+	'settings.analytics.hint': 'PII-free aggregated stats. Off by default; nothing is sent unless you opt in.',
+	'settings.startup.title': 'Startup',
+	'settings.startup.hint': 'The section the app opens on (Mac parity).',
 	'landing.nav.guides': 'Guides',
 	'landing.nav.pricing': 'Pricing',
 	'landing.nav.open': 'Open app',
@@ -1138,6 +1166,7 @@ const es: Dict = {
 	'companion.focusToday': 'Enfoque hoy',
 	'companion.sessionsToday': 'Sesiones hoy',
 	'companion.streak': 'Racha',
+	'companion.streakEmpty': 'Empezá tu racha',
 	'companion.pomodoroNumber': 'Pomodoro n.º',
 	'companion.activeTask': 'Tarea activa',
 	'companion.suggest.title': 'Sugerido para ahora',
@@ -1211,6 +1240,7 @@ const es: Dict = {
 	'period.30': '30D',
 	'period.365': '1A',
 	'chart.week': 'Esta semana',
+	'chart.window': 'Últimos {days} días',
 	'chart.modes': 'Modos',
 	'chart.day.sun': 'Dom',
 	'chart.day.mon': 'Lun',
@@ -1334,6 +1364,18 @@ const es: Dict = {
 	'ai.insights': 'Insights',
 	'ai.optimalHours': 'Horas óptimas',
 	'ai.burnout': 'Riesgo de burnout',
+	'settings.dailyReminder': 'Recordatorio diario',
+	'settings.reminderHour': 'Hora',
+	'settings.reminderMinute': 'Minuto',
+	'settings.reminderNext': 'próximo en {time}',
+	'settings.weeklyRecap': 'Notificación de repaso semanal',
+	'settings.streak.title': 'Racha',
+	'settings.celebrateRecords': 'Celebrar nuevos récords',
+	'settings.privacy.title': 'Privacidad',
+	'settings.analytics': 'Compartir métricas anónimas de uso',
+	'settings.analytics.hint': 'Estadísticas agregadas sin datos personales. Apagado por defecto; no se envía nada sin tu consentimiento.',
+	'settings.startup.title': 'Inicio',
+	'settings.startup.hint': 'La sección donde abre la app (paridad con Mac).',
 	'landing.nav.guides': 'Guías',
 	'landing.nav.pricing': 'Precios',
 	'landing.nav.open': 'Abrir app',
@@ -1609,6 +1651,7 @@ const pt: Dict = {
 	'companion.focusToday': 'Foco hoje',
 	'companion.sessionsToday': 'Sessões hoje',
 	'companion.streak': 'Sequência',
+	'companion.streakEmpty': 'Comece sua sequência',
 	'companion.pomodoroNumber': 'Pomodoro n.º',
 	'companion.activeTask': 'Tarefa ativa',
 	'companion.suggest.title': 'Sugerido para agora',
@@ -1682,6 +1725,7 @@ const pt: Dict = {
 	'period.30': '30D',
 	'period.365': '1A',
 	'chart.week': 'Esta semana',
+	'chart.window': 'Últimos {days} dias',
 	'chart.modes': 'Modos',
 	'chart.day.sun': 'Dom',
 	'chart.day.mon': 'Seg',
@@ -1805,6 +1849,18 @@ const pt: Dict = {
 	'ai.insights': 'Insights',
 	'ai.optimalHours': 'Horas ideais',
 	'ai.burnout': 'Risco de burnout',
+	'settings.dailyReminder': 'Lembrete diário',
+	'settings.reminderHour': 'Hora',
+	'settings.reminderMinute': 'Minuto',
+	'settings.reminderNext': 'próximo em {time}',
+	'settings.weeklyRecap': 'Notificação de revisão semanal',
+	'settings.streak.title': 'Sequência',
+	'settings.celebrateRecords': 'Celebrar novos recordes',
+	'settings.privacy.title': 'Privacidade',
+	'settings.analytics': 'Compartilhar métricas anônimas de uso',
+	'settings.analytics.hint': 'Estatísticas agregadas sem dados pessoais. Desligado por padrão; nada é enviado sem consentimento.',
+	'settings.startup.title': 'Inicialização',
+	'settings.startup.hint': 'A seção onde o app abre (paridade com o Mac).',
 	'landing.nav.guides': 'Guias',
 	'landing.nav.pricing': 'Preços',
 	'landing.nav.open': 'Abrir app',

@@ -46,7 +46,8 @@ export function computeDashboardStats(
 		(s) => (s.status === 'completed' || s.status === 'skipped') && s.startedAt && isWorkPhase(s.phase)
 	);
 	const stats = buildDailyStats(terminal, now);
-	const weekly = lastNDays(stats, 7, now);
+	// Chart window follows the selected analytics period (7/30/365 days).
+	const weekly = lastNDays(stats, Math.min(period, 365), now);
 
 	const todayKey = localDateKey(now);
 	const today = stats.find((d) => d.date === todayKey);
