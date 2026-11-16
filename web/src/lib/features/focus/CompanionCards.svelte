@@ -38,8 +38,8 @@
 	{/if}
 
 	<div class="card stat">
-		<span class="value nums">{focus.streak > 0 ? `🔥 ${focus.streak}` : '—'}</span>
-		<span class="label">{t('companion.streak')}</span>
+		<span class="value">{focus.streak > 0 ? `🔥 ${focus.streak}` : '🌱'}</span>
+		<span class="label">{focus.streak > 0 ? t('companion.streak') : t('companion.streakEmpty')}</span>
 	</div>
 
 	<div class="card stat">
@@ -64,7 +64,7 @@
 	>
 		<span class="label">{t('companion.suggest.title')}</span>
 		<span class="task-title">
-			{t(`focus.mode.${suggestion.mode}`)} — {t(`focus.suggest.${suggestion.reasonKey}`)}
+			{t(`focus.suggest.${suggestion.reasonKey}`)}
 			{#if suggestionLocked}🔒{/if}
 		</span>
 	</button>

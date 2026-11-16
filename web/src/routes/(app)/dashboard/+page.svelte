@@ -127,7 +127,7 @@
 			{/each}
 		</div>
 
-		<Charts stats={dashboard.stats} />
+		<Charts stats={dashboard.stats} periodDays={dashboard.period} />
 
 		<AiCard />
 

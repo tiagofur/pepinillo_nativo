@@ -4,7 +4,9 @@
 	import type { FocusMode } from '$lib/domain/entities/types';
 	import type { DashboardStats } from '$lib/domain/dashboard/stats';
 
-	let { stats }: { stats: DashboardStats } = $props();
+	let { stats, periodDays = 7 }: { stats: DashboardStats; periodDays?: number } = $props();
+
+	let showDayBars = $derived(periodDays <= 31);
 
 	const MODE_COLORS: Record<FocusMode, string> = {
 		pomodoro: 'var(--mode-pomodoro)',
@@ -53,17 +55,17 @@
 
 <div class="charts">
 	<div class="card chart-card">
-		<h3>{t('chart.week')}</h3>
+		<h3>{periodDays === 7 ? t('chart.week') : t('chart.window', { days: periodDays })}</h3>
 		<svg class="spark" viewBox="0 0 {SPARK_W} {SPARK_H}" preserveAspectRatio="none" aria-hidden="true">
 			<path class="spark-area" d={sparkArea} />
 			<path class="spark-line" d={sparkPath} />
 		</svg>
-		<div class="week-days">
+		<div class="week-days" class:compact={!showDayBars}>
 			{#each stats.weekly as d, i (d.date)}
 				<div class="week-col">
 					<span class="nums week-val">{d.totalFocusSeconds > 0 ? fmtMin(d.totalFocusSeconds) : ''}</span>
 					<div class="week-bar" style="height: {(d.totalFocusSeconds / weekMax) * 100}%; background: {d.totalFocusSeconds > 0 ? 'var(--brand)' : 'var(--surface-sunken)'}"></div>
-					<span class="week-label">{t(WEEKDAY_KEYS[new Date(`${d.date}T12:00:00`).getDay()])}</span>
+					<span class="week-label">{showDayBars ? t(WEEKDAY_KEYS[new Date(`${d.date}T12:00:00`).getDay()]) : ''}</span>
 				</div>
 			{/each}
 		</div>
@@ -154,6 +156,14 @@
 		font-size: 10px;
 		color: var(--faint);
 		font-weight: 600;
+	}
+
+	.week-days.compact .week-bar {
+		border-radius: 1px;
+	}
+
+	.week-days.compact .week-val {
+		display: none;
 	}
 
 	.mode-row {

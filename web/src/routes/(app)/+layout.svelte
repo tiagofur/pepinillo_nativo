@@ -6,14 +6,53 @@
 	import { t } from '$lib/i18n/i18n.svelte';
 	import type { MessageKey } from '$lib/i18n/messages';
 	import Icon from '$lib/design/Icon.svelte';
+	import { msUntilNextFire } from '$lib/domain/notifications/reminder';
 	import QuickCapture from '$lib/features/plan/QuickCapture.svelte';
 	import logoUrl from '$lib/assets/logo.svg';
 
 	onMount(() => {
-		void app.init();
-		// Restore the server session (tier → premium gates) on every route.
-		void auth.init();
+		void (async () => {
+			await app.init();
+			// Restore the server session (tier → premium gates) on every route.
+			await auth.init();
+			// macOS parity: open on the user's default section.
+			if (page.url.pathname === '/focus' && app.prefs.defaultSection !== 'focus') {
+				const { goto } = await import('$app/navigation');
+				await goto(`/${app.prefs.defaultSection}`);
+			}
+			scheduleDailyReminder();
+		})();
 	});
+
+	// Native parity: ⌘1/⌘2/⌘3 jump to Focus/Plan/Dashboard (Mac AppCommands).
+	function onCommandKey(e: KeyboardEvent): void {
+		if (!(e.metaKey || e.ctrlKey) || e.key > '3' || e.key < '1') return;
+		e.preventDefault();
+		const routes: Record<string, '/focus' | '/plan' | '/dashboard'> = {
+			1: '/focus',
+			2: '/plan',
+			3: '/dashboard'
+		};
+		const route = routes[e.key];
+		if (!route) return;
+		void import('$app/navigation').then(({ goto }) => goto(route));
+	}
+	window.addEventListener('keydown', onCommandKey);
+
+	// Daily reminder (native parity): one Notification per day at the configured time.
+	function scheduleDailyReminder(): void {
+		if (!app.prefs.notificationsEnabled || !app.prefs.dailyReminderEnabled) return;
+		if (!('Notification' in window) || Notification.permission !== 'granted') return;
+		const ms = msUntilNextFire(app.prefs.dailyReminderHour, app.prefs.dailyReminderMinute);
+		setTimeout(() => {
+			try {
+				new Notification('Pepinillo', { body: '⏰ Hora de enfocarte — tu huerto espera' });
+			} catch {
+				/* non-fatal */
+			}
+			scheduleDailyReminder();
+		}, ms);
+	}
 
 	const NAV: { path: string; key: MessageKey; icon: string }[] = [
 		{ path: '/focus', key: 'nav.focus', icon: 'focus' },

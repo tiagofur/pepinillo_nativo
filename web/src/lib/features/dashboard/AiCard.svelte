@@ -41,7 +41,7 @@
 			</div>
 		{/if}
 
-		{#if ai.burnoutRisk.status === 'ready' && ai.burnoutRisk.data}
+		{#if ai.burnoutRisk.status === 'ready' && ai.burnoutRisk.data?.summary}
 			<div class="row">
 				<span class="label">🩺 {t('ai.burnout')}</span>
 				<span class="badge badge-soft">{ai.burnoutRisk.data.level}</span>

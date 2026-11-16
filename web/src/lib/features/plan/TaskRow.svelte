@@ -27,11 +27,20 @@
 		ondrop?: () => void;
 	} = $props();
 
+	// Native PriorityColors.kt: fixed semantic colors (not theme-dependent).
 	const PRIORITY_COLOR: Record<string, string> = {
 		none: 'transparent',
-		low: 'var(--mode-flowtime)',
-		medium: 'var(--streak)',
-		high: 'var(--mode-pomodoro)'
+		low: '#1e88e5',
+		medium: '#fb8c00',
+		high: '#e53935'
+	};
+
+	// Native EnergyColors.kt: deep=primary, regular=tertiary, light=secondary
+	// mapped to the shared brand/grammar palette.
+	const ENERGY_COLOR: Record<string, string> = {
+		deep: 'var(--brand)',
+		shallow: 'var(--mode-flowtime)',
+		admin: 'var(--streak)'
 	};
 
 	const ENERGY_LABEL: Record<string, MessageKey> = {
@@ -83,7 +92,7 @@
 			{#if dueLabel}
 				<span class="pill due" class:overdue={task.dueDate && task.dueDate < localDateKey(new Date())}>{dueLabel}</span>
 			{/if}
-			<span class="pill energy">{t(ENERGY_LABEL[task.energy])}</span>
+			<span class="pill energy" style="color: {ENERGY_COLOR[task.energy]}; background: color-mix(in srgb, {ENERGY_COLOR[task.energy]} 10%, transparent)">{t(ENERGY_LABEL[task.energy])}</span>
 		</span>
 	</button>
 
