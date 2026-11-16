@@ -43,10 +43,31 @@ export interface FocusSession {
 	completedAt: string | null;
 	createdAt: string;
 	updatedAt: string;
+	/* ---- W2 record enrichment (additive; sync mappers ignore extras) ---- */
+	phase?: FocusPhase;
+	satisfactionRating?: 1 | 2 | 3 | 4 | 5;
+	interruptions?: number;
+	pauseCount?: number;
+	totalPauseMs?: number;
 }
 
 export type ThemePreference = 'system' | 'light' | 'dark';
 export type LocaleCode = 'en' | 'es' | 'pt';
+
+/** Pomodoro/TImeBlock work phases. Breaks exist only inside a mode flow. */
+export type FocusPhase = 'work' | 'shortBreak' | 'longBreak';
+
+export type CompletionSoundName = 'classic' | 'chime' | 'bell' | 'digital' | 'woodblock';
+export type SoundscapeName =
+	| 'none'
+	| 'rain'
+	| 'forest'
+	| 'cafe'
+	| 'whiteNoise'
+	| 'ocean'
+	| 'fireplace'
+	| 'binaural'
+	| 'lofi';
 
 export interface Preferences {
 	locale: LocaleCode;
@@ -56,6 +77,23 @@ export interface Preferences {
 	autoStartNext: boolean;
 	pomodoroWorkMinutes: number;
 	pomodoroBreakMinutes: number;
+	/* ---- W2 focus parity (defaults mirror the native apps) ---- */
+	pomodoroLongBreakMinutes: number;
+	pomodoroSessionsBeforeLongBreak: number;
+	autoStartBreaks: boolean;
+	autoStartWork: boolean;
+	flowtimeMinSessionMinutes: number;
+	timeBlockMinutes: number;
+	timeBlockMidpointCheckIn: boolean;
+	soundEnabled: boolean;
+	completionSound: CompletionSoundName;
+	soundscape: SoundscapeName;
+	soundscapeVolume: number; // 0..1
+	hapticsEnabled: boolean;
+	keepScreenOn: boolean;
+	showJournalAfterSession: boolean;
+	adhdFriendlyEnabled: boolean;
+	notificationsEnabled: boolean;
 }
 
 export interface DeviceMeta {
@@ -74,5 +112,21 @@ export const DEFAULT_PREFERENCES: Preferences = {
 	onboardingCompleted: false,
 	autoStartNext: false,
 	pomodoroWorkMinutes: 25,
-	pomodoroBreakMinutes: 5
+	pomodoroBreakMinutes: 5,
+	pomodoroLongBreakMinutes: 15,
+	pomodoroSessionsBeforeLongBreak: 4,
+	autoStartBreaks: true,
+	autoStartWork: false,
+	flowtimeMinSessionMinutes: 5,
+	timeBlockMinutes: 60,
+	timeBlockMidpointCheckIn: false,
+	soundEnabled: true,
+	completionSound: 'classic',
+	soundscape: 'none',
+	soundscapeVolume: 0.5,
+	hapticsEnabled: false,
+	keepScreenOn: false,
+	showJournalAfterSession: true,
+	adhdFriendlyEnabled: false,
+	notificationsEnabled: false
 };

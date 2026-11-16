@@ -239,3 +239,16 @@ export async function clearSyncMeta(): Promise<void> {
 	const db = await openDb();
 	await db.delete('meta', SYNC_META_ID);
 }
+
+/* ---- Generic meta values (W2: cycle state, milestone latches) ---- */
+
+export async function getMetaValue<T>(id: string): Promise<T | null> {
+	const db = await openDb();
+	const row = (await db.get('meta', id)) as { id: string; value: T } | undefined;
+	return row ? row.value : null;
+}
+
+export async function setMetaValue<T>(id: string, value: T): Promise<void> {
+	const db = await openDb();
+	await db.put('meta', { id, value });
+}
