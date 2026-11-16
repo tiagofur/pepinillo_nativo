@@ -49,7 +49,10 @@ internal data class NotificationChronometer(
  * modes anchor at the phase start. Paused/idle/waiting states keep the static text
  * (their display time is genuinely frozen). Returns null when no chronometer applies.
  */
-internal fun notificationChronometerFor(state: WearTimerState): NotificationChronometer? {
+internal fun notificationChronometerFor(
+    state: WearTimerState,
+    nowMs: Long = System.currentTimeMillis(),
+): NotificationChronometer? {
     if (state.status != "Running") return null
     return if (WearTimerDisplay.isCountUpMode(state.mode)) {
         state.phaseStartEpochMs
@@ -57,7 +60,13 @@ internal fun notificationChronometerFor(state: WearTimerState): NotificationChro
             ?.let { NotificationChronometer(baseEpochMs = it, countDown = false) }
     } else {
         state.phaseEndEpochMs
-            .takeIf { it > 0L }
+            // The system chronometer renders NEGATIVE once wall clock passes
+            // its anchor. The phase-complete push can arrive late over the
+            // Data Layer, so the countdown anchor is only used while it is
+            // still in the future — after that the notification falls back to
+            // the static (clamped-to-00:00) text until the real state lands
+            // (#814 — the Wear twin of the iOS #785 lesson).
+            .takeIf { it > nowMs }
             ?.let { NotificationChronometer(baseEpochMs = it, countDown = true) }
     }
 }
