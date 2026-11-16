@@ -191,6 +191,18 @@ class FocusTimerService : Service() {
         val totalPauseMillis: Long = 0L,
     )
 
+    /**
+     * True once the engine has been restored (or nothing to restore) in this
+     * process. Action intents (PAUSE/STOP/...) can be the VERY reason the
+     * process was resurrected — the engine is still Idle and Application's
+     * async ACTION_RECOVER has not run yet. Applying the action before the
+     * restore silently no-ops it, the recovery then resurrects the session
+     * Running, and the phase completes at its original wall-clock end while
+     * the user believes it paused/stopped (#808). Every action path calls
+     * [ensureEngineRestored] first; the RECOVER path skips a second restore.
+     */
+    @Volatile private var engineRestoredThisProcess = false
+
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
@@ -211,6 +223,32 @@ class FocusTimerService : Service() {
         ContextCompat.registerReceiver(this, dayChangeReceiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
     }
 
+    /** Restores the engine from the recovery snapshot exactly once per
+     *  process (see [engineRestoredThisProcess]). */
+    private suspend fun ensureEngineRestored() {
+        if (engineRestoredThisProcess) return
+        val recovery = readRecoveryState(this)
+        if (recovery != null) {
+            val elapsed = if (recovery.status == TimerStatus.WaitingForNext) 0L
+            else recovery.elapsedMillis
+            focusEngine.restoreState(
+                mode = recovery.mode,
+                phase = recovery.phase,
+                elapsedMillis = elapsed,
+                totalMillis = recovery.totalMillis,
+                completedSessions = recovery.completedSessions,
+                sessionStartTime = recovery.sessionStartTime,
+                status = recovery.status,
+                savedDayStart = recovery.savedDayStart,
+                linkedTaskId = recovery.linkedTaskId,
+                pomodoroNumber = recovery.pomodoroNumber,
+                pauseCount = recovery.pauseCount,
+                totalPauseMillis = recovery.totalPauseMillis,
+            )
+        }
+        engineRestoredThisProcess = true
+    }
+
     private fun startForegroundCompat(notification: Notification) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
@@ -223,6 +261,13 @@ class FocusTimerService : Service() {
         // null intent = START_STICKY restart after process death — attempt recovery
         if (intent == null || intent.action == ACTION_RECOVER) {
             startForegroundCompat(buildNotification(focusEngine.state.value))
+            if (engineRestoredThisProcess) {
+                // An action intent already restored the engine in this process
+                // (see ensureEngineRestored) — a second restore would resurrect
+                // a stale Running snapshot over the action just applied (#808).
+                startCollectingIfNeeded()
+                return START_STICKY
+            }
             val recovery = readRecoveryState(this)
             if (recovery != null) {
                 serviceScope.launch {
@@ -243,7 +288,9 @@ class FocusTimerService : Service() {
                         totalPauseMillis = recovery.totalPauseMillis,
                     )
                 }
+                engineRestoredThisProcess = true
             } else {
+                engineRestoredThisProcess = true
                 if (intent?.action == ACTION_RECOVER) {
                     // Cold start with stale widget — recovery already cleared by bootstrap.
                     stopSelf()
@@ -268,20 +315,30 @@ class FocusTimerService : Service() {
         startForegroundCompat(buildNotification(focusEngine.state.value))
 
         when (intent.action) {
-            ACTION_PAUSE -> focusEngine.pause()
-            ACTION_RESUME -> {
+            ACTION_PAUSE -> serviceScope.launch {
+                ensureEngineRestored()
+                focusEngine.pause()
+            }
+            ACTION_RESUME -> serviceScope.launch {
+                ensureEngineRestored()
                 focusEngine.start()
             }
             ACTION_STOP -> {
+                serviceScope.launch {
+                // The stop intent may be what resurrected this process (#808):
+                // restore FIRST or stop() no-ops against an Idle engine and the
+                // pending ACTION_RECOVER would bring the session back Running.
+                ensureEngineRestored()
                 // Capture the current mode before triggering the async stop coroutine,
                 // then push the idle reset values immediately using the default display time
                 // for that mode. This prevents the watch UI from freezing on the last
                 // running timer value while focusEngine.stop() completes asynchronously.
                 val currentMode = focusEngine.state.value.mode
                 focusEngine.stop()
-                clearRecoveryState(this)
+                val svc = this@FocusTimerService
+                clearRecoveryState(svc)
                 WearDataLayerHelper.pushIdleState(
-                    context = this,
+                    context = svc,
                     mode = currentMode.name,
                     displayTime = "", // Empty string signals idle; watch resets display to full duration
                 )
@@ -293,20 +350,19 @@ class FocusTimerService : Service() {
                 // BEFORE stopping the service. The collector stays the normal driver for
                 // every other transition; it defers teardown while stopResetInFlight is set.
                 stopResetInFlight = true
-                serviceScope.launch {
-                    try {
-                        // Clear linked task highlight from tasks widget
-                        WidgetTaskStateManager.updateLinkedTaskId(this@FocusTimerService, null)
-                        FocusTimerRecovery.clearStaleWidgetState(this@FocusTimerService)
-                        // Refresh tasks+stats on watch after session ends
-                        WorkManager.getInstance(this@FocusTimerService).enqueue(
-                            OneTimeWorkRequestBuilder<WidgetRefreshWorker>().build()
-                        )
-                    } finally {
-                        stopResetInFlight = false
-                        stopForeground(STOP_FOREGROUND_REMOVE)
-                        stopSelf()
-                    }
+                try {
+                    // Clear linked task highlight from tasks widget
+                    WidgetTaskStateManager.updateLinkedTaskId(this@FocusTimerService, null)
+                    FocusTimerRecovery.clearStaleWidgetState(this@FocusTimerService)
+                    // Refresh tasks+stats on watch after session ends
+                    WorkManager.getInstance(this@FocusTimerService).enqueue(
+                        OneTimeWorkRequestBuilder<WidgetRefreshWorker>().build()
+                    )
+                } finally {
+                    stopResetInFlight = false
+                    stopForeground(STOP_FOREGROUND_REMOVE)
+                    stopSelf()
+                }
                 }
                 return START_NOT_STICKY
             }

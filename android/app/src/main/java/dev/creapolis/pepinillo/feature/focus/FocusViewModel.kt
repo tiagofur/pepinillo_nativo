@@ -616,9 +616,24 @@ class FocusViewModel @Inject constructor(
      * user completes a session — nobody celebrates a false record.
      */
     private suspend fun evaluateMilestoneCelebration(prefs: dev.creapolis.pepinillo.data.local.preferences.UserPreferences) {
-        val allDays = sessionRepository.getAllDaysWithSessions().first()
+        // A celebration is pure delight — it must never take down the session
+        // flow: repository hiccups (or test doubles with empty flows) log and
+        // move on (#808 follow-up).
+        try {
+            evaluateMilestoneCelebrationInner(prefs)
+        } catch (t: Throwable) {
+            android.util.Log.w("FocusViewModel", "Milestone evaluation skipped", t)
+        }
+    }
+
+    private suspend fun evaluateMilestoneCelebrationInner(prefs: dev.creapolis.pepinillo.data.local.preferences.UserPreferences) {
+        val allDays = runCatching {
+            sessionRepository.getAllDaysWithSessions().first()
+        }.getOrDefault(emptyList())
         val allTimeSessions = allDays.sumOf { it.sessionsCompleted }
-        val longestTodayMinutes = sessionRepository.getTodayStats().first()?.longestSessionMinutes ?: 0
+        val longestTodayMinutes = runCatching {
+            sessionRepository.getTodayStats().first()?.longestSessionMinutes ?: 0
+        }.getOrDefault(0)
         val streakDays = StreakProtectionService.computeProtectedStreak(
             history = allDays,
             isPro = featureGate.isPro,
@@ -671,7 +686,9 @@ class FocusViewModel @Inject constructor(
      */
     private suspend fun evaluateStreakRecordCelebration(prefs: dev.creapolis.pepinillo.data.local.preferences.UserPreferences) {
         if (!prefs.celebrateStreakRecords) return
-        val allDays = sessionRepository.getAllDaysWithSessions().first()
+        val allDays = runCatching {
+            sessionRepository.getAllDaysWithSessions().first()
+        }.getOrDefault(emptyList())
         val todayStart = java.util.Calendar.getInstance().apply {
             set(java.util.Calendar.HOUR_OF_DAY, 0)
             set(java.util.Calendar.MINUTE, 0)
