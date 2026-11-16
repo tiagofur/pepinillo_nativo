@@ -1,6 +1,8 @@
 <script lang="ts">
 	import Sheet from '$lib/design/Sheet.svelte';
 	import { dashboard } from '$lib/stores/dashboard.svelte';
+	import { ai } from '$lib/stores/ai.svelte';
+	import { app } from '$lib/stores/app.svelte';
 	import { t } from '$lib/i18n/i18n.svelte';
 	import type { MessageKey } from '$lib/i18n/messages';
 	import type { FocusMode } from '$lib/domain/entities/types';
@@ -22,10 +24,17 @@
 		'chart.day.sat'
 	];
 
+	let tab = $state<'data' | 'ai'>('data');
+
 	function fmtMin(seconds: number): string {
 		const m = Math.round(seconds / 60);
 		if (m < 60) return `${m}m`;
 		return `${Math.floor(m / 60)}h ${m % 60}m`;
+	}
+
+	function openAiTab(): void {
+		tab = 'ai';
+		void ai.loadWeeklyInsights();
 	}
 
 	function setKind(kind: 7 | 30): void {
@@ -33,19 +42,69 @@
 	}
 </script>
 
+{#snippet AiPanel()}
+	{#if ai.weeklyInsights.status === 'loading'}
+		<p class="muted">{t('ai.loading')}</p>
+	{:else if ai.weeklyInsights.status === 'gated'}
+		<div class="gated">
+			🔒 <span>{t('ai.gated')}</span>
+			<a class="btn btn-soft pressable" href="/upgrade">{t('ai.upgradeCta')}</a>
+		</div>
+	{:else if ai.weeklyInsights.status === 'offline'}
+		<p class="muted">{t('auth.apiMissing')}</p>
+	{:else if ai.weeklyInsights.status === 'error'}
+		<p class="muted">{t('ai.error')}</p>
+	{:else if ai.weeklyInsights.data}
+		{#if ai.weeklyInsights.data.highlights.length > 0}
+			<div class="section">
+				<h3>{t('ai.highlights')}</h3>
+				<ul class="ai-list">
+					{#each ai.weeklyInsights.data.highlights as line (line)}
+						<li>✨ {line}</li>
+					{/each}
+				</ul>
+			</div>
+		{/if}
+		{#if ai.weeklyInsights.data.insights.length > 0}
+			<div class="section">
+				<h3>{t('ai.insights')}</h3>
+				<ul class="ai-list">
+					{#each ai.weeklyInsights.data.insights as line (line)}
+						<li>💡 {line}</li>
+					{/each}
+				</ul>
+			</div>
+		{/if}
+	{:else}
+		<p class="muted">{t('ai.empty')}</p>
+	{/if}
+{/snippet}
+
 <Sheet open={dashboard.reviewOpen} onclose={() => dashboard.closeReview()} title={t(dashboard.reviewKind === 7 ? 'review.weekly' : 'review.monthly')}>
 	{#if dashboard.review}
 		<div class="tabs">
-			<button class="chip pressable is-active" aria-pressed="true">{t('review.dataTab')}</button>
 			<button
 				class="chip pressable"
-				onclick={() => dashboard.closeReview()}
-				title={t('review.aiSoon')}
+				aria-pressed={tab === 'data'}
+				class:is-active={tab === 'data'}
+				onclick={() => (tab = 'data')}
+			>
+				{t('review.dataTab')}
+			</button>
+			<button
+				class="chip pressable"
+				aria-pressed={tab === 'ai'}
+				class:is-active={tab === 'ai'}
+				class:is-locked={app.tier === 'free'}
+				onclick={openAiTab}
 			>
 				🤖 {t('review.aiTab')}
 			</button>
 		</div>
 
+		{#if tab === 'ai'}
+			{@render AiPanel()}
+		{:else}
 		<div class="grid">
 			<div class="metric">
 				<span class="value nums">{fmtMin(dashboard.review.focusSeconds)}</span>
@@ -98,6 +157,8 @@
 
 		{#if dashboard.review.bestDay !== null}
 			<p class="muted">📅 {t('review.bestDay')} {t(DAY_KEYS[dashboard.review.bestDay])}</p>
+		{/if}
+
 		{/if}
 
 		<p class="kind-switch">
@@ -194,6 +255,28 @@
 	.muted {
 		color: var(--muted);
 		font-size: var(--text-sm);
+	}
+
+	.gated {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-3);
+		align-items: flex-start;
+		color: var(--muted);
+		background: var(--surface-alt);
+		border-radius: var(--radius-md);
+		padding: var(--space-4);
+	}
+
+	.ai-list {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-2);
+		font-size: var(--text-sm);
+		color: var(--ink-secondary);
 	}
 
 	.kind-switch {

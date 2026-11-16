@@ -390,7 +390,17 @@ export type MessageKey =
 	| 'upgrade.manageCta'
 	| 'legal.privacy'
 	| 'legal.terms'
-	| 'auth.deleteFailed';
+	| 'auth.deleteFailed'
+	| 'ai.cardTitle'
+	| 'ai.gated'
+	| 'ai.upgradeCta'
+	| 'ai.loading'
+	| 'ai.error'
+	| 'ai.empty'
+	| 'ai.highlights'
+	| 'ai.insights'
+	| 'ai.optimalHours'
+	| 'ai.burnout';
 
 type Dict = Record<MessageKey, string>;
 
@@ -775,6 +785,16 @@ const en: Dict = {
 	'legal.privacy': 'Privacy',
 	'legal.terms': 'Terms',
 	'auth.deleteFailed': 'Could not delete the account right now. Try again or contact support.',
+	'ai.cardTitle': 'AI insights',
+	'ai.gated': 'AI insights are an Everywhere/AI+ feature.',
+	'ai.upgradeCta': 'Upgrade',
+	'ai.loading': 'Thinking…',
+	'ai.error': 'AI is unavailable right now. Try again later.',
+	'ai.empty': 'No AI insights for this period yet — complete a few sessions first.',
+	'ai.highlights': 'Highlights',
+	'ai.insights': 'Insights',
+	'ai.optimalHours': 'Optimal hours',
+	'ai.burnout': 'Burnout risk',
 	'sync.title': 'Cloud sync',
 	'sync.hint': 'Last-Write-Wins with the server clock, like the native apps.',
 	'sync.last': 'Last sync',
@@ -1200,6 +1220,16 @@ const es: Dict = {
 	'legal.privacy': 'Privacidad',
 	'legal.terms': 'Términos',
 	'auth.deleteFailed': 'No pudimos eliminar la cuenta ahora. Probá de nuevo o contactá soporte.',
+	'ai.cardTitle': 'Insights de IA',
+	'ai.gated': 'Los insights de IA son de Everywhere/AI+.',
+	'ai.upgradeCta': 'Mejorar',
+	'ai.loading': 'Pensando…',
+	'ai.error': 'La IA no está disponible ahora. Probá más tarde.',
+	'ai.empty': 'Sin insights de IA para este período — completá unas sesiones primero.',
+	'ai.highlights': 'Lo destacado',
+	'ai.insights': 'Insights',
+	'ai.optimalHours': 'Horas óptimas',
+	'ai.burnout': 'Riesgo de burnout',
 	'sync.title': 'Sync cloud',
 	'sync.hint': 'Last-Write-Wins con el reloj del servidor, como en las apps nativas.',
 	'sync.last': 'Última sync',
@@ -1609,6 +1639,16 @@ const pt: Dict = {
 	'legal.privacy': 'Privacidade',
 	'legal.terms': 'Termos',
 	'auth.deleteFailed': 'Não conseguimos excluir a conta agora. Tente de novo ou contate o suporte.',
+	'ai.cardTitle': 'Insights de IA',
+	'ai.gated': 'Insights de IA são um recurso do Everywhere/AI+.',
+	'ai.upgradeCta': 'Fazer upgrade',
+	'ai.loading': 'Pensando…',
+	'ai.error': 'A IA não está disponível agora. Tente mais tarde.',
+	'ai.empty': 'Sem insights de IA para este período — complete algumas sessões primeiro.',
+	'ai.highlights': 'Destaques',
+	'ai.insights': 'Insights',
+	'ai.optimalHours': 'Horas ideais',
+	'ai.burnout': 'Risco de burnout',
 	'sync.title': 'Sync cloud',
 	'sync.hint': 'Last-Write-Wins com o relógio do servidor, como nos apps nativos.',
 	'sync.last': 'Última sync',
