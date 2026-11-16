@@ -35,6 +35,7 @@ export type RemoteTask = {
 	priority: number;
 	estimatedPomodoros: number;
 	isDeleted: boolean;
+	recurrenceRule?: string | null;
 	updatedAt: string;
 	createdDate?: string | null;
 	category?: string | null;

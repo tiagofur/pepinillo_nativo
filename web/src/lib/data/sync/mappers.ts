@@ -11,20 +11,35 @@ import type {
 import type { RemoteFocusSession, RemoteTask, UserPreference } from '$lib/data/remote/types';
 
 const PRIORITY_TO_INT: Record<TaskPriority, number> = {
+	none: 0,
 	low: 1,
 	medium: 2,
 	high: 3
 };
 
 const INT_TO_PRIORITY: Record<number, TaskPriority> = {
+	0: 'none',
 	1: 'low',
 	2: 'medium',
 	3: 'high'
 };
 
 const VALID_LISTS = new Set<TaskList>(['inbox', 'today', 'upcoming']);
-const VALID_ENERGIES = new Set<TaskEnergy>(['low', 'medium', 'high']);
+const VALID_ENERGIES = new Set<TaskEnergy>(['deep', 'shallow', 'admin']);
 const VALID_MODES = new Set<FocusMode>(['pomodoro', 'stopwatch', 'flowtime', 'timeblock']);
+
+/**
+ * Normalize legacy/foreign energy values onto the native enum.
+ * Legacy web (pre-W3) used low/medium/high; Android sends capitalized
+ * Regular/Deep/Shallow. Backend accepts free-form strings (contract).
+ */
+export function normalizeEnergy(raw: string): TaskEnergy {
+	const v = raw.toLowerCase();
+	if (VALID_ENERGIES.has(v as TaskEnergy)) return v as TaskEnergy;
+	if (v === 'low' || v === 'regular') return 'admin';
+	if (v === 'high') return 'deep';
+	return 'shallow';
+}
 
 export function taskToRemote(task: Task): RemoteTask {
 	return {
@@ -35,6 +50,7 @@ export function taskToRemote(task: Task): RemoteTask {
 		priority: PRIORITY_TO_INT[task.priority] ?? 0,
 		estimatedPomodoros: task.estimatedPomodoros,
 		isDeleted: task.status === 'archived',
+		recurrenceRule: task.recurrenceRule ?? null,
 		updatedAt: task.updatedAt,
 		createdDate: task.createdAt,
 		category: task.list
@@ -89,16 +105,16 @@ export function remoteToTask(rt: RemoteTask, order = 0): Task {
 			? 'completed'
 			: 'active';
 	const category = (rt.category ?? 'inbox') as TaskList;
-	const energyRaw = (rt.energyLevel ?? 'medium') as TaskEnergy;
 	return {
 		id: rt.syncId,
 		title: rt.title ?? '',
 		status,
-		priority: INT_TO_PRIORITY[rt.priority] ?? 'medium',
-		energy: VALID_ENERGIES.has(energyRaw) ? energyRaw : 'medium',
+		priority: INT_TO_PRIORITY[rt.priority] ?? 'none',
+		energy: normalizeEnergy(rt.energyLevel ?? 'shallow'),
 		estimatedPomodoros: rt.estimatedPomodoros ?? 0,
 		list: VALID_LISTS.has(category) ? category : 'inbox',
 		order,
+		recurrenceRule: rt.recurrenceRule ?? null,
 		createdAt: rt.createdDate ?? rt.updatedAt,
 		updatedAt: rt.updatedAt
 	};
