@@ -228,7 +228,43 @@ export type MessageKey =
 	| 'settings.journal'
 	| 'settings.adhd'
 	| 'settings.notifications'
-	| 'settings.notifications.hint';
+	| 'settings.notifications.hint'
+	| 'plan.filter.completed'
+	| 'plan.priority.none'
+	| 'plan.energy.deep'
+	| 'plan.energy.shallow'
+	| 'plan.energy.admin'
+	| 'plan.energySuggest'
+	| 'plan.energyHint'
+	| 'plan.due.today'
+	| 'plan.due.overdue'
+	| 'plan.dueDate'
+	| 'plan.focusToday'
+	| 'plan.recurrence'
+	| 'plan.recurrence.daily'
+	| 'plan.recurrence.weekdays'
+	| 'plan.recurrence.weekly'
+	| 'plan.recurrence.biweekly'
+	| 'plan.recurrence.monthly'
+	| 'plan.notes'
+	| 'plan.notesPlaceholder'
+	| 'plan.subtasks'
+	| 'plan.subtaskAdd'
+	| 'plan.subtaskDelete'
+	| 'plan.subtasksGate'
+	| 'plan.analytics'
+	| 'plan.analytics.sessions'
+	| 'plan.analytics.focus'
+	| 'plan.deleteConfirm'
+	| 'plan.inspector'
+	| 'plan.empty.today'
+	| 'plan.empty.inbox'
+	| 'plan.empty.upcoming'
+	| 'plan.empty.completed'
+	| 'plan.empty.body'
+	| 'quickCapture.title'
+	| 'quickCapture.placeholder'
+	| 'quickCapture.hint';
 
 type Dict = Record<MessageKey, string>;
 
@@ -460,6 +496,42 @@ const en: Dict = {
 	'settings.adhd': 'Guided breaks (ADHD-friendly)',
 	'settings.notifications': 'Phase notifications',
 	'settings.notifications.hint': 'Browser notifications between phases. You will be asked for permission.',
+	'plan.filter.completed': 'Completed',
+	'plan.priority.none': 'None',
+	'plan.energy.deep': 'Deep',
+	'plan.energy.shallow': 'Shallow',
+	'plan.energy.admin': 'Admin',
+	'plan.energySuggest': 'Suggest for now',
+	'plan.energyHint': 'Suggested energy right now: {energy}',
+	'plan.due.today': 'Today',
+	'plan.due.overdue': 'Overdue',
+	'plan.dueDate': 'Due date',
+	'plan.focusToday': 'Focus today',
+	'plan.recurrence': 'Repeat',
+	'plan.recurrence.daily': 'Daily',
+	'plan.recurrence.weekdays': 'Weekdays',
+	'plan.recurrence.weekly': 'Weekly',
+	'plan.recurrence.biweekly': 'Every 2 weeks',
+	'plan.recurrence.monthly': 'Monthly',
+	'plan.notes': 'Notes',
+	'plan.notesPlaceholder': 'Notes, links, context…',
+	'plan.subtasks': 'Subtasks',
+	'plan.subtaskAdd': 'Add a subtask and press Enter',
+	'plan.subtaskDelete': 'Delete subtask',
+	'plan.subtasksGate': 'Subtasks are a Pepinillo+ feature.',
+	'plan.analytics': 'Focus history',
+	'plan.analytics.sessions': '{count} sessions',
+	'plan.analytics.focus': '{time} of focus',
+	'plan.deleteConfirm': 'Tap again to delete',
+	'plan.inspector': 'Task details',
+	'plan.empty.today': 'Nothing for today',
+	'plan.empty.inbox': 'Inbox zero',
+	'plan.empty.upcoming': 'Nothing scheduled ahead',
+	'plan.empty.completed': 'No harvest yet',
+	'plan.empty.body': 'Add your first task above — your garden starts here.',
+	'quickCapture.title': 'Quick Capture',
+	'quickCapture.placeholder': 'Capture a task…',
+	'quickCapture.hint': '⌘K / Ctrl+K from anywhere',
 	'account.tier': 'Plan',
 	'account.tierFree': 'Free · local browser only',
 	'account.locale': 'Language',
@@ -722,7 +794,43 @@ const es: Dict = {
 	'settings.journal': 'Journal tras cada sesión',
 	'settings.adhd': 'Descansos guiados (modo TDAH)',
 	'settings.notifications': 'Notificaciones de fase',
-	'settings.notifications.hint': 'Notificaciones del navegador entre fases. Se pedirá permiso.'
+	'settings.notifications.hint': 'Notificaciones del navegador entre fases. Se pedirá permiso.',
+	'plan.filter.completed': 'Completadas',
+	'plan.priority.none': 'Sin prioridad',
+	'plan.energy.deep': 'Profunda',
+	'plan.energy.shallow': 'Superficial',
+	'plan.energy.admin': 'Admin',
+	'plan.energySuggest': 'Sugerir para ahora',
+	'plan.energyHint': 'Energía sugerida ahora: {energy}',
+	'plan.due.today': 'Hoy',
+	'plan.due.overdue': 'Atrasada',
+	'plan.dueDate': 'Fecha límite',
+	'plan.focusToday': 'Enfoque hoy',
+	'plan.recurrence': 'Repetir',
+	'plan.recurrence.daily': 'Diaria',
+	'plan.recurrence.weekdays': 'Días de semana',
+	'plan.recurrence.weekly': 'Semanal',
+	'plan.recurrence.biweekly': 'Cada 2 semanas',
+	'plan.recurrence.monthly': 'Mensual',
+	'plan.notes': 'Notas',
+	'plan.notesPlaceholder': 'Notas, links, contexto…',
+	'plan.subtasks': 'Subtareas',
+	'plan.subtaskAdd': 'Agregá una subtarea y apretá Enter',
+	'plan.subtaskDelete': 'Eliminar subtarea',
+	'plan.subtasksGate': 'Las subtareas son de Pepinillo+.',
+	'plan.analytics': 'Historial de foco',
+	'plan.analytics.sessions': '{count} sesiones',
+	'plan.analytics.focus': '{time} de foco',
+	'plan.deleteConfirm': 'Tocá de nuevo para eliminar',
+	'plan.inspector': 'Detalle de tarea',
+	'plan.empty.today': 'Nada para hoy',
+	'plan.empty.inbox': 'Bandeja en cero',
+	'plan.empty.upcoming': 'Nada agendado',
+	'plan.empty.completed': 'Aún sin cosecha',
+	'plan.empty.body': 'Agregá tu primera tarea arriba — tu huerto empieza acá.',
+	'quickCapture.title': 'Captura rápida',
+	'quickCapture.placeholder': 'Capturar una tarea…',
+	'quickCapture.hint': '⌘K / Ctrl+K desde cualquier lugar'
 };
 
 const pt: Dict = {
@@ -969,7 +1077,43 @@ const pt: Dict = {
 	'settings.journal': 'Diário após cada sessão',
 	'settings.adhd': 'Pausas guiadas (modo TDAH)',
 	'settings.notifications': 'Notificações de fase',
-	'settings.notifications.hint': 'Notificações do navegador entre fases. A permissão será solicitada.'
+	'settings.notifications.hint': 'Notificações do navegador entre fases. A permissão será solicitada.',
+	'plan.filter.completed': 'Concluídas',
+	'plan.priority.none': 'Sem prioridade',
+	'plan.energy.deep': 'Profunda',
+	'plan.energy.shallow': 'Leve',
+	'plan.energy.admin': 'Admin',
+	'plan.energySuggest': 'Sugerir para agora',
+	'plan.energyHint': 'Energia sugerida agora: {energy}',
+	'plan.due.today': 'Hoje',
+	'plan.due.overdue': 'Atrasada',
+	'plan.dueDate': 'Data limite',
+	'plan.focusToday': 'Foco hoje',
+	'plan.recurrence': 'Repetir',
+	'plan.recurrence.daily': 'Diária',
+	'plan.recurrence.weekdays': 'Dias de semana',
+	'plan.recurrence.weekly': 'Semanal',
+	'plan.recurrence.biweekly': 'A cada 2 semanas',
+	'plan.recurrence.monthly': 'Mensal',
+	'plan.notes': 'Notas',
+	'plan.notesPlaceholder': 'Notas, links, contexto…',
+	'plan.subtasks': 'Subtarefas',
+	'plan.subtaskAdd': 'Adicione uma subtarefa e aperte Enter',
+	'plan.subtaskDelete': 'Excluir subtarefa',
+	'plan.subtasksGate': 'Subtarefas são um recurso do Pepinillo+.',
+	'plan.analytics': 'Histórico de foco',
+	'plan.analytics.sessions': '{count} sessões',
+	'plan.analytics.focus': '{time} de foco',
+	'plan.deleteConfirm': 'Toque de novo para excluir',
+	'plan.inspector': 'Detalhes da tarefa',
+	'plan.empty.today': 'Nada para hoje',
+	'plan.empty.inbox': 'Caixa zerada',
+	'plan.empty.upcoming': 'Nada agendado',
+	'plan.empty.completed': 'Ainda sem colheita',
+	'plan.empty.body': 'Adicione sua primeira tarefa acima — sua horta começa aqui.',
+	'quickCapture.title': 'Captura rápida',
+	'quickCapture.placeholder': 'Capturar uma tarefa…',
+	'quickCapture.hint': '⌘K / Ctrl+K de qualquer lugar'
 };
 
 const catalogs: Record<LocaleCode, Dict> = { en, es, pt };
