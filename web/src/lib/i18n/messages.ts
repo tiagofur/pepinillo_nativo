@@ -264,7 +264,52 @@ export type MessageKey =
 	| 'plan.empty.body'
 	| 'quickCapture.title'
 	| 'quickCapture.placeholder'
-	| 'quickCapture.hint';
+	| 'quickCapture.hint'
+	| 'period.7'
+	| 'period.30'
+	| 'period.365'
+	| 'chart.week'
+	| 'chart.modes'
+	| 'chart.day.sun'
+	| 'chart.day.mon'
+	| 'chart.day.tue'
+	| 'chart.day.wed'
+	| 'chart.day.thu'
+	| 'chart.day.fri'
+	| 'chart.day.sat'
+	| 'dash.best'
+	| 'dash.focusScore'
+	| 'dash.peakHour'
+	| 'dash.completion'
+	| 'dash.longest'
+	| 'dash.periodFocus'
+	| 'score.exceptional'
+	| 'score.strong'
+	| 'score.steady'
+	| 'score.warming'
+	| 'score.rest'
+	| 'achievements.title'
+	| 'achievements.firstFocus.title'
+	| 'achievements.weekWarrior.title'
+	| 'achievements.pomodoroMaster.title'
+	| 'achievements.deepDiver.title'
+	| 'achievements.centuryClub.title'
+	| 'achievements.earlyBird.title'
+	| 'sessions.recent'
+	| 'sessions.empty'
+	| 'review.weekly'
+	| 'review.monthly'
+	| 'review.dataTab'
+	| 'review.aiTab'
+	| 'review.aiSoon'
+	| 'review.focus'
+	| 'review.sessions'
+	| 'review.trendUp'
+	| 'review.trendDown'
+	| 'review.trendFlat'
+	| 'review.topTasks'
+	| 'review.modes'
+	| 'review.bestDay';
 
 type Dict = Record<MessageKey, string>;
 
@@ -532,6 +577,51 @@ const en: Dict = {
 	'quickCapture.title': 'Quick Capture',
 	'quickCapture.placeholder': 'Capture a task…',
 	'quickCapture.hint': '⌘K / Ctrl+K from anywhere',
+	'period.7': '7D',
+	'period.30': '30D',
+	'period.365': '1Y',
+	'chart.week': 'This week',
+	'chart.modes': 'Modes',
+	'chart.day.sun': 'Sun',
+	'chart.day.mon': 'Mon',
+	'chart.day.tue': 'Tue',
+	'chart.day.wed': 'Wed',
+	'chart.day.thu': 'Thu',
+	'chart.day.fri': 'Fri',
+	'chart.day.sat': 'Sat',
+	'dash.best': 'Best: {days}',
+	'dash.focusScore': 'Focus score',
+	'dash.peakHour': 'Peak hour',
+	'dash.completion': 'Completion',
+	'dash.longest': 'Longest session',
+	'dash.periodFocus': 'Period focus',
+	'score.exceptional': 'Exceptional week',
+	'score.strong': 'Strong rhythm',
+	'score.steady': 'Steady',
+	'score.warming': 'Warming up',
+	'score.rest': 'Rest week',
+	'achievements.title': 'Achievements',
+	'achievements.firstFocus.title': 'First Focus',
+	'achievements.weekWarrior.title': 'Week Warrior',
+	'achievements.pomodoroMaster.title': 'Pomodoro Master',
+	'achievements.deepDiver.title': 'Deep Diver',
+	'achievements.centuryClub.title': 'Century Club',
+	'achievements.earlyBird.title': 'Early Bird',
+	'sessions.recent': 'Recent sessions',
+	'sessions.empty': 'Complete your first session to see it here.',
+	'review.weekly': 'Weekly review',
+	'review.monthly': 'Monthly review',
+	'review.dataTab': 'Data',
+	'review.aiTab': 'AI Insights',
+	'review.aiSoon': 'AI insights arrive with Everywhere+ (coming to web).',
+	'review.focus': 'Focus',
+	'review.sessions': 'Sessions',
+	'review.trendUp': 'Up {pct}% vs previous period',
+	'review.trendDown': 'Down {pct}% vs previous period',
+	'review.trendFlat': 'Same as previous period',
+	'review.topTasks': 'Top tasks',
+	'review.modes': 'Modes',
+	'review.bestDay': 'Best day:',
 	'account.tier': 'Plan',
 	'account.tierFree': 'Free · local browser only',
 	'account.locale': 'Language',
@@ -830,7 +920,52 @@ const es: Dict = {
 	'plan.empty.body': 'Agregá tu primera tarea arriba — tu huerto empieza acá.',
 	'quickCapture.title': 'Captura rápida',
 	'quickCapture.placeholder': 'Capturar una tarea…',
-	'quickCapture.hint': '⌘K / Ctrl+K desde cualquier lugar'
+	'quickCapture.hint': '⌘K / Ctrl+K desde cualquier lugar',
+	'period.7': '7D',
+	'period.30': '30D',
+	'period.365': '1A',
+	'chart.week': 'Esta semana',
+	'chart.modes': 'Modos',
+	'chart.day.sun': 'Dom',
+	'chart.day.mon': 'Lun',
+	'chart.day.tue': 'Mar',
+	'chart.day.wed': 'Mié',
+	'chart.day.thu': 'Jue',
+	'chart.day.fri': 'Vie',
+	'chart.day.sat': 'Sáb',
+	'dash.best': 'Récord: {days}',
+	'dash.focusScore': 'Puntaje de foco',
+	'dash.peakHour': 'Hora pico',
+	'dash.completion': 'Finalización',
+	'dash.longest': 'Sesión más larga',
+	'dash.periodFocus': 'Foco del período',
+	'score.exceptional': 'Semana excepcional',
+	'score.strong': 'Ritmo sólido',
+	'score.steady': 'Constante',
+	'score.warming': 'Calentando',
+	'score.rest': 'Semana de descanso',
+	'achievements.title': 'Logros',
+	'achievements.firstFocus.title': 'Primer Foco',
+	'achievements.weekWarrior.title': 'Guerrero Semanal',
+	'achievements.pomodoroMaster.title': 'Maestro Pomodoro',
+	'achievements.deepDiver.title': 'Buzo Profundo',
+	'achievements.centuryClub.title': 'Club de los Cien',
+	'achievements.earlyBird.title': 'Madrugador',
+	'sessions.recent': 'Sesiones recientes',
+	'sessions.empty': 'Completá tu primera sesión para verla acá.',
+	'review.weekly': 'Repaso semanal',
+	'review.monthly': 'Repaso mensual',
+	'review.dataTab': 'Datos',
+	'review.aiTab': 'Insights IA',
+	'review.aiSoon': 'Los insights de IA llegan con Everywhere+ (pronto en web).',
+	'review.focus': 'Foco',
+	'review.sessions': 'Sesiones',
+	'review.trendUp': 'Subiste {pct}% vs el período anterior',
+	'review.trendDown': 'Bajaste {pct}% vs el período anterior',
+	'review.trendFlat': 'Igual que el período anterior',
+	'review.topTasks': 'Tareas top',
+	'review.modes': 'Modos',
+	'review.bestDay': 'Mejor día:'
 };
 
 const pt: Dict = {
@@ -1113,7 +1248,52 @@ const pt: Dict = {
 	'plan.empty.body': 'Adicione sua primeira tarefa acima — sua horta começa aqui.',
 	'quickCapture.title': 'Captura rápida',
 	'quickCapture.placeholder': 'Capturar uma tarefa…',
-	'quickCapture.hint': '⌘K / Ctrl+K de qualquer lugar'
+	'quickCapture.hint': '⌘K / Ctrl+K de qualquer lugar',
+	'period.7': '7D',
+	'period.30': '30D',
+	'period.365': '1A',
+	'chart.week': 'Esta semana',
+	'chart.modes': 'Modos',
+	'chart.day.sun': 'Dom',
+	'chart.day.mon': 'Seg',
+	'chart.day.tue': 'Ter',
+	'chart.day.wed': 'Qua',
+	'chart.day.thu': 'Qui',
+	'chart.day.fri': 'Sex',
+	'chart.day.sat': 'Sáb',
+	'dash.best': 'Recorde: {days}',
+	'dash.focusScore': 'Pontuação de foco',
+	'dash.peakHour': 'Hora de pico',
+	'dash.completion': 'Conclusão',
+	'dash.longest': 'Sessão mais longa',
+	'dash.periodFocus': 'Foco do período',
+	'score.exceptional': 'Semana excepcional',
+	'score.strong': 'Ritmo forte',
+	'score.steady': 'Constante',
+	'score.warming': 'Aquecendo',
+	'score.rest': 'Semana de descanso',
+	'achievements.title': 'Conquistas',
+	'achievements.firstFocus.title': 'Primeiro Foco',
+	'achievements.weekWarrior.title': 'Guerreiro Semanal',
+	'achievements.pomodoroMaster.title': 'Mestre Pomodoro',
+	'achievements.deepDiver.title': 'Mergulhador Profundo',
+	'achievements.centuryClub.title': 'Clube dos Cem',
+	'achievements.earlyBird.title': 'Madrugador',
+	'sessions.recent': 'Sessões recentes',
+	'sessions.empty': 'Complete sua primeira sessão para vê-la aqui.',
+	'review.weekly': 'Revisão semanal',
+	'review.monthly': 'Revisão mensual',
+	'review.dataTab': 'Dados',
+	'review.aiTab': 'Insights IA',
+	'review.aiSoon': 'Insights de IA chegam com Everywhere+ (em breve na web).',
+	'review.focus': 'Foco',
+	'review.sessions': 'Sessões',
+	'review.trendUp': 'Você subiu {pct}% vs o período anterior',
+	'review.trendDown': 'Você caiu {pct}% vs o período anterior',
+	'review.trendFlat': 'Igual ao período anterior',
+	'review.topTasks': 'Tarefas top',
+	'review.modes': 'Modos',
+	'review.bestDay': 'Melhor dia:'
 };
 
 const catalogs: Record<LocaleCode, Dict> = { en, es, pt };
