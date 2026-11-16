@@ -382,7 +382,7 @@ private fun TimerActiveLayout(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                // Stop (44×44)
+                // Stop — 48dp minimum touch target (#776 Batch C)
                 Button(
                     onClick = {
                         if (showStopConfirm) {
@@ -392,7 +392,7 @@ private fun TimerActiveLayout(
                             showStopConfirm = true
                         }
                     },
-                    modifier = Modifier.size(44.dp),
+                    modifier = Modifier.size(48.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = if (showStopConfirm) Color(0xFFB71C1C) else MaterialTheme.colorScheme.surfaceContainer,
                         contentColor = if (showStopConfirm) Color.White else MaterialTheme.colorScheme.onSurface,
@@ -429,11 +429,11 @@ private fun TimerActiveLayout(
                     )
                 }
 
-                // Skip (44×44) — only during break phases (#508: localize CD)
+                // Skip — 48dp minimum touch target (#776 Batch C; only during breaks #508)
                 if (isBreakPhase) {
                     Button(
                         onClick = onSkip,
-                        modifier = Modifier.size(44.dp),
+                        modifier = Modifier.size(48.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.surfaceContainer,
                             contentColor = MaterialTheme.colorScheme.onSurface,
@@ -796,11 +796,8 @@ private fun IdleLayout(
     }
 }
 
-private fun formatMinutes(totalMinutes: Int): String {
-    val hours = totalMinutes / 60
-    val minutes = totalMinutes % 60
-    return if (hours > 0) "${hours}h${minutes}m" else "${minutes}m"
-}
+// Unified compact notation lives in TimeFormat.kt (#776 Batch C).
+private fun formatMinutes(totalMinutes: Int): String = formatCompactMinutes(totalMinutes)
 
 // ─────────────────────────── Shared ───────────────────────────────────────
 
