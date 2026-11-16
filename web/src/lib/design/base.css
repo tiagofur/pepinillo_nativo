@@ -1,0 +1,163 @@
+/*
+ * Pepinillo Web — base reset + document styles.
+ * Calm, clear, native. Everything global lives here; components live in components.css.
+ */
+
+*,
+*::before,
+*::after {
+	box-sizing: border-box;
+}
+
+html {
+	scroll-behavior: smooth;
+	-webkit-text-size-adjust: 100%;
+}
+
+body {
+	margin: 0;
+	font-family: var(--font-sans);
+	font-size: var(--text-base);
+	line-height: 1.55;
+	color: var(--ink);
+	background: var(--bg);
+	-webkit-font-smoothing: antialiased;
+	text-rendering: optimizeLegibility;
+	/* Touch: no double-tap zoom delay, no long-press selection on chrome */
+	touch-action: manipulation;
+	overscroll-behavior-y: none;
+}
+
+/* Inputs inherit the document voice */
+button,
+input,
+select,
+textarea {
+	font: inherit;
+	color: inherit;
+}
+
+/* Never let an input shrink below 16px → no iOS focus zoom */
+input,
+select,
+textarea {
+	font-size: max(1rem, var(--text-base));
+}
+
+h1,
+h2,
+h3,
+h4 {
+	margin: 0;
+	font-weight: 700;
+	letter-spacing: var(--tracking-tight);
+	line-height: 1.15;
+	text-wrap: balance;
+}
+
+p {
+	margin: 0;
+	text-wrap: pretty;
+}
+
+a {
+	color: var(--brand);
+	text-decoration: none;
+}
+
+a:hover {
+	text-decoration: underline;
+}
+
+::selection {
+	background: var(--brand-soft);
+}
+
+:focus-visible {
+	outline: none;
+	box-shadow: var(--focus-ring);
+	border-radius: var(--radius-sm);
+}
+
+/* Tabular numerals for anything that counts or ticks */
+.nums {
+	font-variant-numeric: tabular-nums;
+	font-feature-settings: 'tnum' 1;
+}
+
+.mono {
+	font-family: var(--font-mono);
+}
+
+/* Remove tap highlight only where we render our own pressed states
+	 (interactive primitives opt in via .pressable) */
+.pressable {
+	-webkit-tap-highlight-color: transparent;
+	user-select: none;
+}
+
+/* Momentum scroll regions */
+.scroll-y {
+	overflow-y: auto;
+	-webkit-overflow-scrolling: touch;
+	scrollbar-width: thin;
+}
+
+/* Visually hidden, screen-reader available */
+.sr {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+	clip-path: inset(50%);
+	white-space: nowrap;
+}
+
+/* ---- Motion ---- */
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.01ms !important;
+		scroll-behavior: auto !important;
+	}
+}
+
+/* Page-level entrance: content settles in with one calm move */
+@keyframes rise-in {
+	from {
+		opacity: 0;
+		transform: translateY(10px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+.rise-in {
+	animation: rise-in var(--dur-slow) var(--ease-out-quint) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.rise-in {
+		animation: none;
+	}
+}
+
+/* Celebration spring (milestones, records) — the ONE bouncy moment */
+@keyframes pop-celebrate {
+	0% {
+		transform: scale(0.6);
+		opacity: 0;
+	}
+	60% {
+		transform: scale(1.06);
+		opacity: 1;
+	}
+	100% {
+		transform: scale(1);
+	}
+}
