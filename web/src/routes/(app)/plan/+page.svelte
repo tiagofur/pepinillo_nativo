@@ -190,7 +190,7 @@
 		display: flex;
 		flex-direction: column;
 		gap: var(--space-4);
-		max-width: 860px;
+		max-width: 1100px; /* wide, like the Mac plan table */
 		margin-inline: auto;
 		width: 100%;
 	}

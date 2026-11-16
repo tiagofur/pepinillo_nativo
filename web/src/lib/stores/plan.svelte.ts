@@ -23,6 +23,7 @@ import { filterTasks, reorderSubset, type PlanFilter } from '$lib/domain/tasks/p
 import { app } from '$lib/stores/app.svelte';
 import { focus } from '$lib/stores/focus.svelte';
 import { toast } from '$lib/stores/toast.svelte';
+import { t as translate } from '$lib/i18n/i18n.svelte';
 import type { SubTask, Task } from '$lib/domain/entities/types';
 
 /** Undo snapshot for one reversible operation (MacPlanView parity). */
@@ -98,7 +99,11 @@ class PlanStore {
 	async updateTask(id: string, patch: Partial<Task>): Promise<void> {
 		const idx = this.tasks.findIndex((t) => t.id === id);
 		if (idx === -1) return;
-		const updated: Task = { ...this.tasks[idx], ...patch, updatedAt: new Date().toISOString() };
+		const updated: Task = $state.snapshot({
+			...this.tasks[idx],
+			...patch,
+			updatedAt: new Date().toISOString()
+		});
 		this.tasks = this.tasks.map((t) => (t.id === id ? updated : t));
 		await upsertTask(updated);
 	}
@@ -138,7 +143,7 @@ class PlanStore {
 			this.offerUndo({
 				label: `'${snapshot.title}' deleted`,
 				apply: async () => {
-					await upsertTask(snapshot);
+					await upsertTask($state.snapshot(snapshot));
 					await this.reload();
 				}
 			});
@@ -147,7 +152,7 @@ class PlanStore {
 
 	/** MacPlanView parity: snackbar with UNDO (5 s) after destructive actions. */
 	private offerUndo(snapshot: UndoSnapshot): void {
-		toast.action(snapshot.label, 'Undo', () => void snapshot.apply());
+		toast.action(snapshot.label, translate('toast.undo'), () => void snapshot.apply());
 	}
 
 	/** Dense reorder inside the currently visible subset. */
@@ -160,7 +165,7 @@ class PlanStore {
 			const order = map.get(t.id);
 			if (order === undefined || order === t.order) return t;
 			const updated = { ...t, order, updatedAt: new Date().toISOString() };
-			changed.push(updated);
+			changed.push($state.snapshot(updated));
 			return updated;
 		});
 		await saveAllTasks(changed);
