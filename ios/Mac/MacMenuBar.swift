@@ -158,10 +158,22 @@ struct MacMenuBarView: View {
     private var secondaryActions: some View {
         if focus.isRunning {
             HStack {
-                Button("Skip") { store.send(.focus(.skipPhaseTapped)) }
-                Button("Stop") { store.send(.focus(.stopTapped)) }
+                // Touch path (guide R2): popover links are tap-first surfaces;
+                // the 36 pt hit rect grows invisibly around the compact glyph.
+                Button {
+                    store.send(.focus(.skipPhaseTapped))
+                } label: {
+                    Text("Skip").macTouchTarget()
+                }
+                .buttonStyle(.link)
+
+                Button {
+                    store.send(.focus(.stopTapped))
+                } label: {
+                    Text("Stop").macTouchTarget()
+                }
+                .buttonStyle(.link)
             }
-            .buttonStyle(.link)
             .frame(maxWidth: .infinity, alignment: .center)
         }
     }
@@ -196,9 +208,11 @@ struct MacMenuBarView: View {
 
     private var footer: some View {
         HStack {
-            Button("Open Pepinillo") {
+            Button {
                 openWindow(id: "main")
                 NSApp.activate(ignoringOtherApps: true)
+            } label: {
+                Text("Open Pepinillo").macTouchTarget()
             }
             .buttonStyle(.link)
 
@@ -206,11 +220,13 @@ struct MacMenuBarView: View {
             // hotkey stays the accelerator, the popover link is the visible
             // entry. The transient popover closes itself when the capture
             // panel takes key focus.
-            Button("Quick Capture") {
+            Button {
                 NotificationCenter.default.post(
                     name: .macQuickCaptureToggleRequested,
                     object: nil
                 )
+            } label: {
+                Text("Quick Capture").macTouchTarget()
             }
             .buttonStyle(.link)
 

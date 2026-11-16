@@ -80,6 +80,7 @@ struct MacTaskInspectorView: View {
                     .font(.title3)
                     .foregroundStyle(store.isCompleted ? Color.green : Color.secondary)
                     .contentTransition(.symbolEffect(.replace))
+                    .macTouchTarget()
             }
             .buttonStyle(.plain)
             .help(
@@ -113,6 +114,7 @@ struct MacTaskInspectorView: View {
             } label: {
                 Image(systemName: "xmark.circle.fill")
                     .foregroundStyle(.tertiary)
+                    .macTouchTarget()
             }
             .buttonStyle(.plain)
             .help(String(localized: "Close Inspector"))
@@ -236,6 +238,7 @@ struct MacTaskInspectorView: View {
                     } label: {
                         Image(systemName: "xmark.circle.fill")
                             .foregroundStyle(.tertiary)
+                            .macTouchTarget()
                     }
                     .buttonStyle(.plain)
                     .help(String(localized: "Remove Due Date"))
