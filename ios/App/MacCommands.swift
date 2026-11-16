@@ -121,10 +121,19 @@ extension Notification.Name {
     static let macQuickCaptureToggleRequested = Notification.Name("pepinillo.mac.quickCapture.toggle")
 }
 
+/// Zen stage on the Mac focus view (issue #797): shared by the pinch gesture
+/// in `MacFocusView` and the View ▸ Zen Mode menu item, its accessible twin.
+enum FocusZenMode {
+    static let storageKey = "mac.focus.zenMode"
+    /// Minimum pinch scale delta (15%) that counts as a deliberate toggle.
+    static let pinchThreshold: CGFloat = 0.15
+}
+
 struct PepinilloCommands: Commands {
     let store: StoreOf<AppFeature>
 
     @Environment(\.openWindow) private var openWindow
+    @AppStorage(FocusZenMode.storageKey) private var isZen = false
 
     var body: some Commands {
         CommandGroup(after: .textEditing) {
@@ -239,6 +248,12 @@ struct PepinilloCommands: Commands {
                 openWindow(id: "statistics")
             }
             .keyboardShortcut("4", modifiers: .command)
+
+            Divider()
+
+            // Accessible twin of the pinch gesture on the Focus stage.
+            Toggle(String(localized: "menu.view.zen", defaultValue: "Zen Mode"), isOn: $isZen)
+                .keyboardShortcut("z", modifiers: [.control, .command])
             #endif
         }
 
