@@ -139,7 +139,10 @@ class WearFocusServiceTest {
             totalDurationMs = 25L * 60_000L,
         )
 
-        val chronometer = notificationChronometerFor(state)
+        val chronometer = notificationChronometerFor(
+            state,
+            nowMs = 1_700_000_000_000L, // 5 min before the anchor
+        )
 
         assertNotNull(chronometer)
         assertEquals(1_700_000_300_000L, chronometer!!.baseEpochMs)
@@ -159,6 +162,27 @@ class WearFocusServiceTest {
         assertNotNull(chronometer)
         assertEquals(1_700_000_000_000L, chronometer!!.baseEpochMs)
         assertFalse(chronometer.countDown)
+    }
+
+    @Test
+    fun `countdown chronometer drops once the anchor is in the past - never negative`() {
+        val state = WearTimerState(
+            mode = "Pomodoro",
+            status = "Running",
+            phaseEndEpochMs = 1_700_000_300_000L,
+            totalDurationMs = 25L * 60_000L,
+        )
+
+        // The phase-complete push can arrive late over the Data Layer; the
+        // system chronometer must be dropped the moment wall clock passes the
+        // anchor so the notification can never render a negative countdown
+        // (#814 — Wear twin of the iOS #785 late-push lesson).
+        val chronometer = notificationChronometerFor(
+            state,
+            nowMs = 1_700_000_301_000L, // 1 s past the anchor
+        )
+
+        assertNull(chronometer)
     }
 
     @Test
