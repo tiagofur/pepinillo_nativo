@@ -26,7 +26,7 @@ docker run -d --name pepinillo-redis-dev -p 6380:6379 redis:7-alpine
 cd backend
 DATABASE_URL="postgres://postgres:postgres@127.0.0.1:55433/pepinillo?sslmode=disable" \
 REDIS_URL="redis://localhost:6380" \
-JWT_SECRET="local-dev-secret-for-testing-only-32b" \
+JWT_SECRET="$(openssl rand -hex 32)" \
 APP_ENV=development \
 CORS_ALLOWED_ORIGINS="http://127.0.0.1:4174,http://localhost:4174" \
 EMAIL_PROVIDER=log \
