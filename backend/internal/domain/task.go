@@ -38,3 +38,13 @@ type Task struct {
 	UpdatedAt       time.Time `json:"updatedAt" gorm:"not null"`
 	SubTasks        []SubTask `json:"subTasks" gorm:"foreignKey:TaskID;constraint:OnDelete:CASCADE"`
 }
+
+// ValidTrackingMode is the single allow-list for tracking_mode across HTTP
+// handlers and the sync repository (matches chk_tasks_tracking_mode).
+func ValidTrackingMode(mode string) bool {
+	switch mode {
+	case "pomodoro", "flowtime", "timeblock", "stopwatch":
+		return true
+	}
+	return false
+}

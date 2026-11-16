@@ -55,6 +55,15 @@ func RegisterAPIRoutes(api fiber.Router, deps RouteHandlers) {
 	stripeWebhook := api.Group("/billing/stripe")
 	stripeWebhook.Post("/webhook", deps.Stripe.Webhook)
 
+	// WebSocket endpoint: authenticated by the WebSocketUpgrade middleware
+	// itself (Authorization header or Sec-WebSocket-Protocol sub-protocol for
+	// browsers). MUST be registered BEFORE protected := api.Group("",
+	// middleware.JWT(...)) — the bare JWT middleware only reads the
+	// Authorization header and would kill browser sub-protocol handshakes
+	// (missing_auth_header), making the browser path dead code.
+	api.Use("/ws", deps.WebSocket.WebSocketUpgrade)
+	api.Get("/ws", fiberws.New(deps.WebSocket.HandleWebSocket))
+
 	auth := api.Group("/auth")
 	authLimiter := limiter.New(limiter.Config{Max: 60})
 	// Per-IP limits — the existing line of defence.
@@ -222,11 +231,6 @@ func RegisterAPIRoutes(api fiber.Router, deps RouteHandlers) {
 	sync.Post("/sessions", subMw, syncGate, deps.Sync.SyncSessions)
 	sync.Post("/initial-upload", subMw, syncGate, deps.Sync.InitialUpload)
 
-	// WebSocket endpoint: JWT validated via Authorization header (or
-	// Sec-WebSocket-Protocol sub-protocol) before upgrade. Query param is a
-	// deprecated fallback gated by DEPRECATED_WS_QUERY_AUTH.
-	api.Use("/ws", deps.WebSocket.WebSocketUpgrade)
-	api.Get("/ws", fiberws.New(deps.WebSocket.HandleWebSocket))
 }
 
 // emailKeyGenerator returns a Fiber limiter KeyGenerator that keys by the
