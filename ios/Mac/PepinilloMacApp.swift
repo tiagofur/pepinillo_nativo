@@ -120,6 +120,16 @@ private final class MacAppBootstrap: ObservableObject {
             AppFeature()
         } withDependencies: {
             $0.persistenceClient = PersistenceClient.live(container: container)
+            #if MAC_LIVE_ACTIVITIES
+            // Live Activities on Mac (macOS 27.3+): menu bar presentation on
+            // Macs without Dynamic Island — same ActivityKit stack as iOS
+            // (issue #746). Runtime-gated; the app runs down to macOS 15.
+            if #available(macOS 27.3, *) {
+                let liveActivityClient = LiveActivityManager.makeClient()
+                $0.liveActivityClient = liveActivityClient
+                Task { await liveActivityClient.reconcileOnLaunch() }
+            }
+            #endif
         }
         self.store = store
         phase = .ready

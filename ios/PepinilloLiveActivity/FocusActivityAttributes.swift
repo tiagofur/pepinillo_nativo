@@ -7,6 +7,10 @@
 import Foundation
 import ActivityKit
 
+// Compiled on iOS always; on macOS only behind MAC_LIVE_ACTIVITIES
+// (ActivityKit's macOS availability is 27.3 — see LiveActivityManager.swift).
+#if os(iOS) || MAC_LIVE_ACTIVITIES
+
 struct FocusActivityAttributes: ActivityAttributes {
     // Static content (set once when activity starts)
     var startedAt: Date
@@ -100,3 +104,4 @@ extension FocusActivityAttributes {
         return nil
     }
 }
+#endif

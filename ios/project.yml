@@ -188,6 +188,7 @@ targets:
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         LSApplicationCategoryType: public.app-category.productivity
         CFBundleIconName: AppIcon
+        NSSupportsLiveActivities: true
         API_BASE_URL: "$(API_BASE_URL)"
         WS_BASE_URL: "$(WS_BASE_URL)"
         APP_ENVIRONMENT: "$(APP_ENVIRONMENT)"
@@ -237,6 +238,8 @@ targets:
       - path: PepinilloIntents
         excludes:
           - FocusFilterIntent.swift
+      - path: PepinilloLiveActivity/LiveActivityManager.swift
+      - path: PepinilloLiveActivity/FocusActivityAttributes.swift
     resources:
       - path: Shared/Resources
         optional: true
@@ -265,6 +268,10 @@ targets:
         Debug:
           CODE_SIGN_ENTITLEMENTS: Mac/PepinilloMacDebug.entitlements
           ENABLE_HARDENED_RUNTIME: "NO"
+          # ActivityKit on macOS needs the 27.3 SDK (issue #746) — the Live
+          # Activity port compiles in Debug only; Staging/Release archives
+          # keep building with the stable SDK until 27.3 goes final.
+          SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited) MAC_LIVE_ACTIVITIES"
         Staging:
           CODE_SIGN_ENTITLEMENTS: Mac/PepinilloMac.entitlements
         Release:
@@ -335,7 +342,7 @@ targets:
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
-        NSSupportsLiveActivities: false
+        NSSupportsLiveActivities: true
     entitlements:
       path: PepinilloWidget/PepinilloWidgetMac.entitlements
       properties:
@@ -345,12 +352,8 @@ targets:
     sources:
       - path: PepinilloWidget
       - path: PepinilloLiveActivity
-        excludes:
-          - "**/*"
       - path: Features/Focus/FocusModels.swift
       - path: Domain/Clients/LiveActivityClient.swift
-        excludes:
-          - "**/*"
       - path: Domain/Models
       - path: Domain/Services/StreakProtectionService.swift
       - path: Shared/Persistence/AppGroupContainer.swift
@@ -375,6 +378,7 @@ targets:
       configs:
         Debug:
           CODE_SIGN_ENTITLEMENTS: PepinilloWidget/PepinilloWidgetMacDebug.entitlements
+          SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited) MAC_LIVE_ACTIVITIES"
         Staging:
           CODE_SIGN_ENTITLEMENTS: PepinilloWidget/PepinilloWidget.entitlements
         Release:

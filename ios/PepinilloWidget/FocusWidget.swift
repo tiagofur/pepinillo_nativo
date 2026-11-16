@@ -120,8 +120,20 @@ struct PepinilloWidgetBundle: WidgetBundle {
         FocusHomeScreenWidget()
         #if os(iOS)
         FocusLockScreenWidget()
+        // Live Activity configuration (ActivityKit, iOS 16.1+): explicit
+        // bundle registration per the WidgetKit contract — the struct was
+        // compiled into the extension but never registered (#746 follow-up).
+        FocusLiveActivityWidget()
         #endif
         TasksHomeScreenWidget()
         DashboardHomeScreenWidget()
+        #if os(macOS) && MAC_LIVE_ACTIVITIES
+        // Live Activities on Mac (macOS 27.3+, issue #746): menu bar
+        // presentation on Macs without Dynamic Island, island regions on the
+        // touch MacBook Pro. Debug-only until the 27.3 SDK goes stable.
+        if #available(macOS 27.3, *) {
+            FocusLiveActivityWidget()
+        }
+        #endif
     }
 }
