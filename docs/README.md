@@ -14,6 +14,7 @@
 | `ios/**` (iPhone/iPad/watchOS/macOS) | [`architecture.md`](architecture.md) § Apple | [`../ios/AGENTS.md`](../ios/AGENTS.md), [`../ios/docs/macos-design-contract.md`](../ios/docs/macos-design-contract.md) |
 | `ios/Mac/**` (PepinilloMac, touch en Mac) | [`../ios/docs/macos-design-contract.md`](../ios/docs/macos-design-contract.md) | [`../ios/docs/touch-on-mac.md`](../ios/docs/touch-on-mac.md) |
 | `android/**` (phone/Wear OS) | [`architecture.md`](architecture.md) § Android | [`../android/AGENTS.md`](../android/AGENTS.md) |
+| `web/**` (PWA pepinillo.app, landing, guías) | [`architecture.md`](architecture.md) § Web | [`design.md`](design.md), issue épica #809 |
 | UI/UX, tema, glass, soundscapes | [`design.md`](design.md) | [`../.impeccable.md`](../.impeccable.md) |
 | Cambios HTTP | [`../contracts/openapi.yaml`](../contracts/openapi.yaml) **antes del código** | [`architecture/adr/ADR-0003-contract-first-openapi.md`](architecture/adr/ADR-0003-contract-first-openapi.md) |
 | Verificación y CI | [`verification.md`](verification.md) | [`../Makefile`](../Makefile), `.github/workflows/` |

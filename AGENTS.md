@@ -77,12 +77,14 @@ un PRD antiguo, y registra la discrepancia en la fuente de verdad apropiada.
 ## 3. Invariantes que nunca se omiten por eficiencia
 
 - **Plataformas activas vs. en pausa:** activas son **iOS**, **watchOS**,
-  **macOS (`PepinilloMac`)**, **Android**, **Wear OS** y **Backend Go**.
-  **Web (`web/`)** y **Windows (`windows/`)** están **en pausa**; no expandirlos
-  sin autorización explícita.
+  **macOS (`PepinilloMac`)**, **Android**, **Wear OS**, **Backend Go** y
+  **Web (`web/`)** (reactivada con autorización explícita en el epic #809:
+  PWA completa + landing + guías + Stripe para `pepinillo.app`).
+  **Windows (`windows/`)** sigue **en pausa**; no expandirlo sin autorización
+  explícita.
 - **Paridad cross-platform activa:** todo fix o feature del motor de foco
   (`Pomodoro`, `Flowtime`, `TimeBlock`, `Stopwatch`), sesiones o tareas mantiene
-  paridad funcional entre iOS, watchOS, macOS, Android y Wear OS.
+  paridad funcional entre iOS, watchOS, macOS, Android, Wear OS y Web.
 - **Offline-first y sync LWW:** los clientes operan 100% offline (SwiftData
   `SchemaV6` en Apple; Room v14 en Android). La sync cloud
   (`POST /api/v1/sync/initial-upload`, `GET /api/v1/sync/full`,
@@ -130,7 +132,9 @@ scripts/      → Guardrails (`factory_preflight.py`, `factory_handoff.py`, `che
                 `check_secrets.py`, `setup-labels.sh`).
 odd/tasks/    → Artefactos de ejecución por issue (`<issue>-<slug>.md`).
 progress/     → Estado vivo de sesión (`current.md`) y bitácora (`history.md`).
-web/          → [EN PAUSA] Web Companion (Svelte 5 + SvelteKit 2 + IndexedDB).
+web/          → App web PWA + landing + guías para `pepinillo.app` (epic #809; Svelte 5 +
+                SvelteKit 2 + IndexedDB offline-first, sync LWW, Stripe en backend Go).
+                Touch-first, diseño híbrido familiar Apple/Android.
 windows/      → [EN PAUSA] Cliente de escritorio (C# / .NET / WinUI 3).
 ```
 
@@ -144,6 +148,7 @@ make test             # Guardrails Python + suite unitaria del backend Go (C3)
 make test-factory     # Tests unitarios de scripts de la factoría
 make test-backend     # go test ./... en backend/
 make test-android     # ./gradlew :app:testDebugUnitTest :wear:testDebugUnitTest
+make test-web         # pnpm test en web/ (si existe)
 make contracts-lint   # Valida contracts/openapi.yaml con Spectral (C2)
 make contracts-diff   # Breaking changes OpenAPI contra origin/main (C2)
 make handoff          # Paquete stateless de revisión con contexto limpio (C4)

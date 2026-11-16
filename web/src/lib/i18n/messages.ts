@@ -134,13 +134,22 @@ export type MessageKey =
 	| 'account.everywhereTeaser'
 	| 'account.about'
 	| 'account.nonGoals'
-	| 'account.deviceId';
+	| 'account.deviceId'
+	| 'account.appearance'
+	| 'account.theme.classic'
+	| 'account.theme.forest'
+	| 'account.theme.ocean'
+	| 'account.theme.sunset'
+	| 'landing.openApp'
+	| 'landing.wipNote'
+	| 'common.wip.title'
+	| 'common.wip.body';
 
 type Dict = Record<MessageKey, string>;
 
 const en: Dict = {
 	'app.name': 'Pepinillo',
-	'app.tagline': 'Web companion · large screen focus',
+	'app.tagline': 'Plan, focus, and celebrate your deep work — natively, on every screen you own.',
 	'nav.focus': 'Focus',
 	'nav.plan': 'Plan',
 	'nav.dashboard': 'Dashboard',
@@ -272,6 +281,15 @@ const en: Dict = {
 	'sync.lastSync': 'Last sync',
 	'sync.autoSyncOn': 'Auto-sync on — changes sync across devices.',
 	'auth.required': 'Sign in first.',
+	'account.appearance': 'Appearance',
+	'account.theme.classic': 'Classic',
+	'account.theme.forest': 'Forest',
+	'account.theme.ocean': 'Ocean',
+	'account.theme.sunset': 'Sunset',
+	'landing.openApp': 'Open the app',
+	'landing.wipNote': 'The new web app is being built with everything from the native apps.',
+	'common.wip.title': 'It arrives in the next batch',
+	'common.wip.body': 'This surface is being rebuilt with everything from the native apps.',
 	'account.tier': 'Plan',
 	'account.tierFree': 'Free · local browser only',
 	'account.locale': 'Language',
@@ -292,7 +310,7 @@ const en: Dict = {
 
 const es: Dict = {
 	...en,
-	'app.tagline': 'Compañero web · foco en pantalla grande',
+	'app.tagline': 'Planifica, enfócate y celebra tu deep work — nativo, en todas tus pantallas.',
 	'nav.focus': 'Foco',
 	'nav.plan': 'Plan',
 	'nav.dashboard': 'Panel',
@@ -440,12 +458,21 @@ const es: Dict = {
 	'sync.pullError': 'No se pudo actualizar desde la nube. Intentá de nuevo.',
 	'sync.lastSync': 'Última sync',
 	'sync.autoSyncOn': 'Auto-sync activo — los cambios se sincronizan entre dispositivos.',
-	'auth.required': 'Iniciá sesión primero.'
+	'auth.required': 'Iniciá sesión primero.',
+	'account.appearance': 'Apariencia',
+	'account.theme.classic': 'Clásico',
+	'account.theme.forest': 'Bosque',
+	'account.theme.ocean': 'Océano',
+	'account.theme.sunset': 'Atardecer',
+	'landing.openApp': 'Abrir la app',
+	'landing.wipNote': 'La nueva web se está construyendo con todo de las apps nativas.',
+	'common.wip.title': 'Llega en el próximo lote',
+	'common.wip.body': 'Esta superficie se está reconstruyendo con todo de las apps nativas.'
 };
 
 const pt: Dict = {
 	...en,
-	'app.tagline': 'Companheiro web · foco em tela grande',
+	'app.tagline': 'Planeje, concentre-se e celebre seu deep work — nativo, em todas as suas telas.',
 	'nav.focus': 'Foco',
 	'nav.plan': 'Plano',
 	'nav.dashboard': 'Painel',
@@ -593,7 +620,16 @@ const pt: Dict = {
 	'sync.pullError': 'Não foi possível atualizar da nuvem. Tente novamente.',
 	'sync.lastSync': 'Última sync',
 	'sync.autoSyncOn': 'Auto-sync ativo — as mudanças sincronizam entre dispositivos.',
-	'auth.required': 'Entre primeiro.'
+	'auth.required': 'Entre primeiro.',
+	'account.appearance': 'Aparência',
+	'account.theme.classic': 'Clássico',
+	'account.theme.forest': 'Floresta',
+	'account.theme.ocean': 'Oceano',
+	'account.theme.sunset': 'Pôr do sol',
+	'landing.openApp': 'Abrir o app',
+	'landing.wipNote': 'A nova web está sendo construída com tudo dos apps nativos.',
+	'common.wip.title': 'Chega no próximo lote',
+	'common.wip.body': 'Esta superfície está sendo reconstruída com tudo dos apps nativos.'
 };
 
 const catalogs: Record<LocaleCode, Dict> = { en, es, pt };

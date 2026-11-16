@@ -1,9 +1,30 @@
 <!doctype html>
-<html lang="en">
+<html lang="es">
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-		<meta name="text-scale" content="scale" />
+		<link rel="manifest" href="/manifest.webmanifest" />
+		<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+		<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+		<meta name="theme-color" media="(prefers-color-scheme: light)" content="#f5f6f4" />
+		<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#141416" />
+		<meta name="apple-mobile-web-app-capable" content="yes" />
+		<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+		<meta name="apple-mobile-web-app-title" content="Pepinillo" />
+		<meta name="description" content="Pepinillo — planifica, enfócate, celebra. Deep work nativo para tus dispositivos y tu navegador." />
+		<script>
+			// Apply stored appearance before first paint (no flash of wrong theme).
+			try {
+				var a = localStorage.getItem('pepinillo.appearance');
+				if (a === 'light' || a === 'dark') {
+					document.documentElement.setAttribute('data-appearance', a);
+				}
+				var t = localStorage.getItem('pepinillo.theme');
+				if (t && t !== 'classic') {
+					document.documentElement.setAttribute('data-theme', t);
+				}
+			} catch (e) {}
+		</script>
 		%sveltekit.head%
 	</head>
 	<body data-sveltekit-preload-data="hover">

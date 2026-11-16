@@ -1,0 +1,208 @@
+/*
+ * Pepinillo Web — Design tokens
+ * Source of truth for color, type, space, radius and motion.
+ * Mirrors docs/design.md + docs/manual/macos.html (validated reference).
+ * Voice: calm, clear, native. Tinted neutrals, brand green, mode colors.
+ */
+
+:root {
+	/* ---- Brand ---- */
+	--brand: #2e7d46;
+	--brand-strong: #266c3b;
+	--brand-light: #3d9c5e;
+	--brand-soft: rgba(46, 125, 70, 0.12);
+	--brand-softer: rgba(46, 125, 70, 0.07);
+	--on-brand: #ffffff;
+
+	/* ---- Focus modes (shared grammar with iOS/Android) ---- */
+	--mode-pomodoro: #d9453a;
+	--mode-pomodoro-soft: rgba(217, 69, 58, 0.12);
+	--mode-flowtime: #1e88a8;
+	--mode-flowtime-soft: rgba(30, 136, 168, 0.12);
+	--mode-timeblock: #7b52ab;
+	--mode-timeblock-soft: rgba(123, 82, 171, 0.12);
+	--mode-stopwatch: #2e7d46;
+	--mode-stopwatch-soft: rgba(46, 125, 70, 0.12);
+	--streak: #d9822b;
+	--streak-soft: rgba(217, 130, 43, 0.12);
+
+	/* ---- Surfaces (light, neutrals tinted toward brand hue) ---- */
+	--bg: #f5f6f4;
+	--surface: #ffffff;
+	--surface-alt: #eef0ec;
+	--surface-sunken: #e7eae4;
+	--sidebar-bg: rgba(243, 245, 241, 0.88);
+	--ink: #1d1d1f;
+	--ink-secondary: #46474a;
+	--muted: #6e6e73;
+	--faint: #9b9ba0;
+	--border: rgba(0, 0, 0, 0.09);
+	--border-strong: rgba(0, 0, 0, 0.16);
+	--hairline: rgba(0, 0, 0, 0.05);
+
+	/* ---- Elevation (tinted, never pure black) ---- */
+	--shadow-1: 0 1px 2px rgba(29, 29, 31, 0.05), 0 2px 8px rgba(29, 29, 31, 0.04);
+	--shadow-2: 0 8px 24px rgba(29, 29, 31, 0.06);
+	--shadow-3: 0 16px 48px rgba(29, 29, 31, 0.12);
+	--ring-glow: 0 0 0 8px var(--brand-softer);
+
+	/* ---- Typography ----
+	 * Native system stack: SF on Apple devices, Roboto on Android/Chrome.
+	 * Distinctiveness comes from scale, tracking and tabular numerals —
+	 * not from a downloaded font (instant load, native feel).
+	 */
+	--font-sans:
+		-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Segoe UI', Roboto,
+		'Helvetica Neue', Arial, sans-serif;
+	--font-mono: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas, monospace;
+
+	--text-2xs: 0.6875rem; /* 11 */
+	--text-xs: 0.75rem; /* 12 */
+	--text-sm: 0.8125rem; /* 13 */
+	--text-base: 1rem; /* 16 — inputs never below this (no iOS zoom) */
+	--text-md: 1.125rem; /* 18 */
+	--text-lg: clamp(1.25rem, 1.1rem + 0.6vw, 1.5rem);
+	--text-xl: clamp(1.5rem, 1.2rem + 1.2vw, 2rem);
+	--text-display: clamp(2.5rem, 1.6rem + 3.4vw, 4.25rem); /* timer hero */
+	--tracking-tight: -0.022em;
+	--tracking-tighter: -0.03em;
+
+	/* ---- Space (4pt base) ---- */
+	--space-1: 4px;
+	--space-2: 8px;
+	--space-3: 12px;
+	--space-4: 16px;
+	--space-5: 20px;
+	--space-6: 24px;
+	--space-8: 32px;
+	--space-10: 40px;
+	--space-12: 48px;
+	--space-16: 64px;
+
+	/* ---- Radius ---- */
+	--radius-sm: 10px;
+	--radius-md: 14px;
+	--radius-lg: 20px; /* card */
+	--radius-xl: 28px; /* hero */
+	--radius-pill: 999px;
+
+	/* ---- Motion ----
+	 * Expressive but calm: smooth deceleration everywhere, one gentle
+	 * spring reserved for celebratory moments. Reduced-motion honored in base.css.
+	 */
+	--ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
+	--ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+	--spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+	--dur-fast: 150ms;
+	--dur-base: 250ms;
+	--dur-slow: 420ms;
+	--dur-celebrate: 600ms;
+
+	/* ---- Layout ---- */
+	--sidebar-w: 264px;
+	--rail-w: 78px;
+	--tabbar-h: 64px;
+	--content-max: 1200px;
+	--touch-target: 44px; /* min everywhere; 48 with .touch-lg */
+	--safe-b: env(safe-area-inset-bottom, 0px);
+	--safe-t: env(safe-area-inset-top, 0px);
+	--safe-l: env(safe-area-inset-left, 0px);
+	--safe-r: env(safe-area-inset-right, 0px);
+
+	/* ---- Focus ring (a11y) ---- */
+	--focus-ring: 0 0 0 2px var(--surface), 0 0 0 4px var(--brand);
+}
+
+/* ---- Dark ---- */
+@media (prefers-color-scheme: dark) {
+	:root:not([data-appearance='light']) {
+		--bg: #141416;
+		--surface: #1e1e22;
+		--surface-alt: #26262c;
+		--surface-sunken: #1a1a1e;
+		--sidebar-bg: rgba(26, 26, 30, 0.88);
+		--ink: #f5f5f7;
+		--ink-secondary: #d4d4d8;
+		--muted: #a1a1a6;
+		--faint: #77777d;
+		--border: rgba(255, 255, 255, 0.1);
+		--border-strong: rgba(255, 255, 255, 0.18);
+		--hairline: rgba(255, 255, 255, 0.06);
+		--shadow-1: 0 1px 2px rgba(0, 0, 0, 0.3), 0 2px 8px rgba(0, 0, 0, 0.25);
+		--shadow-2: 0 12px 32px rgba(0, 0, 0, 0.35);
+		--shadow-3: 0 20px 56px rgba(0, 0, 0, 0.5);
+		--brand-soft: rgba(61, 156, 94, 0.18);
+		--brand-softer: rgba(61, 156, 94, 0.1);
+		--mode-pomodoro-soft: rgba(217, 69, 58, 0.18);
+		--mode-flowtime-soft: rgba(30, 136, 168, 0.2);
+		--mode-timeblock-soft: rgba(123, 82, 171, 0.2);
+		--mode-stopwatch-soft: rgba(61, 156, 94, 0.18);
+		--streak-soft: rgba(217, 130, 43, 0.18);
+	}
+}
+:root[data-appearance='dark'] {
+	--bg: #141416;
+	--surface: #1e1e22;
+	--surface-alt: #26262c;
+	--surface-sunken: #1a1a1e;
+	--sidebar-bg: rgba(26, 26, 30, 0.88);
+	--ink: #f5f5f7;
+	--ink-secondary: #d4d4d8;
+	--muted: #a1a1a6;
+	--faint: #77777d;
+	--border: rgba(255, 255, 255, 0.1);
+	--border-strong: rgba(255, 255, 255, 0.18);
+	--hairline: rgba(255, 255, 255, 0.06);
+	--shadow-1: 0 1px 2px rgba(0, 0, 0, 0.3), 0 2px 8px rgba(0, 0, 0, 0.25);
+	--shadow-2: 0 12px 32px rgba(0, 0, 0, 0.35);
+	--shadow-3: 0 20px 56px rgba(0, 0, 0, 0.5);
+	--brand-soft: rgba(61, 156, 94, 0.18);
+	--brand-softer: rgba(61, 156, 94, 0.1);
+	--mode-pomodoro-soft: rgba(217, 69, 58, 0.18);
+	--mode-flowtime-soft: rgba(30, 136, 168, 0.2);
+	--mode-timeblock-soft: rgba(123, 82, 171, 0.2);
+	--mode-stopwatch-soft: rgba(61, 156, 94, 0.18);
+	--streak-soft: rgba(217, 130, 43, 0.18);
+}
+
+/* ---- Premium themes (Pepinillo+): swap the brand ramp only.
+	 * Mode colors and semantics stay stable across themes. ---- */
+:root[data-theme='forest'] {
+	--brand: #2e6b4f;
+	--brand-strong: #255b42;
+	--brand-light: #4e8a67;
+	--brand-soft: rgba(46, 107, 79, 0.14);
+	--brand-softer: rgba(46, 107, 79, 0.08);
+}
+:root[data-theme='ocean'] {
+	--brand: #1e6e8c;
+	--brand-strong: #195d77;
+	--brand-light: #3e93b8;
+	--brand-soft: rgba(30, 110, 140, 0.14);
+	--brand-softer: rgba(30, 110, 140, 0.08);
+}
+:root[data-theme='sunset'] {
+	--brand: #c05a2e;
+	--brand-strong: #a84b23;
+	--brand-light: #da7b4f;
+	--brand-soft: rgba(192, 90, 46, 0.14);
+	--brand-softer: rgba(192, 90, 46, 0.08);
+}
+
+/* ---- Mode helpers ---- */
+.mode-pomodoro {
+	--mode-color: var(--mode-pomodoro);
+	--mode-soft: var(--mode-pomodoro-soft);
+}
+.mode-flowtime {
+	--mode-color: var(--mode-flowtime);
+	--mode-soft: var(--mode-flowtime-soft);
+}
+.mode-timeblock {
+	--mode-color: var(--mode-timeblock);
+	--mode-soft: var(--mode-timeblock-soft);
+}
+.mode-stopwatch {
+	--mode-color: var(--mode-stopwatch);
+	--mode-soft: var(--mode-stopwatch-soft);
+}

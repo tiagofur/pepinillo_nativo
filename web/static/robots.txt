@@ -1,3 +1,2 @@
-# NG6 — do not market web as shipped until product lifts noindex
 User-agent: *
-Disallow: /
+Allow: /

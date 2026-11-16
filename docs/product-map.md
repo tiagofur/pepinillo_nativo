@@ -16,7 +16,7 @@
 | **Android (phone/tablet)** | Activa, Play Store (`dev.creapolis.pepinillo`, v3.1.0 build 29) | Room v14 (7 entidades, `schemas/` 8–14) | `./gradlew :app:assembleDebug` |
 | **Wear OS** | Activa, companion (timer/tasks/stats, Tiles, Complications, FGS `specialUse`) | Snapshot + DataLayer (`/pepinillo/{timer,tasks,stats,theme,user}`) | `./gradlew :wear:assembleDebug` |
 | **Backend Go** | Activa, producción `api.ppn.creapolis.dev` (VPS IONOS + Caddy) | PostgreSQL 16 + Redis 7 (`migrations/000001..000015`) | `go test ./...`, `deploy.yml` |
-| **Web (`web/`)** | **EN PAUSA** (W1/W2 explorados: shell offline IndexedDB + auth/sync) | IndexedDB (`idb`) | `pnpm test` |
+| **Web (`web/`)** | **EN RECONSTRUCCIÓN** (epic #809: PWA completa + landing + guías + Stripe para `pepinillo.app`; núcleo W1 rescatado de history) | IndexedDB (`idb`) | `pnpm test` / `make test-web` |
 | **Windows (`windows/`)** | **EN PAUSA** (W0–W15 mergeados; falta smoke #575 + Partner Center #568) | — | `windows-build.yml` |
 
 ---
