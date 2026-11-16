@@ -254,6 +254,7 @@ func (r *integrationUserRepo) GetByStripeCustomerID(_ context.Context, _ string)
 	return nil, nil
 }
 
+
 func newTestAuthService(repo *integrationUserRepo, notifier *capturingNotifier) *services.AuthService {
 	return services.NewAuthService(
 		repo,

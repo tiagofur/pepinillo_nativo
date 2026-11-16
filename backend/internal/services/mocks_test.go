@@ -131,6 +131,22 @@ func (m *MockUserRepository) ClaimWebhookEvent(ctx context.Context, eventID, sou
 	return args.Bool(0), args.Error(1)
 }
 
+func (m *MockUserRepository) SetStripeCustomer(ctx context.Context, userID, customerID string) error {
+	args := m.Called(ctx, userID, customerID)
+	return args.Error(1)
+}
+
+func (m *MockUserRepository) UpdateStripeState(ctx context.Context, userID string, tier *string, expiresAt *time.Time) error {
+	args := m.Called(ctx, userID, tier, expiresAt)
+	return args.Error(0)
+}
+
+func (m *MockUserRepository) GetByStripeCustomerID(ctx context.Context, customerID string) (*domain.User, error) {
+	args := m.Called(ctx, customerID)
+	user, _ := args.Get(0).(*domain.User)
+	return user, args.Error(1)
+}
+
 // MockAuthStore is a testify mock for ports.AuthStore.
 type MockAuthStore struct {
 	mock.Mock

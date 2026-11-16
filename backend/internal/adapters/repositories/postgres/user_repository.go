@@ -64,6 +64,33 @@ func (r *UserRepository) UpdateSubscription(ctx context.Context, userID, tier st
 		}).Error
 }
 
+// SetStripeCustomer binds a Stripe customer to the account (web checkout).
+func (r *UserRepository) SetStripeCustomer(ctx context.Context, userID, stripeCustomerID string) error {
+	return r.db.WithContext(ctx).Model(&domain.User{}).Where("id = ?", userID).
+		Update("stripe_customer_id", stripeCustomerID).Error
+}
+
+// UpdateStripeState writes ONLY the stripe_* columns (targeted write, B6).
+func (r *UserRepository) UpdateStripeState(ctx context.Context, userID string, tier *string, expiresAt *time.Time) error {
+	return r.db.WithContext(ctx).Model(&domain.User{}).Where("id = ?", userID).
+		Updates(map[string]any{
+			"stripe_tier":       tier,
+			"stripe_expires_at": expiresAt,
+		}).Error
+}
+
+func (r *UserRepository) GetByStripeCustomerID(ctx context.Context, stripeCustomerID string) (*domain.User, error) {
+	var user domain.User
+	err := r.db.WithContext(ctx).Where("stripe_customer_id = ?", stripeCustomerID).First(&user).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &user, nil
+}
+
 func (r *UserRepository) Delete(ctx context.Context, userID string) error {
 	return r.db.WithContext(ctx).Where("id = ?", userID).Delete(&domain.User{}).Error
 }

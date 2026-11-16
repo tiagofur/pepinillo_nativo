@@ -161,3 +161,15 @@ func (r *fakeUserRepository) ClaimPurchaseToken(_ context.Context, platform, tok
 func (r *fakeUserRepository) ClaimWebhookEvent(_ context.Context, eventID, source string) (bool, error) {
 	return true, nil
 }
+
+func (r *fakeUserRepository) SetStripeCustomer(_ context.Context, _, _ string) error {
+	return nil
+}
+
+func (r *fakeUserRepository) UpdateStripeState(_ context.Context, _ string, _ *string, _ *time.Time) error {
+	return nil
+}
+
+func (r *fakeUserRepository) GetByStripeCustomerID(_ context.Context, _ string) (*domain.User, error) {
+	return nil, nil
+}

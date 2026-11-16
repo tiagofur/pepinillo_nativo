@@ -28,6 +28,7 @@ type RouteHandlers struct {
 	AI           *AIHandler
 	Billing      *BillingHandler
 	RevenueCat   *RevenueCatHandler
+	Stripe       *StripeHandler
 	Push         *PushHandler
 	WebSocket    *WebSocketHandler
 	Analytics    *AnalyticsHandler
@@ -48,6 +49,11 @@ func RegisterAPIRoutes(api fiber.Router, deps RouteHandlers) {
 	// because Fiber v2 applies empty-prefix group middleware to all subsequent routes on api.
 	webhooks := api.Group("/webhooks")
 	webhooks.Post("/revenuecat", deps.RevenueCat.Webhook)
+
+	// Stripe webhook (no JWT auth - verified via Stripe signature header).
+	// Same ordering rule as above.
+	stripeWebhook := api.Group("/billing/stripe")
+	stripeWebhook.Post("/webhook", deps.Stripe.Webhook)
 
 	auth := api.Group("/auth")
 	authLimiter := limiter.New(limiter.Config{Max: 60})
@@ -180,6 +186,8 @@ func RegisterAPIRoutes(api fiber.Router, deps RouteHandlers) {
 
 	billing := protected.Group("/billing")
 	billing.Post("/verify-receipt", deps.Billing.VerifyReceipt)
+	billing.Post("/stripe/checkout-session", deps.Stripe.CheckoutSession)
+	billing.Post("/stripe/portal-session", deps.Stripe.PortalSession)
 
 	push := verified.Group("/push")
 	push.Post("/devices", deps.Push.RegisterDevice)

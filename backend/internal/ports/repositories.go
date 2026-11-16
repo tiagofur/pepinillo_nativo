@@ -52,6 +52,14 @@ type UserRepository interface {
 	// Webhook dedupe (B3): ClaimWebhookEvent records a processed event ID.
 	// Returns false when the ID was already claimed (redelivery).
 	ClaimWebhookEvent(ctx context.Context, eventID, source string) (claimed bool, err error)
+
+	// Stripe billing (web). SetStripeCustomer binds the Stripe customer to the
+	// account; UpdateStripeState writes ONLY the stripe_* columns (targeted
+	// write, same rationale as UpdateSubscription/B6); GetByStripeCustomerID
+	// resolves the webhook's customer → user.
+	SetStripeCustomer(ctx context.Context, userID, stripeCustomerID string) error
+	UpdateStripeState(ctx context.Context, userID string, tier *string, expiresAt *time.Time) error
+	GetByStripeCustomerID(ctx context.Context, stripeCustomerID string) (*domain.User, error)
 }
 
 // TaskSyncResult is the outcome of a task sync push. AppliedSyncIDs are the
