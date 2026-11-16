@@ -5,7 +5,9 @@
 	import { t } from '$lib/i18n/i18n.svelte';
 	import type { MessageKey } from '$lib/i18n/messages';
 	import TaskRow from '$lib/features/plan/TaskRow.svelte';
+	import TaskTable from '$lib/features/plan/TaskTable.svelte';
 	import TaskInspector from '$lib/features/plan/TaskInspector.svelte';
+	import Segmented from '$lib/design/Segmented.svelte';
 	import { groupByEnergy, PLAN_FILTERS, quickAddDefaults, type PlanFilter } from '$lib/domain/tasks/plan';
 	import { suggestEnergy } from '$lib/domain/tasks/energy';
 	import type { Task } from '$lib/domain/entities/types';
@@ -86,18 +88,11 @@
 
 <section class="plan rise-in">
 	<header class="toolbar">
-		<div class="pills">
-			{#each FILTER_KEYS as f (f.id)}
-				<button
-					class="chip pressable"
-					aria-pressed={plan.filter === f.id}
-					class:is-active={plan.filter === f.id}
-					onclick={() => plan.setFilter(f.id)}
-				>
-					{t(f.key)}
-				</button>
-			{/each}
-		</div>
+		<Segmented
+			options={FILTER_KEYS.map((f) => ({ id: f.id, label: t(f.key) }))}
+			value={plan.filter}
+			onchange={(id) => plan.setFilter(id as PlanFilter)}
+		/>
 		<button
 			class="chip pressable qc-open"
 			onclick={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }))}
@@ -154,6 +149,14 @@
 					{/each}
 				</ul>
 			{:else}
+				<TaskTable
+					tasks={plan.visible}
+					selectedId={selectedId}
+					onselect={selectTask}
+					ontoggle={(id) => plan.toggleComplete(id)}
+					onfocus={focusTask}
+				/>
+				<div class="mobile-list">
 				{#each groupByEnergy(plan.visible) as group (group.energy)}
 					<section class="group">
 						<h2 class="group-title">{t(`plan.energy.${group.energy}`)}</h2>
@@ -174,6 +177,7 @@
 						</ul>
 					</section>
 				{/each}
+				</div>
 			{/if}
 		</div>
 
@@ -196,12 +200,6 @@
 		align-items: center;
 		justify-content: space-between;
 		gap: var(--space-3);
-		flex-wrap: wrap;
-	}
-
-	.pills {
-		display: flex;
-		gap: var(--space-2);
 		flex-wrap: wrap;
 	}
 
@@ -262,6 +260,24 @@
 		display: flex;
 		flex-direction: column;
 		gap: var(--space-5);
+	}
+
+	.mobile-list {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-5);
+	}
+
+	@media (min-width: 1024px) {
+		.mobile-list {
+			display: none;
+		}
+	}
+
+	@media (max-width: 1023px) {
+		.list-area :global(.task-table) {
+			display: none;
+		}
 	}
 
 	.list {
