@@ -1,5 +1,6 @@
 package dev.creapolis.pepinillo.presentation
 
+import androidx.compose.material.icons.rounded.Checklist
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.scrollBy
@@ -117,15 +118,28 @@ fun TasksScreen(
 
         if (tasks.isEmpty()) {
             item {
-                Text(
-                    text = stringResource(R.string.no_active_tasks),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center,
+                // Styled empty state (#776 Batch C): icon + copy, matching the
+                // phone's EmptyTasksState grammar scaled for the watch.
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 16.dp),
-                )
+                        .padding(top = 24.dp),
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.Checklist,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(28.dp),
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = stringResource(R.string.no_active_tasks),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center,
+                    )
+                }
             }
         } else {
             items(tasks) { task ->

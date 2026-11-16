@@ -252,8 +252,5 @@ private fun StatRow(
     }
 }
 
-private fun formatMinutes(totalMinutes: Int): String {
-    val hours = totalMinutes / 60
-    val minutes = totalMinutes % 60
-    return if (hours > 0) "${hours}h ${minutes}m" else "${minutes}m"
-}
+// Unified compact notation lives in TimeFormat.kt (#776 Batch C).
+private fun formatMinutes(totalMinutes: Int): String = formatCompactMinutes(totalMinutes)

@@ -1,5 +1,6 @@
 package dev.creapolis.pepinillo.tile
 
+import dev.creapolis.pepinillo.presentation.formatCompactMinutes
 import androidx.concurrent.futures.CallbackToFutureAdapter
 import androidx.wear.protolayout.ActionBuilders
 import androidx.wear.protolayout.ColorBuilders
@@ -236,7 +237,8 @@ class FocusTileService : TileService() {
         colors: WearThemeColors,
     ): LayoutElementBuilders.LayoutElement {
         val emoji = modeEmoji(state.mode)
-        val statsText = "${stats.totalMinutes} min \u00b7 \uD83D\uDD25 ${stats.streak}d"
+        // Compact "2h 5m" notation, unified with app and wear (#776 Batch C).
+        val statsText = "${formatCompactMinutes(stats.totalMinutes)} \u00b7 \uD83D\uDD25 ${stats.streak}d"
 
         return LayoutElementBuilders.Box.Builder()
             .setWidth(DimensionBuilders.expand())
