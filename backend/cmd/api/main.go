@@ -130,7 +130,9 @@ func main() {
 	}
 	app.Use(cors.New(cors.Config{
 		AllowOrigins: corsOrigins,
-		AllowHeaders: "Origin, Content-Type, Accept, Authorization",
+		// X-Device-ID: sent by every client on authenticated calls (excludes
+		// the device from WS broadcasts). Stripe-Signature: webhook endpoint.
+		AllowHeaders: "Origin, Content-Type, Accept, Authorization, X-Device-ID, Stripe-Signature",
 		AllowMethods: "GET,POST,PUT,DELETE,PATCH,OPTIONS",
 	}))
 	app.Use(limiter.New(limiter.Config{

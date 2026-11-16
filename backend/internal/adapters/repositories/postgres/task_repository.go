@@ -192,6 +192,13 @@ const taskSyncChunkSize = 200
 // transactions. incoming is passed by value: caller slices are never mutated.
 func (r *TaskRepository) upsertSyncItem(tx *gorm.DB, userID string, incoming domain.Task, now time.Time, applied, rejected *[]string) error {
 	incoming.UserID = userID
+	// Sync clients may omit tracking_mode (e.g. the web mapper pre-W9): an
+	// invalid value would violate chk_tasks_tracking_mode on UPDATE (GORM
+	// writes the raw string on full-row Save — the column default only helps
+	// INSERTs). Keep the server value on update; default to pomodoro on insert.
+	if !domain.ValidTrackingMode(incoming.TrackingMode) {
+		incoming.TrackingMode = "pomodoro"
+	}
 	// D2: compare AND store on the same (device) timeline.
 	clientUpdatedAt := resolveSyncTimestamp(incoming.UpdatedAt, now)
 
@@ -218,6 +225,10 @@ func (r *TaskRepository) upsertSyncItem(tx *gorm.DB, userID string, incoming dom
 			return nil
 		}
 		incoming.ID = existing.ID
+		if !domain.ValidTrackingMode(incoming.TrackingMode) {
+			// Preserve the server-side tracking mode when the client omits it.
+			incoming.TrackingMode = existing.TrackingMode
+		}
 	} else {
 		// Lookup missed: do NOT trust the client-supplied ID; force INSERT.
 		incoming.ID = 0

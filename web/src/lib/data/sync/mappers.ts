@@ -50,6 +50,7 @@ export function taskToRemote(task: Task): RemoteTask {
 		priority: PRIORITY_TO_INT[task.priority] ?? 0,
 		estimatedPomodoros: task.estimatedPomodoros,
 		isDeleted: task.status === 'archived',
+		trackingMode: 'pomodoro',
 		recurrenceRule: task.recurrenceRule ?? null,
 		updatedAt: task.updatedAt,
 		createdDate: task.createdAt,
