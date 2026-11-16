@@ -2,7 +2,13 @@
 // Pepinillo — Deep Work Companion for Apple
 //
 // WidgetKit Live Activity configuration combining all 4 Dynamic Island presentations
-// and the Lock Screen banner view.
+// and the Lock Screen banner view. On macOS 27.3 the same configuration drives the
+// menu bar presentation (Macs without Dynamic Island) — issue #746.
+//
+// Compiled on iOS always; on macOS only behind MAC_LIVE_ACTIVITIES
+// (ActivityKit's macOS availability is 27.3 — see LiveActivityManager.swift).
+
+#if os(iOS) || MAC_LIVE_ACTIVITIES
 
 import ActivityKit
 import WidgetKit
@@ -33,6 +39,7 @@ private func liveProgressBar(
     }
 }
 
+@available(iOS 16.1, macOS 27.3, *)
 struct FocusLiveActivityWidget: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: FocusActivityAttributes.self) { context in
@@ -89,3 +96,5 @@ struct FocusLiveActivityWidget: Widget {
     }
 
 }
+
+#endif

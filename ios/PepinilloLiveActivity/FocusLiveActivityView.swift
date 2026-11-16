@@ -3,6 +3,11 @@
 //
 // Lock Screen and Dynamic Island views for all 4 focus modes.
 // The Live Activity keeps the session visible without opening the app.
+//
+// Compiled on iOS always; on macOS only behind MAC_LIVE_ACTIVITIES
+// (ActivityKit's macOS availability is 27.3 — see LiveActivityManager.swift).
+
+#if os(iOS) || MAC_LIVE_ACTIVITIES
 
 import SwiftUI
 import ActivityKit
@@ -294,3 +299,4 @@ struct FocusDynamicIslandExpanded: View {
     }
 
 }
+#endif

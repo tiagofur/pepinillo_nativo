@@ -4,6 +4,13 @@
 // Actor that manages the ActivityKit Live Activity lifecycle.
 // Lives in the PepinilloLiveActivity module which has ActivityKit access.
 // Called from FocusFeature via LiveActivityClient.activityKit().
+//
+// On macOS the whole module compiles only behind MAC_LIVE_ACTIVITIES
+// (Debug-only compilation condition, issue #746): ActivityKit's macOS
+// availability is macOS 27.3, so Staging/Release keep building with the
+// stable SDK until 27.3 goes final.
+
+#if os(iOS) || MAC_LIVE_ACTIVITIES
 
 @preconcurrency import ActivityKit
 import Foundation
@@ -11,7 +18,7 @@ import Foundation
 // MARK: - Live Activity Manager
 
 /// Thread-safe actor managing a single active Focus Live Activity.
-@available(iOS 16.2, *)
+@available(iOS 16.2, macOS 27.3, *)
 actor LiveActivityManager {
     static let shared = LiveActivityManager()
 
@@ -117,3 +124,5 @@ actor LiveActivityManager {
         )
     }
 }
+
+#endif
