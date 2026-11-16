@@ -210,17 +210,32 @@ struct MacStatisticsView: View {
     }
 
     private func topActivityIcon(_ app: AppActivitySummary) -> some View {
-        Group {
-            if let appURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: app.bundleID) {
-                Image(nsImage: NSWorkspace.shared.icon(forFile: appURL.path))
-                    .resizable()
-            } else {
-                Image(systemName: "app.dashed")
-                    .font(.system(size: 26))
-                    .foregroundStyle(.secondary)
+        VStack(spacing: 4) {
+            Group {
+                if let appURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: app.bundleID) {
+                    Image(nsImage: NSWorkspace.shared.icon(forFile: appURL.path))
+                        .resizable()
+                } else {
+                    Image(systemName: "app.dashed")
+                        .font(.system(size: 26))
+                        .foregroundStyle(.secondary)
+                }
             }
+            .frame(width: 32, height: 32)
+
+            // Touch path (guide R1): a finger never reveals the tooltip, so
+            // the essential data (name + time) sits beside the glyph instead
+            // of living only behind .help().
+            Text(app.name)
+                .font(.caption)
+                .lineLimit(1)
+                .truncationMode(.tail)
+            Text(durationText(app.seconds))
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .monospacedDigit()
         }
-        .frame(width: 32, height: 32)
+        .frame(width: 76)
         .help("\(app.name) · \(durationText(app.seconds))")
         .accessibilityLabel(Text("\(app.name), \(durationText(app.seconds))"))
     }

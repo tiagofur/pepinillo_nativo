@@ -172,11 +172,33 @@ private struct MacQuickCaptureView: View {
             .onExitCommand { onCancel() }
 
             if !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                Text("⏎")
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-                    .accessibilityHidden(true)
+                // Touch path (guide R4): the Return hint became a real button
+                // — dictation or the on-screen keyboard can capture with a
+                // tap, no physical keyboard needed.
+                Button {
+                    onSubmit(text)
+                } label: {
+                    Image(systemName: "arrow.up.circle.fill")
+                        .font(.title3)
+                        .foregroundStyle(.tint)
+                        .macTouchTarget()
+                }
+                .buttonStyle(.plain)
+                .help(String(localized: "Add Task"))
+                .accessibilityLabel(String(localized: "Add Task"))
             }
+
+            Button {
+                onCancel()
+            } label: {
+                Image(systemName: "xmark.circle.fill")
+                    .font(.title3)
+                    .foregroundStyle(.tertiary)
+                    .macTouchTarget()
+            }
+            .buttonStyle(.plain)
+            .help(String(localized: "Cancel"))
+            .accessibilityLabel(String(localized: "Cancel"))
         }
         .padding(.horizontal, 18)
         .frame(height: 64)
