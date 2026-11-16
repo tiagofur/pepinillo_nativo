@@ -396,8 +396,9 @@ fun FocusScreen(
                 CircularTimerRing(
                     progress = animatedProgress,
                     ringColor = animatedAccentColor,
-                    // 0.18 = iOS track tint parity (#776 Batch B feedback side-by-side).
-                    trackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.18f),
+                    // Track tinted with the mode color at 0.18 — identical to the iOS track
+                    // (Tiago's call: softer, lower-contrast; cross-platform parity).
+                    trackColor = animatedAccentColor.copy(alpha = 0.18f),
                     strokeWidth = if (sessionActive) 13.dp else 11.dp,
                     modifier = Modifier.size(timerSize.dp),
                     isRunning = uiState.isRunning,
