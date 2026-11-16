@@ -4,6 +4,7 @@
 	import { t } from '$lib/i18n/i18n.svelte';
 	import type { MessageKey } from '$lib/i18n/messages';
 	import Charts from '$lib/features/dashboard/Charts.svelte';
+	import Segmented from '$lib/design/Segmented.svelte';
 	import Panels from '$lib/features/dashboard/Panels.svelte';
 	import AiCard from '$lib/features/dashboard/AiCard.svelte';
 	import ReviewSheet from '$lib/features/dashboard/ReviewSheet.svelte';
@@ -108,26 +109,22 @@
 			</div>
 		</div>
 
-		<!-- Period picker -->
-		<div class="pills">
-			{#each PERIODS as p (p.days)}
-				{@const gated = dashboard.periodGated(p.days)}
-				<button
-					class="chip pressable"
-					aria-pressed={dashboard.period === p.days}
-					class:is-active={dashboard.period === p.days}
-					class:is-locked={gated}
-					disabled={gated}
-					onclick={() => dashboard.setPeriod(p.days)}
-					title={gated ? t('common.proLocked') : ''}
-				>
-					{#if gated}🔒{/if}
-					{t(p.key)}
-				</button>
-			{/each}
+		<!-- Period picker (segmented, Mac style) -->
+		<div class="period">
+			<Segmented
+				compact
+				options={PERIODS.map((p) => ({
+					id: String(p.days),
+					label: p.days === 7 ? t(p.key) : `${p.days}D`,
+					disabled: dashboard.periodGated(p.days),
+					title: dashboard.periodGated(p.days) ? t('common.proLocked') : undefined
+				}))}
+				value={String(dashboard.period)}
+				onchange={(id) => dashboard.setPeriod(Number(id) as AnalyticsPeriod)}
+			/>
 		</div>
 
-		<Charts stats={dashboard.stats} />
+		<Charts stats={dashboard.stats} periodDays={dashboard.period} />
 
 		<AiCard />
 
@@ -255,9 +252,15 @@
 		font-weight: 600;
 	}
 
-	.pills {
+	.period :global(.segmented) {
+		width: 200px;
+	}
+
+	.period :global(.segmented button) {
 		display: flex;
-		gap: var(--space-2);
+		align-items: center;
+		justify-content: center;
+		gap: 4px;
 	}
 
 	.empty {

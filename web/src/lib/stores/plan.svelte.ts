@@ -22,7 +22,15 @@ import {
 import { filterTasks, reorderSubset, type PlanFilter } from '$lib/domain/tasks/plan';
 import { app } from '$lib/stores/app.svelte';
 import { focus } from '$lib/stores/focus.svelte';
+import { toast } from '$lib/stores/toast.svelte';
+import { t as translate } from '$lib/i18n/i18n.svelte';
 import type { SubTask, Task } from '$lib/domain/entities/types';
+
+/** Undo snapshot for one reversible operation (MacPlanView parity). */
+interface UndoSnapshot {
+	label: string;
+	apply: () => Promise<void>;
+}
 
 function uid(): string {
 	return `t-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
@@ -91,7 +99,11 @@ class PlanStore {
 	async updateTask(id: string, patch: Partial<Task>): Promise<void> {
 		const idx = this.tasks.findIndex((t) => t.id === id);
 		if (idx === -1) return;
-		const updated: Task = { ...this.tasks[idx], ...patch, updatedAt: new Date().toISOString() };
+		const updated: Task = $state.snapshot({
+			...this.tasks[idx],
+			...patch,
+			updatedAt: new Date().toISOString()
+		});
 		this.tasks = this.tasks.map((t) => (t.id === id ? updated : t));
 		await upsertTask(updated);
 	}
@@ -111,15 +123,36 @@ class PlanStore {
 				return;
 			}
 			await this.updateTask(id, { status: 'completed', completedAt: new Date().toISOString() });
+			this.offerUndo({
+				label: `'${task.title}' completed`,
+				apply: async () => {
+					await this.updateTask(id, { status: 'active', completedAt: null });
+				}
+			});
 		} else {
 			await this.updateTask(id, { status: 'active', completedAt: null });
 		}
 	}
 
 	async deleteTask(id: string): Promise<void> {
+		const snapshot = this.tasks.find((t) => t.id === id);
 		this.tasks = this.tasks.filter((t) => t.id !== id);
 		if (focus.activeTask?.id === id) focus.setActiveTask(null);
 		await removeTask(id);
+		if (snapshot) {
+			this.offerUndo({
+				label: `'${snapshot.title}' deleted`,
+				apply: async () => {
+					await upsertTask($state.snapshot(snapshot));
+					await this.reload();
+				}
+			});
+		}
+	}
+
+	/** MacPlanView parity: snackbar with UNDO (5 s) after destructive actions. */
+	private offerUndo(snapshot: UndoSnapshot): void {
+		toast.action(snapshot.label, translate('toast.undo'), () => void snapshot.apply());
 	}
 
 	/** Dense reorder inside the currently visible subset. */
@@ -132,7 +165,7 @@ class PlanStore {
 			const order = map.get(t.id);
 			if (order === undefined || order === t.order) return t;
 			const updated = { ...t, order, updatedAt: new Date().toISOString() };
-			changed.push(updated);
+			changed.push($state.snapshot(updated));
 			return updated;
 		});
 		await saveAllTasks(changed);

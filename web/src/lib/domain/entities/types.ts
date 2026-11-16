@@ -110,6 +110,14 @@ export interface Preferences {
 	showJournalAfterSession: boolean;
 	adhdFriendlyEnabled: boolean;
 	notificationsEnabled: boolean;
+	/* ---- macOS parity (MacSettingsView / iOS SettingsView) ---- */
+	defaultSection: 'focus' | 'plan' | 'dashboard';
+	dailyReminderEnabled: boolean;
+	dailyReminderHour: number;
+	dailyReminderMinute: number;
+	weeklyRecapEnabled: boolean;
+	celebrateRecordsEnabled: boolean;
+	analyticsOptIn: boolean;
 }
 
 export interface DeviceMeta {
@@ -144,5 +152,12 @@ export const DEFAULT_PREFERENCES: Preferences = {
 	keepScreenOn: false,
 	showJournalAfterSession: true,
 	adhdFriendlyEnabled: false,
-	notificationsEnabled: false
+	notificationsEnabled: false,
+	defaultSection: 'focus',
+	dailyReminderEnabled: false,
+	dailyReminderHour: 9,
+	dailyReminderMinute: 0,
+	weeklyRecapEnabled: false,
+	celebrateRecordsEnabled: true,
+	analyticsOptIn: false
 };

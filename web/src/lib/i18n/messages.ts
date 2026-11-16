@@ -198,6 +198,7 @@ export type MessageKey =
 	| 'companion.streak'
 	| 'companion.pomodoroNumber'
 	| 'companion.activeTask'
+	| 'companion.streakEmpty'
 	| 'companion.suggest.title'
 	| 'companion.suggest.apply'
 	| 'adhd.breathe'
@@ -265,10 +266,21 @@ export type MessageKey =
 	| 'quickCapture.title'
 	| 'quickCapture.placeholder'
 	| 'quickCapture.hint'
+	| 'quickCapture.captured'
+	| 'palette.placeholder'
+	| 'palette.addTask'
+	| 'palette.empty'
+	| 'palette.focus'
+	| 'palette.plan'
+	| 'palette.dashboard'
+	| 'palette.startFocus'
+	| 'palette.toggleTheme'
+	| 'toast.undo'
 	| 'period.7'
 	| 'period.30'
 	| 'period.365'
 	| 'chart.week'
+	| 'chart.window'
 	| 'chart.modes'
 	| 'chart.day.sun'
 	| 'chart.day.mon'
@@ -400,7 +412,71 @@ export type MessageKey =
 	| 'ai.highlights'
 	| 'ai.insights'
 	| 'ai.optimalHours'
-	| 'ai.burnout';
+	| 'ai.burnout'
+	| 'settings.dailyReminder'
+	| 'settings.reminderHour'
+	| 'settings.reminderMinute'
+	| 'settings.reminderNext'
+	| 'settings.weeklyRecap'
+	| 'settings.streak.title'
+	| 'settings.celebrateRecords'
+	| 'settings.privacy.title'
+	| 'settings.analytics'
+	| 'settings.analytics.hint'
+	| 'settings.startup.title'
+	| 'settings.startup.hint'
+	| 'landing.nav.guides'
+	| 'landing.nav.pricing'
+	| 'landing.nav.open'
+	| 'landing.nav.home'
+	| 'landing.meta'
+	| 'landing.kicker'
+	| 'landing.hero.title'
+	| 'landing.hero.sub'
+	| 'landing.hero.hint'
+	| 'landing.cta.web'
+	| 'landing.cta.stores'
+	| 'landing.flow.label'
+	| 'landing.flow.plan'
+	| 'landing.flow.focus'
+	| 'landing.flow.complete'
+	| 'landing.flow.reflect'
+	| 'landing.feat.modes.title'
+	| 'landing.feat.modes.body'
+	| 'landing.feat.tasks.title'
+	| 'landing.feat.tasks.body'
+	| 'landing.feat.stats.title'
+	| 'landing.feat.stats.body'
+	| 'landing.feat.sync.title'
+	| 'landing.feat.sync.body'
+	| 'landing.download.title'
+	| 'landing.download.body'
+	| 'landing.download.ios'
+	| 'landing.download.android'
+	| 'landing.download.web'
+	| 'landing.pricing.title'
+	| 'landing.pricing.cta'
+	| 'landing.faq.title'
+	| 'landing.faq.offline.q'
+	| 'landing.faq.offline.a'
+	| 'landing.faq.devices.q'
+	| 'landing.faq.devices.a'
+	| 'landing.faq.price.q'
+	| 'landing.faq.price.a'
+	| 'landing.faq.account.q'
+	| 'landing.faq.account.a'
+	| 'guides.title'
+	| 'guides.meta'
+	| 'guides.intro'
+	| 'guides.soon'
+	| 'guides.list.macos'
+	| 'guides.list.macos.body'
+	| 'guides.list.iphone'
+	| 'guides.list.watchos'
+	| 'guides.list.android'
+	| 'guides.list.wearos'
+	| 'guides.list.web'
+	| 'guides.list.generic.body';
 
 type Dict = Record<MessageKey, string>;
 
@@ -599,6 +675,7 @@ const en: Dict = {
 	'companion.focusToday': 'Focus today',
 	'companion.sessionsToday': 'Sessions today',
 	'companion.streak': 'Streak',
+	'companion.streakEmpty': 'Start your streak',
 	'companion.pomodoroNumber': 'Pomodoro #',
 	'companion.activeTask': 'Active task',
 	'companion.suggest.title': 'Suggested for now',
@@ -668,10 +745,21 @@ const en: Dict = {
 	'quickCapture.title': 'Quick Capture',
 	'quickCapture.placeholder': 'Capture a task…',
 	'quickCapture.hint': '⌘K / Ctrl+K from anywhere',
+	'quickCapture.captured': '{title} captured to Inbox',
+	'palette.placeholder': 'Search commands or capture a task…',
+	'palette.addTask': 'Add task',
+	'palette.empty': 'No matching commands',
+	'palette.focus': 'Focus',
+	'palette.plan': 'Plan',
+	'palette.dashboard': 'Dashboard',
+	'palette.startFocus': 'Start focus session',
+	'palette.toggleTheme': 'Toggle light / dark',
+	'toast.undo': 'Undo',
 	'period.7': '7D',
 	'period.30': '30D',
 	'period.365': '1Y',
 	'chart.week': 'This week',
+	'chart.window': 'Last {days} days',
 	'chart.modes': 'Modes',
 	'chart.day.sun': 'Sun',
 	'chart.day.mon': 'Mon',
@@ -795,6 +883,70 @@ const en: Dict = {
 	'ai.insights': 'Insights',
 	'ai.optimalHours': 'Optimal hours',
 	'ai.burnout': 'Burnout risk',
+	'settings.dailyReminder': 'Daily reminder',
+	'settings.reminderHour': 'Hour',
+	'settings.reminderMinute': 'Minute',
+	'settings.reminderNext': 'next in {time}',
+	'settings.weeklyRecap': 'Weekly recap notification',
+	'settings.streak.title': 'Streak',
+	'settings.celebrateRecords': 'Celebrate new records',
+	'settings.privacy.title': 'Privacy',
+	'settings.analytics': 'Share anonymous usage metrics',
+	'settings.analytics.hint': 'PII-free aggregated stats. Off by default; nothing is sent unless you opt in.',
+	'settings.startup.title': 'Startup',
+	'settings.startup.hint': 'The section the app opens on (Mac parity).',
+	'landing.nav.guides': 'Guides',
+	'landing.nav.pricing': 'Pricing',
+	'landing.nav.open': 'Open app',
+	'landing.nav.home': 'Home',
+	'landing.meta': 'Pepinillo is a native companion for deep work: plan with intention, focus without noise, and celebrate your progress. iPhone, iPad, Mac, Android, Wear OS and web.',
+	'landing.kicker': 'Deep work, native',
+	'landing.hero.title': 'Plan with intention. Focus without noise. Celebrate what you grow.',
+	'landing.hero.sub': 'Pepinillo is a native companion for deep work on every screen you own — a pomodoro timer that respects your brain, tasks organized by energy, and stats that help you understand your patterns.',
+	'landing.hero.hint': 'The web app works offline and installs like a native app.',
+	'landing.cta.web': 'Open the web app',
+	'landing.cta.stores': 'Get the native apps',
+	'landing.flow.label': 'The Pepinillo flow',
+	'landing.flow.plan': 'Plan',
+	'landing.flow.focus': 'Focus',
+	'landing.flow.complete': 'Complete',
+	'landing.flow.reflect': 'Reflect',
+	'landing.feat.modes.title': 'Four ways to focus',
+	'landing.feat.modes.body': 'Pomodoro for rhythm, Flowtime for deep immersion, Time Blocks for planned sessions, Stopwatch for open work. Your engine keeps running honestly on every device.',
+	'landing.feat.tasks.title': 'Tasks that respect your energy',
+	'landing.feat.tasks.body': 'Organize by priority and mental energy — deep, shallow, admin — with subtasks, recurrence and a daily suggestion based on your chronobiology.',
+	'landing.feat.stats.title': 'Streaks worth celebrating',
+	'landing.feat.stats.body': 'Weekly and monthly reviews, focus score, personal records and milestones that fire exactly when you earn them. Your garden grows with every session.',
+	'landing.feat.sync.title': 'Everywhere you work',
+	'landing.feat.sync.body': 'Everywhere/AI+ syncs your data between devices the same way the native apps do, and adds AI insights: reviews, tips and predictions.',
+	'landing.download.title': 'Native on every screen',
+	'landing.download.body': 'Widgets, watch complications, Live Activities, menu bar — Pepinillo feels at home on each platform. This web app is the newest member of the family.',
+	'landing.download.ios': 'iPhone & iPad',
+	'landing.download.android': 'Android',
+	'landing.download.web': 'Use the web app',
+	'landing.pricing.title': 'Simple, honest pricing',
+	'landing.pricing.cta': 'See full pricing',
+	'landing.faq.title': 'Frequently asked',
+	'landing.faq.offline.q': 'Does it work offline?',
+	'landing.faq.offline.a': 'Yes — everything runs on your device first. The web app stores your data locally and works without connection; cloud sync is an Everywhere/AI+ extra.',
+	'landing.faq.devices.q': 'Which devices are supported?',
+	'landing.faq.devices.a': 'iPhone, iPad, Mac, Android, Wear OS and this web app. Your engine, tasks and stats behave the same everywhere.',
+	'landing.faq.price.q': 'Is the web version free?',
+	'landing.faq.price.a': 'Yes. The web app is free with the same limits as mobile free: Pomodoro + Stopwatch, 3 active tasks and 7 days of analytics. Pepinillo+ and Everywhere/AI+ unlock the rest.',
+	'landing.faq.account.q': 'Do I need an account?',
+	'landing.faq.account.a': 'No. You can use everything offline without signing up. An account is only needed for cloud sync and AI (Everywhere/AI+).',
+	'guides.title': 'User guides',
+	'guides.meta': 'Step-by-step user guides for Pepinillo on Mac, iPhone, iPad, watchOS, Android, Wear OS and web.',
+	'guides.intro': 'Learn every corner of Pepinillo, platform by platform.',
+	'guides.soon': 'Coming soon',
+	'guides.list.macos': 'Mac — manual & touch guide',
+	'guides.list.macos.body': 'Menu bar, Notch panel, Quick Capture, keyboard shortcuts and the new touch gestures.',
+	'guides.list.iphone': 'iPhone & iPad',
+	'guides.list.watchos': 'watchOS',
+	'guides.list.android': 'Android',
+	'guides.list.wearos': 'Wear OS',
+	'guides.list.web': 'Web app',
+	'guides.list.generic.body': 'The full guide for this platform is on its way.',
 	'sync.title': 'Cloud sync',
 	'sync.hint': 'Last-Write-Wins with the server clock, like the native apps.',
 	'sync.last': 'Last sync',
@@ -1034,6 +1186,7 @@ const es: Dict = {
 	'companion.focusToday': 'Enfoque hoy',
 	'companion.sessionsToday': 'Sesiones hoy',
 	'companion.streak': 'Racha',
+	'companion.streakEmpty': 'Empezá tu racha',
 	'companion.pomodoroNumber': 'Pomodoro n.º',
 	'companion.activeTask': 'Tarea activa',
 	'companion.suggest.title': 'Sugerido para ahora',
@@ -1103,10 +1256,21 @@ const es: Dict = {
 	'quickCapture.title': 'Captura rápida',
 	'quickCapture.placeholder': 'Capturar una tarea…',
 	'quickCapture.hint': '⌘K / Ctrl+K desde cualquier lugar',
+	'quickCapture.captured': '{title} capturada en Inbox',
+	'palette.placeholder': 'Buscá comandos o capturá una tarea…',
+	'palette.addTask': 'Agregar tarea',
+	'palette.empty': 'Sin comandos que coincidan',
+	'palette.focus': 'Focus',
+	'palette.plan': 'Plan',
+	'palette.dashboard': 'Dashboard',
+	'palette.startFocus': 'Iniciar sesión de foco',
+	'palette.toggleTheme': 'Cambiar claro / oscuro',
+	'toast.undo': 'Deshacer',
 	'period.7': '7D',
 	'period.30': '30D',
 	'period.365': '1A',
 	'chart.week': 'Esta semana',
+	'chart.window': 'Últimos {days} días',
 	'chart.modes': 'Modos',
 	'chart.day.sun': 'Dom',
 	'chart.day.mon': 'Lun',
@@ -1230,6 +1394,70 @@ const es: Dict = {
 	'ai.insights': 'Insights',
 	'ai.optimalHours': 'Horas óptimas',
 	'ai.burnout': 'Riesgo de burnout',
+	'settings.dailyReminder': 'Recordatorio diario',
+	'settings.reminderHour': 'Hora',
+	'settings.reminderMinute': 'Minuto',
+	'settings.reminderNext': 'próximo en {time}',
+	'settings.weeklyRecap': 'Notificación de repaso semanal',
+	'settings.streak.title': 'Racha',
+	'settings.celebrateRecords': 'Celebrar nuevos récords',
+	'settings.privacy.title': 'Privacidad',
+	'settings.analytics': 'Compartir métricas anónimas de uso',
+	'settings.analytics.hint': 'Estadísticas agregadas sin datos personales. Apagado por defecto; no se envía nada sin tu consentimiento.',
+	'settings.startup.title': 'Inicio',
+	'settings.startup.hint': 'La sección donde abre la app (paridad con Mac).',
+	'landing.nav.guides': 'Guías',
+	'landing.nav.pricing': 'Precios',
+	'landing.nav.open': 'Abrir app',
+	'landing.nav.home': 'Inicio',
+	'landing.meta': 'Pepinillo es un compañero nativo de deep work: planificá con intención, enfocate sin ruido y celebrá lo que cultivás. iPhone, iPad, Mac, Android, Wear OS y web.',
+	'landing.kicker': 'Deep work, nativo',
+	'landing.hero.title': 'Planificá con intención. Enfocate sin ruido. Celebrá lo que cultivás.',
+	'landing.hero.sub': 'Pepinillo es un compañero nativo de deep work en todas tus pantallas — un timer que respeta tu cerebro, tareas organizadas por energía y estadísticas que te ayudan a entender tus patrones.',
+	'landing.hero.hint': 'La app web funciona offline y se instala como una app nativa.',
+	'landing.cta.web': 'Abrir la app web',
+	'landing.cta.stores': 'Descargar las apps nativas',
+	'landing.flow.label': 'El flujo Pepinillo',
+	'landing.flow.plan': 'Planificá',
+	'landing.flow.focus': 'Enfocate',
+	'landing.flow.complete': 'Completá',
+	'landing.flow.reflect': 'Reflexioná',
+	'landing.feat.modes.title': 'Cuatro formas de enfocarte',
+	'landing.feat.modes.body': 'Pomodoro para el ritmo, Flowtime para la inmersión profunda, Bloques para sesiones planificadas, Cronómetro para trabajo abierto. Tu motor corre con honestidad en cada dispositivo.',
+	'landing.feat.tasks.title': 'Tareas que respetan tu energía',
+	'landing.feat.tasks.body': 'Organizá por prioridad y energía mental — profunda, superficial, admin — con subtareas, recurrencia y una sugerencia diaria basada en tu cronobiología.',
+	'landing.feat.stats.title': 'Rachas que vale la pena celebrar',
+	'landing.feat.stats.body': 'Repasos semanales y mensuales, puntaje de foco, récords personales e hitos que se disparan justo cuando te los ganás. Tu huerto crece con cada sesión.',
+	'landing.feat.sync.title': 'En todos lados donde trabajás',
+	'landing.feat.sync.body': 'Everywhere/AI+ sincroniza tus datos entre dispositivos igual que las apps nativas, y suma insights de IA: repasos, tips y predicciones.',
+	'landing.download.title': 'Nativo en cada pantalla',
+	'landing.download.body': 'Widgets, complicaciones de reloj, Live Activities, barra de menú — Pepinillo se siente de casa en cada plataforma. Esta app web es el nuevo miembro de la familia.',
+	'landing.download.ios': 'iPhone y iPad',
+	'landing.download.android': 'Android',
+	'landing.download.web': 'Usar la app web',
+	'landing.pricing.title': 'Precios simples y honestos',
+	'landing.pricing.cta': 'Ver precios completos',
+	'landing.faq.title': 'Preguntas frecuentes',
+	'landing.faq.offline.q': '¿Funciona sin conexión?',
+	'landing.faq.offline.a': 'Sí — todo corre primero en tu dispositivo. La app web guarda tus datos localmente y funciona sin conexión; la sync cloud es un extra de Everywhere/AI+.',
+	'landing.faq.devices.q': '¿Qué dispositivos están soportados?',
+	'landing.faq.devices.a': 'iPhone, iPad, Mac, Android, Wear OS y esta app web. Tu motor, tareas y estadísticas se comportan igual en todos lados.',
+	'landing.faq.price.q': '¿La versión web es gratis?',
+	'landing.faq.price.a': 'Sí. La app web es gratis con los mismos límites que mobile free: Pomodoro + Cronómetro, 3 tareas activas y 7 días de analítica. Pepinillo+ y Everywhere/AI+ desbloquean el resto.',
+	'landing.faq.account.q': '¿Necesito una cuenta?',
+	'landing.faq.account.a': 'No. Podés usar todo offline sin registrarte. La cuenta solo hace falta para la sync cloud y la IA (Everywhere/AI+).',
+	'guides.title': 'Guías de usuario',
+	'guides.meta': 'Guías paso a paso de Pepinillo en Mac, iPhone, iPad, watchOS, Android, Wear OS y web.',
+	'guides.intro': 'Aprendé cada rincón de Pepinillo, plataforma por plataforma.',
+	'guides.soon': 'Pronto disponible',
+	'guides.list.macos': 'Mac — manual y guía touch',
+	'guides.list.macos.body': 'Barra de menú, panel Notch, Quick Capture, atajos de teclado y los nuevos gestos táctiles.',
+	'guides.list.iphone': 'iPhone y iPad',
+	'guides.list.watchos': 'watchOS',
+	'guides.list.android': 'Android',
+	'guides.list.wearos': 'Wear OS',
+	'guides.list.web': 'App web',
+	'guides.list.generic.body': 'La guía completa de esta plataforma está en camino.',
 	'sync.title': 'Sync cloud',
 	'sync.hint': 'Last-Write-Wins con el reloj del servidor, como en las apps nativas.',
 	'sync.last': 'Última sync',
@@ -1453,6 +1681,7 @@ const pt: Dict = {
 	'companion.focusToday': 'Foco hoje',
 	'companion.sessionsToday': 'Sessões hoje',
 	'companion.streak': 'Sequência',
+	'companion.streakEmpty': 'Comece sua sequência',
 	'companion.pomodoroNumber': 'Pomodoro n.º',
 	'companion.activeTask': 'Tarefa ativa',
 	'companion.suggest.title': 'Sugerido para agora',
@@ -1522,10 +1751,21 @@ const pt: Dict = {
 	'quickCapture.title': 'Captura rápida',
 	'quickCapture.placeholder': 'Capturar uma tarefa…',
 	'quickCapture.hint': '⌘K / Ctrl+K de qualquer lugar',
+	'quickCapture.captured': '{title} capturada na Inbox',
+	'palette.placeholder': 'Busque comandos ou capture uma tarefa…',
+	'palette.addTask': 'Adicionar tarefa',
+	'palette.empty': 'Nenhum comando correspondente',
+	'palette.focus': 'Focus',
+	'palette.plan': 'Plan',
+	'palette.dashboard': 'Dashboard',
+	'palette.startFocus': 'Iniciar sessão de foco',
+	'palette.toggleTheme': 'Alternar claro / escuro',
+	'toast.undo': 'Desfazer',
 	'period.7': '7D',
 	'period.30': '30D',
 	'period.365': '1A',
 	'chart.week': 'Esta semana',
+	'chart.window': 'Últimos {days} dias',
 	'chart.modes': 'Modos',
 	'chart.day.sun': 'Dom',
 	'chart.day.mon': 'Seg',
@@ -1649,6 +1889,70 @@ const pt: Dict = {
 	'ai.insights': 'Insights',
 	'ai.optimalHours': 'Horas ideais',
 	'ai.burnout': 'Risco de burnout',
+	'settings.dailyReminder': 'Lembrete diário',
+	'settings.reminderHour': 'Hora',
+	'settings.reminderMinute': 'Minuto',
+	'settings.reminderNext': 'próximo em {time}',
+	'settings.weeklyRecap': 'Notificação de revisão semanal',
+	'settings.streak.title': 'Sequência',
+	'settings.celebrateRecords': 'Celebrar novos recordes',
+	'settings.privacy.title': 'Privacidade',
+	'settings.analytics': 'Compartilhar métricas anônimas de uso',
+	'settings.analytics.hint': 'Estatísticas agregadas sem dados pessoais. Desligado por padrão; nada é enviado sem consentimento.',
+	'settings.startup.title': 'Inicialização',
+	'settings.startup.hint': 'A seção onde o app abre (paridade com o Mac).',
+	'landing.nav.guides': 'Guias',
+	'landing.nav.pricing': 'Preços',
+	'landing.nav.open': 'Abrir app',
+	'landing.nav.home': 'Início',
+	'landing.meta': 'Pepinillo é um companheiro nativo de deep work: planeje com intenção, concentre-se sem ruído e celebre o que você cultiva. iPhone, iPad, Mac, Android, Wear OS e web.',
+	'landing.kicker': 'Deep work, nativo',
+	'landing.hero.title': 'Planeje com intenção. Concentre-se sem ruído. Celebre o que você cultiva.',
+	'landing.hero.sub': 'Pepinillo é um companheiro nativo de deep work em todas as suas telas — um timer que respeita seu cérebro, tarefas organizadas por energia e estatísticas que ajudam você a entender seus padrões.',
+	'landing.hero.hint': 'O app web funciona offline e se instala como um app nativo.',
+	'landing.cta.web': 'Abrir o app web',
+	'landing.cta.stores': 'Baixar os apps nativos',
+	'landing.flow.label': 'O fluxo Pepinillo',
+	'landing.flow.plan': 'Planeje',
+	'landing.flow.focus': 'Concentre-se',
+	'landing.flow.complete': 'Complete',
+	'landing.flow.reflect': 'Reflita',
+	'landing.feat.modes.title': 'Quatro formas de se concentrar',
+	'landing.feat.modes.body': 'Pomodoro para o ritmo, Flowtime para imersão profunda, Blocos para sessões planejadas, Cronômetro para trabalho aberto. Seu motor roda com honestidade em cada dispositivo.',
+	'landing.feat.tasks.title': 'Tarefas que respeitam sua energia',
+	'landing.feat.tasks.body': 'Organize por prioridade e energia mental — profunda, leve, admin — com subtarefas, recorrência e uma sugestão diária baseada na sua cronobiologia.',
+	'landing.feat.stats.title': 'Sequências que valem celebração',
+	'landing.feat.stats.body': 'Revisões semanais e mensuais, pontuação de foco, recordes pessoais e marcos que disparam exatamente quando você os ganha. Sua horta cresce a cada sessão.',
+	'landing.feat.sync.title': 'Onde você trabalha',
+	'landing.feat.sync.body': 'Everywhere/AI+ sincroniza seus dados entre dispositivos como os apps nativos, e adiciona insights de IA: revisões, dicas e previsões.',
+	'landing.download.title': 'Nativo em cada tela',
+	'landing.download.body': 'Widgets, complicações de relógio, Live Activities, barra de menu — o Pepinillo se sente em casa em cada plataforma. Este app web é o novo membro da família.',
+	'landing.download.ios': 'iPhone e iPad',
+	'landing.download.android': 'Android',
+	'landing.download.web': 'Usar o app web',
+	'landing.pricing.title': 'Preços simples e honestos',
+	'landing.pricing.cta': 'Ver preços completos',
+	'landing.faq.title': 'Perguntas frequentes',
+	'landing.faq.offline.q': 'Funciona offline?',
+	'landing.faq.offline.a': 'Sim — tudo roda primeiro no seu dispositivo. O app web guarda seus dados localmente e funciona sem conexão; a sync cloud é um extra do Everywhere/AI+.',
+	'landing.faq.devices.q': 'Quais dispositivos são suportados?',
+	'landing.faq.devices.a': 'iPhone, iPad, Mac, Android, Wear OS e este app web. Seu motor, tarefas e estatísticas se comportam igual em todos.',
+	'landing.faq.price.q': 'A versão web é grátis?',
+	'landing.faq.price.a': 'Sim. O app web é grátis com os mesmos limites do mobile free: Pomodoro + Cronômetro, 3 tarefas ativas e 7 dias de métricas. Pepinillo+ e Everywhere/AI+ desbloqueiam o resto.',
+	'landing.faq.account.q': 'Preciso de uma conta?',
+	'landing.faq.account.a': 'Não. Você pode usar tudo offline sem cadastro. A conta só é necessária para sync cloud e IA (Everywhere/AI+).',
+	'guides.title': 'Guias do usuário',
+	'guides.meta': 'Guias passo a passo do Pepinillo no Mac, iPhone, iPad, watchOS, Android, Wear OS e web.',
+	'guides.intro': 'Aprenda cada canto do Pepinillo, plataforma por plataforma.',
+	'guides.soon': 'Em breve',
+	'guides.list.macos': 'Mac — manual e guia touch',
+	'guides.list.macos.body': 'Barra de menu, painel Notch, Quick Capture, atalhos de teclado e os novos gestos touch.',
+	'guides.list.iphone': 'iPhone e iPad',
+	'guides.list.watchos': 'watchOS',
+	'guides.list.android': 'Android',
+	'guides.list.wearos': 'Wear OS',
+	'guides.list.web': 'App web',
+	'guides.list.generic.body': 'O guia completo desta plataforma está a caminho.',
 	'sync.title': 'Sync cloud',
 	'sync.hint': 'Last-Write-Wins com o relógio do servidor, como nos apps nativos.',
 	'sync.last': 'Última sync',

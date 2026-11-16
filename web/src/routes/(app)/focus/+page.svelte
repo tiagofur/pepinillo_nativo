@@ -21,6 +21,27 @@
 
 	onMount(() => {
 		void focus.init();
+		// Native Mac parity: Space starts/pauses the timer (⌘K capture lives globally).
+		function onKeydown(e: KeyboardEvent): void {
+			const target = e.target as HTMLElement | null;
+			if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) return;
+			if (e.code === 'Space') {
+				e.preventDefault();
+				if (focus.running) focus.pause();
+				else if (focus.paused) focus.resume();
+				else focus.start();
+			}
+		}
+		function onStartRequest(): void {
+			if (focus.running || focus.paused) return;
+			focus.start();
+		}
+		window.addEventListener('keydown', onKeydown);
+		window.addEventListener('pepinillo:focus-start', onStartRequest);
+		return () => {
+			window.removeEventListener('keydown', onKeydown);
+			window.removeEventListener('pepinillo:focus-start', onStartRequest);
+		};
 	});
 
 	let waitingLabel = $derived(
@@ -82,6 +103,11 @@
 				<Icon name="play" size={20} />
 				{t(focus.nextAfterHold !== 'work' ? 'focus.startBreak' : 'focus.startWork')}
 			</button>
+			{#if focus.nextAfterHold === 'work'}
+				<button class="btn btn-outline pressable" onclick={() => focus.extendHold(5)}>
+					+5 min
+				</button>
+			{/if}
 		{:else if focus.running}
 			<button class="btn btn-outline pressable" onclick={() => focus.pause()}>
 				<Icon name="pause" size={20} />

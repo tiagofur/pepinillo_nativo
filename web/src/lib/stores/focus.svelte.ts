@@ -167,6 +167,19 @@ class FocusController {
 		this.blockMinutes = adjustBlock(this.blockMinutes, delta);
 	}
 
+	/** Native parity (iOS extendWorkPhase): +5 minutes to the upcoming work phase. */
+	extendHold(minutes = 5): void {
+		if (!this.waiting || this.nextAfterHold !== 'work') return;
+		// Native parity: extends the PENDING phase cumulatively (iOS
+		// extendWorkPhase), capped at 3 hours like TimeBlock.
+		const base = this.session?.targetMs ?? this.idleTarget() ?? 0;
+		this.session = {
+			...this.session!,
+			targetMs: Math.min(180 * 60_000, base + minutes * 60_000)
+		};
+		this.refreshDisplay();
+	}
+
 	start(): void {
 		primeAudio();
 		if (this.waiting) {
@@ -448,7 +461,8 @@ class FocusController {
 				this.milestone = result.milestone;
 				if (app.prefs.hapticsEnabled) haptic('celebrate');
 			} else {
-				this.streakRecord = isStreakRecord(this.streak, this.bestStreak);
+				this.streakRecord =
+					app.prefs.celebrateRecordsEnabled && isStreakRecord(this.streak, this.bestStreak);
 			}
 		});
 	}
