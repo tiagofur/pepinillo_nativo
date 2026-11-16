@@ -22,7 +22,14 @@ import {
 import { filterTasks, reorderSubset, type PlanFilter } from '$lib/domain/tasks/plan';
 import { app } from '$lib/stores/app.svelte';
 import { focus } from '$lib/stores/focus.svelte';
+import { toast } from '$lib/stores/toast.svelte';
 import type { SubTask, Task } from '$lib/domain/entities/types';
+
+/** Undo snapshot for one reversible operation (MacPlanView parity). */
+interface UndoSnapshot {
+	label: string;
+	apply: () => Promise<void>;
+}
 
 function uid(): string {
 	return `t-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
@@ -111,15 +118,36 @@ class PlanStore {
 				return;
 			}
 			await this.updateTask(id, { status: 'completed', completedAt: new Date().toISOString() });
+			this.offerUndo({
+				label: `'${task.title}' completed`,
+				apply: async () => {
+					await this.updateTask(id, { status: 'active', completedAt: null });
+				}
+			});
 		} else {
 			await this.updateTask(id, { status: 'active', completedAt: null });
 		}
 	}
 
 	async deleteTask(id: string): Promise<void> {
+		const snapshot = this.tasks.find((t) => t.id === id);
 		this.tasks = this.tasks.filter((t) => t.id !== id);
 		if (focus.activeTask?.id === id) focus.setActiveTask(null);
 		await removeTask(id);
+		if (snapshot) {
+			this.offerUndo({
+				label: `'${snapshot.title}' deleted`,
+				apply: async () => {
+					await upsertTask(snapshot);
+					await this.reload();
+				}
+			});
+		}
+	}
+
+	/** MacPlanView parity: snackbar with UNDO (5 s) after destructive actions. */
+	private offerUndo(snapshot: UndoSnapshot): void {
+		toast.action(snapshot.label, 'Undo', () => void snapshot.apply());
 	}
 
 	/** Dense reorder inside the currently visible subset. */

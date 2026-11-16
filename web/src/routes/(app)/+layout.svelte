@@ -8,6 +8,7 @@
 	import Icon from '$lib/design/Icon.svelte';
 	import { msUntilNextFire } from '$lib/domain/notifications/reminder';
 	import QuickCapture from '$lib/features/plan/QuickCapture.svelte';
+	import Toasts from '$lib/design/Toasts.svelte';
 	import logoUrl from '$lib/assets/logo.svg';
 
 	onMount(() => {
@@ -110,6 +111,7 @@
 </div>
 
 <QuickCapture />
+<Toasts />
 
 <!-- Mobile bottom tab bar -->
 <nav class="tabbar tabbar-fixed" aria-label={t('app.name')}>

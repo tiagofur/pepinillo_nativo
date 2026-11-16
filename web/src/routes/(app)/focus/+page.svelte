@@ -32,8 +32,16 @@
 				else focus.start();
 			}
 		}
+		function onStartRequest(): void {
+			if (focus.running || focus.paused) return;
+			focus.start();
+		}
 		window.addEventListener('keydown', onKeydown);
-		return () => window.removeEventListener('keydown', onKeydown);
+		window.addEventListener('pepinillo:focus-start', onStartRequest);
+		return () => {
+			window.removeEventListener('keydown', onKeydown);
+			window.removeEventListener('pepinillo:focus-start', onStartRequest);
+		};
 	});
 
 	let waitingLabel = $derived(

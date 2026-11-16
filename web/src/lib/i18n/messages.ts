@@ -266,6 +266,16 @@ export type MessageKey =
 	| 'quickCapture.title'
 	| 'quickCapture.placeholder'
 	| 'quickCapture.hint'
+	| 'quickCapture.captured'
+	| 'palette.placeholder'
+	| 'palette.addTask'
+	| 'palette.empty'
+	| 'palette.focus'
+	| 'palette.plan'
+	| 'palette.dashboard'
+	| 'palette.startFocus'
+	| 'palette.toggleTheme'
+	| 'toast.undo'
 	| 'period.7'
 	| 'period.30'
 	| 'period.365'
@@ -735,6 +745,16 @@ const en: Dict = {
 	'quickCapture.title': 'Quick Capture',
 	'quickCapture.placeholder': 'Capture a task…',
 	'quickCapture.hint': '⌘K / Ctrl+K from anywhere',
+	'quickCapture.captured': '{title} captured to Inbox',
+	'palette.placeholder': 'Search commands or capture a task…',
+	'palette.addTask': 'Add task',
+	'palette.empty': 'No matching commands',
+	'palette.focus': 'Focus',
+	'palette.plan': 'Plan',
+	'palette.dashboard': 'Dashboard',
+	'palette.startFocus': 'Start focus session',
+	'palette.toggleTheme': 'Toggle light / dark',
+	'toast.undo': 'Undo',
 	'period.7': '7D',
 	'period.30': '30D',
 	'period.365': '1Y',
@@ -1236,6 +1256,16 @@ const es: Dict = {
 	'quickCapture.title': 'Captura rápida',
 	'quickCapture.placeholder': 'Capturar una tarea…',
 	'quickCapture.hint': '⌘K / Ctrl+K desde cualquier lugar',
+	'quickCapture.captured': '{title} capturada en Inbox',
+	'palette.placeholder': 'Buscá comandos o capturá una tarea…',
+	'palette.addTask': 'Agregar tarea',
+	'palette.empty': 'Sin comandos que coincidan',
+	'palette.focus': 'Focus',
+	'palette.plan': 'Plan',
+	'palette.dashboard': 'Dashboard',
+	'palette.startFocus': 'Iniciar sesión de foco',
+	'palette.toggleTheme': 'Cambiar claro / oscuro',
+	'toast.undo': 'Deshacer',
 	'period.7': '7D',
 	'period.30': '30D',
 	'period.365': '1A',
@@ -1721,6 +1751,16 @@ const pt: Dict = {
 	'quickCapture.title': 'Captura rápida',
 	'quickCapture.placeholder': 'Capturar uma tarefa…',
 	'quickCapture.hint': '⌘K / Ctrl+K de qualquer lugar',
+	'quickCapture.captured': '{title} capturada na Inbox',
+	'palette.placeholder': 'Busque comandos ou capture uma tarefa…',
+	'palette.addTask': 'Adicionar tarefa',
+	'palette.empty': 'Nenhum comando correspondente',
+	'palette.focus': 'Focus',
+	'palette.plan': 'Plan',
+	'palette.dashboard': 'Dashboard',
+	'palette.startFocus': 'Iniciar sessão de foco',
+	'palette.toggleTheme': 'Alternar claro / escuro',
+	'toast.undo': 'Desfazer',
 	'period.7': '7D',
 	'period.30': '30D',
 	'period.365': '1A',

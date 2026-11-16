@@ -6,6 +6,7 @@
 	import { LOCALES, type MessageKey } from '$lib/i18n/messages';
 	import Icon from '$lib/design/Icon.svelte';
 	import FocusSettings from '$lib/features/settings/FocusSettings.svelte';
+	import Segmented from '$lib/design/Segmented.svelte';
 	import AuthPanel from '$lib/features/auth/AuthPanel.svelte';
 	import AccountServer from '$lib/features/auth/AccountServer.svelte';
 	import type { LocaleCode, ThemePreference } from '$lib/domain/entities/types';
@@ -58,34 +59,20 @@
 
 	<div class="card section">
 		<h2>{t('account.locale')}</h2>
-		<div class="row">
-			{#each LOCALES as code (code)}
-				<button
-					class="chip pressable"
-					aria-pressed={app.prefs.locale === code}
-					class:is-active={app.prefs.locale === code}
-					onclick={() => app.setLocaleOf(code)}
-				>
-					{LOCALE_LABELS[code]}
-				</button>
-			{/each}
-		</div>
+		<Segmented
+			options={LOCALES.map((code) => ({ id: code, label: LOCALE_LABELS[code] }))}
+			value={app.prefs.locale}
+			onchange={(id) => app.setLocaleOf(id as LocaleCode)}
+		/>
 	</div>
 
 	<div class="card section">
 		<h2>{t('account.appearance')}</h2>
-		<div class="row">
-			{#each APPEARANCES as a (a)}
-				<button
-					class="chip pressable"
-					aria-pressed={app.prefs.theme === a}
-					class:is-active={app.prefs.theme === a}
-					onclick={() => app.setAppearance(a)}
-				>
-					{t(appearanceKey(a))}
-				</button>
-			{/each}
-		</div>
+		<Segmented
+			options={APPEARANCES.map((a) => ({ id: a, label: t(appearanceKey(a)) }))}
+			value={app.prefs.theme}
+			onchange={(id) => app.setAppearance(id as ThemePreference)}
+		/>
 	</div>
 
 	<div class="card section">
