@@ -5,6 +5,7 @@
 	import type { MessageKey } from '$lib/i18n/messages';
 	import Charts from '$lib/features/dashboard/Charts.svelte';
 	import Panels from '$lib/features/dashboard/Panels.svelte';
+	import AiCard from '$lib/features/dashboard/AiCard.svelte';
 	import ReviewSheet from '$lib/features/dashboard/ReviewSheet.svelte';
 	import type { AnalyticsPeriod } from '$lib/domain/dashboard/stats';
 
@@ -127,6 +128,8 @@
 		</div>
 
 		<Charts stats={dashboard.stats} />
+
+		<AiCard />
 
 		<Panels achievements={dashboard.achievements} sessions={dashboard.sessions} />
 

@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
 	import { app } from '$lib/stores/app.svelte';
+	import { auth } from '$lib/stores/auth.svelte';
 	import { t } from '$lib/i18n/i18n.svelte';
 	import type { MessageKey } from '$lib/i18n/messages';
 	import Icon from '$lib/design/Icon.svelte';
@@ -10,6 +11,8 @@
 
 	onMount(() => {
 		void app.init();
+		// Restore the server session (tier → premium gates) on every route.
+		void auth.init();
 	});
 
 	const NAV: { path: string; key: MessageKey; icon: string }[] = [

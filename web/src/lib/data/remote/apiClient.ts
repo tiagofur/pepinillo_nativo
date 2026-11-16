@@ -111,6 +111,24 @@ export class ApiClient {
 		await this.request<void>('/api/v1/auth/account', { method: 'DELETE' });
 	}
 
+	// ---------- AI (Everywhere/AI+) ----------
+
+	async aiDailyTip(): Promise<{ tip?: string; message?: string }> {
+		return this.request('/api/v1/ai/daily-tip', { method: 'GET' });
+	}
+
+	async aiBurnoutRisk(): Promise<{ level: string; summary: string }> {
+		return this.request('/api/v1/ai/predictions/burnout-risk', { method: 'GET' });
+	}
+
+	async aiOptimalHours(): Promise<{ windows: string[] }> {
+		return this.request('/api/v1/ai/optimal-hours', { method: 'GET' });
+	}
+
+	async aiWeeklyReport(): Promise<{ highlights?: string[]; insights?: string[]; recommendations?: string[] }> {
+		return this.request('/api/v1/ai/weekly-report', { method: 'GET' });
+	}
+
 	async initialUpload(payload: InitialUploadRequest): Promise<InitialUploadResponse> {
 		return this.request<InitialUploadResponse>('/api/v1/sync/initial-upload', {
 			method: 'POST',
