@@ -210,6 +210,8 @@
 	}
 
 	.title-btn {
+		flex: 1;
+		min-width: 0;
 		background: none;
 		border: none;
 		padding: 0;
