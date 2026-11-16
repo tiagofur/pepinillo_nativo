@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pepinillo para macOS — Manual de Usuario y Guía Touch</title>
+  <link rel="canonical" href="https://pepinillo.app/guides/macos" />
+  <style>
+    :root {
+      --brand: #2E7D46;
+      --brand-light: #3D9C5E;
+      --brand-soft: rgba(46, 125, 70, 0.12);
+      --pomodoro: #D9453A;
+      --flowtime: #1E88A8;
+      --timeblock: #7B52AB;
+      --stopwatch: #2E7D46;
+      --streak: #D9822B;
+
+      --bg: #F5F5F7;
+      --surface: #FFFFFF;
+      --surface-alt: #EFEFF2;
+      --sidebar-bg: rgba(242, 242, 245, 0.88);
+      --ink: #1D1D1F;
+      --muted: #6E6E73;
+      --border: rgba(0, 0, 0, 0.09);
+      --shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+      --radius-card: 18px;
+      --radius-pill: 999px;
+      --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", system-ui, sans-serif;
+      --mono: "SF Mono", ui-monospace, Menlo, monospace;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #141416;
+        --surface: #1E1E22;
+        --surface-alt: #28282E;
+        --sidebar-bg: rgba(28, 28, 32, 0.88);
+        --ink: #F5F5F7;
+        --muted: #A1A1A6;
+        --border: rgba(255, 255, 255, 0.1);
+        --shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+        --brand-soft: rgba(61, 156, 94, 0.18);
+      }
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .app-shell {
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      min-height: 100vh;
+    }
+
+    /* Sidebar estilo macOS */
+    aside {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      padding: 24px 16px;
+      background: var(--sidebar-bg);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      overflow-y: auto;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 4px 10px;
+    }
+    .brand-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--brand), var(--brand-light));
+      color: #fff;
+      display: grid;
+      place-items: center;
+      font-weight: 700;
+      font-size: 18px;
+      box-shadow: 0 4px 12px rgba(46, 125, 70, 0.3);
+    }
+    .brand-title { font-weight: 700; font-size: 16px; letter-spacing: -0.01em; }
+    .brand-sub { font-size: 12px; color: var(--muted); }
+
+    nav { display: flex; flex-direction: column; gap: 4px; }
+    .nav-label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      padding: 10px 12px 4px;
+    }
+    nav a {
+      text-decoration: none;
+      color: var(--ink);
+      font-size: 13.5px;
+      font-weight: 500;
+      padding: 8px 12px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: background 0.15s ease;
+    }
+    nav a:hover { background: var(--brand-soft); }
+    nav a.active {
+      background: var(--brand);
+      color: #fff;
+    }
+
+    .sidebar-footer {
+      margin-top: auto;
+      padding: 12px;
+      border-radius: 12px;
+      background: var(--surface-alt);
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    /* Main Content */
+    main {
+      max-width: 980px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 40px 44px 80px;
+    }
+
+    .hero {
+      padding: 32px;
+      border-radius: 26px;
+      background: linear-gradient(135deg, rgba(46, 125, 70, 0.14), rgba(61, 156, 94, 0.04));
+      border: 1px solid var(--border);
+      margin-bottom: 36px;
+    }
+    .hero-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--brand-light);
+      background: var(--brand-soft);
+      padding: 4px 12px;
+      border-radius: var(--radius-pill);
+      margin-bottom: 14px;
+    }
+    h1 {
+      margin: 0 0 10px;
+      font-size: 32px;
+      letter-spacing: -0.025em;
+      line-height: 1.15;
+    }
+    .hero p {
+      margin: 0;
+      font-size: 16px;
+      color: var(--muted);
+      max-width: 68ch;
+    }
+
+    section { margin-bottom: 48px; scroll-margin-top: 24px; }
+    h2 {
+      font-size: 22px;
+      letter-spacing: -0.015em;
+      margin: 0 0 6px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .section-lead {
+      margin: 0 0 20px;
+      color: var(--muted);
+      font-size: 14.5px;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+    }
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 14px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-card);
+      padding: 20px;
+      box-shadow: var(--shadow);
+    }
+    .card h3 {
+      margin: 0 0 8px;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .card p {
+      margin: 0;
+      font-size: 13.5px;
+      color: var(--muted);
+    }
+    .card ul {
+      margin: 10px 0 0;
+      padding-left: 18px;
+      font-size: 13.5px;
+      color: var(--muted);
+    }
+    .card li { margin-bottom: 5px; }
+
+    /* Badges */
+    .badge {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 9px;
+      border-radius: var(--radius-pill);
+      white-space: nowrap;
+    }
+    .badge-free { background: var(--brand-soft); color: var(--brand-light); }
+    .badge-pro { background: rgba(123, 82, 171, 0.15); color: #9F7AEA; }
+    .badge-touch { background: rgba(30, 136, 168, 0.16); color: #2FA8CC; }
+    .badge-cloud { background: rgba(217, 130, 43, 0.16); color: var(--streak); }
+
+    /* Mode accents */
+    .mode-card { border-top: 3px solid var(--brand); }
+    .mode-pomodoro { border-top-color: var(--pomodoro); }
+    .mode-flowtime { border-top-color: var(--flowtime); }
+    .mode-timeblock { border-top-color: var(--timeblock); }
+    .mode-stopwatch { border-top-color: var(--stopwatch); }
+
+    /* Touch highlight box */
+    .touch-banner {
+      background: linear-gradient(135deg, rgba(30, 136, 168, 0.12), rgba(46, 125, 70, 0.1));
+      border: 1px solid rgba(47, 168, 204, 0.3);
+      border-radius: 20px;
+      padding: 22px;
+      margin-bottom: 18px;
+    }
+    .touch-banner strong { color: var(--ink); }
+
+    /* Keyboard shortcuts table */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--surface);
+      border-radius: var(--radius-card);
+      overflow: hidden;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      font-size: 13.5px;
+    }
+    th, td {
+      text-align: left;
+      padding: 11px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    th {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+      background: var(--surface-alt);
+    }
+    tr:last-child td { border-bottom: none; }
+
+    kbd {
+      font-family: var(--mono);
+      font-size: 12px;
+      padding: 2px 7px;
+      border-radius: 6px;
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      color: var(--ink);
+    }
+
+    .callout {
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+      padding: 16px 18px;
+      border-radius: 14px;
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      font-size: 13.5px;
+      margin-top: 16px;
+    }
+
+    @media (max-width: 860px) {
+      .app-shell { grid-template-columns: 1fr; }
+      aside {
+        position: relative;
+        height: auto;
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+      }
+      main { padding: 24px 20px 60px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <aside>
+      <div class="brand"><a href="/guides" style="text-decoration:none;color:inherit;margin-right:8px" title="Todas las guías">←</a>
+        <div class="brand-icon">P</div>
+        <div>
+          <div class="brand-title">Pepinillo</div>
+          <div class="brand-sub">Manual macOS &amp; Touch</div>
+        </div>
+      </div>
+
+      <nav>
+        <div class="nav-label">Flujo Principal</div>
+        <a href="#modos" class="active">1. 4 Modos de Foco</a>
+        <a href="#presencia">2. Barra, Notch y Dock</a>
+        <a href="#plan">3. Tareas e Inspector</a>
+        <a href="#captura">4. Captura Universal</a>
+
+        <div class="nav-label">macOS Touch</div>
+        <a href="#touch">5. Gestos y Ergonomía Touch <span class="badge badge-touch">Nuevo</span></a>
+
+        <div class="nav-label">Inteligencia y Control</div>
+        <a href="#analiticas">6. Today, Statistics e IA</a>
+        <a href="#atajos">7. Atajos de Teclado</a>
+        <a href="#sync">8. Privacidad, Planes y Sync</a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <strong>Arquitectura 100% Nativa</strong><br />
+        Swift 6 · SwiftUI + AppKit · SwiftData · Offline-first
+      </div>
+    </aside>
+
+    <main>
+      <header class="hero">
+        <div class="hero-eyebrow">Guía Completa de Usuario · Pepinillo para macOS</div>
+        <h1>Mucho más que un Pomodoro y una lista de tareas</h1>
+        <p>
+          Pepinillo para Mac está diseñado bajo el flujo <strong>Plan → Focus → Complete → Reflect</strong>:
+          vive en tu barra de menú, bajo el notch, en el ícono del Dock y en Spotlight, y ahora está
+          optimizado para el nuevo <strong>MacBook Pro con pantalla táctil</strong> sin perder la velocidad
+          del teclado y el trackpad.
+        </p>
+      </header>
+
+      <!-- 1. MODOS DE FOCO -->
+      <section id="modos">
+        <h2>1. Cuatro modos de enfoque en un solo motor</h2>
+        <p class="section-lead">
+          Cambia de técnica según tu energía o el tipo de trabajo. Todos los modos comparten estadísticas, rachas, tareas vinculadas y diario post-sesión.
+        </p>
+        <div class="grid-2">
+          <article class="card mode-card mode-pomodoro">
+            <h3>Pomodoro <span class="badge badge-free">Gratis</span></h3>
+            <p>Intervalos clásicos de trabajo y descanso (25 / 5 / 15 min por defecto, personalizables en Ajustes).</p>
+            <ul>
+              <li>Ciclos de 4 pomodoros antes del descanso largo.</li>
+              <li>Opción de inicio automático de descansos o espera manual.</li>
+            </ul>
+          </article>
+
+          <article class="card mode-card mode-flowtime">
+            <h3>Flowtime <span class="badge badge-pro">Pepinillo+</span></h3>
+            <p>Cronómetro ascendente para trabajo creativo sin cortes forzados. Cuando decides parar, Pepinillo calcula tu descanso ideal:</p>
+            <ul>
+              <li>&lt;25 min → 5 min · &lt;50 min → 8 min · &lt;90 min → 10 min · ≥90 min → 15 min.</li>
+            </ul>
+          </article>
+
+          <article class="card mode-card mode-timeblock">
+            <h3>Time Block <span class="badge badge-pro">Pepinillo+</span></h3>
+            <p>Reserva un bloque fijo (60 min por defecto; ajustable de <strong>5 a 480 min</strong>) para una sola meta importante.</p>
+            <ul>
+              <li>Incluye check-in a mitad del bloque para verificar que sigues enfocado.</li>
+              <li>Ajuste rápido con botones <strong>− / +</strong> (±5 min) o dial táctil en el anillo.</li>
+            </ul>
+          </article>
+
+          <article class="card mode-card mode-stopwatch">
+            <h3>Stopwatch (Cronómetro) <span class="badge badge-free">Gratis</span></h3>
+            <p>Conteo libre ascendente para medir cuánto tiempo real te toma cualquier tarea o proyecto sin descansos programados.</p>
+          </article>
+        </div>
+
+        <div class="callout">
+          <strong>Recuperación ante cierres y diario:</strong> El motor está anclado al reloj del sistema (<em>wall-clock</em>). Si cierras la ventana principal o el Mac entra en reposo, el temporizador no se pierde. Al finalizar una sesión, puedes registrar una reflexión rápida en el <strong>Diario de Sesión</strong>.
+        </div>
+      </section>
+
+      <!-- 2. PRESENCIA MAC -->
+      <section id="presencia">
+        <h2>2. Presencia nativa: Barra de Menú, Notch y Dock</h2>
+        <p class="section-lead">
+          No necesitas mantener la ventana principal abierta para controlar tu foco.
+        </p>
+        <div class="grid-3">
+          <article class="card">
+            <h3>Barra de Menú en vivo</h3>
+            <p>Muestra el conteo en tiempo real y un popover compacto con Start/Pause, Skip, Stop, stats de hoy y Quick Capture.</p>
+            <ul>
+              <li><strong>Countdown:</strong> ícono + tiempo <span class="badge badge-free">Gratis</span></li>
+              <li><strong>Time only / Icon only:</strong> estilos minimalistas <span class="badge badge-pro">Pepinillo+</span></li>
+            </ul>
+          </article>
+
+          <article class="card">
+            <h3>Panel Notch interactivo <span class="badge badge-touch">Touch</span></h3>
+            <p>Al terminar cada fase, una píldora Liquid Glass aparece justo debajo del notch físico:</p>
+            <ul>
+              <li>Toca o haz <strong>Swipe Down</strong> para expandir reloj, progreso del ciclo, <strong>Start</strong>, <strong>+5 min</strong> y <strong>End Session</strong>.</li>
+              <li><strong>Swipe Up</strong> o toca el encabezado para ocultarlo.</li>
+            </ul>
+          </article>
+
+          <article class="card">
+            <h3>Dock inteligente</h3>
+            <p>El ícono del Dock funciona como superficie de control viva mientras dura una sesión:</p>
+            <ul>
+              <li>Dibuja un <strong>anillo de progreso</strong> alrededor del ícono y muestra los minutos restantes en el badge.</li>
+              <li>Clic derecho (o mantener presionado) abre controles rápidos de sesión y cambio de vista.</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <!-- 3. PLAN E INSPECTOR -->
+      <section id="plan">
+        <h2>3. Planificación de tareas e Inspector</h2>
+        <p class="section-lead">
+          Organiza tu día en la tabla nativa de macOS con filtros inteligentes en el sidebar: <strong>All</strong>, <strong>Today</strong>, <strong>Upcoming</strong> y <strong>Completed</strong>.
+        </p>
+        <div class="grid-2">
+          <article class="card">
+            <h3>Tabla Plan de alta densidad</h3>
+            <ul>
+              <li><strong>Columnas clave:</strong> Estado, Título (edición inline), Prioridad, Nivel de Energía (<em>Deep / Shallow / Admin</em>), Pomodoros completados/estimados y Fecha límite.</li>
+              <li><strong>Reordenamiento:</strong> Arrastra filas para priorizar manualmente.</li>
+              <li><strong>Menú contextual:</strong> Clic derecho o toque prolongado para iniciar foco, cambiar prioridad/energía, mover a Hoy o eliminar.</li>
+              <li><strong>Undo inmediato:</strong> Banner flotante para deshacer tareas completadas o eliminadas por error.</li>
+            </ul>
+          </article>
+
+          <article class="card">
+            <h3>Inspector lateral (<kbd>⌘⌥I</kbd> o botón ⓘ)</h3>
+            <ul>
+              <li>Al seleccionar o tocar una fila aparece el botón <strong>ⓘ</strong> para abrir el detalle sin salir de la tabla.</li>
+              <li>Edita notas, prioridad, energía, fecha límite y <strong>subtareas</strong> <span class="badge badge-pro">Pepinillo+</span>.</li>
+              <li>Consulta el <strong>historial de sesiones</strong> acumuladas en esa tarea e inicia una nueva sesión con un clic.</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <!-- 4. CAPTURA UNIVERSAL -->
+      <section id="captura">
+        <h2>4. Captura tareas desde cualquier lugar del Mac</h2>
+        <p class="section-lead">
+          Nunca pierdas una idea por cambiar de ventana. Pepinillo captura tareas estés en el navegador, correo o editor de código.
+        </p>
+        <div class="grid-3">
+          <article class="card">
+            <h3>Quick Capture (<kbd>⌃⌥T</kbd>)</h3>
+            <p>Abre una barra flotante tipo Spotlight encima de cualquier app sin robarle el foco. Escribe y pulsa <kbd>⏎</kbd> (o toca el botón táctil <strong>⏎</strong>).</p>
+          </article>
+          <article class="card">
+            <h3>macOS Services</h3>
+            <p>Selecciona cualquier texto en Safari, Mail o Notas → clic derecho → <em>Services → Add Task to Pepinillo</em> para convertirlo en tarea al instante.</p>
+          </article>
+          <article class="card">
+            <h3>Drag &amp; Drop + Spotlight</h3>
+            <p>Arrastra texto desde otra app y suéltalo en <strong>Plan</strong> para crear una tarea. Todas tus tareas abiertas se indexan en <strong>Spotlight</strong> (<kbd>⌘Space</kbd>).</p>
+          </article>
+        </div>
+      </section>
+
+      <!-- 5. TOUCH ON MAC -->
+      <section id="touch">
+        <h2>5. Experiencia Touch para MacBook Pro</h2>
+        <p class="section-lead">
+          Diseñada siguiendo las guías oficiales de Apple para macOS Touch: mantiene la densidad visual de escritorio pero expande las áreas táctiles a un mínimo invisible de <strong>36×36 pt</strong> y elimina controles ocultos exclusivos de puntero.
+        </p>
+
+        <div class="touch-banner">
+          <strong>Ergonomía pensada para tus manos:</strong> los controles frecuentes viven en los bordes laterales (Sidebar e Inspector) donde descansas los dedos al sujetar la pantalla, mientras el centro se reserva para gestos amplios sobre el anillo de foco.
+        </div>
+
+        <div class="grid-2">
+          <article class="card">
+            <h3>Dial táctil sobre el anillo <span class="badge badge-touch">Time Block</span></h3>
+            <p>Con el reloj en reposo, desliza el dedo en círculo alrededor del anillo central para ajustar la duración de <strong>5 a 120 minutos</strong> en pasos de 5 min, o usa los botones <strong>− / +</strong>.</p>
+          </article>
+
+          <article class="card">
+            <h3>Tap para Pausar y Pinch Zen <span class="badge badge-touch">Gestos</span></h3>
+            <ul>
+              <li><strong>Un toque en el anillo</strong> mientras corre la sesión: pausa o reanuda sin buscar botones pequeños.</li>
+              <li><strong>Pellizco con dos dedos (Pinch):</strong> activa el <em>Modo Zen</em> ocultando estadísticas y chips secundarios (funciona en pantalla táctil y trackpad).</li>
+            </ul>
+          </article>
+
+          <article class="card">
+            <h3>Arrastra de Plan a Focus <span class="badge badge-touch">Drag &amp; Drop</span></h3>
+            <p>Mantén presionada una tarea en la tabla <strong>Plan</strong> y arrástrala directamente sobre la fila <strong>Focus</strong> en el sidebar izquierdo: Pepinillo la vincula y arranca la sesión automáticamente.</p>
+          </article>
+
+          <article class="card">
+            <h3>Gráficas, Notch y Refresh <span class="badge badge-touch">36 pt</span></h3>
+            <ul>
+              <li>Desliza el dedo sobre las barras de <strong>Today</strong> y <strong>Statistics</strong> para inspeccionar minutos y sesiones exactas por día/semana.</li>
+              <li><strong>Pull-to-Refresh</strong> hacia abajo en <em>Today</em> y <em>Plan</em>.</li>
+              <li><strong>Swipe Down / Swipe Up</strong> en la píldora del Notch y botones ≥36 pt en Inspector, Menu Bar y Quick Capture.</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <!-- 6. ANALITICAS E IA -->
+      <section id="analiticas">
+        <h2>6. Dashboard Today, Statistics (<kbd>⌘4</kbd>) e IA On-Device</h2>
+        <p class="section-lead">
+          Entiende en qué inviertes tu tiempo profundo sin sacrificar tu privacidad.
+        </p>
+        <div class="grid-2">
+          <article class="card">
+            <h3>Today &amp; Statistics (7D / 30D / Año)</h3>
+            <ul>
+              <li><strong>KPIs diarios:</strong> tiempo enfocado, sesiones completadas, racha activa y tareas cerradas hoy.</li>
+              <li><strong>Top Activity (opt-in local):</strong> activa en <em>Ajustes → General</em> el conteo de apps en primer plano durante tus sesiones. Los nombres nunca salen de tu Mac y ahora muestran tiempo y nombre visibles sin depender de tooltips.</li>
+            </ul>
+          </article>
+
+          <article class="card">
+            <h3>Reportes Inteligentes con IA <span class="badge badge-pro">Pepinillo+</span></h3>
+            <ul>
+              <li>Genera análisis <strong>semanales y mensuales</strong> desde la barra superior de <em>Statistics</em> (<kbd>⌘4</kbd>).</li>
+              <li>En macOS 26+ corre <strong>100% en tu dispositivo</strong> mediante Apple Foundation Models, con resumen de horas pico, modo dominante y recomendaciones accionables.</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <!-- 7. ATAJOS -->
+      <section id="atajos">
+        <h2>7. Referencia rápida de atajos de teclado</h2>
+        <p class="section-lead">
+          Para quienes alternan entre pantalla táctil y velocidad pura con teclado.
+        </p>
+        <table>
+          <thead>
+            <tr>
+              <th>Atajo</th>
+              <th>Alcance</th>
+              <th>Acción</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><kbd>⌃⌥Space</kbd></td>
+              <td>Global (cualquier app)</td>
+              <td>Iniciar, pausar, reanudar o avanzar a la siguiente fase</td>
+            </tr>
+            <tr>
+              <td><kbd>⌃⌥T</kbd></td>
+              <td>Global (cualquier app)</td>
+              <td>Abrir o cerrar Quick Capture flotante</td>
+            </tr>
+            <tr>
+              <td><kbd>⌃⌥→</kbd> / <kbd>⌃⌥X</kbd></td>
+              <td>Global (cualquier app)</td>
+              <td>Saltar fase actual / Terminar sesión</td>
+            </tr>
+            <tr>
+              <td><kbd>⌃⌥P</kbd></td>
+              <td>Global (cualquier app)</td>
+              <td>Traer ventana principal de Pepinillo al frente</td>
+            </tr>
+            <tr>
+              <td><kbd>⌘1</kbd> · <kbd>⌘2</kbd> · <kbd>⌘3</kbd></td>
+              <td>En Pepinillo</td>
+              <td>Cambiar entre Focus, Plan y Dashboard (Today)</td>
+            </tr>
+            <tr>
+              <td><kbd>⌘4</kbd> / <kbd>⌘,</kbd></td>
+              <td>En Pepinillo</td>
+              <td>Abrir ventana de Statistics / Abrir Ajustes</td>
+            </tr>
+            <tr>
+              <td><kbd>⌘N</kbd> · <kbd>⌘F</kbd> · <kbd>⌘⌥I</kbd></td>
+              <td>En Plan</td>
+              <td>Nueva tarea · Buscar tareas · Mostrar/Ocultar Inspector</td>
+            </tr>
+            <tr>
+              <td><kbd>⌘↩</kbd> / <kbd>⌘.</kbd></td>
+              <td>En Focus</td>
+              <td>Acción principal (Start/Pause) / Detener sesión</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- 8. PRIVACIDAD, PLANES Y SYNC -->
+      <section id="sync">
+        <h2>8. Privacidad, personalización y niveles</h2>
+        <p class="section-lead">
+          Sin anuncios, sin rastreo y completamente funcional sin crear cuenta.
+        </p>
+        <div class="grid-3">
+          <article class="card">
+            <h3>Personalización</h3>
+            <p>4 temas (<em>Classic, Forest, Ocean, Sunset</em>), modo Claro/Oscuro/Sistema, sonidos de finalización configurables, opción <em>Keep screen on</em> y recordatorios diarios o resumen semanal.</p>
+          </article>
+          <article class="card">
+            <h3>Pepinillo+ <span class="badge badge-pro">Pago único</span></h3>
+            <p>Desbloquea Flowtime, Time Block, estilos minimalistas en barra de menú, subtareas, reportes con IA en el dispositivo y respaldo privado en <strong>iCloud</strong>.</p>
+          </article>
+          <article class="card">
+            <h3>Everywhere / AI+ <span class="badge badge-cloud">Suscripción</span></h3>
+            <p>Todo Pepinillo+ más sincronización multiplataforma en tiempo real entre Mac, iPhone, iPad, Apple Watch, Android y Wear OS con recuperación por cuenta.</p>
+          </article>
+        </div>
+      </section>
+    </main>
+  </div>
+</body>
+</html>
