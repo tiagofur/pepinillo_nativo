@@ -343,7 +343,54 @@ export type MessageKey =
 	| 'sync.mergeTitle'
 	| 'sync.mergeBody'
 	| 'sync.mergePull'
-	| 'sync.mergeUpload';
+	| 'sync.mergeUpload'
+	| 'upgrade.title'
+	| 'upgrade.meta'
+	| 'upgrade.headline'
+	| 'upgrade.sub'
+	| 'upgrade.signedIn'
+	| 'upgrade.signInFirst'
+	| 'upgrade.plan.free'
+	| 'upgrade.plan.plus'
+	| 'upgrade.plan.everywhere'
+	| 'upgrade.price.free'
+	| 'upgrade.price.plus'
+	| 'upgrade.price.everywhere'
+	| 'upgrade.note.free'
+	| 'upgrade.note.plus'
+	| 'upgrade.note.everywhere'
+	| 'upgrade.flag.best'
+	| 'upgrade.free.pomodoro'
+	| 'upgrade.free.stopwatch'
+	| 'upgrade.free.tasks'
+	| 'upgrade.free.analytics'
+	| 'upgrade.plus.modes'
+	| 'upgrade.plus.tasks'
+	| 'upgrade.plus.subtasks'
+	| 'upgrade.plus.themes'
+	| 'upgrade.plus.analytics'
+	| 'upgrade.plus.soundscapes'
+	| 'upgrade.everywhere.plusIncluded'
+	| 'upgrade.everywhere.sync'
+	| 'upgrade.everywhere.ai'
+	| 'upgrade.everywhere.recovery'
+	| 'upgrade.everywhere.web'
+	| 'upgrade.cta.free'
+	| 'upgrade.cta.plus'
+	| 'upgrade.cta.everywhere'
+	| 'upgrade.working'
+	| 'upgrade.checkoutError'
+	| 'upgrade.portalError'
+	| 'upgrade.storesTitle'
+	| 'upgrade.storesBody'
+	| 'upgrade.storeApp'
+	| 'upgrade.storePlay'
+	| 'upgrade.manageTitle'
+	| 'upgrade.manageBody'
+	| 'upgrade.manageCta'
+	| 'legal.privacy'
+	| 'legal.terms'
+	| 'auth.deleteFailed';
 
 type Dict = Record<MessageKey, string>;
 
@@ -681,6 +728,53 @@ const en: Dict = {
 	'auth.dangerTitle': 'Session',
 	'auth.deleteConfirm': 'This removes your cloud account. Your email, to confirm:',
 	'auth.deleteAccount': 'Delete account',
+	'upgrade.title': 'Pricing',
+	'upgrade.meta': 'Pepinillo pricing: free forever, Pepinillo+ one-time purchase, Everywhere/AI+ subscription with cloud sync and AI.',
+	'upgrade.headline': 'Grow your focus, your way',
+	'upgrade.sub': 'Start free forever. Pepinillo+ is one purchase, yours forever — no subscription. Everywhere/AI+ adds cloud sync and AI across every screen you own.',
+	'upgrade.signedIn': 'Signed in as {email}',
+	'upgrade.signInFirst': 'Sign in first to purchase on the web',
+	'upgrade.plan.free': 'Free',
+	'upgrade.plan.plus': 'Pepinillo+',
+	'upgrade.plan.everywhere': 'Everywhere/AI+',
+	'upgrade.price.free': '$0',
+	'upgrade.price.plus': '$19.99 once',
+	'upgrade.price.everywhere': '$4.99/mo · $34.99/yr',
+	'upgrade.note.free': 'Everything to start a habit',
+	'upgrade.note.plus': 'One purchase. Yours forever. Not a subscription.',
+	'upgrade.note.everywhere': 'Everything in Pepinillo+, across every screen you own.',
+	'upgrade.flag.best': 'Most complete',
+	'upgrade.free.pomodoro': 'Pomodoro + Stopwatch',
+	'upgrade.free.stopwatch': '3 active tasks',
+	'upgrade.free.tasks': 'Analytics: today + 7 days',
+	'upgrade.free.analytics': 'Complete offline, no account needed',
+	'upgrade.plus.modes': 'Flowtime + Time Block',
+	'upgrade.plus.tasks': 'Unlimited tasks',
+	'upgrade.plus.subtasks': 'Subtasks + recurrence',
+	'upgrade.plus.themes': 'Forest, Ocean and Sunset themes',
+	'upgrade.plus.analytics': 'Full analytics (30 days + 1 year)',
+	'upgrade.plus.soundscapes': 'All soundscapes',
+	'upgrade.everywhere.plusIncluded': 'Everything in Pepinillo+',
+	'upgrade.everywhere.sync': 'Cloud sync between devices (LWW, like the native apps)',
+	'upgrade.everywhere.ai': 'AI insights: reviews, tips and predictions',
+	'upgrade.everywhere.recovery': 'Account recovery — your data is safe even if you lose a device',
+	'upgrade.everywhere.web': 'Full access to this web app',
+	'upgrade.cta.free': 'Open the app',
+	'upgrade.cta.plus': 'Buy once',
+	'upgrade.cta.everywhere': 'Subscribe',
+	'upgrade.working': 'Opening…',
+	'upgrade.checkoutError': 'Could not open checkout. Try again in a moment.',
+	'upgrade.portalError': 'Could not open the billing portal. Do you have a web subscription?',
+	'upgrade.storesTitle': 'Prefer the native apps?',
+	'upgrade.storesBody': 'Pepinillo lives natively on iPhone, iPad, Mac, Android and Wear OS — with widgets, watch complications and Live Activities.',
+	'upgrade.storeApp': 'App Store',
+	'upgrade.storePlay': 'Google Play',
+	'upgrade.manageTitle': 'Manage your web subscription',
+	'upgrade.manageBody': 'Change plan, update payment method or cancel — straight in the Stripe portal.',
+	'upgrade.manageCta': 'Open billing portal',
+	'legal.privacy': 'Privacy',
+	'legal.terms': 'Terms',
+	'auth.deleteFailed': 'Could not delete the account right now. Try again or contact support.',
 	'sync.title': 'Cloud sync',
 	'sync.hint': 'Last-Write-Wins with the server clock, like the native apps.',
 	'sync.last': 'Last sync',
@@ -1059,6 +1153,53 @@ const es: Dict = {
 	'auth.dangerTitle': 'Sesión',
 	'auth.deleteConfirm': 'Esto elimina tu cuenta en la nube. Tu email, para confirmar:',
 	'auth.deleteAccount': 'Eliminar cuenta',
+	'upgrade.title': 'Precios',
+	'upgrade.meta': 'Precios de Pepinillo: free para siempre, Pepinillo+ compra única, Everywhere/AI+ suscripción con sync cloud e IA.',
+	'upgrade.headline': 'Cultivá tu foco, a tu manera',
+	'upgrade.sub': 'Empezá gratis para siempre. Pepinillo+ es una compra, tuya para siempre — no es una suscripción. Everywhere/AI+ suma sync cloud e IA en todas tus pantallas.',
+	'upgrade.signedIn': 'Sesión iniciada como {email}',
+	'upgrade.signInFirst': 'Iniciá sesión primero para comprar en la web',
+	'upgrade.plan.free': 'Free',
+	'upgrade.plan.plus': 'Pepinillo+',
+	'upgrade.plan.everywhere': 'Everywhere/AI+',
+	'upgrade.price.free': '$0',
+	'upgrade.price.plus': '$19.99 una vez',
+	'upgrade.price.everywhere': '$4.99/mes · $34.99/año',
+	'upgrade.note.free': 'Todo para empezar el hábito',
+	'upgrade.note.plus': 'Una compra. Tuya para siempre. No es una suscripción.',
+	'upgrade.note.everywhere': 'Todo lo de Pepinillo+, en todas tus pantallas.',
+	'upgrade.flag.best': 'El más completo',
+	'upgrade.free.pomodoro': 'Pomodoro + Cronómetro',
+	'upgrade.free.stopwatch': '3 tareas activas',
+	'upgrade.free.tasks': 'Analítica: hoy + 7 días',
+	'upgrade.free.analytics': 'Offline completo, sin cuenta',
+	'upgrade.plus.modes': 'Flowtime + Bloques de tiempo',
+	'upgrade.plus.tasks': 'Tareas ilimitadas',
+	'upgrade.plus.subtasks': 'Subtareas + recurrencia',
+	'upgrade.plus.themes': 'Temas Bosque, Océano y Atardecer',
+	'upgrade.plus.analytics': 'Analítica completa (30 días + 1 año)',
+	'upgrade.plus.soundscapes': 'Todos los paisajes sonoros',
+	'upgrade.everywhere.plusIncluded': 'Todo lo de Pepinillo+',
+	'upgrade.everywhere.sync': 'Sync cloud entre dispositivos (LWW, como en las apps nativas)',
+	'upgrade.everywhere.ai': 'Insights de IA: repasos, tips y predicciones',
+	'upgrade.everywhere.recovery': 'Recuperación de cuenta — tus datos a salvo aunque pierdas un dispositivo',
+	'upgrade.everywhere.web': 'Acceso completo a esta app web',
+	'upgrade.cta.free': 'Abrir la app',
+	'upgrade.cta.plus': 'Comprar una vez',
+	'upgrade.cta.everywhere': 'Suscribirme',
+	'upgrade.working': 'Abriendo…',
+	'upgrade.checkoutError': 'No pudimos abrir el checkout. Probá en un momento.',
+	'upgrade.portalError': 'No pudimos abrir el portal de pagos. ¿Tenés una suscripción web?',
+	'upgrade.storesTitle': '¿Preferís las apps nativas?',
+	'upgrade.storesBody': 'Pepinillo vive nativo en iPhone, iPad, Mac, Android y Wear OS — con widgets, complicaciones de reloj y Live Activities.',
+	'upgrade.storeApp': 'App Store',
+	'upgrade.storePlay': 'Google Play',
+	'upgrade.manageTitle': 'Gestioná tu suscripción web',
+	'upgrade.manageBody': 'Cambiá de plan, actualizá el medio de pago o cancelá — directo en el portal de Stripe.',
+	'upgrade.manageCta': 'Abrir portal de pagos',
+	'legal.privacy': 'Privacidad',
+	'legal.terms': 'Términos',
+	'auth.deleteFailed': 'No pudimos eliminar la cuenta ahora. Probá de nuevo o contactá soporte.',
 	'sync.title': 'Sync cloud',
 	'sync.hint': 'Last-Write-Wins con el reloj del servidor, como en las apps nativas.',
 	'sync.last': 'Última sync',
@@ -1421,6 +1562,53 @@ const pt: Dict = {
 	'auth.dangerTitle': 'Sessão',
 	'auth.deleteConfirm': 'Isso remove sua conta na nuvem. Seu email, para confirmar:',
 	'auth.deleteAccount': 'Excluir conta',
+	'upgrade.title': 'Preços',
+	'upgrade.meta': 'Preços do Pepinillo: free para sempre, Pepinillo+ compra única, Everywhere/AI+ assinatura com sync cloud e IA.',
+	'upgrade.headline': 'Cultive seu foco, do seu jeito',
+	'upgrade.sub': 'Comece grátis para sempre. Pepinillo+ é uma compra, sua para sempre — não é assinatura. Everywhere/AI+ adiciona sync cloud e IA em todas as suas telas.',
+	'upgrade.signedIn': 'Conectado como {email}',
+	'upgrade.signInFirst': 'Entre primeiro para comprar na web',
+	'upgrade.plan.free': 'Free',
+	'upgrade.plan.plus': 'Pepinillo+',
+	'upgrade.plan.everywhere': 'Everywhere/AI+',
+	'upgrade.price.free': '$0',
+	'upgrade.price.plus': '$19.99 uma vez',
+	'upgrade.price.everywhere': '$4.99/mês · $34.99/ano',
+	'upgrade.note.free': 'Tudo para começar o hábito',
+	'upgrade.note.plus': 'Uma compra. Sua para sempre. Não é assinatura.',
+	'upgrade.note.everywhere': 'Tudo do Pepinillo+, em todas as suas telas.',
+	'upgrade.flag.best': 'O mais completo',
+	'upgrade.free.pomodoro': 'Pomodoro + Cronômetro',
+	'upgrade.free.stopwatch': '3 tarefas ativas',
+	'upgrade.free.tasks': 'Métricas: hoje + 7 dias',
+	'upgrade.free.analytics': 'Offline completo, sem conta',
+	'upgrade.plus.modes': 'Flowtime + Blocos de tempo',
+	'upgrade.plus.tasks': 'Tarefas ilimitadas',
+	'upgrade.plus.subtasks': 'Subtarefas + recorrência',
+	'upgrade.plus.themes': 'Temas Floresta, Oceano e Pôr do sol',
+	'upgrade.plus.analytics': 'Métricas completas (30 dias + 1 ano)',
+	'upgrade.plus.soundscapes': 'Todas as paisagens sonoras',
+	'upgrade.everywhere.plusIncluded': 'Tudo do Pepinillo+',
+	'upgrade.everywhere.sync': 'Sync cloud entre dispositivos (LWW, como nos apps nativos)',
+	'upgrade.everywhere.ai': 'Insights de IA: revisões, dicas e previsões',
+	'upgrade.everywhere.recovery': 'Recuperação de conta — seus dados a salvo mesmo se perder um dispositivo',
+	'upgrade.everywhere.web': 'Acesso completo a este app web',
+	'upgrade.cta.free': 'Abrir o app',
+	'upgrade.cta.plus': 'Comprar uma vez',
+	'upgrade.cta.everywhere': 'Assinar',
+	'upgrade.working': 'Abrindo…',
+	'upgrade.checkoutError': 'Não conseguimos abrir o checkout. Tente em instantes.',
+	'upgrade.portalError': 'Não conseguimos abrir o portal de pagos. Você tem uma assinatura web?',
+	'upgrade.storesTitle': 'Prefere os apps nativos?',
+	'upgrade.storesBody': 'O Pepinillo vive nativo no iPhone, iPad, Mac, Android e Wear OS — com widgets, complicações de relógio e Live Activities.',
+	'upgrade.storeApp': 'App Store',
+	'upgrade.storePlay': 'Google Play',
+	'upgrade.manageTitle': 'Gerencie sua assinatura web',
+	'upgrade.manageBody': 'Mude de plano, atualize o meio de pagamento ou cancele — direto no portal do Stripe.',
+	'upgrade.manageCta': 'Abrir portal de pagos',
+	'legal.privacy': 'Privacidade',
+	'legal.terms': 'Termos',
+	'auth.deleteFailed': 'Não conseguimos excluir a conta agora. Tente de novo ou contate o suporte.',
 	'sync.title': 'Sync cloud',
 	'sync.hint': 'Last-Write-Wins com o relógio do servidor, como nos apps nativos.',
 	'sync.last': 'Última sync',

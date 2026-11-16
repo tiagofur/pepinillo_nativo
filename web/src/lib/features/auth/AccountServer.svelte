@@ -15,6 +15,7 @@
 
 	let confirmDelete = $state(false);
 	let deleteEmail = $state('');
+	let noticeText = $state('');
 
 	function fmtWhen(iso: string | null): string {
 		if (!iso) return '—';
@@ -61,11 +62,14 @@
 	}
 
 	async function deleteAccount(): Promise<void> {
-		// Server-side delete is a W6+ contract extension; for now this signs out
-		// and clears local tokens (documented in the PR).
-		await auth.signOut();
-		confirmDelete = false;
-		deleteEmail = '';
+		const ok = await auth.deleteAccount();
+		if (ok) {
+			confirmDelete = false;
+			deleteEmail = '';
+		} else {
+			noticeText = t('auth.deleteFailed');
+			setTimeout(() => (noticeText = ''), 4000);
+		}
 	}
 </script>
 
@@ -123,6 +127,9 @@
 	{#if confirmDelete}
 		<p class="warn">{t('auth.deleteConfirm')}</p>
 		<input class="field" type="email" placeholder={t('auth.emailField')} bind:value={deleteEmail} />
+		{#if noticeText}
+			<p class="notice">{noticeText}</p>
+		{/if}
 		<div class="row">
 			<button class="btn pressable danger-btn" disabled={deleteEmail !== auth.user?.email} onclick={deleteAccount}>
 				{t('auth.deleteAccount')}

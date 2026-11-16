@@ -91,6 +91,26 @@ export class ApiClient {
 		return res.hasData;
 	}
 
+	/** Stripe web checkout (W6): one-time plus or Everywhere subscription. */
+	async createStripeCheckout(plan: string): Promise<{ checkoutUrl: string }> {
+		return this.request<{ checkoutUrl: string }>('/api/v1/billing/stripe/checkout-session', {
+			method: 'POST',
+			body: JSON.stringify({ plan })
+		});
+	}
+
+	/** Stripe Billing Portal deep link for managing the web subscription. */
+	async createStripePortal(): Promise<{ portalUrl: string }> {
+		return this.request<{ portalUrl: string }>('/api/v1/billing/stripe/portal-session', {
+			method: 'POST'
+		});
+	}
+
+	/** Permanently deletes the account (JWT). Local data stays on the device. */
+	async deleteAccount(): Promise<void> {
+		await this.request<void>('/api/v1/auth/account', { method: 'DELETE' });
+	}
+
 	async initialUpload(payload: InitialUploadRequest): Promise<InitialUploadResponse> {
 		return this.request<InitialUploadResponse>('/api/v1/sync/initial-upload', {
 			method: 'POST',

@@ -161,6 +161,20 @@ class AuthStore {
 		await this.clearSession();
 	}
 
+	/** Permanently deletes the cloud account, then clears the local session. */
+	async deleteAccount(): Promise<boolean> {
+		const api = this.api;
+		if (!api) return false;
+		try {
+			await api.deleteAccount();
+		} catch {
+			return false;
+		}
+		this.disconnectWs();
+		await this.clearSession();
+		return true;
+	}
+
 	private async clearSession(): Promise<void> {
 		await clearAuthMeta();
 		this.tokensSnapshot = null;
