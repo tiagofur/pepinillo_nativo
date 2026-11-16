@@ -55,9 +55,11 @@ import {
 import { formatMs } from '$lib/format/time';
 import {
 	getMetaValue,
+	listAllTasks,
 	listSessions,
 	saveSession,
-	setMetaValue
+	setMetaValue,
+	upsertTask
 } from '$lib/data/local/idb';
 import { app } from '$lib/stores/app.svelte';
 import type { FocusMode, FocusPhase, FocusSession, Task } from '$lib/domain/entities/types';
@@ -391,6 +393,23 @@ class FocusController {
 		if (!s || !terminal) return;
 		this.session = { ...s, elapsedMs, taskId: this.activeTask?.id ?? null };
 		void saveSession($state.snapshot(this.session));
+		if (this.session.taskId) void this.bumpLinkedTask(this.session.taskId);
+	}
+
+	/** Native parity: a completed work session bumps 🍅 on the linked task. */
+	private async bumpLinkedTask(taskId: string): Promise<void> {
+		try {
+			const tasks = await listAllTasks();
+			const t = tasks.find((x) => x.id === taskId);
+			if (!t) return;
+			await upsertTask({
+				...t,
+				completedPomodoros: (t.completedPomodoros ?? 0) + 1,
+				updatedAt: new Date().toISOString()
+			});
+		} catch {
+			/* non-fatal */
+		}
 	}
 
 	private reevaluateStatsSoon(): void {
