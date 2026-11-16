@@ -7,16 +7,24 @@ import (
 )
 
 type fakeUserRepo struct {
-	byID    map[string]*domain.User
-	byEmail map[string]*domain.User
-	claims  map[string]string
+	byID       map[string]*domain.User
+	byEmail    map[string]*domain.User
+	claims     map[string]string
+	events     map[string]bool
+	stripeTier map[string]*string
+	stripeExp  map[string]*time.Time
+	byCustomer map[string]string
 }
 
 func newFakeUserRepo() *fakeUserRepo {
 	return &fakeUserRepo{
-		byID:    make(map[string]*domain.User),
-		byEmail: make(map[string]*domain.User),
-		claims:  make(map[string]string),
+		byID:       make(map[string]*domain.User),
+		byEmail:    make(map[string]*domain.User),
+		claims:     make(map[string]string),
+		events:     make(map[string]bool),
+		stripeTier: make(map[string]*string),
+		stripeExp:  make(map[string]*time.Time),
+		byCustomer: make(map[string]string),
 	}
 }
 
@@ -166,5 +174,28 @@ func (r *fakeUserRepo) ClaimPurchaseToken(_ context.Context, platform, token, us
 }
 
 func (r *fakeUserRepo) ClaimWebhookEvent(_ context.Context, eventID, source string) (bool, error) {
+	key := source + "\x00" + eventID
+	if r.events[key] {
+		return false, nil
+	}
+	r.events[key] = true
 	return true, nil
+}
+
+func (r *fakeUserRepo) SetStripeCustomer(_ context.Context, userID, customerID string) error {
+	r.byCustomer[customerID] = userID
+	return nil
+}
+
+func (r *fakeUserRepo) UpdateStripeState(_ context.Context, userID string, tier *string, expiresAt *time.Time) error {
+	r.stripeTier[userID] = tier
+	r.stripeExp[userID] = expiresAt
+	return nil
+}
+
+func (r *fakeUserRepo) GetByStripeCustomerID(_ context.Context, customerID string) (*domain.User, error) {
+	if userID, ok := r.byCustomer[customerID]; ok {
+		return r.byID[userID], nil
+	}
+	return nil, nil
 }

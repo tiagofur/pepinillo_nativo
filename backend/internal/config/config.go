@@ -89,6 +89,14 @@ type Config struct {
 	RevenueCatSecretKey                    string // Secret API Key (V2) for server-to-server validation
 	RevenueCatWebhookAuthToken             string
 	RevenueCatAPIBaseURL                   string
+	// Stripe billing (web purchases, epic #809 W6).
+	StripeSecretKey              string
+	StripeWebhookSecret          string
+	StripePricePepinilloPlus     string
+	StripePriceEverywhereMonthly string
+	StripePriceEverywhereAnnual  string
+	StripeSuccessURL             string
+	StripeCancelURL              string
 	LogLevel                               string
 	SentryDSN                              string
 	SentrySampleRate                       float64
@@ -182,6 +190,13 @@ func Load() (*Config, error) {
 		RevenueCatSecretKey:                    getEnv("REVENUECAT_SECRET_KEY", ""),
 		RevenueCatWebhookAuthToken:             getEnv("REVENUECAT_WEBHOOK_AUTH_TOKEN", ""),
 		RevenueCatAPIBaseURL:                   getEnv("REVENUECAT_API_BASE_URL", "https://api.revenuecat.com/v1"),
+		StripeSecretKey:                        getEnv("STRIPE_SECRET_KEY", ""),
+		StripeWebhookSecret:                    getEnv("STRIPE_WEBHOOK_SECRET", ""),
+		StripePricePepinilloPlus:               getEnv("STRIPE_PRICE_PEPINILLO_PLUS", ""),
+		StripePriceEverywhereMonthly:           getEnv("STRIPE_PRICE_EVERYWHERE_MONTHLY", ""),
+		StripePriceEverywhereAnnual:            getEnv("STRIPE_PRICE_EVERYWHERE_ANNUAL", ""),
+		StripeSuccessURL:                       getEnv("STRIPE_SUCCESS_URL", "https://pepinillo.app/upgrade"),
+		StripeCancelURL:                        getEnv("STRIPE_CANCEL_URL", "https://pepinillo.app/upgrade"),
 		LogLevel:                               getEnv("LOG_LEVEL", "info"),
 		SentryDSN:                              getEnv("SENTRY_DSN", ""),
 		SentrySampleRate:                       getEnvFloat64("SENTRY_SAMPLE_RATE", 1.0),
