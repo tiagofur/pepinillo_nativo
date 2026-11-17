@@ -146,7 +146,7 @@
 				<span class="pill">{subs.done}/{subs.total}</span>
 			{/if}
 			{#if task.estimatedPomodoros > 0}
-				<span class="pill nums">🍅 {task.completedPomodoros ?? 0}/{task.estimatedPomodoros}</span>
+				<span class="pill nums">⏱ {task.completedPomodoros ?? 0}/{task.estimatedPomodoros}</span>
 			{/if}
 			{#if task.recurrenceRule}
 				<span class="pill">🔁</span>

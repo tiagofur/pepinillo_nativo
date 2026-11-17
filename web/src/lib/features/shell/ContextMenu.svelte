@@ -226,10 +226,14 @@
 		padding: var(--space-1);
 	}
 
-	/* Flipped: open to the left when the menu is near the right edge */
+	/* Flipped (menu near the right edge): on narrow viewports the 180px
+	 * floating submenu would clip on BOTH edges, so it stacks inline inside
+	 * the menu instead — always in-viewport. */
 	.ctx.flip .submenu {
-		left: auto;
-		right: calc(100% - 6px);
+		position: static;
+		min-width: 100%;
+		max-height: 260px;
+		box-shadow: none;
 	}
 
 	.sep {

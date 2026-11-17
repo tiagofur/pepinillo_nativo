@@ -231,6 +231,7 @@
 		{/snippet}
 	</PaneToolbar>
 
+	<div class="plan-scroll">
 	<div class="toolbar">
 		<Segmented
 			options={FILTER_KEYS.map((f) => ({ id: f.id, label: t(f.key) }))}
@@ -320,6 +321,18 @@
 		<TaskInspector task={selectedTask} onclose={() => selectTask(null)} />
 	</div>
 
+	{#if plan.filter === 'today' && displayed.length > 0 && app.tier === 'free'}
+		<p class="suggest-hint">✨ {t('plan.energyHint', { energy: t(`plan.energy.${suggestion}`) })}</p>
+	{/if}
+
+	{#if showCapNotice && plan.freeCapReached}
+		<div class="cap card">
+			🔒 {t('plan.capBlocked')}
+			<a class="btn btn-soft pressable" href="/account">{t('plan.upgradeTeaser')}</a>
+		</div>
+	{/if}
+	</div>
+
 	<!-- Desktop: Reminders-style fixed "New task" row at the foot of the plan -->
 	<form
 		class="newtask"
@@ -339,17 +352,6 @@
 		/>
 	</form>
 
-	{#if plan.filter === 'today' && displayed.length > 0 && app.tier === 'free'}
-		<p class="suggest-hint">✨ {t('plan.energyHint', { energy: t(`plan.energy.${suggestion}`) })}</p>
-	{/if}
-
-	{#if showCapNotice && plan.freeCapReached}
-		<div class="cap card">
-			🔒 {t('plan.capBlocked')}
-			<a class="btn btn-soft pressable" href="/account">{t('plan.upgradeTeaser')}</a>
-		</div>
-	{/if}
-
 
 	{#if ctx}
 		<ContextMenu x={ctx.x} y={ctx.y} items={ctxItems} onclose={() => (ctx = null)} />
@@ -364,6 +366,20 @@
 		max-width: 1100px; /* wide, like the Mac plan table */
 		margin-inline: auto;
 		width: 100%;
+	}
+
+	/* Desktop: the plan scrolls INSIDE its column and the New-task bar sits
+	 * statically at the foot — always visible, never overlaying content. */
+	@media (min-width: 1024px) {
+		.plan {
+			height: calc(100dvh - var(--space-8) - var(--space-10) - var(--safe-b));
+		}
+
+		.plan-scroll {
+			flex: 1;
+			min-height: 0;
+			overflow-y: auto;
+		}
 	}
 
 	.toolbar {
@@ -410,9 +426,8 @@
 	/* Mac bottom "New task" row (MacPlanView bottom safe area): pinned to the
 	 * foot of the content column, bar background, accent plus, plain text. */
 	.newtask {
-		position: sticky;
-		bottom: 0;
 		display: flex;
+		flex: none;
 		align-items: center;
 		gap: var(--space-3);
 		margin: var(--space-4) calc(-1 * var(--space-8)) calc(-1 * (var(--space-10) + var(--safe-b)));
@@ -465,11 +480,7 @@
 			margin-inline: calc(-1 * var(--space-8));
 		}
 
-		/* Reserve the sticky bar's overlay height so scrolled content (cap
-		 * notice, last rows) never hides behind it (Mac bottom safe area). */
-		.inspector-grid {
-			padding-bottom: 76px;
-		}
+
 	}
 
 	.suggest-hint {
