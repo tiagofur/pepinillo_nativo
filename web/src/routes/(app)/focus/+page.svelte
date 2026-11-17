@@ -179,8 +179,9 @@
 		gap: var(--space-2);
 	}
 
-	/* Desktop: the toolbar segmented replaces the chip row (Mac toolbar) */
-	@media (min-width: 1024px) {
+	/* ≥768px: the toolbar segmented replaces the chip row (Mac toolbar);
+	 * below that the chips are the touch-friendly mode picker */
+	@media (min-width: 768px) {
 		.modes {
 			display: none;
 		}

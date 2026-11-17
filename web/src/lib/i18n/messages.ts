@@ -49,7 +49,7 @@ export type MessageKey =
 	| 'plan.add'
 	| 'plan.search'
 	| 'plan.newTask'
-	| 'plan.inspector'
+	| 'plan.search.empty'
 	| 'plan.empty.all'
 	| 'dashboard.refresh'
 	| 'plan.empty'
@@ -544,7 +544,7 @@ const en: Dict = {
 	'plan.add': 'Add task',
 	'plan.search': 'Search tasks',
 	'plan.newTask': 'New task',
-	'plan.inspector': 'Inspector',
+	'plan.search.empty': 'No tasks match your search',
 	'dashboard.refresh': 'Refresh',
 	'plan.empty': 'No tasks yet. Add up to 3 active tasks on Free.',
 	'plan.capBlocked': 'Free allows up to 3 active tasks.',
@@ -1048,7 +1048,7 @@ const es: Dict = {
 	'plan.add': 'Agregar tarea',
 	'plan.search': 'Buscar tareas',
 	'plan.newTask': 'Nueva tarea',
-	'plan.inspector': 'Inspector',
+	'plan.search.empty': 'Ninguna tarea coincide con tu búsqueda',
 	'dashboard.refresh': 'Actualizar',
 	'plan.empty': 'Sin tareas aún. En Free podés tener hasta 3 activas.',
 	'plan.capBlocked': 'Free permite hasta 3 tareas activas.',
@@ -1552,7 +1552,7 @@ const pt: Dict = {
 	'plan.add': 'Adicionar tarefa',
 	'plan.search': 'Buscar tarefas',
 	'plan.newTask': 'Nova tarefa',
-	'plan.inspector': 'Inspetor',
+	'plan.search.empty': 'Nenhuma tarefa corresponde à sua busca',
 	'dashboard.refresh': 'Atualizar',
 	'plan.empty': 'Nenhuma tarefa ainda. No Free você pode ter até 3 ativas.',
 	'plan.capBlocked': 'Free permite até 3 tarefas ativas.',

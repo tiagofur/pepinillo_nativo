@@ -195,7 +195,7 @@
 	display: flex;
 	align-items: center;
 	gap: var(--space-2);
-	min-height: 30px;
+	min-height: var(--touch-target);
 	padding: 0 var(--space-3);
 	border-radius: var(--radius-sm);
 	color: var(--ink);
@@ -205,6 +205,18 @@
 	transition:
 		background-color var(--dur-fast) var(--spring-snappy),
 		color var(--dur-fast) var(--spring-snappy);
+}
+
+/* Fine pointer ≥1024px: Mac 30px rows (tablets keep the 44px HIG minimum) */
+@media (min-width: 1024px) and (pointer: fine) {
+	.nav-row,
+	.account-row {
+		min-height: 30px;
+	}
+
+	.gear-btn {
+		height: 30px;
+	}
 }
 
 .nav-row svg {
@@ -250,7 +262,7 @@
 	gap: var(--space-2);
 	flex: 1;
 	min-width: 0;
-	min-height: 30px;
+	min-height: var(--touch-target);
 	padding: 0 var(--space-2);
 	border-radius: 7px;
 	color: var(--ink);
@@ -307,7 +319,7 @@
 	align-items: center;
 	justify-content: center;
 	width: 36px;
-	height: 30px;
+	height: var(--touch-target);
 	border: none;
 	background: transparent;
 	border-radius: 7px;

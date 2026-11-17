@@ -17,19 +17,26 @@
 	onMount(() => {
 		void plan.init();
 		// Mac window commands raised by the shell (⌘F / ⌘N / ⌘⌥I).
-		function onPlanSearch(): void {
-			searchEl?.focus();
+		function planCommand(command: string): void {
+			if (command === 'pepinillo:plan-search') searchEl?.focus();
+			else if (command === 'pepinillo:plan-new-task') quickAddEl?.focus();
+			else if (command === 'pepinillo:plan-inspector') toggleInspector();
 		}
-		function onPlanNewTask(): void {
-			quickAddEl?.focus();
+		function onPlanCommand(e: Event): void {
+			planCommand(e.type);
 		}
-		window.addEventListener('pepinillo:plan-search', onPlanSearch);
-		window.addEventListener('pepinillo:plan-new-task', onPlanNewTask);
-		window.addEventListener('pepinillo:plan-inspector', toggleInspector);
+		window.addEventListener('pepinillo:plan-search', onPlanCommand);
+		window.addEventListener('pepinillo:plan-new-task', onPlanCommand);
+		window.addEventListener('pepinillo:plan-inspector', onPlanCommand);
+		// Shell may have parked a command raised before this page mounted.
+		const w = window as unknown as { pepinilloPlanCommand?: string };
+		const pending = w.pepinilloPlanCommand;
+		delete w.pepinilloPlanCommand;
+		if (pending) planCommand(pending);
 		return () => {
-			window.removeEventListener('pepinillo:plan-search', onPlanSearch);
-			window.removeEventListener('pepinillo:plan-new-task', onPlanNewTask);
-			window.removeEventListener('pepinillo:plan-inspector', toggleInspector);
+			window.removeEventListener('pepinillo:plan-search', onPlanCommand);
+			window.removeEventListener('pepinillo:plan-new-task', onPlanCommand);
+			window.removeEventListener('pepinillo:plan-inspector', onPlanCommand);
 		};
 	});
 
@@ -139,7 +146,7 @@
 				<button
 					class="pt-btn pressable"
 					class:is-on={!!selectedTask}
-					title="⌘⌥I — {t('plan.inspector')}"
+					title={t('plan.inspector')}
 					aria-label={t('plan.inspector')}
 					aria-pressed={!!selectedTask}
 					onclick={toggleInspector}
@@ -148,7 +155,7 @@
 				</button>
 				<button
 					class="pt-btn pressable"
-					title="⌘N — {t('plan.newTask')}"
+					title={t('plan.newTask')}
 					aria-label={t('plan.newTask')}
 					onclick={() => quickAddEl?.focus()}
 				>
@@ -205,8 +212,8 @@
 		<div class="list-area">
 			{#if displayed.length === 0}
 				<div class="empty card">
-					<p class="empty-title">{query.trim() ? t('plan.empty.body') : t(EMPTY_KEYS[plan.filter])}</p>
-					<p class="empty-body">{t('plan.empty.body')}</p>
+					<p class="empty-title">{query.trim() ? t('plan.search.empty') : t(EMPTY_KEYS[plan.filter])}</p>
+					<p class="empty-body">{query.trim() ? '' : t('plan.empty.body')}</p>
 				</div>
 			{:else if plan.filter === 'completed'}
 				<ul class="list">

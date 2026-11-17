@@ -28,7 +28,8 @@
 <style>
 	.pane-toolbar {
 		position: sticky;
-		top: calc(-1 * var(--space-8)); /* cancels the shell's content padding */
+		top: 0; /* sticky insets are scrollport-relative — the negative margin
+				 above already seats the toolbar flush with the viewport top */
 		z-index: 30;
 		width: 100%;
 		display: grid;
@@ -143,9 +144,11 @@
 		box-shadow: none;
 	}
 
-	/* Phones: compact top bar — title + actions only */
+	/* Phones: compact top bar — title + one secondary action; the search
+	 * field flexes so narrow viewports never squeeze or overflow */
 	@media (max-width: 767px) {
 		.pane-toolbar {
+			grid-template-columns: auto 1fr;
 			min-height: 44px;
 			margin: calc(-1 * var(--space-5)) calc(-1 * var(--space-4)) var(--space-4);
 			padding: 0 var(--space-4);
@@ -157,6 +160,16 @@
 
 		.pt-center {
 			display: none;
+		}
+
+		.pt-right :global(.pt-group) {
+			display: none;
+		}
+
+		.pt-right :global(.pt-search) {
+			min-width: 0;
+			max-width: none;
+			flex: 1;
 		}
 	}
 

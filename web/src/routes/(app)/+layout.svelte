@@ -13,6 +13,8 @@
 	import logoUrl from '$lib/assets/logo.svg';
 	import type { PlanFilter } from '$lib/domain/tasks/plan';
 
+	type PlanCommand = 'pepinillo:plan-search' | 'pepinillo:plan-new-task' | 'pepinillo:plan-inspector';
+
 	onMount(() => {
 		void (async () => {
 			await app.init();
@@ -30,6 +32,7 @@
 	// Native parity: ⌘1/⌘2/⌘3 jump to Focus/Plan/Dashboard (Mac AppCommands),
 	// ⌘F plan search, ⌘N new task, ⌘⌥I inspector. (⌘N/⌘⌥I are browser-reserved
 	// in some engines — the toolbar buttons are the reliable path.)
+	// e.code (physical key) so Alt-composed keys on macOS still match.
 	function onCommandKey(e: KeyboardEvent): void {
 		if (!(e.metaKey || e.ctrlKey)) return;
 		if (e.key >= '1' && e.key <= '3') {
@@ -43,22 +46,31 @@
 			if (route) void import('$app/navigation').then(({ goto }) => goto(route));
 			return;
 		}
-		const key = e.key.toLowerCase();
-		if (key === 'f' && !e.altKey && !e.shiftKey) {
+		if (e.code === 'KeyF' && !e.altKey && !e.shiftKey) {
 			e.preventDefault();
 			void planThenDispatch('pepinillo:plan-search');
-		} else if (key === 'n' && !e.altKey && !e.shiftKey) {
+		} else if (e.code === 'KeyN' && !e.altKey && !e.shiftKey) {
+			e.preventDefault();
 			void planThenDispatch('pepinillo:plan-new-task');
-		} else if (key === 'i' && e.altKey) {
+		} else if (e.code === 'KeyI' && e.altKey) {
+			e.preventDefault();
 			void planThenDispatch('pepinillo:plan-inspector');
 		}
 	}
 
-	/** Navigate to Plan (if needed), then raise a page-level command event. */
-	async function planThenDispatch(event: string): Promise<void> {
-		const { goto } = await import('$app/navigation');
-		if (!page.url.pathname.startsWith('/plan')) await goto('/plan');
-		setTimeout(() => window.dispatchEvent(new CustomEvent(event)), 250);
+	/**
+	 * Navigate to Plan (if needed) and raise a page-level command.
+	 * The command is ALSO parked on `window.pepinilloPlanCommand` so the
+	 * Plan page picks it up on mount — no setTimeout race.
+	 */
+	async function planThenDispatch(command: PlanCommand): Promise<void> {
+		const w = window as unknown as { pepinilloPlanCommand?: PlanCommand };
+		w.pepinilloPlanCommand = command;
+		if (!page.url.pathname.startsWith('/plan')) {
+			const { goto } = await import('$app/navigation');
+			await goto('/plan');
+		}
+		window.dispatchEvent(new CustomEvent(command));
 	}
 
 	window.addEventListener('keydown', onCommandKey);
