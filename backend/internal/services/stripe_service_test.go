@@ -26,7 +26,7 @@ func testStripeConfig(baseURL string) StripeConfig {
 		PricePepinilloPlus:     "price_plus",
 		PriceEverywhereMonthly: "price_monthly",
 		PriceEverywhereAnnual:  "price_annual",
-		SuccessURL:             "https://pepinillo.app/upgrade",
+		SuccessURL:             "https://app.pepinillo.app/upgrade",
 		APIBaseURL:             baseURL,
 	}
 }

@@ -144,8 +144,20 @@
 		{/each}
 	</section>
 
+	<!-- Guides / user manual -->
+	<section class="guides card">
+		<h2>📚 {t('landing.guides.title')}</h2>
+		<p class="muted">{t('landing.guides.sub')}</p>
+		<div class="store-row">
+			<a class="btn btn-primary pressable" href="/guides/macos.html" data-sveltekit-reload>{t('landing.guides.cta')}</a>
+			<a class="btn btn-ghost pressable" href="/guides">{t('landing.nav.guides')}</a>
+		</div>
+	</section>
+
 	<footer class="foot">
 		<a href="/guides">{t('landing.nav.guides')}</a>
+		<span class="dot">·</span>
+		<a href="/guides/macos.html" data-sveltekit-reload>{t('landing.nav.macmanual')}</a>
 		<span class="dot">·</span>
 		<a href="/upgrade">{t('landing.nav.pricing')}</a>
 		<span class="dot">·</span>
@@ -388,6 +400,15 @@
 		flex-direction: column;
 		gap: var(--space-3);
 		max-width: 720px;
+	}
+
+	.guides {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-3);
+		max-width: 720px;
+		text-align: center;
+		align-items: center;
 	}
 
 	.faq-item {

@@ -125,6 +125,8 @@
 <svelte:head>
 	<title>{t('upgrade.title')} · Pepinillo</title>
 	<meta name="description" content={t('upgrade.meta')} />
+	<meta property="og:url" content="https://app.pepinillo.app/upgrade" />
+	<link rel="canonical" href="https://app.pepinillo.app/upgrade" />
 </svelte:head>
 
 <main class="upgrade">
