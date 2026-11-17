@@ -11,6 +11,9 @@ struct MacAppView: View {
     @Environment(\.openSettings) private var openSettings
     @Environment(\.controlActiveState) private var controlActiveState
 
+    /// A Plan task is being dragged over the sidebar's Focus row (issue #799).
+    @State private var isFocusDropTargeted = false
+
     private var activeTheme: AppTheme {
         AppTheme.named(store.settings.themeName)
     }
@@ -122,8 +125,14 @@ struct MacAppView: View {
                     String(localized: "Focus"),
                     systemImage: AppFeature.Tab.focus.macSystemImage,
                     tag: .focus,
-                    isSelected: store.selectedTab == .focus
+                    isSelected: store.selectedTab == .focus,
+                    isDropTargeted: isFocusDropTargeted
                 )
+                // Drag a task from Plan onto Focus: link it and start in one
+                // move (touch-hold-and-drag on macOS 27, plain drag before).
+                .dropDestination(for: String.self) { items, _ in
+                    startFocus(fromDropped: items)
+                } isTargeted: { isFocusDropTargeted = $0 }
             }
 
             Section(String(localized: "Plan")) {
@@ -175,7 +184,8 @@ struct MacAppView: View {
         _ title: String,
         systemImage: String,
         tag: SidebarSelection,
-        isSelected: Bool
+        isSelected: Bool,
+        isDropTargeted: Bool = false
     ) -> some View {
         HStack(spacing: 6) {
             Image(systemName: systemImage)
@@ -198,8 +208,27 @@ struct MacAppView: View {
         // system paints its selection glass in — so it replaces that layer
         // outright instead of peeking out from behind a smaller in-content
         // fill. The horizontal padding is the menu-to-button inset.
-        .listRowBackground(SidebarRowBackground(isSelected: isSelected))
+        .listRowBackground(SidebarRowBackground(isSelected: isSelected, isDropTargeted: isDropTargeted))
         .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+    }
+
+    /// Drop on Focus: only an open, non-template task counts (the same UUID
+    /// payload `MacPlanView` rows drag; plain text from other apps is
+    /// rejected here and keeps creating tasks when dropped on Plan). A
+    /// session already in flight keeps its timer — the drop only re-links.
+    private func startFocus(fromDropped items: [String]) -> Bool {
+        let task = items.lazy
+            .compactMap { UUID(uuidString: $0) }
+            .compactMap { store.tasks.tasks[id: $0] }
+            .first { !$0.isCompleted && !$0.isRecurringTemplate }
+        guard let task else { return false }
+
+        store.send(.tabSelected(.focus))
+        store.send(.focus(.linkTask(task.id, task.title, task.energyLevel.icon)))
+        if !store.focus.isRunning && !store.focus.isWaitingForNextPhase {
+            store.send(.focus(.startTapped()))
+        }
+        return true
     }
 
     private func rowIconColor(isSelected: Bool) -> Color {
@@ -445,6 +474,7 @@ private struct SidebarToggleRemoval: ViewModifier {
 /// menu-to-button inset their sidebars carry.
 private struct SidebarRowBackground: View {
     let isSelected: Bool
+    var isDropTargeted: Bool = false
     @Environment(\.controlActiveState) private var controlActiveState
 
     var body: some View {
@@ -455,6 +485,15 @@ private struct SidebarRowBackground: View {
                     .padding(.horizontal, 8)
             } else {
                 Color.clear
+            }
+        }
+        // Drop-target ring: same capsule geometry, outlined in the accent so
+        // it reads on both the selected (filled) and unselected row.
+        .overlay {
+            if isDropTargeted {
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .strokeBorder(isSelected ? Color.white : Color.accentColor, lineWidth: 2)
+                    .padding(.horizontal, 8)
             }
         }
         // Reminders-style capsule settle: a snappy crossfade when the

@@ -327,6 +327,39 @@ struct FocusFeatureReducerTests {
         }
     }
 
+    /// Issue #799: dropping a Plan task on the Mac sidebar's Focus row while
+    /// a session is in flight only re-links — the running timer is untouched.
+    @Test func linkTaskDuringRunningSessionKeepsTheTimer() async {
+        var state = FocusFeature.State()
+        state.isRunning = true
+        state.activeMode = .pomodoro
+        state.phase = .work(number: 1, total: 4)
+        state.elapsedSeconds = 300
+        state.remainingSeconds = 20 * 60
+        state.displayTime = "20:00"
+
+        let store = TestStore(initialState: state) {
+            FocusFeature()
+        } withDependencies: {
+            $0.persistenceClient.fetchSessions = { _, _ in [] }
+        }
+        store.exhaustivity = .off
+
+        let taskID = UUID()
+        await store.send(.linkTask(taskID, "Ship the dial", "bolt.fill")) {
+            $0.linkedTaskID = taskID
+            $0.linkedTaskTitle = "Ship the dial"
+        }
+
+        #expect(store.state.isRunning)
+        #expect(!store.state.isPaused)
+        #expect(store.state.activeMode == .pomodoro)
+        #expect(store.state.phase == .work(number: 1, total: 4))
+        #expect(store.state.elapsedSeconds == 300)
+        #expect(store.state.remainingSeconds == TimeInterval(20 * 60))
+        #expect(store.state.displayTime == "20:00")
+    }
+
     // MARK: - Custom Duration
 
     @Test func startPomodoroPassesCompletedWorkCountToEngine() async {
