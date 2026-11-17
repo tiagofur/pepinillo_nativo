@@ -1,7 +1,7 @@
 {
 	"name": "Pepinillo",
 	"short_name": "Pepinillo",
-	"description": "Planifica, enfócate y celebra tu deep work — nativo, en todas tus pantallas.",
+	"description": "Planifica, enf\u00f3cate y celebra tu deep work \u2014 nativo, en todas tus pantallas.",
 	"id": "/focus",
 	"start_url": "/focus",
 	"scope": "/",
@@ -9,7 +9,10 @@
 	"orientation": "any",
 	"background_color": "#f5f6f4",
 	"theme_color": "#2e7d46",
-	"categories": ["productivity", "lifestyle"],
+	"categories": [
+		"productivity",
+		"lifestyle"
+	],
 	"lang": "es",
 	"icons": [
 		{

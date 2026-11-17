@@ -1,0 +1,5 @@
+/* Pepinillo Web — stylesheet entry.
+	 Order matters: tokens → base → shared primitives. */
+@import './lib/design/tokens.css';
+@import './lib/design/base.css';
+@import './lib/design/components.css';
