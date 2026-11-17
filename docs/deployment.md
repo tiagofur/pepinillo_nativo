@@ -75,9 +75,19 @@ el batch **W9** del epic #809 (DNS + sitios Plesk + rsync + CORS + QA):
 
 | Superficie | Dominio |
 | :--- | :--- |
-| Landing + guías de usuario (`/`, `/guides*`) | `https://pepinillo.app` |
-| PWA app (`/focus`, `/plan`, `/dashboard`, `/account`, `/upgrade`) | `https://app.pepinillo.app` |
+| Landing (`/`) + guías (`/guides*`) | `https://pepinillo.app` |
+| PWA app (`/focus`, `/plan`, `/dashboard`, `/account`, `/upgrade`) | `https://app.pepinillo.app` (abre directamente en `/focus`) |
 | API (nuevo hostname) | `https://api.pepinillo.app` — mismo contenedor que el viejo |
+
+**Separación por dominio (nginx, mismo build):** un solo build estático en ambos
+docroots; el enrutado por `vhost_nginx.conf` decide la experiencia. En
+`pepinillo.app`, `/focus|plan|dashboard|account` y `/upgrade` redirigen 302 a
+`app.pepinillo.app`; en `app.pepinillo.app`, `/` redirige a `/focus` y `/guides*`
+redirige a la landing. El índice de guías se sirve desde `guides.html`
+(adapter-static emite sin trailing slash): `location = /guides { try_files
+/guides.html =404; }`. Una separación de código real (dos proyectos SvelteKit)
+quedó descartada por ahora: duplicaría el motor y el mantenimiento — si algún día
+se quiere, la landing extrae `/+pages` propias a un proyecto aparte.
 
 **Coexistencia de API (issue #859):** las apps nativas siguen apuntando a
 `api.ppn.creapolis.dev`, así que **ambos hostnames sirven el mismo contenedor
