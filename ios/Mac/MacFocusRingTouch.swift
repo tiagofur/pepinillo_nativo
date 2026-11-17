@@ -2,9 +2,10 @@
 // Pepinillo — direct-touch gestures on the Mac focus ring (issue #797)
 //
 // Touch on Mac (macOS 27+, guide R3): the ring answers a finger without
-// growing any chrome. At rest on Time Block it is a rotary dial (turn the
-// ring like a kitchen timer, 5 min detents); during a session a tap inside
-// it pauses/resumes. Both gestures are restricted to `.directTouch`, so
+// growing any chrome. At rest on a configurable-duration mode it is a rotary
+// dial (turn the ring like a kitchen timer, 5 min detents — Time Block
+// 5…480, Pomodoro 5…120, issue #848); during a session a tap inside it
+// pauses/resumes. Both gestures are restricted to `.directTouch`, so
 // mouse and trackpad behave exactly as before, and on macOS 15–26 this
 // modifier is a no-op. Every gesture has a non-gesture twin: the ±5
 // steppers and the primary button.
@@ -40,27 +41,53 @@ private struct DirectTouchRingOverlay: View {
         var rotation: Double
     }
 
-    /// Same bounds as the ±5 steppers and `FocusFeature.customDurationChanged`.
-    private static let timeBlockRange = 5...480
+    /// What the dial is armed for right now: the clamped range, the base
+    /// minutes it starts from and the reducer action each 5-minute detent
+    /// crosses. Time Block overrides `customDurationMinutes`; Pomodoro
+    /// overrides `config.pomodoroDuration` (issue #848). Both are in-memory
+    /// next-session overrides — the next `configUpdated` hydration from
+    /// Settings overwrites them by design.
+    private struct DialTarget {
+        let range: ClosedRange<Int>
+        let baseMinutes: Int
+        let sendDuration: (Int) -> Void
+    }
 
     @State private var turn: DialTurn?
 
     private var size: CGSize { CGSize(width: ringSize, height: ringSize) }
 
-    /// The dial lives exactly where the duration steppers do: Time Block,
-    /// idle, not waiting for the next phase.
-    private var isDialEnabled: Bool {
-        store.selectedMode == .timeBlock && !store.isRunning && !store.isWaitingForNextPhase
+    /// The dial lives exactly where the duration steppers do: a
+    /// configurable-duration mode (Time Block, Pomodoro), idle, not waiting
+    /// for the next phase.
+    private var dialTarget: DialTarget? {
+        guard !store.isRunning, !store.isWaitingForNextPhase else { return nil }
+        switch store.selectedMode {
+        case .timeBlock:
+            return DialTarget(
+                range: 5...480,
+                baseMinutes: store.customDurationMinutes,
+                sendDuration: { store.send(.customDurationChanged($0)) }
+            )
+        case .pomodoro:
+            return DialTarget(
+                range: 5...120,
+                baseMinutes: Int((store.config.pomodoroDuration / 60).rounded()),
+                sendDuration: { store.send(.pomodoroDurationChanged($0)) }
+            )
+        default:
+            return nil
+        }
     }
 
     var body: some View {
         Group {
-            if isDialEnabled {
+            if let target = dialTarget {
                 // Only the ring band is hit-testable, so a finger landing in
                 // the interior still scrolls the stage.
                 Color.clear
                     .contentShape(RingBandShape(), eoFill: true)
-                    .gesture(dialGesture)
+                    .gesture(dialGesture(target))
             } else if store.isRunning {
                 Color.clear
                     .contentShape(Circle())
@@ -73,14 +100,14 @@ private struct DirectTouchRingOverlay: View {
         .accessibilityHidden(true)
     }
 
-    private var dialGesture: some Gesture {
+    private func dialGesture(_ target: DialTarget) -> some Gesture {
         DragGesture(minimumDistance: 4, coordinateSpace: .local, inputKinds: .directTouch)
             .onChanged { value in
                 let angle = FocusRingDial.angle(at: value.location, in: size)
                 guard var current = turn else {
                     guard FocusRingDial.isOnRingBand(value.startLocation, in: size) else { return }
                     turn = DialTurn(
-                        baseMinutes: store.customDurationMinutes,
+                        baseMinutes: target.baseMinutes,
                         lastAngle: FocusRingDial.angle(at: value.startLocation, in: size),
                         rotation: 0
                     )
@@ -90,14 +117,14 @@ private struct DirectTouchRingOverlay: View {
                 current.lastAngle = angle
                 turn = current
 
-                let target = FocusRingDial.minutes(
+                let minutes = FocusRingDial.minutes(
                     base: current.baseMinutes,
                     rotation: current.rotation,
-                    range: Self.timeBlockRange
+                    range: target.range
                 )
                 // Only cross the reducer on a detent, never per touch sample.
-                if target != store.customDurationMinutes {
-                    store.send(.customDurationChanged(target))
+                if minutes != current.baseMinutes {
+                    target.sendDuration(minutes)
                 }
             }
             .onEnded { _ in turn = nil }

@@ -116,6 +116,7 @@ struct FocusFeature {
         case skipPhaseTapped
         case linkTask(UUID?, String?, String?)
         case customDurationChanged(Int)
+        case pomodoroDurationChanged(Int)
         case configUpdated(FocusConfig)
 
         // Task picker
@@ -642,6 +643,18 @@ struct FocusFeature {
                 state.customDurationMinutes = max(1, min(480, minutes))
                 var config = state.config
                 config.defaultBlockDuration = TimeInterval(state.customDurationMinutes * 60)
+                state.config = config
+                updateIdleDisplay(&state)
+                return .none
+
+            case .pomodoroDurationChanged(let minutes):
+                // The Pomodoro twin of `customDurationChanged` (issue #848):
+                // an in-memory override for the next session, same kitchen
+                // timer semantics as the Time Block dial. Settings keeps the
+                // persisted default, and the next `configUpdated` hydration
+                // intentionally overwrites this value.
+                var config = state.config
+                config.pomodoroDuration = TimeInterval(max(5, min(120, minutes)) * 60)
                 state.config = config
                 updateIdleDisplay(&state)
                 return .none
