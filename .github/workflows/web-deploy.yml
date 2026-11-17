@@ -94,7 +94,7 @@ jobs:
           tar -czf /tmp/pepinillo_web_bundle.tgz -C web-build .
           scp -P ${SSH_PORT} /tmp/pepinillo_web_bundle.tgz deploy:/tmp/pepinillo_web_bundle.tgz
 
-          ssh -p ${SSH_PORT} deploy << DEPLOY_SCRIPT
+          ssh -p ${SSH_PORT} deploy << 'DEPLOY_SCRIPT'
           set -e
           BASE=/var/www/vhosts/pepinillo.app
           rm -rf /tmp/pepinillo_web_build
