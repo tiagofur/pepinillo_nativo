@@ -96,10 +96,7 @@ jobs:
 
           ssh -p ${SSH_PORT} deploy << 'DEPLOY_SCRIPT'
           set -e
-          whoami
-          id
           BASE=/var/www/vhosts/pepinillo.app
-          ls -ld "$BASE" || true
           rm -rf /tmp/pepinillo_web_build
           mkdir -p /tmp/pepinillo_web_build
           tar -xzf /tmp/pepinillo_web_bundle.tgz -C /tmp/pepinillo_web_build

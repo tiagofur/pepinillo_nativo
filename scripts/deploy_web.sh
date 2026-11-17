@@ -26,10 +26,10 @@ echo "==> Building web (pnpm build)"
 (cd "$WEB_DIR" && pnpm build)
 
 echo "==> rsync build → $VPS_HOST:$VPS_DOCROOT_MAIN ${DRY_FLAG}"
-rsync -az --delete $DRY_FLAG "$WEB_DIR/build/" "$VPS_HOST:$VPS_DOCROOT_MAIN/"
+rsync -az --no-o --no-g --no-perms -O --delete --exclude=".well-known" $DRY_FLAG "$WEB_DIR/build/" "$VPS_HOST:$VPS_DOCROOT_MAIN/"
 
 echo "==> rsync build → $VPS_HOST:$VPS_DOCROOT_APP ${DRY_FLAG}"
-rsync -az --delete $DRY_FLAG "$WEB_DIR/build/" "$VPS_HOST:$VPS_DOCROOT_APP/"
+rsync -az --no-o --no-g --no-perms -O --delete --exclude=".well-known" $DRY_FLAG "$WEB_DIR/build/" "$VPS_HOST:$VPS_DOCROOT_APP/"
 
 echo "==> Reloading nginx (Plesk)"
 ssh "$VPS_HOST" "nginx -t && nginx -s reload"
