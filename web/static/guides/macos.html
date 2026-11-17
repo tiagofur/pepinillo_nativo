@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Pepinillo para macOS — Manual de Usuario y Guía Touch</title>
+  <title>Pepinillo para macOS — Manual de Usuario</title>
+  <meta name="description" content="Manual completo de Pepinillo para Mac: los cuatro modos de foco, planificación de tareas, barra de menú, notch, Dock, atajos de teclado, ambientes sonoros, estadísticas y más." />
   <link rel="canonical" href="https://pepinillo.app/guides/macos" />
   <style>
     :root {
@@ -61,7 +62,6 @@
       min-height: 100vh;
     }
 
-    /* Sidebar estilo macOS */
     aside {
       position: sticky;
       top: 0;
@@ -81,112 +81,105 @@
       display: flex;
       align-items: center;
       gap: 12px;
-      padding: 4px 10px;
     }
+
     .brand-icon {
-      width: 38px;
-      height: 38px;
-      border-radius: 10px;
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
       background: linear-gradient(135deg, var(--brand), var(--brand-light));
       color: #fff;
+      font-weight: 700;
+      font-size: 20px;
       display: grid;
       place-items: center;
-      font-weight: 700;
-      font-size: 18px;
-      box-shadow: 0 4px 12px rgba(46, 125, 70, 0.3);
+      flex-shrink: 0;
     }
-    .brand-title { font-weight: 700; font-size: 16px; letter-spacing: -0.01em; }
+
+    .brand-title { font-weight: 700; font-size: 16px; }
     .brand-sub { font-size: 12px; color: var(--muted); }
 
-    nav { display: flex; flex-direction: column; gap: 4px; }
-    .nav-label {
-      font-size: 11px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: var(--muted);
-      padding: 10px 12px 4px;
-    }
+    nav { display: flex; flex-direction: column; gap: 2px; }
+
     nav a {
-      text-decoration: none;
+      display: block;
+      padding: 7px 12px;
+      border-radius: 8px;
       color: var(--ink);
+      text-decoration: none;
       font-size: 13.5px;
-      font-weight: 500;
-      padding: 8px 12px;
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
       transition: background 0.15s ease;
     }
     nav a:hover { background: var(--brand-soft); }
-    nav a.active {
-      background: var(--brand);
-      color: #fff;
+
+    .nav-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin: 14px 0 4px 12px;
     }
+    .nav-label:first-child { margin-top: 0; }
 
     .sidebar-footer {
       margin-top: auto;
-      padding: 12px;
-      border-radius: 12px;
-      background: var(--surface-alt);
       font-size: 12px;
       color: var(--muted);
+      padding: 14px 12px;
+      border-top: 1px solid var(--border);
+      line-height: 1.5;
     }
 
-    /* Main Content */
     main {
+      padding: 32px clamp(20px, 5vw, 56px) 80px;
       max-width: 980px;
-      width: 100%;
-      margin: 0 auto;
-      padding: 40px 44px 80px;
     }
 
     .hero {
-      padding: 32px;
-      border-radius: 26px;
-      background: linear-gradient(135deg, rgba(46, 125, 70, 0.14), rgba(61, 156, 94, 0.04));
-      border: 1px solid var(--border);
       margin-bottom: 36px;
     }
     .hero-eyebrow {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 12px;
+      display: inline-block;
+      font-size: 12.5px;
       font-weight: 600;
-      color: var(--brand-light);
+      color: var(--brand);
       background: var(--brand-soft);
-      padding: 4px 12px;
+      padding: 5px 12px;
       border-radius: var(--radius-pill);
       margin-bottom: 14px;
     }
-    h1 {
-      margin: 0 0 10px;
-      font-size: 32px;
-      letter-spacing: -0.025em;
+    .hero h1 {
+      font-size: clamp(28px, 4.5vw, 40px);
       line-height: 1.15;
+      letter-spacing: -0.02em;
+      margin: 0 0 14px;
     }
     .hero p {
-      margin: 0;
       font-size: 16px;
       color: var(--muted);
-      max-width: 68ch;
+      max-width: 640px;
+      margin: 0;
     }
 
-    section { margin-bottom: 48px; scroll-margin-top: 24px; }
+    section {
+      margin-bottom: 56px;
+      scroll-margin-top: 24px;
+    }
+
     h2 {
-      font-size: 22px;
+      font-size: 24px;
       letter-spacing: -0.015em;
       margin: 0 0 6px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
     }
+
+    h3 { font-size: 16.5px; margin: 0 0 8px; }
+
     .section-lead {
-      margin: 0 0 20px;
       color: var(--muted);
-      font-size: 14.5px;
+      font-size: 15px;
+      margin: 0 0 20px;
+      max-width: 680px;
     }
 
     .grid-2 {
@@ -194,115 +187,153 @@
       grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
       gap: 16px;
     }
+
     .grid-3 {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-      gap: 14px;
+      gap: 16px;
     }
 
     .card {
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: var(--radius-card);
-      padding: 20px;
+      padding: 20px 22px;
       box-shadow: var(--shadow);
     }
-    .card h3 {
-      margin: 0 0 8px;
-      font-size: 16px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-    }
-    .card p {
-      margin: 0;
-      font-size: 13.5px;
-      color: var(--muted);
-    }
-    .card ul {
-      margin: 10px 0 0;
-      padding-left: 18px;
-      font-size: 13.5px;
-      color: var(--muted);
-    }
+
+    .card p { margin: 0 0 8px; font-size: 14px; color: var(--muted); }
+    .card ul { margin: 8px 0 0; padding-left: 18px; font-size: 13.5px; color: var(--muted); }
     .card li { margin-bottom: 5px; }
+    .card li strong, .card p strong { color: var(--ink); }
 
-    /* Badges */
-    .badge {
-      font-size: 11px;
-      font-weight: 600;
-      padding: 2px 9px;
-      border-radius: var(--radius-pill);
-      white-space: nowrap;
-    }
-    .badge-free { background: var(--brand-soft); color: var(--brand-light); }
-    .badge-pro { background: rgba(123, 82, 171, 0.15); color: #9F7AEA; }
-    .badge-touch { background: rgba(30, 136, 168, 0.16); color: #2FA8CC; }
-    .badge-cloud { background: rgba(217, 130, 43, 0.16); color: var(--streak); }
-
-    /* Mode accents */
-    .mode-card { border-top: 3px solid var(--brand); }
+    .mode-card { border-top: 4px solid var(--brand); }
     .mode-pomodoro { border-top-color: var(--pomodoro); }
     .mode-flowtime { border-top-color: var(--flowtime); }
     .mode-timeblock { border-top-color: var(--timeblock); }
     .mode-stopwatch { border-top-color: var(--stopwatch); }
 
-    /* Touch highlight box */
-    .touch-banner {
-      background: linear-gradient(135deg, rgba(30, 136, 168, 0.12), rgba(46, 125, 70, 0.1));
-      border: 1px solid rgba(47, 168, 204, 0.3);
-      border-radius: 20px;
-      padding: 22px;
-      margin-bottom: 18px;
+    .badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 9px;
+      border-radius: var(--radius-pill);
+      vertical-align: 2px;
+      margin-left: 6px;
     }
-    .touch-banner strong { color: var(--ink); }
+    .badge-free { background: var(--brand-soft); color: var(--brand); }
+    .badge-pro { background: rgba(217, 130, 43, 0.14); color: var(--streak); }
+    .badge-touch { background: rgba(30, 136, 168, 0.14); color: var(--flowtime); }
+    .badge-cloud { background: rgba(123, 82, 171, 0.14); color: var(--timeblock); }
+    .badge-new { background: rgba(30, 136, 168, 0.14); color: var(--flowtime); }
 
-    /* Keyboard shortcuts table */
+    kbd {
+      font-family: var(--mono);
+      font-size: 12px;
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      border-bottom-width: 2px;
+      border-radius: 6px;
+      padding: 2px 7px;
+      white-space: nowrap;
+    }
+
     table {
       width: 100%;
       border-collapse: collapse;
+      font-size: 13.5px;
       background: var(--surface);
-      border-radius: var(--radius-card);
+      border-radius: 14px;
       overflow: hidden;
       border: 1px solid var(--border);
-      box-shadow: var(--shadow);
-      font-size: 13.5px;
-    }
-    th, td {
-      text-align: left;
-      padding: 11px 16px;
-      border-bottom: 1px solid var(--border);
     }
     th {
+      text-align: left;
       font-size: 12px;
       text-transform: uppercase;
       letter-spacing: 0.05em;
       color: var(--muted);
       background: var(--surface-alt);
+      padding: 10px 14px;
     }
-    tr:last-child td { border-bottom: none; }
-
-    kbd {
-      font-family: var(--mono);
-      font-size: 12px;
-      padding: 2px 7px;
-      border-radius: 6px;
-      background: var(--surface-alt);
-      border: 1px solid var(--border);
-      color: var(--ink);
+    td {
+      padding: 10px 14px;
+      border-top: 1px solid var(--border);
+      vertical-align: top;
     }
 
     .callout {
-      display: flex;
-      gap: 14px;
-      align-items: flex-start;
       padding: 16px 18px;
       border-radius: 14px;
       background: var(--surface-alt);
       border: 1px solid var(--border);
       font-size: 13.5px;
       margin-top: 16px;
+    }
+
+    .touch-banner {
+      padding: 16px 18px;
+      border-radius: 14px;
+      font-size: 13.5px;
+      margin-bottom: 18px;
+      background: linear-gradient(120deg, rgba(30, 136, 168, 0.12), rgba(46, 125, 70, 0.12));
+      border: 1px solid var(--border);
+    }
+
+    /* Capturas de pantalla reales */
+    figure {
+      margin: 22px 0;
+    }
+    figure .screenshot {
+      display: block;
+      width: 100%;
+      height: auto;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      background: var(--surface-alt);
+    }
+    figure.half { max-width: 560px; }
+    figure.third { max-width: 380px; }
+    figcaption {
+      font-size: 12.5px;
+      color: var(--muted);
+      margin-top: 8px;
+      padding-left: 2px;
+    }
+    .figure-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px;
+      align-items: start;
+      margin: 22px 0;
+    }
+
+    .steps { counter-reset: step; padding-left: 0; list-style: none; margin: 16px 0; }
+    .steps li {
+      counter-increment: step;
+      position: relative;
+      padding-left: 40px;
+      margin-bottom: 12px;
+      font-size: 14px;
+      color: var(--muted);
+    }
+    .steps li strong { color: var(--ink); }
+    .steps li::before {
+      content: counter(step);
+      position: absolute;
+      left: 0;
+      top: 1px;
+      width: 26px;
+      height: 26px;
+      border-radius: 8px;
+      background: var(--brand-soft);
+      color: var(--brand);
+      font-weight: 700;
+      font-size: 13px;
+      display: grid;
+      place-items: center;
     }
 
     @media (max-width: 860px) {
@@ -324,24 +355,37 @@
         <div class="brand-icon">P</div>
         <div>
           <div class="brand-title">Pepinillo</div>
-          <div class="brand-sub">Manual macOS &amp; Touch</div>
+          <div class="brand-sub">Manual para macOS</div>
         </div>
       </div>
 
       <nav>
-        <div class="nav-label">Flujo Principal</div>
-        <a href="#modos" class="active">1. 4 Modos de Foco</a>
-        <a href="#presencia">2. Barra, Notch y Dock</a>
-        <a href="#plan">3. Tareas e Inspector</a>
-        <a href="#captura">4. Captura Universal</a>
+        <div class="nav-label">Empezando</div>
+        <a href="#primeros-pasos">1. Instalación y primer arranque</a>
+        <a href="#flujo">2. El flujo Plan → Focus → Reflect</a>
 
-        <div class="nav-label">macOS Touch</div>
-        <a href="#touch">5. Gestos y Ergonomía Touch <span class="badge badge-touch">Nuevo</span></a>
+        <div class="nav-label">Foco</div>
+        <a href="#modos">3. Los cuatro modos de foco</a>
+        <a href="#sesion">4. Durante la sesión</a>
 
-        <div class="nav-label">Inteligencia y Control</div>
-        <a href="#analiticas">6. Today, Statistics e IA</a>
-        <a href="#atajos">7. Atajos de Teclado</a>
-        <a href="#sync">8. Privacidad, Planes y Sync</a>
+        <div class="nav-label">Plan</div>
+        <a href="#plan">5. Tareas e Inspector</a>
+
+        <div class="nav-label">Progreso</div>
+        <a href="#analiticas">6. Hoy, Estadísticas e IA</a>
+
+        <div class="nav-label">Siempre presente</div>
+        <a href="#presencia">7. Barra de menú, Notch y Dock</a>
+        <a href="#captura">8. Captura universal</a>
+        <a href="#integraciones">9. Siri, Atajos y widgets</a>
+
+        <div class="nav-label">Ajustes</div>
+        <a href="#ajustes">10. Preferencias al detalle</a>
+
+        <div class="nav-label">Referencia</div>
+        <a href="#atajos">11. Todos los atajos</a>
+        <a href="#planes">12. Cuenta y planes</a>
+        <a href="#tips">13. Tips avanzados y FAQ</a>
       </nav>
 
       <div class="sidebar-footer">
@@ -352,292 +396,812 @@
 
     <main>
       <header class="hero">
-        <div class="hero-eyebrow">Guía Completa de Usuario · Pepinillo para macOS</div>
-        <h1>Mucho más que un Pomodoro y una lista de tareas</h1>
+        <div class="hero-eyebrow">Manual de Usuario · Pepinillo para macOS</div>
+        <h1>Todo Pepinillo, de lo básico a lo avanzado</h1>
         <p>
-          Pepinillo para Mac está diseñado bajo el flujo <strong>Plan → Focus → Complete → Reflect</strong>:
-          vive en tu barra de menú, bajo el notch, en el ícono del Dock y en Spotlight, y ahora está
-          optimizado para el nuevo <strong>MacBook Pro con pantalla táctil</strong> sin perder la velocidad
-          del teclado y el trackpad.
+          Pepinillo para Mac es un espacio de trabajo profundo que vive en tu barra de menú, bajo el
+          notch y en el Dock. Este manual cubre <strong>todas</strong> sus funciones con capturas reales
+          de la app: los cuatro modos de foco, la planificación de tareas, las estadísticas, los atajos
+          de teclado y cada rincón de la interfaz.
         </p>
       </header>
 
-      <!-- 1. MODOS DE FOCO -->
-      <section id="modos">
-        <h2>1. Cuatro modos de enfoque en un solo motor</h2>
+      <!-- 1. PRIMEROS PASOS -->
+      <section id="primeros-pasos">
+        <h2>1. Instalación y primer arranque</h2>
         <p class="section-lead">
-          Cambia de técnica según tu energía o el tipo de trabajo. Todos los modos comparten estadísticas, rachas, tareas vinculadas y diario post-sesión.
+          De cero a tu primera sesión de foco en menos de un minuto.
+        </p>
+        <div class="grid-2">
+          <article class="card">
+            <h3>Instalar y conceder permisos</h3>
+            <ol class="steps">
+              <li><strong>Descarga Pepinillo</strong> del Mac App Store y ábrelo como cualquier otra app.</li>
+              <li>Al primer arranque verás una breve <strong>introducción a los cuatro modos</strong> de foco. Puedes saltarla con <em>Omitir</em>.</li>
+              <li>Pepinillo te pedirá permiso para <strong>notificaciones</strong>: acéptalo para recibir los avisos de fin de fase y descansos aunque estés en otra app.</li>
+              <li>Elige tu <strong>modo por defecto</strong> y pulsa <em>Comenzar</em>.</li>
+            </ol>
+            <p>Sin cuenta, sin configuración: todo funciona al instante y offline.</p>
+          </article>
+          <article class="card">
+            <h3>Cómo está organizada la app</h3>
+            <ul>
+              <li><strong>Foco</strong> — el temporizador y sus controles (<kbd>⌘1</kbd>).</li>
+              <li><strong>Plan</strong> — tus tareas con filtros <em>Todas, Hoy, Próximas, Completadas</em> (<kbd>⌘2</kbd>).</li>
+              <li><strong>Panel</strong> — el resumen del día con racha y gráficas (<kbd>⌘3</kbd>).</li>
+              <li><strong>Estadísticas</strong> — ventana aparte con 7 días / 30 días / Año (<kbd>⌘4</kbd>).</li>
+              <li>En el pie del sidebar: tu <strong>cuenta</strong> y los <strong>Ajustes</strong> (<kbd>⌘,</kbd>).</li>
+            </ul>
+          </article>
+        </div>
+        <figure>
+          <img class="screenshot" src="/guides/img/macos-focus-idle.jpg" alt="Ventana principal de Pepinillo para Mac con la sección Foco activa" loading="lazy" />
+          <figcaption>La ventana principal al abrir Pepinillo: sidebar estilo Reminders, anillo de foco y botones − / Iniciar / +. En este manual, la app corre con datos de demostración.</figcaption>
+        </figure>
+        <div class="callout">
+          <strong>Cerrar la ventana no detiene nada.</strong> Pepinillo sigue corriendo desde la barra
+          de menú: el temporizador, la sesión y las notificaciones siguen vivos aunque cierres la
+          ventana principal. Vuelve a la app desde el Dock o con <kbd>⌃⌥P</kbd>. Pepinillo recuerda
+          además la última sección que tenías abierta.
+        </div>
+      </section>
+
+      <!-- 2. FLUJO -->
+      <section id="flujo">
+        <h2>2. El flujo Plan → Focus → Complete → Reflect</h2>
+        <p class="section-lead">
+          Todas las funciones de Pepinillo sirven a un mismo ciclo de trabajo profundo.
+        </p>
+        <div class="grid-2">
+          <article class="card">
+            <h3>Las cuatro fases del ciclo</h3>
+            <ul>
+              <li><strong>Plan:</strong> captura y organiza tareas con energía y prioridad en <em>Plan</em>.</li>
+              <li><strong>Focus:</strong> elige un modo, vincula una tarea y empieza la sesión.</li>
+              <li><strong>Complete:</strong> pomodoros contados, tareas cerradas y rachas que crecen.</li>
+              <li><strong>Reflect:</strong> el diario post-sesión, el resumen del día y las Estadísticas.</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>El motor es honesto</h3>
+            <ul>
+              <li>El temporizador está anclado al <strong>reloj del sistema</strong> (<em>wall-clock</em>): cerrar la ventana, el reposo del Mac o un reinicio no descuadran el tiempo.</li>
+              <li>Las <strong>estadísticas se calculan localmente</strong> en tu Mac; nada sale de él salvo que actives la sincronización de pago.</li>
+              <li>Todo el historial vive en una base <strong>SwiftData</strong> local, rápida y privada.</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <!-- 3. MODOS -->
+      <section id="modos">
+        <h2>3. Los cuatro modos de foco</h2>
+        <p class="section-lead">
+          Cambia de técnica según tu energía o el tipo de trabajo. Todos los modos comparten
+          estadísticas, rachas, tareas vinculadas y diario post-sesión. El selector vive en la barra
+          superior de la sección Foco (solo visible en reposo, como el app Reloj).
         </p>
         <div class="grid-2">
           <article class="card mode-card mode-pomodoro">
             <h3>Pomodoro <span class="badge badge-free">Gratis</span></h3>
-            <p>Intervalos clásicos de trabajo y descanso (25 / 5 / 15 min por defecto, personalizables en Ajustes).</p>
+            <p>Intervalos clásicos de trabajo y descanso: <strong>25 / 5 / 15 min</strong> por defecto, personalizables en Ajustes ▸ Foco.</p>
             <ul>
-              <li>Ciclos de 4 pomodoros antes del descanso largo.</li>
-              <li>Opción de inicio automático de descansos o espera manual.</li>
+              <li>Ciclos de <strong>4 pomodoros</strong> antes del descanso largo (configurable de 1 a 12).</li>
+              <li>Auto-inicio de descansos y de trabajo: enciéndelos o espera manualmente con la píldora del notch.</li>
+              <li>El anillo marca el avance en <strong>rojo Pomodoro</strong>; las fases se leen como <em>Foco 2/4</em>, <em>Pausa corta</em>, <em>Pausa larga</em>.</li>
             </ul>
           </article>
 
           <article class="card mode-card mode-flowtime">
-            <h3>Flowtime <span class="badge badge-pro">Pepinillo+</span></h3>
+            <h3>Tiempo fluido (Flowtime) <span class="badge badge-pro">Pepinillo+</span></h3>
             <p>Cronómetro ascendente para trabajo creativo sin cortes forzados. Cuando decides parar, Pepinillo calcula tu descanso ideal:</p>
             <ul>
               <li>&lt;25 min → 5 min · &lt;50 min → 8 min · &lt;90 min → 10 min · ≥90 min → 15 min.</li>
+              <li>El botón de <strong>saltar fase</strong> se convierte en una taza: termina el bloque fluido y arranca el descanso calculado.</li>
             </ul>
           </article>
 
           <article class="card mode-card mode-timeblock">
-            <h3>Time Block <span class="badge badge-pro">Pepinillo+</span></h3>
+            <h3>Bloque de tiempo (Time Block) <span class="badge badge-pro">Pepinillo+</span></h3>
             <p>Reserva un bloque fijo (60 min por defecto; ajustable de <strong>5 a 480 min</strong>) para una sola meta importante.</p>
             <ul>
-              <li>Incluye check-in a mitad del bloque para verificar que sigues enfocado.</li>
-              <li>Ajuste rápido con botones <strong>− / +</strong> (±5 min) o dial táctil en el anillo.</li>
+              <li>Incluye un <strong>check-in a mitad</strong> del bloque para verificar que sigas enfocado.</li>
+              <li>Ajuste rápido con botones <strong>− / +</strong> (±5 min) o girando el dial táctil sobre el anillo.</li>
             </ul>
           </article>
 
           <article class="card mode-card mode-stopwatch">
-            <h3>Stopwatch (Cronómetro) <span class="badge badge-free">Gratis</span></h3>
-            <p>Conteo libre ascendente para medir cuánto tiempo real te toma cualquier tarea o proyecto sin descansos programados.</p>
+            <h3>Cronómetro (Stopwatch) <span class="badge badge-free">Gratis</span></h3>
+            <p>Conteo libre ascendente para medir cuánto tiempo real te toma cualquier tarea o proyecto, sin descansos programados ni duración objetivo.</p>
+            <ul>
+              <li>Ideal para trabajos que ya tienes medidos y solo quieres <strong>registrar</strong>.</li>
+              <li>Al pausar y terminar, el tiempo se suma a tus estadísticas del día.</li>
+            </ul>
           </article>
         </div>
-
+        <figure>
+          <img class="screenshot" src="/guides/img/macos-focus-timeblock.jpg" alt="Modo Bloque de tiempo con steppers ±5 minutos" loading="lazy" />
+          <figcaption>Cada modo cambia el color del anillo y sus controles: aquí Bloque de tiempo (violeta) con los steppers − / + a ±5 minutos.</figcaption>
+        </figure>
         <div class="callout">
-          <strong>Recuperación ante cierres y diario:</strong> El motor está anclado al reloj del sistema (<em>wall-clock</em>). Si cierras la ventana principal o el Mac entra en reposo, el temporizador no se pierde. Al finalizar una sesión, puedes registrar una reflexión rápida en el <strong>Diario de Sesión</strong>.
+          <strong>Saltar fase con crédito:</strong> si terminas un pomodoro antes (o un descanso te
+          sobra), <em>Saltar fase</em> avanza el ciclo conservando el progreso. Las sesiones
+          interrumpidas a mitad se registran como <em>Detenida</em> en el historial para no inflar tus
+          estadísticas. Si la app se cierra a mitad de sesión, al relanzar el tiempo perdido se
+          descarta sin estropear tu racha.
         </div>
       </section>
 
-      <!-- 2. PRESENCIA MAC -->
-      <section id="presencia">
-        <h2>2. Presencia nativa: Barra de Menú, Notch y Dock</h2>
+      <!-- 4. DURANTE LA SESIÓN -->
+      <section id="sesion">
+        <h2>4. Durante la sesión: tareas, sonido y control</h2>
         <p class="section-lead">
-          No necesitas mantener la ventana principal abierta para controlar tu foco.
+          La escena de foco se reduce a lo esencial: el anillo, la acción principal y dos pastillas:
+          <strong>Vincular tarea</strong> y <strong>Ambiente sonoro</strong>.
         </p>
-        <div class="grid-3">
-          <article class="card">
-            <h3>Barra de Menú en vivo</h3>
-            <p>Muestra el conteo en tiempo real y un popover compacto con Start/Pause, Skip, Stop, stats de hoy y Quick Capture.</p>
-            <ul>
-              <li><strong>Countdown:</strong> ícono + tiempo <span class="badge badge-free">Gratis</span></li>
-              <li><strong>Time only / Icon only:</strong> estilos minimalistas <span class="badge badge-pro">Pepinillo+</span></li>
-            </ul>
-          </article>
 
-          <article class="card">
-            <h3>Panel Notch interactivo <span class="badge badge-touch">Touch</span></h3>
-            <p>Al terminar cada fase, una píldora Liquid Glass aparece justo debajo del notch físico:</p>
-            <ul>
-              <li>Toca o haz <strong>Swipe Down</strong> para expandir reloj, progreso del ciclo, <strong>Start</strong>, <strong>+5 min</strong> y <strong>End Session</strong>.</li>
-              <li><strong>Swipe Up</strong> o toca el encabezado para ocultarlo.</li>
-            </ul>
-          </article>
+        <figure>
+          <img class="screenshot" src="/guides/img/macos-focus-running.jpg" alt="Sesión de foco corriendo con tarea vinculada y ambiente lluvia" loading="lazy" />
+          <figcaption>Sesión en curso con una tarea vinculada (el chip bajo el anillo muestra su título) y el ambiente Lluvia activo. El botón principal pasa a Pausar; debajo, Terminar sesión.</figcaption>
+        </figure>
 
-          <article class="card">
-            <h3>Dock inteligente</h3>
-            <p>El ícono del Dock funciona como superficie de control viva mientras dura una sesión:</p>
-            <ul>
-              <li>Dibuja un <strong>anillo de progreso</strong> alrededor del ícono y muestra los minutos restantes en el badge.</li>
-              <li>Clic derecho (o mantener presionado) abre controles rápidos de sesión y cambio de vista.</li>
-            </ul>
-          </article>
-        </div>
-      </section>
-
-      <!-- 3. PLAN E INSPECTOR -->
-      <section id="plan">
-        <h2>3. Planificación de tareas e Inspector</h2>
-        <p class="section-lead">
-          Organiza tu día en la tabla nativa de macOS con filtros inteligentes en el sidebar: <strong>All</strong>, <strong>Today</strong>, <strong>Upcoming</strong> y <strong>Completed</strong>.
-        </p>
         <div class="grid-2">
           <article class="card">
-            <h3>Tabla Plan de alta densidad</h3>
+            <h3>Vincular tarea</h3>
+            <p>Pulsa <strong>Vincular tarea</strong> y elige cualquiera de tus tareas activas en el popover. La sesión quedará asociada: sus minutos contarán en el historial de esa tarea y en el contador de pomodoros <em>2/4</em> del Inspector.</p>
             <ul>
-              <li><strong>Columnas clave:</strong> Estado, Título (edición inline), Prioridad, Nivel de Energía (<em>Deep / Shallow / Admin</em>), Pomodoros completados/estimados y Fecha límite.</li>
-              <li><strong>Reordenamiento:</strong> Arrastra filas para priorizar manualmente.</li>
-              <li><strong>Menú contextual:</strong> Clic derecho o toque prolongado para iniciar foco, cambiar prioridad/energía, mover a Hoy o eliminar.</li>
-              <li><strong>Undo inmediato:</strong> Banner flotante para deshacer tareas completadas o eliminadas por error.</li>
+              <li>Desde <strong>Plan</strong>, también puedes arrastrar una tarea hasta la fila <strong>Foco</strong> del sidebar: se vincula y la sesión arranca sola.</li>
+              <li>El menú contextual de una tarea ofrece <strong>Iniciar Enfoque</strong> directamente.</li>
             </ul>
           </article>
 
           <article class="card">
-            <h3>Inspector lateral (<kbd>⌘⌥I</kbd> o botón ⓘ)</h3>
+            <h3>Ambiente sonoro</h3>
+            <p>Ocho fondos sonoros generados por la app para enmascarar ruido, con vista previa de 3 s y volumen independiente.</p>
             <ul>
-              <li>Al seleccionar o tocar una fila aparece el botón <strong>ⓘ</strong> para abrir el detalle sin salir de la tabla.</li>
-              <li>Edita notas, prioridad, energía, fecha límite y <strong>subtareas</strong> <span class="badge badge-pro">Pepinillo+</span>.</li>
-              <li>Consulta el <strong>historial de sesiones</strong> acumuladas en esa tarea e inicia una nueva sesión con un clic.</li>
+              <li><strong>Gratis:</strong> Ninguno, Lluvia, Bosque, Café, Ruido blanco.</li>
+              <li><strong>Pepinillo+:</strong> Océano, Chimenea, Batidos binaurales, Lo-fi.</li>
+              <li>El popover se queda abierto para ajustar volumen y ambiente a la vez; se recuerda entre sesiones.</li>
             </ul>
           </article>
         </div>
-      </section>
 
-      <!-- 4. CAPTURA UNIVERSAL -->
-      <section id="captura">
-        <h2>4. Captura tareas desde cualquier lugar del Mac</h2>
-        <p class="section-lead">
-          Nunca pierdas una idea por cambiar de ventana. Pepinillo captura tareas estés en el navegador, correo o editor de código.
-        </p>
-        <div class="grid-3">
+        <div class="figure-row">
+          <figure>
+            <img class="screenshot" src="/guides/img/macos-soundscapes.jpg" alt="Popover de ambientes sonoros con volumen y lista" loading="lazy" />
+            <figcaption>El popover de Ambiente sonoro: volumen arriba, 5 fondos gratis y 4 Pro.</figcaption>
+          </figure>
+          <figure>
+            <img class="screenshot" src="/guides/img/macos-task-picker.jpg" alt="Popover del selector de tareas" loading="lazy" />
+            <figcaption>El selector de tareas muestra todas tus tareas abiertas; al elegir, el chip pasa a mostrar su título.</figcaption>
+          </figure>
+        </div>
+
+        <div class="grid-2">
           <article class="card">
-            <h3>Quick Capture (<kbd>⌃⌥T</kbd>)</h3>
-            <p>Abre una barra flotante tipo Spotlight encima de cualquier app sin robarle el foco. Escribe y pulsa <kbd>⏎</kbd> (o toca el botón táctil <strong>⏎</strong>).</p>
+            <h3>Pausar, saltar y terminar</h3>
+            <ul>
+              <li><strong>Pausar / Reanudar:</strong> el botón principal (o <kbd>⌘↩</kbd>).</li>
+              <li><strong>Saltar fase:</strong> disponible en descansos y en Tiempo fluido (icono de taza) — también con el global <kbd>⌃⌥→</kbd>.</li>
+              <li><strong>+5 min:</strong> tras terminar una fase de trabajo puedes estirarla desde el panel del notch.</li>
+              <li><strong>Terminar sesión:</strong> pide confirmación y registra lo andado (<kbd>⌃⌥X</kbd>).</li>
+            </ul>
           </article>
           <article class="card">
-            <h3>macOS Services</h3>
-            <p>Selecciona cualquier texto en Safari, Mail o Notas → clic derecho → <em>Services → Add Task to Pepinillo</em> para convertirlo en tarea al instante.</p>
-          </article>
-          <article class="card">
-            <h3>Drag &amp; Drop + Spotlight</h3>
-            <p>Arrastra texto desde otra app y suéltalo en <strong>Plan</strong> para crear una tarea. Todas tus tareas abiertas se indexan en <strong>Spotlight</strong> (<kbd>⌘Space</kbd>).</p>
+            <h3>Modo Zen <span class="badge badge-new">Gesto</span></h3>
+            <p>Oculta el chip de tarea y las estadísticas del día para dejar solo anillo y controles.</p>
+            <ul>
+              <li><strong>Pellizco con dos dedos</strong> sobre la escena (pantalla táctil o trackpad).</li>
+              <li>O el menú <em>Visualización ▸ Modo Zen</em> (<kbd>⌃⌘Z</kbd>).</li>
+              <li>La preferencia se recuerda entre sesiones.</li>
+            </ul>
           </article>
         </div>
-      </section>
 
-      <!-- 5. TOUCH ON MAC -->
-      <section id="touch">
-        <h2>5. Experiencia Touch para MacBook Pro</h2>
-        <p class="section-lead">
-          Diseñada siguiendo las guías oficiales de Apple para macOS Touch: mantiene la densidad visual de escritorio pero expande las áreas táctiles a un mínimo invisible de <strong>36×36 pt</strong> y elimina controles ocultos exclusivos de puntero.
-        </p>
+        <figure class="half">
+          <img class="screenshot" src="/guides/img/macos-end-confirm.jpg" alt="Confirmación de Terminar sesión" loading="lazy" />
+          <figcaption>Terminar sesión pide confirmación y registra el tiempo andado.</figcaption>
+        </figure>
 
         <div class="touch-banner">
-          <strong>Ergonomía pensada para tus manos:</strong> los controles frecuentes viven en los bordes laterales (Sidebar e Inspector) donde descansas los dedos al sujetar la pantalla, mientras el centro se reserva para gestos amplios sobre el anillo de foco.
+          <strong>En MacBook Pro con pantalla táctil</strong> hay gestos extra: girar el dedo sobre el
+          anillo ajusta la duración (5–120 min en Pomodoro, 5–480 en Bloque, con topes de 5 min) y un
+          toque dentro del anillo pausa o reanuda. En trackpad y ratón, usa los steppers − / + y el
+          teclado: mismas acciones, distinta mano.
+        </div>
+
+        <figure>
+          <img class="screenshot" src="/guides/img/macos-focus-break.jpg" alt="Fase de descanso con anillo en tonos suaves" loading="lazy" />
+          <figcaption>Un descanso en curso: el anillo cambia de tono y la etiqueta anuncia la fase y la siguiente.</figcaption>
+        </figure>
+
+        <h3>El diario post-sesión y las celebraciones</h3>
+        <p class="section-lead">
+          Al completar una sesión de forma natural, Pepinillo te propone una reflexión de 15 segundos.
+        </p>
+        <div class="grid-2">
+          <article class="card">
+            <h3>Diario de sesión</h3>
+            <ul>
+              <li><strong>Valoración 1–5</strong> con emojis (de Dura a Genial) para registrar cómo te sentiste.</li>
+              <li><strong>Nota libre</strong> de hasta 500 caracteres, con Herramientas de Escritura del sistema.</li>
+              <li>Si acabas de <strong>batir tu récord de racha</strong>, el diario lo celebra con un banner especial.</li>
+              <li>Puedes desactivarlo en Ajustes ▸ Notificaciones ▸ <em>Reflexión post-sesión</em>.</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>Celebraciones</h3>
+            <ul>
+              <li>Primera sesión, rachas de <strong>3, 7, 14 y 30 días</strong>, y sesiones <strong>10, 50 y 100</strong>.</li>
+              <li>Confeti nativo + tarjeta resumen; toca fuera para continuar.</li>
+              <li>El récord de racha nuevo también se anuncia desde la barra de menú si lo activas en Ajustes.</li>
+            </ul>
+          </article>
+        </div>
+        <figure>
+          <img class="screenshot" src="/guides/img/macos-journal.jpg" alt="Diario post-sesión con valoración y nota" loading="lazy" />
+          <figcaption>El diario post-sesión: valoración con emojis, nota de reflexión y el botón Guardar (o Omitir si vas con prisa).</figcaption>
+        </figure>
+        <div class="callout">
+          <strong>Fin de fase con notificaciones accionables:</strong> al terminar un pomodoro, la
+          notificación del sistema ofrece <em>Iniciar pausa</em>, <em>+5 min</em> y <em>Terminar
+          sesión</em> sin abrir la app. Al terminar un descanso, <em>Iniciar sesión</em> arranca el
+          siguiente bloque. Durante la sesión activa, la notificación persistente expone
+          <em>Pausar</em> y <em>Terminar sesión</em>.
+        </div>
+      </section>
+
+      <!-- 5. PLAN -->
+      <section id="plan">
+        <h2>5. Tareas e Inspector</h2>
+        <p class="section-lead">
+          Una tabla nativa de macOS con toda la densidad de Reminders: filtros en el sidebar, columnas
+          ordenables, edición inline y un inspector lateral para el detalle.
+        </p>
+
+        <figure>
+          <img class="screenshot" src="/guides/img/macos-plan-table.jpg" alt="Tabla de tareas del Plan con columnas y filtros" loading="lazy" />
+          <figcaption>La tabla Plan en el filtro Todas: columnas Listo, Título, Prioridad, Energía, Pomodoros y Vence (las tareas vencidas se marcan en rojo).</figcaption>
+        </figure>
+
+        <div class="grid-2">
+          <article class="card">
+            <h3>Filtros y columnas</h3>
+            <ul>
+              <li>El sidebar agrupa <strong>Todas, Hoy, Próximas y Completadas</strong>; el filtro activo se marca con la cápsula verde.</li>
+              <li><strong>Prioridad:</strong> Alta, Media, Baja o sin marcar.</li>
+              <li><strong>Energía:</strong> Trabajo Profundo, Trabajo Superficial o Administrador — planifica según la energía que te quede.</li>
+              <li><strong>Pomodoros:</strong> completados / estimados (p. ej. <em>4/6</em>).</li>
+              <li><strong>Vence:</strong> fecha límite con resaltado de vencidas.</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>Edición y reordenamiento</h3>
+            <ul>
+              <li><strong>Renombrar en sitio:</strong> menú contextual ▸ <em>Renombrar tarea</em> o <kbd>⌘R</kbd>; <kbd>⏎</kbd> confirma, <kbd>Esc</kbd> cancela.</li>
+              <li><strong>Arrastra filas</strong> para fijar tu propio orden de prioridad manual.</li>
+              <li><strong>Multi-selección</strong> con <kbd>⌘</kbd> y <kbd>⇧</kbd> para completar o borrar en lote.</li>
+              <li><strong>Undo:</strong> al completar o borrar aparece un banner con <em>Deshacer</em>.</li>
+            </ul>
+          </article>
         </div>
 
         <div class="grid-2">
           <article class="card">
-            <h3>Dial táctil sobre el anillo <span class="badge badge-touch">Time Block</span></h3>
-            <p>Con el reloj en reposo, desliza el dedo en círculo alrededor del anillo central para ajustar la duración de <strong>5 a 120 minutos</strong> en pasos de 5 min, o usa los botones <strong>− / +</strong>.</p>
-          </article>
-
-          <article class="card">
-            <h3>Tap para Pausar y Pinch Zen <span class="badge badge-touch">Gestos</span></h3>
+            <h3>Nuevas tareas rápidas</h3>
             <ul>
-              <li><strong>Un toque en el anillo</strong> mientras corre la sesión: pausa o reanuda sin buscar botones pequeños.</li>
-              <li><strong>Pellizco con dos dedos (Pinch):</strong> activa el <em>Modo Zen</em> ocultando estadísticas y chips secundarios (funciona en pantalla táctil y trackpad).</li>
+              <li><kbd>⌘N</kbd> o el botón <strong>+</strong>: fila <em>Nueva tarea</em> al pie, estilo Reminders; <kbd>⏎</kbd> añade y sigue.</li>
+              <li>Arrastra <strong>texto de otra app</strong> (Safari, Mail, Notas) sobre la tabla y se convierte en tarea.</li>
+              <li>La <strong>Captura rápida</strong> (<kbd>⌃⌥T</kbd>) hace lo mismo sin salir de la app en la que estás.</li>
             </ul>
           </article>
-
           <article class="card">
-            <h3>Arrastra de Plan a Focus <span class="badge badge-touch">Drag &amp; Drop</span></h3>
-            <p>Mantén presionada una tarea en la tabla <strong>Plan</strong> y arrástrala directamente sobre la fila <strong>Focus</strong> en el sidebar izquierdo: Pepinillo la vincula y arranca la sesión automáticamente.</p>
-          </article>
-
-          <article class="card">
-            <h3>Gráficas, Notch y Refresh <span class="badge badge-touch">36 pt</span></h3>
+            <h3>Buscar</h3>
             <ul>
-              <li>Desliza el dedo sobre las barras de <strong>Today</strong> y <strong>Statistics</strong> para inspeccionar minutos y sesiones exactas por día/semana.</li>
-              <li><strong>Pull-to-Refresh</strong> hacia abajo en <em>Today</em> y <em>Plan</em>.</li>
-              <li><strong>Swipe Down / Swipe Up</strong> en la píldora del Notch y botones ≥36 pt en Inspector, Menu Bar y Quick Capture.</li>
+              <li><kbd>⌘F</kbd> lleva el foco al buscador de la toolbar; filtra por título al instante.</li>
+              <li>El estado vacío de búsqueda ofrece <em>Limpiar búsqueda</em> en un clic.</li>
             </ul>
           </article>
         </div>
+
+        <div class="figure-row">
+          <figure>
+            <img class="screenshot" src="/guides/img/macos-plan-newtask.jpg" alt="Composer de nueva tarea al pie de la tabla" loading="lazy" />
+            <figcaption>La fila de nueva tarea: escribe y pulsa Añadir.</figcaption>
+          </figure>
+          <figure>
+            <img class="screenshot" src="/guides/img/macos-plan-search.jpg" alt="Búsqueda de tareas con resultados filtrados" loading="lazy" />
+            <figcaption>Buscando «diseño»: la tabla filtra en vivo.</figcaption>
+          </figure>
+        </div>
+
+        <h3>Menú contextual</h3>
+        <p class="section-lead">
+          Clic derecho (o toque prolongado) sobre cualquier tarea: renombrar, iniciar foco, completar,
+          cambiar prioridad y energía, mover a Hoy o eliminar.
+        </p>
+        <figure class="half">
+          <img class="screenshot" src="/guides/img/macos-plan-context.jpg" alt="Menú contextual de una tarea" loading="lazy" />
+          <figcaption>El menú contextual con los submenús Prioridad y Energía.</figcaption>
+        </figure>
+
+        <h3>El Inspector (<kbd>⌘⌥I</kbd>)</h3>
+        <p class="section-lead">
+          Selecciona una tarea y abre el Inspector con el botón ⓘ de la fila o el toggle de la
+          toolbar: notas, planificación, subtareas e historial de foco en una columna lateral.
+        </p>
+        <figure>
+          <img class="screenshot" src="/guides/img/macos-plan-inspector.jpg" alt="Inspector de tarea con notas, planificación, subtareas e historial" loading="lazy" />
+          <figcaption>El Inspector completo: título editable, notas, Prioridad/Energía/Estimación, Programada para hoy, fecha límite, subtareas (Pepinillo+) y el historial de sesiones de esa tarea.</figcaption>
+        </figure>
+        <div class="grid-2">
+          <article class="card">
+            <h3>Planificación</h3>
+            <ul>
+              <li><strong>Prioridad</strong> y <strong>Energía</strong> como en la tabla.</li>
+              <li><strong>Estimación:</strong> stepper de 1 a 8 pomodoros.</li>
+              <li><strong>Programada para hoy</strong> con un toggle; <strong>Fecha límite</strong> con calendario.</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>Subtareas e historial</h3>
+            <ul>
+              <li><strong>Subtareas</strong> con contador <em>n/m</em> <span class="badge badge-pro">Pepinillo+</span> — gratis se ven con candado.</li>
+              <li><strong>Tiempo total de enfoque</strong> y pomodoros completados en esa tarea.</li>
+              <li>Últimas 5 sesiones con modo, duración y hora.</li>
+              <li>Botón <strong>Iniciar sesión de enfoque</strong> al pie: vincula y arranca.</li>
+            </ul>
+          </article>
+        </div>
+        <div class="callout">
+          <strong>Arrastra una tarea hasta el sidebar:</strong> suelta una fila de Plan sobre la fila
+          <strong>Foco</strong> del sidebar y Pepinillo vincula la tarea y arranca la sesión al
+          instante — el camino más corto de Plan a Focus que existe.
+        </div>
       </section>
 
-      <!-- 6. ANALITICAS E IA -->
+      <!-- 6. ANALITICAS -->
       <section id="analiticas">
-        <h2>6. Dashboard Today, Statistics (<kbd>⌘4</kbd>) e IA On-Device</h2>
+        <h2>6. Hoy, Estadísticas (<kbd>⌘4</kbd>) e IA</h2>
         <p class="section-lead">
-          Entiende en qué inviertes tu tiempo profundo sin sacrificar tu privacidad.
+          Entiende en qué inviertes tu tiempo profundo sin sacrificar tu privacidad: todo se calcula
+          en tu Mac.
+        </p>
+
+        <figure>
+          <img class="screenshot" src="/guides/img/macos-dashboard.jpg" alt="Panel de Hoy con KPIs, gráfica semanal y próximas sesiones" loading="lazy" />
+          <figcaption>El Panel (Hoy): fecha y racha arriba, KPIs del día, gráfica de los últimos 7 días con scrubbing, próximas sesiones y la tarjeta Próximo enfoque.</figcaption>
+        </figure>
+
+        <div class="grid-2">
+          <article class="card">
+            <h3>Panel de Hoy (<kbd>⌘3</kbd>)</h3>
+            <ul>
+              <li><strong>KPIs:</strong> tiempo enfocado, sesiones, racha y tareas completadas del día.</li>
+              <li><strong>Últimos 7 días:</strong> barras por día con la de hoy destacada; pasa el puntero (o el dedo) para ver minutos y sesiones exactos, total semanal y mejor día.</li>
+              <li><strong>Sesiones recientes:</strong> las últimas 5 con modo, duración, tarea y badge <em>Detenida</em> si no se completaron.</li>
+              <li><strong>Próximo enfoque:</strong> tu siguiente tarea de hoy con botón directo <em>Comenzar próximo enfoque</em>; si no hay nada, <em>Abrir Plan</em>.</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>Estadísticas (<kbd>⌘4</kbd>)</h3>
+            <ul>
+              <li>Ventana dedicada con selector <strong>7 días / 30 días / Año</strong> (el año se agrupa por semanas).</li>
+              <li>Cabecera con total del período, sesiones, mejor día y racha; gráfica con scrubbing por día/semana.</li>
+              <li><strong>Actividad principal</strong> <span class="badge badge-free">Opt-in</span>: si activas «Registrar apps durante las sesiones de foco» en Ajustes ▸ General, verás las apps que ocuparon el primer plano durante tus sesiones, con su tiempo. Los nombres nunca salen de tu Mac.</li>
+            </ul>
+          </article>
+        </div>
+
+        <div class="figure-row">
+          <figure>
+            <img class="screenshot" src="/guides/img/macos-statistics-7d.jpg" alt="Estadísticas a 7 días" loading="lazy" />
+            <figcaption>Estadísticas con el período de 7 días activo.</figcaption>
+          </figure>
+          <figure>
+            <img class="screenshot" src="/guides/img/macos-statistics-year.jpg" alt="Estadísticas agrupadas por año" loading="lazy" />
+            <figcaption>La vista Año agrupa las semanas: tendencias de largo plazo de un vistazo.</figcaption>
+          </figure>
+        </div>
+
+        <article class="card" style="margin-top:16px">
+          <h3>Reportes con IA, 100% en tu dispositivo <span class="badge badge-pro">Pepinillo+</span></h3>
+          <p>Desde el menú <strong>Reportes</strong> (icono de destellos) de Estadísticas, genera un análisis <strong>semanal o mensual</strong>: horas pico, modo dominante, tendencias y recomendaciones accionables.</p>
+          <ul>
+            <li>En macOS 26 o superior, la IA corre <strong>localmente</strong> con Apple Foundation Models: tu historial no sale del Mac.</li>
+            <li>Si el modelo del sistema no está disponible, Pepinillo genera un resumen estadístico de respaldo — siempre hay reporte.</li>
+          </ul>
+        </article>
+      </section>
+
+      <!-- 7. PRESENCIA -->
+      <section id="presencia">
+        <h2>7. Barra de menú, Notch y Dock</h2>
+        <p class="section-lead">
+          No necesitas mantener la ventana abierta: Pepinillo vive en tres sitios del sistema a la vez.
+        </p>
+
+        <div class="grid-3">
+          <article class="card">
+            <h3>Barra de menú en vivo</h3>
+            <p>Icono + cuenta regresiva de la fase en curso, refrescados cada segundo.</p>
+            <ul>
+              <li><strong>Cuenta regresiva:</strong> icono del modo + tiempo <span class="badge badge-free">Gratis</span></li>
+              <li><strong>Solo tiempo / Solo ícono:</strong> estilos minimalistas <span class="badge badge-pro">Pepinillo+</span></li>
+              <li>Se configura en Ajustes ▸ General ▸ Barra de menú.</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>Panel del notch</h3>
+            <p>Al terminar una fase con auto-inicio desactivado, una <strong>píldora Liquid Glass</strong> aparece bajo el notch.</p>
+            <ul>
+              <li>Muestra la fase que espera (<em>Pausa corta</em>, <em>Foco 2/4</em>) y su duración.</li>
+              <li>Clic para expandir el panel completo: reloj, pips del ciclo, <strong>Iniciar</strong>, <strong>+5 min</strong> y <strong>Terminar sesión</strong>.</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>Dock inteligente</h3>
+            <p>Mientras corre una sesión, el icono del Dock se convierte en un control vivo.</p>
+            <ul>
+              <li><strong>Anillo de progreso</strong> alrededor del icono + <strong>badge</strong> con los minutos restantes de la fase.</li>
+              <li>Menú contextual con Iniciar/Pausar, Saltar fase, Detener, Nueva tarea, Captura rápida y saltos a las secciones.</li>
+            </ul>
+          </article>
+        </div>
+
+        <figure>
+          <img class="screenshot" src="/guides/img/macos-menubar-popover.jpg" alt="Popover de la barra de menú con controles de sesión" loading="lazy" />
+          <figcaption>El popover de la barra de menú: modo y fase, hora grande, Iniciar/Pausar, Saltar y Detener como enlaces, estadísticas de hoy y accesos a la app y la Captura rápida.</figcaption>
+        </figure>
+
+        <div class="figure-row">
+          <figure>
+            <img class="screenshot" src="/guides/img/macos-notch-pill.jpg" alt="Píldora del notch con la fase en espera" loading="lazy" />
+            <figcaption>La píldora en espera: icono del modo, fase pendiente y tiempo.</figcaption>
+          </figure>
+          <figure>
+            <img class="screenshot" src="/guides/img/macos-notch-panel.jpg" alt="Panel expandido del notch" loading="lazy" />
+            <figcaption>El panel expandido: título del ciclo, cuenta atrás grande, pips de pomodoros, acciones y estadísticas al pie.</figcaption>
+          </figure>
+        </div>
+
+        <figure class="half">
+          <img class="screenshot" src="/guides/img/macos-dock-menu.jpg" alt="Menú contextual del icono del Dock" loading="lazy" />
+          <figcaption>El menú del Dock durante una sesión: control total sin abrir la ventana.</figcaption>
+        </figure>
+
+        <div class="callout">
+          <strong>Sin siesta para el Mac:</strong> durante una sesión, Pepinillo desactiva App Nap para
+          que el motor no se congele, y si activas <em>Mantener pantalla encendida</em> (Ajustes ▸
+          General) también evita que el display se duerma. Con <em>Mostrar en el Dock</em> desactivado,
+          la app pasa a vivir solo en la barra de menú.
+        </div>
+      </section>
+
+      <!-- 8. CAPTURA UNIVERSAL -->
+      <section id="captura">
+        <h2>8. Captura tareas desde cualquier lugar del Mac</h2>
+        <p class="section-lead">
+          Nunca pierdas una idea por cambiar de ventana. Tres caminos, todos sin abandonar la app en la
+          que estás.
+        </p>
+        <div class="grid-3">
+          <article class="card">
+            <h3>Captura rápida (<kbd>⌃⌥T</kbd>)</h3>
+            <p>Una barra flotante tipo Spotlight <strong>sin robar el foco</strong> de la app actual: escribe (hasta 200 caracteres) y pulsa <kbd>⏎</kbd>. <kbd>Esc</kbd> o un clic fuera la cierran.</p>
+          </article>
+          <article class="card">
+            <h3>Servicios de macOS</h3>
+            <p>Selecciona cualquier texto en Safari, Mail o tu editor → clic derecho → <em>Servicios ▸ Add Task to Pepinillo</em>. El texto seleccionado se convierte en tarea al instante.</p>
+          </article>
+          <article class="card">
+            <h3>Arrastrar y Spotlight</h3>
+            <p>Arrastra texto desde cualquier app hasta la tabla de Plan para crear la tarea. Y al revés: tus tareas abiertas quedan <strong>indexadas en Spotlight</strong> (<kbd>⌘Space</kbd>) para abrirlas desde el sistema; al elegirla, Pepinillo salta a Plan con la tarea seleccionada.</p>
+          </article>
+        </div>
+        <figure class="half">
+          <img class="screenshot" src="/guides/img/macos-quick-capture.jpg" alt="Panel flotante de Captura rápida" loading="lazy" />
+          <figcaption>La Captura rápida en pleno vuelo: aparece centrada arriba y no interrumpe a la app de abajo.</figcaption>
+        </figure>
+      </section>
+
+      <!-- 9. INTEGRACIONES -->
+      <section id="integraciones">
+        <h2>9. Siri, Atajos, widgets y Handoff</h2>
+        <p class="section-lead">
+          Pepinillo se conecta al sistema: hazle caso desde Siri, desde los widgets del escritorio o
+          desde el iPhone.
         </p>
         <div class="grid-2">
           <article class="card">
-            <h3>Today &amp; Statistics (7D / 30D / Año)</h3>
+            <h3>Siri y la app Atajos</h3>
             <ul>
-              <li><strong>KPIs diarios:</strong> tiempo enfocado, sesiones completadas, racha activa y tareas cerradas hoy.</li>
-              <li><strong>Top Activity (opt-in local):</strong> activa en <em>Ajustes → General</em> el conteo de apps en primer plano durante tus sesiones. Los nombres nunca salen de tu Mac y ahora muestran tiempo y nombre visibles sin depender de tooltips.</li>
+              <li>«<strong>Inicia un pomodoro en Pepinillo</strong>», «<em>para de concentrarme</em>», «<em>¿cómo estuvo mi enfoque hoy?</em>», «<em>reporte semanal</em>»…</li>
+              <li>Intents disponibles: iniciar/parar/pausar/reanudar sesión, obtener la sesión actual, consultar estadísticas, reporte semanal, insights y modo sugerido.</li>
+              <li>Cómbinalos en la app <strong>Atajos</strong> para automatizaciones (p. ej., un atajo que ponga Modo Concentración + inicie un bloque de 45 min).</li>
             </ul>
           </article>
-
           <article class="card">
-            <h3>Reportes Inteligentes con IA <span class="badge badge-pro">Pepinillo+</span></h3>
+            <h3>Widgets de escritorio</h3>
             <ul>
-              <li>Genera análisis <strong>semanales y mensuales</strong> desde la barra superior de <em>Statistics</em> (<kbd>⌘4</kbd>).</li>
-              <li>En macOS 26+ corre <strong>100% en tu dispositivo</strong> mediante Apple Foundation Models, con resumen de horas pico, modo dominante y recomendaciones accionables.</li>
+              <li><strong>Temporizador de foco:</strong> tamaño pequeño gratis; medianos y grandes con Pro.</li>
+              <li><strong>Tareas:</strong> contador gratis; lista interactiva con Pro (marcar y arrancar foco desde el widget).</li>
+              <li><strong>Panel:</strong> resumen semanal de estadísticas.</li>
+              <li>Botones interactivos en los widgets: Iniciar, modo, Pausar, Reanudar, siguiente fase, Detener y completar tareas — sin abrir la app.</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>Handoff y enlaces</h3>
+            <ul>
+              <li>Continúa una sesión entre dispositivos con <strong>Handoff</strong> (actividad de sesión de foco).</li>
+              <li>Enlaces <code>pepinillo://</code> para saltar directo a Foco, Plan, Panel, una tarea concreta o las estadísticas — útiles para tus propios atajos.</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>Control cruzado entre dispositivos</h3>
+            <ul>
+              <li>Si pausas o detienes la sesión desde un widget, Siri o el iPhone, la app del Mac lo aplica <strong>al instante en segundo plano</strong>.</li>
+              <li>Todo el control remoto viaja por el sistema, no por servidores.</li>
             </ul>
           </article>
         </div>
       </section>
 
-      <!-- 7. ATAJOS -->
-      <section id="atajos">
-        <h2>7. Referencia rápida de atajos de teclado</h2>
+      <!-- 10. AJUSTES -->
+      <section id="ajustes">
+        <h2>10. Preferencias al detalle (<kbd>⌘,</kbd>)</h2>
         <p class="section-lead">
-          Para quienes alternan entre pantalla táctil y velocidad pura con teclado.
+          Cuatro pestañas, cada opción explicada.
         </p>
+
+        <figure>
+          <img class="screenshot" src="/guides/img/macos-settings-general.jpg" alt="Pestaña General de Ajustes" loading="lazy" />
+          <figcaption>La pestaña General: arranque, Dock, sección por defecto, atajos globales y el estilo de la barra de menú.</figcaption>
+        </figure>
+
+        <div class="grid-2">
+          <article class="card">
+            <h3>General</h3>
+            <ul>
+              <li><strong>Iniciar al iniciar sesión</strong> — abre Pepinillo con el Mac.</li>
+              <li><strong>Mostrar en el Dock</strong> — desactívalo para que viva solo en la barra de menú.</li>
+              <li><strong>Sección predeterminada</strong> — Foco, Plan u Hoy al abrir la ventana.</li>
+              <li><strong>Mantener pantalla encendida durante sesiones</strong>.</li>
+              <li><strong>Estilo del ícono</strong> de la barra de menú: Cuenta regresiva (gratis) · Solo tiempo / Solo ícono (Pro).</li>
+              <li><strong>Registrar apps durante las sesiones</strong> (Actividad principal, opt-in, local).</li>
+              <li><strong>Sincronización iCloud</strong> con su estado <span class="badge badge-pro">Pepinillo+</span>.</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>Foco</h3>
+            <ul>
+              <li><strong>Modo por defecto</strong> (los avanzados marcan «Pro»).</li>
+              <li><strong>Pomodoro:</strong> foco 5–120, pausa corta 1–30, pausa larga 5–60, pomodoros por ciclo 1–12, auto-inicio de descansos y de trabajo.</li>
+              <li><strong>Tiempo fluido:</strong> sesión mínima 1–30 min.</li>
+              <li><strong>Bloque de tiempo:</strong> duración 5–480 min en pasos de 15.</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>Notificaciones</h3>
+            <ul>
+              <li><strong>Efectos de sonido</strong> y <strong>sonido de finalización</strong> (a elegir).</li>
+              <li><strong>Reflexión post-sesión</strong> — el diario tras cada sesión completada.</li>
+              <li><strong>Recordatorio diario</strong> con hora, y <strong>resumen semanal</strong> (domingos).</li>
+              <li><strong>Celebrar nuevos récords</strong> de racha.</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>Apariencia</h3>
+            <ul>
+              <li><strong>Tema:</strong> Clásico, Bosque, Océano o Atardecer — cambia acentos y el color de la racha.</li>
+              <li><strong>Apariencia:</strong> Sistema, Claro u Oscuro (independiente del Mac si quieres).</li>
+            </ul>
+          </article>
+        </div>
+
+        <figure>
+          <img class="screenshot" src="/guides/img/macos-settings-focus.jpg" alt="Pestaña Foco de Ajustes" loading="lazy" />
+          <figcaption>La pestaña Foco con todas las duraciones y los auto-inicios.</figcaption>
+        </figure>
+
+        <h3>Modo oscuro</h3>
+        <p class="section-lead">
+          El tema oscuro de macOS aplica a toda la interfaz, con los colores de cada modo intactos.
+        </p>
+        <div class="figure-row">
+          <figure>
+            <img class="screenshot" src="/guides/img/macos-dark-focus.jpg" alt="Sesión de foco en modo oscuro" loading="lazy" />
+            <figcaption>Foco corriendo en oscuro.</figcaption>
+          </figure>
+          <figure>
+            <img class="screenshot" src="/guides/img/macos-dark-menubar.jpg" alt="Popover de barra de menú en modo oscuro" loading="lazy" />
+            <figcaption>La barra de menú también cambia.</figcaption>
+          </figure>
+          <figure>
+            <img class="screenshot" src="/guides/img/macos-dark-plan.jpg" alt="Plan en modo oscuro" loading="lazy" />
+            <figcaption>La tabla Plan en oscuro.</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <!-- 11. ATAJOS -->
+      <section id="atajos">
+        <h2>11. Todos los atajos de teclado</h2>
+        <p class="section-lead">
+          Los globales funcionan con Pepinillo en segundo plano; el resto, con la app al frente.
+        </p>
+
+        <h3>Globales (desde cualquier app)</h3>
         <table>
           <thead>
-            <tr>
-              <th>Atajo</th>
-              <th>Alcance</th>
-              <th>Acción</th>
-            </tr>
+            <tr><th>Atajo</th><th>Acción</th></tr>
           </thead>
           <tbody>
-            <tr>
-              <td><kbd>⌃⌥Space</kbd></td>
-              <td>Global (cualquier app)</td>
-              <td>Iniciar, pausar, reanudar o avanzar a la siguiente fase</td>
-            </tr>
-            <tr>
-              <td><kbd>⌃⌥T</kbd></td>
-              <td>Global (cualquier app)</td>
-              <td>Abrir o cerrar Quick Capture flotante</td>
-            </tr>
-            <tr>
-              <td><kbd>⌃⌥→</kbd> / <kbd>⌃⌥X</kbd></td>
-              <td>Global (cualquier app)</td>
-              <td>Saltar fase actual / Terminar sesión</td>
-            </tr>
-            <tr>
-              <td><kbd>⌃⌥P</kbd></td>
-              <td>Global (cualquier app)</td>
-              <td>Traer ventana principal de Pepinillo al frente</td>
-            </tr>
-            <tr>
-              <td><kbd>⌘1</kbd> · <kbd>⌘2</kbd> · <kbd>⌘3</kbd></td>
-              <td>En Pepinillo</td>
-              <td>Cambiar entre Focus, Plan y Dashboard (Today)</td>
-            </tr>
-            <tr>
-              <td><kbd>⌘4</kbd> / <kbd>⌘,</kbd></td>
-              <td>En Pepinillo</td>
-              <td>Abrir ventana de Statistics / Abrir Ajustes</td>
-            </tr>
-            <tr>
-              <td><kbd>⌘N</kbd> · <kbd>⌘F</kbd> · <kbd>⌘⌥I</kbd></td>
-              <td>En Plan</td>
-              <td>Nueva tarea · Buscar tareas · Mostrar/Ocultar Inspector</td>
-            </tr>
-            <tr>
-              <td><kbd>⌘↩</kbd> / <kbd>⌘.</kbd></td>
-              <td>En Focus</td>
-              <td>Acción principal (Start/Pause) / Detener sesión</td>
-            </tr>
+            <tr><td><kbd>⌃⌥Space</kbd></td><td>Iniciar, pausar, reanudar o avanzar a la siguiente fase (interruptor inteligente)</td></tr>
+            <tr><td><kbd>⌃⌥T</kbd></td><td>Abrir la Captura rápida flotante</td></tr>
+            <tr><td><kbd>⌃⌥→</kbd></td><td>Saltar la fase actual / avanzar la fase en espera</td></tr>
+            <tr><td><kbd>⌃⌥X</kbd></td><td>Terminar la sesión en curso</td></tr>
+            <tr><td><kbd>⌃⌥P</kbd></td><td>Traer la ventana de Pepinillo al frente</td></tr>
+          </tbody>
+        </table>
+
+        <h3 style="margin-top:24px">Navegación y ventanas</h3>
+        <table>
+          <thead>
+            <tr><th>Atajo</th><th>Acción</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><kbd>⌘1</kbd> · <kbd>⌘2</kbd> · <kbd>⌘3</kbd></td><td>Ir a Foco · Plan · Panel (Hoy)</td></tr>
+            <tr><td><kbd>⌘4</kbd></td><td>Abrir la ventana de Estadísticas</td></tr>
+            <tr><td><kbd>⌘,</kbd></td><td>Abrir Ajustes</td></tr>
+            <tr><td><kbd>⇧⌘?</kbd></td><td>Abrir la Ayuda de Pepinillo</td></tr>
+            <tr><td><kbd>⌘W</kbd></td><td>Cerrar la ventana (la sesión sigue en la barra de menú)</td></tr>
+          </tbody>
+        </table>
+
+        <h3 style="margin-top:24px">En Foco</h3>
+        <table>
+          <thead>
+            <tr><th>Atajo</th><th>Acción</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><kbd>⌘↩</kbd></td><td>Acción principal: Iniciar / Pausar / Reanudar / Siguiente fase</td></tr>
+            <tr><td><kbd>⌘.</kbd></td><td>Detener la sesión (con confirmación)</td></tr>
+            <tr><td><kbd>⌘⌥1..4</kbd></td><td>Elegir modo: Pomodoro · Tiempo fluido · Bloque · Cronómetro (en reposo)</td></tr>
+            <tr><td><kbd>⌃⌘Z</kbd></td><td>Modo Zen (solo anillo y controles)</td></tr>
+            <tr><td><kbd>⏎</kbd></td><td>Botón por defecto (Iniciar / Pausar / Guardar según contexto)</td></tr>
+            <tr><td><kbd>Esc</kbd></td><td>Cerrar popovers y diálogos</td></tr>
+          </tbody>
+        </table>
+
+        <h3 style="margin-top:24px">En Plan</h3>
+        <table>
+          <thead>
+            <tr><th>Atajo</th><th>Acción</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><kbd>⌘N</kbd></td><td>Nueva tarea (fila al pie de la tabla)</td></tr>
+            <tr><td><kbd>⌘F</kbd></td><td>Buscar tareas</td></tr>
+            <tr><td><kbd>⌘R</kbd></td><td>Renombrar la tarea seleccionada (edición inline)</td></tr>
+            <tr><td><kbd>⌘⌥I</kbd></td><td>Mostrar u ocultar el Inspector</td></tr>
+          </tbody>
+        </table>
+
+        <h3 style="margin-top:24px">Gestos <span class="badge badge-touch">Multi-touch</span></h3>
+        <table>
+          <thead>
+            <tr><th>Gesto</th><th>Acción</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Pellizco (dos dedos)</td><td>Modo Zen dentro de la escena de foco — táctil o trackpad</td></tr>
+            <tr><td>Girar sobre el anillo</td><td>Ajustar duración en reposo (táctil; en trackpad usa − / +)</td></tr>
+            <tr><td>Toque en el anillo</td><td>Pausar / reanudar la sesión (táctil)</td></tr>
+            <tr><td>Deslizar sobre barras</td><td>Scrubbing de minutos y sesiones en Hoy y Estadísticas</td></tr>
+            <tr><td>Tirar hacia abajo</td><td>Actualizar en Hoy y Plan (pull-to-refresh)</td></tr>
           </tbody>
         </table>
       </section>
 
-      <!-- 8. PRIVACIDAD, PLANES Y SYNC -->
-      <section id="sync">
-        <h2>8. Privacidad, personalización y niveles</h2>
+      <!-- 12. PLANES -->
+      <section id="planes">
+        <h2>12. Cuenta y planes</h2>
         <p class="section-lead">
-          Sin anuncios, sin rastreo y completamente funcional sin crear cuenta.
+          Pepinillo funciona completo sin cuenta y sin conexión. Los planes solo añaden.
         </p>
         <div class="grid-3">
           <article class="card">
-            <h3>Personalización</h3>
-            <p>4 temas (<em>Classic, Forest, Ocean, Sunset</em>), modo Claro/Oscuro/Sistema, sonidos de finalización configurables, opción <em>Keep screen on</em> y recordatorios diarios o resumen semanal.</p>
+            <h3>Gratis</h3>
+            <ul>
+              <li>Pomodoro y Cronómetro completos.</li>
+              <li>Tareas ilimitadas, Plan e Inspector (subtareas aparte).</li>
+              <li>Panel, Estadísticas, rachas y celebraciones.</li>
+              <li>4 ambientes sonoros, widget pequeño y barra de menú con cuenta regresiva.</li>
+            </ul>
           </article>
           <article class="card">
             <h3>Pepinillo+ <span class="badge badge-pro">Pago único</span></h3>
-            <p>Desbloquea Flowtime, Time Block, estilos minimalistas en barra de menú, subtareas, reportes con IA en el dispositivo y respaldo privado en <strong>iCloud</strong>.</p>
+            <p>Una compra, tuya para siempre. No es una suscripción.</p>
+            <ul>
+              <li>Tiempo fluido y Bloque de tiempo.</li>
+              <li>Subtareas, widgets medianos/grandes y estilos minimalistas de barra de menú.</li>
+              <li>Reportes con IA <strong>en el dispositivo</strong> y respaldo privado en iCloud.</li>
+            </ul>
           </article>
           <article class="card">
             <h3>Everywhere / AI+ <span class="badge badge-cloud">Suscripción</span></h3>
-            <p>Todo Pepinillo+ más sincronización multiplataforma en tiempo real entre Mac, iPhone, iPad, Apple Watch, Android y Wear OS con recuperación por cuenta.</p>
+            <p>Todo Pepinillo+, más continuidad entre dispositivos.</p>
+            <ul>
+              <li>Sincronización por cuenta Pepinillo en tiempo real entre tus dispositivos con la app.</li>
+              <li>Recuperación por cuenta y compras reconciliadas.</li>
+              <li>IA avanzada con el historial sincronizado.</li>
+            </ul>
           </article>
         </div>
+        <figure class="half">
+          <img class="screenshot" src="/guides/img/macos-paywall.jpg" alt="Hoja de planes de Pepinillo" loading="lazy" />
+          <figcaption>La hoja de planes: Pepinillo+ (pago único) y Everywhere/AI+ (suscripción), con la compra gestionada por el Mac App Store.</figcaption>
+        </figure>
+        <div class="callout">
+          <strong>Local primero, siempre:</strong> la cuenta es opcional. Todo (tareas, sesiones,
+          estadísticas) vive en tu Mac; iniciar sesión solo activa la sincronización. Al cerrar sesión,
+          tus tareas se quedan exactamente donde están.
+        </div>
       </section>
+
+      <!-- 13. TIPS -->
+      <section id="tips">
+        <h2>13. Tips avanzados y FAQ</h2>
+        <p class="section-lead">
+          Los detalles que convierten un buen día de foco en un sistema.
+        </p>
+        <div class="grid-2">
+          <article class="card">
+            <h3>Rutinas recomendadas</h3>
+            <ul>
+              <li><strong>Mañana:</strong> Captura rápida (<kbd>⌃⌥T</kbd>) para vaciar la cabeza; luego en Plan, prioriza con energía y estima pomodoros en el Inspector.</li>
+              <li><strong>Al trabajar:</strong> arrastra la tarea elegida al sidebar Foco y deja la ventana cerrada; controla todo con <kbd>⌃⌥Space</kbd> y el notch.</li>
+              <li><strong>Viernes:</strong> abre Estadísticas (<kbd>⌘4</kbd>) ▸ Reportes y revisa el resumen IA de la semana.</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>Trucos menos conocidos</h3>
+            <ul>
+              <li>El <strong>+5 min</strong> del panel del notch solo aparece tras una fase de trabajo: úsalo cuando el flujo siga caliente.</li>
+              <li>El ícono del Dock muestra el <strong>anillo de progreso</strong>: de un vistazo sabes cuánto queda sin mirar nada más.</li>
+              <li><strong>Handoff</strong> sigue la sesión entre el Mac y el resto de tus dispositivos Apple con Pepinillo.</li>
+              <li>Los enlaces <code>pepinillo://task/&lt;id&gt;</code> abren tareas concretas: úsalos en tus notas o atajos propios.</li>
+            </ul>
+          </article>
+        </div>
+
+        <h3>Preguntas frecuentes</h3>
+        <div class="grid-2">
+          <article class="card">
+            <p><strong>¿Necesito cuenta o internet?</strong><br />No. Pepinillo es 100% funcional offline; la cuenta solo activa la sincronización de pago.</p>
+            <p><strong>¿Cerrar la ventana para la sesión?</strong><br />No: la sesión vive en la barra de menú, el notch y el Dock.</p>
+            <p><strong>¿Se descuadra el timer si el Mac se duerme?</strong><br />No: el motor usa el reloj del sistema y recalcula al despertar.</p>
+          </article>
+          <article class="card">
+            <p><strong>Spotlight no encuentra mis tareas</strong><br />Las tareas abiertas se indexan cada pocos segundos; verifica que no estén completadas y que el Mac haya indexado la app (abrirla una vez basta).</p>
+            <p><strong>No veo la píldora del notch</strong><br />Aparece solo cuando una fase termina con auto-inicio desactivado (Ajustes ▸ Foco) y en pantallas con notch.</p>
+            <p><strong>¿Dónde están mis datos?</strong><br />En una base local del grupo de la app en tu Mac. Puedes ver tu correo y plan en la sección Cuenta, y cerrar sesión sin perder nada.</p>
+          </article>
+        </div>
+
+        <div class="callout">
+          ¿Algo no cuadra? Abre <strong>Ayuda ▸ Ayuda de Pepinillo</strong> (<kbd>⇧⌘?</kbd>) dentro de
+          la app: guía rápida, preguntas frecuentes, privacidad y contacto directo con soporte.
+        </div>
+        <figure class="half">
+          <img class="screenshot" src="/guides/img/macos-help.jpg" alt="Ventana de Ayuda de Pepinillo" loading="lazy" />
+          <figcaption>La ventana de Ayuda: Comenzando, FAQ, Privacidad y Contacto en una sola pantalla.</figcaption>
+        </figure>
+      </section>
+
+      <footer style="margin-top:24px;font-size:12.5px;color:var(--muted);border-top:1px solid var(--border);padding-top:18px">
+        Manual de Pepinillo para macOS · Capturas reales de la app con datos de demostración ·
+        <a href="/guides" style="color:var(--brand);text-decoration:none">Todas las guías →</a>
+      </footer>
     </main>
   </div>
 </body>
