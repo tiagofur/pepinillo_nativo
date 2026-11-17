@@ -40,6 +40,6 @@ func insufficientTierError(c *fiber.Ctx) error {
 		"error":       "subscription_required",
 		"code":        "ERR_TIER_INSUFFICIENT",
 		"message":     "An Everywhere+ subscription is required to use backend sync",
-		"upgrade_url": "https://pepinillo.app/upgrade",
+		"upgrade_url": "https://app.pepinillo.app/upgrade",
 	})
 }

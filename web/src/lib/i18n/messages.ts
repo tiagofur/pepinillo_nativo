@@ -426,7 +426,11 @@ export type MessageKey =
 	| 'settings.startup.title'
 	| 'settings.startup.hint'
 	| 'landing.nav.guides'
+	| 'landing.nav.macmanual'
 	| 'landing.nav.pricing'
+	| 'landing.guides.title'
+	| 'landing.guides.sub'
+	| 'landing.guides.cta'
 	| 'landing.nav.open'
 	| 'landing.nav.home'
 	| 'landing.meta'
@@ -896,7 +900,11 @@ const en: Dict = {
 	'settings.startup.title': 'Startup',
 	'settings.startup.hint': 'The section the app opens on (Mac parity).',
 	'landing.nav.guides': 'Guides',
+	'landing.nav.macmanual': 'macOS manual',
 	'landing.nav.pricing': 'Pricing',
+	'landing.guides.title': 'Learn to use every corner',
+	'landing.guides.sub': 'The complete macOS user manual, with real screenshots of the app: from your first session to every keyboard shortcut.',
+	'landing.guides.cta': 'Read the macOS manual',
 	'landing.nav.open': 'Open app',
 	'landing.nav.home': 'Home',
 	'landing.meta': 'Pepinillo is a native companion for deep work: plan with intention, focus without noise, and celebrate your progress. iPhone, iPad, Mac, Android, Wear OS and web.',
@@ -1407,7 +1415,11 @@ const es: Dict = {
 	'settings.startup.title': 'Inicio',
 	'settings.startup.hint': 'La sección donde abre la app (paridad con Mac).',
 	'landing.nav.guides': 'Guías',
+	'landing.nav.macmanual': 'Manual de macOS',
 	'landing.nav.pricing': 'Precios',
+	'landing.guides.title': 'Aprende a usar cada rincón',
+	'landing.guides.sub': 'El manual de usuario completo de macOS, con capturas reales de la app: desde tu primera sesión hasta cada atajo de teclado.',
+	'landing.guides.cta': 'Leer el manual de macOS',
 	'landing.nav.open': 'Abrir app',
 	'landing.nav.home': 'Inicio',
 	'landing.meta': 'Pepinillo es un compañero nativo de deep work: planificá con intención, enfocate sin ruido y celebrá lo que cultivás. iPhone, iPad, Mac, Android, Wear OS y web.',
@@ -1902,7 +1914,11 @@ const pt: Dict = {
 	'settings.startup.title': 'Inicialização',
 	'settings.startup.hint': 'A seção onde o app abre (paridade com o Mac).',
 	'landing.nav.guides': 'Guias',
+	'landing.nav.macmanual': 'Manual do macOS',
 	'landing.nav.pricing': 'Preços',
+	'landing.guides.title': 'Aprenda a usar cada canto',
+	'landing.guides.sub': 'O manual de usuário completo do macOS, com capturas de tela reais do app: da sua primeira sessão a cada atalho de teclado.',
+	'landing.guides.cta': 'Ler o manual do macOS',
 	'landing.nav.open': 'Abrir app',
 	'landing.nav.home': 'Início',
 	'landing.meta': 'Pepinillo é um companheiro nativo de deep work: planeje com intenção, concentre-se sem ruído e celebre o que você cultiva. iPhone, iPad, Mac, Android, Wear OS e web.',

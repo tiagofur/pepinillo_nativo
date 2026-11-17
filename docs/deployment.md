@@ -65,4 +65,18 @@ tratar como comprometido hasta confirmar rotación.
 | API producción | `https://api.ppn.creapolis.dev/api/v1` |
 | API staging | `https://staging.api.ppn.creapolis.dev/api/v1` |
 | Web marketing | `https://creapolis.dev` (privacy/terms: `/privacy-policy/`, `/terms-of-use/`) |
-| Upgrade URL (paywall) | `https://pepinillo.app/upgrade` |
+| Upgrade URL (paywall) | `https://app.pepinillo.app/upgrade` |
+
+### 4.1 Dominio propio `pepinillo.app` (comprado 2026-11-17)
+
+Split de dominios decidido por Tiago (issue #855); el despliegue real es el batch
+**W9** del epic #809 (Caddy vhosts + DNS + CORS + QA):
+
+| Superficie | Dominio |
+| :--- | :--- |
+| Landing + guías de usuario (`/`, `/guides*`) | `https://pepinillo.app` |
+| PWA app (`/focus`, `/plan`, `/dashboard`, `/account`, `/upgrade`) | `https://app.pepinillo.app` |
+
+Notas: los canonical/OG de landing y guías usan `pepinillo.app`; `/upgrade`
+canonicaliza a `app.pepinillo.app` (ver `web/static/sitemap.xml`). CORS del
+backend deberá permitir ambos orígenes al configurar W9.
