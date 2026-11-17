@@ -60,17 +60,25 @@
 
 	/**
 	 * Navigate to Plan (if needed) and raise a page-level command.
-	 * The command is ALSO parked on `window.pepinilloPlanCommand` so the
-	 * Plan page picks it up on mount — no setTimeout race.
+	 * Cross-route: park the command on `window.pepinilloPlanCommand` — the
+	 * Plan page consumes it on mount (goto resolves after mount). If mount
+	 * somehow raced, the fallback dispatch fires once; the parked value is
+	 * checked before dispatching so the command never executes twice.
+	 * Already on Plan: dispatch directly (nothing parked, nothing leaks).
 	 */
 	async function planThenDispatch(command: PlanCommand): Promise<void> {
 		const w = window as unknown as { pepinilloPlanCommand?: PlanCommand };
-		w.pepinilloPlanCommand = command;
 		if (!page.url.pathname.startsWith('/plan')) {
+			w.pepinilloPlanCommand = command;
 			const { goto } = await import('$app/navigation');
 			await goto('/plan');
+			if (w.pepinilloPlanCommand === command) {
+				delete w.pepinilloPlanCommand;
+				window.dispatchEvent(new CustomEvent(command));
+			}
+		} else {
+			window.dispatchEvent(new CustomEvent(command));
 		}
-		window.dispatchEvent(new CustomEvent(command));
 	}
 
 	window.addEventListener('keydown', onCommandKey);

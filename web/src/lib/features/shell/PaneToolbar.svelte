@@ -144,6 +144,14 @@
 		box-shadow: none;
 	}
 
+	/* Tablet: cancel the shell's 24px content padding (must precede the
+	 * phone block so phones keep their own tighter margin) */
+	@media (max-width: 1023px) {
+		.pane-toolbar {
+			margin: calc(-1 * var(--space-6)) calc(-1 * var(--space-5)) var(--space-5);
+		}
+	}
+
 	/* Phones: compact top bar — title + one secondary action; the search
 	 * field flexes so narrow viewports never squeeze or overflow */
 	@media (max-width: 767px) {
@@ -170,12 +178,6 @@
 			min-width: 0;
 			max-width: none;
 			flex: 1;
-		}
-	}
-
-	@media (max-width: 1023px) {
-		.pane-toolbar {
-			margin: calc(-1 * var(--space-6)) calc(-1 * var(--space-5)) var(--space-5);
 		}
 	}
 </style>
