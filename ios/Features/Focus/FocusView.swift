@@ -558,8 +558,8 @@ struct FocusView: View {
                     .accessibilityLabel(String(localized: "Skip to next phase"))
                 }
             } else {
-                // − duration (TimeBlock only)
-                if store.selectedMode == .timeBlock {
+                // − duration (configurable modes: TimeBlock, Pomodoro #848)
+                if durationStep != nil {
                     durationStepButton(systemName: "minus", delta: -5)
                         .transition(reduceMotion ? .opacity : .scale.combined(with: .opacity))
                 }
@@ -584,8 +584,8 @@ struct FocusView: View {
                 .buttonStyle(.pressable)
                 .accessibilityHint(String(localized: "Double tap to start a focus session"))
 
-                // + duration (TimeBlock only)
-                if store.selectedMode == .timeBlock {
+                // + duration (configurable modes: TimeBlock, Pomodoro #848)
+                if durationStep != nil {
                     durationStepButton(systemName: "plus", delta: 5)
                         .transition(reduceMotion ? .opacity : .scale.combined(with: .opacity))
                 }
@@ -593,31 +593,50 @@ struct FocusView: View {
         }
     }
 
-    // MARK: - Duration Step Button (TimeBlock idle, flanks Start)
+    // MARK: - Duration Step Button (configurable-mode idle, flanks Start)
 
+    /// Duration step bounds and action per mode (issue #848): Time Block
+    /// overrides `customDurationMinutes` (5…480); Pomodoro overrides
+    /// `config.pomodoroDuration` (5…120). Both are in-memory next-session
+    /// overrides — the next Settings hydration overwrites them.
+    private var durationStep: (range: ClosedRange<Int>, current: Int, change: (Int) -> FocusFeature.Action)? {
+        switch store.selectedMode {
+        case .timeBlock:
+            return (5...480, store.customDurationMinutes, FocusFeature.Action.customDurationChanged)
+        case .pomodoro:
+            return (5...120, Int((store.config.pomodoroDuration / 60).rounded()), FocusFeature.Action.pomodoroDurationChanged)
+        default:
+            return nil
+        }
+    }
+
+    /// Same per-mode bounds, same reducer action and same a11y labels as
+    /// `MacFocusView.durationStepButton` on macOS.
     @ViewBuilder
     private func durationStepButton(systemName: String, delta: Int) -> some View {
-        let projected = store.customDurationMinutes + delta
-        let isAtBoundary = projected < 5 || projected > 480
-        Button {
-            let target = store.customDurationMinutes + delta
-            guard target >= 5, target <= 480 else { return }
-            store.send(.customDurationChanged(target))
-            HapticManager.selection()
-        } label: {
-            Image(systemName: systemName)
-                .font(.title3.weight(.semibold))
-                .foregroundStyle(.primary)
-                .frame(width: 56, height: 56)
-                .adaptiveGlassCircle(id: "duration-\(systemName)-button", namespace: glassNS)
+        if let step = durationStep {
+            let projected = step.current + delta
+            let isAtBoundary = projected < step.range.lowerBound || projected > step.range.upperBound
+            Button {
+                let target = step.current + delta
+                guard step.range.contains(target) else { return }
+                store.send(step.change(target))
+                HapticManager.selection()
+            } label: {
+                Image(systemName: systemName)
+                    .font(.title3.weight(.semibold))
+                    .foregroundStyle(.primary)
+                    .frame(width: 56, height: 56)
+                    .adaptiveGlassCircle(id: "duration-\(systemName)-button", namespace: glassNS)
+            }
+            .buttonStyle(.plain)
+            .buttonBorderShape(.circle)
+            .opacity(isAtBoundary ? 0.4 : 1)
+            .disabled(isAtBoundary)
+            .accessibilityLabel(delta < 0
+                ? String(localized: "Decrease duration by 5 minutes")
+                : String(localized: "Increase duration by 5 minutes"))
         }
-        .buttonStyle(.plain)
-        .buttonBorderShape(.circle)
-        .opacity(isAtBoundary ? 0.4 : 1)
-        .disabled(isAtBoundary)
-        .accessibilityLabel(delta < 0
-            ? String(localized: "Decrease duration by 5 minutes")
-            : String(localized: "Increase duration by 5 minutes"))
     }
 
     // MARK: - Waiting-for-next-phase CTA label

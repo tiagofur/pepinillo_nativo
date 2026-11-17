@@ -1223,6 +1223,108 @@ struct FocusGhostAdoptTests {
         }
     }
 
+    // MARK: - Pomodoro Duration Dial (issue #848)
+
+    /// The Pomodoro twin of `customDurationIsClamped`: the ring dial (and the
+    /// ±5 steppers) override the next session's work length, clamped to the
+    /// same 5…120 range Settings uses.
+    @Test func pomodoroDurationIsClamped() async {
+        let store = TestStore(
+            initialState: FocusFeature.State(selectedMode: .pomodoro)
+        ) {
+            FocusFeature()
+        }
+
+        store.exhaustivity = .off
+
+        // Normal value
+        await store.send(.pomodoroDurationChanged(40)) {
+            $0.config.pomodoroDuration = 40 * 60
+            $0.displayTime = "40:00"
+            $0.remainingSeconds = 40 * 60
+        }
+
+        // Below minimum → clamped to 5
+        await store.send(.pomodoroDurationChanged(3)) {
+            $0.config.pomodoroDuration = 5 * 60
+            $0.displayTime = "5:00"
+            $0.remainingSeconds = 5 * 60
+        }
+
+        // Above maximum → clamped to 120
+        await store.send(.pomodoroDurationChanged(200)) {
+            $0.config.pomodoroDuration = 120 * 60
+            $0.displayTime = "120:00"
+            $0.remainingSeconds = 120 * 60
+        }
+    }
+
+    /// The dialled Pomodoro length is what `startTapped` actually starts with.
+    @Test func startPomodoroUsesDialedDuration() async {
+        var state = FocusFeature.State()
+        state.selectedMode = .pomodoro
+        state.isProUser = true
+
+        let store = TestStore(initialState: state) {
+            FocusFeature()
+        } withDependencies: {
+            $0.focusClient.start = { _, _, _, _, _, _, _ in }
+            $0.focusClient.events = { AsyncStream { $0.finish() } }
+            $0.focusClient.currentState = { nil }
+            $0.liveActivityClient.isAvailable = { false }
+            $0.soundscapeClient.play = { _, _ in }
+            $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
+            $0.persistenceClient.fetchSessions = { _, _ in [] }
+            $0.notificationClient.requestAuthorization = { false }
+        }
+
+        store.exhaustivity = .off
+
+        await store.send(.pomodoroDurationChanged(40)) {
+            $0.config.pomodoroDuration = 40 * 60
+            $0.displayTime = "40:00"
+            $0.remainingSeconds = 40 * 60
+        }
+
+        await store.send(.startTapped()) {
+            $0.isRunning = true
+            $0.activeMode = .pomodoro
+            $0.phase = .work(number: 1, total: 4)
+            $0.remainingSeconds = 40 * 60
+            $0.progress = 0.0
+            $0.displayTime = "40:00"
+            $0.isPaused = false
+            $0.elapsedSeconds = 0
+        }
+    }
+
+    /// Documents the dial's semantics (#848): the in-memory Pomodoro override
+    /// is intentionally transient — the next `configUpdated` hydration from
+    /// Settings overwrites it, exactly like the Time Block dial.
+    @Test func configUpdatedOverwritesDialedPomodoroDuration() async {
+        let store = TestStore(
+            initialState: FocusFeature.State(selectedMode: .pomodoro)
+        ) {
+            FocusFeature()
+        }
+
+        store.exhaustivity = .off
+
+        await store.send(.pomodoroDurationChanged(50)) {
+            $0.config.pomodoroDuration = 50 * 60
+            $0.displayTime = "50:00"
+            $0.remainingSeconds = 50 * 60
+        }
+
+        var hydrated = FocusConfig.default
+        hydrated.pomodoroDuration = 25 * 60
+        await store.send(.configUpdated(hydrated)) {
+            $0.config = hydrated
+            $0.displayTime = "25:00"
+            $0.remainingSeconds = 25 * 60
+        }
+    }
+
     // MARK: - Health logging (#227)
 
     @Test func pomodoroPhaseCompletedLogsMindfulMinutesNotFullSession() async {
