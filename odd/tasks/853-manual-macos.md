@@ -39,7 +39,7 @@ Branch: `docs/manual-macos` | Delivery: `complete` | Test runners: `pnpm check` 
 ## Cómo probar (S7)
 
 1. `cd web && pnpm build && (cd build && python3 -m http.server 4178 &)` → abre `http://localhost:4178/guides/macos.html`.
-2. Recorre el índice del sidebar: cada sección abre con capturas reales y captions (lazy-load: baja para verlas). 30 imágenes referenciadas, 28 figuras en el documento.
+2. Recorre el índice del sidebar: cada sección abre con capturas reales y captions (lazy-load: baja para verlas). 30 imágenes referenciadas en 30 figuras.
 3. Modo oscuro del sistema: el manual cambia de tema solo; las capturas oscuras están en §10.
 4. Desde `/guides`, la tarjeta Manual Mac abre este documento (data-sveltekit-reload). Responsive: sin overflow a 390px.
 
