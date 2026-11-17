@@ -92,8 +92,9 @@
 	// ---- Context menu (MacPlanView contextMenu parity) ----
 	let ctx = $state<{ task: Task; x: number; y: number } | null>(null);
 
+	// No row selection side effect: on mobile it would pop the inspector
+	// Sheet behind the menu (double modal); Mac selects only on left-click.
 	function openContext(task: Task, x: number, y: number): void {
-		selectTask(task.id);
 		ctx = { task, x, y };
 	}
 
@@ -120,7 +121,7 @@
 				kind: 'submenu',
 				children: PRIORITY_KEYS.map((p) => ({
 					id: p,
-					label: p === 'none' ? '—' : t(`plan.priority.${p}` as MessageKey),
+					label: t(`plan.priority.${p}` as MessageKey),
 					checked: task.priority === p,
 					onselect: () => void plan.updateTask(task.id, { priority: p })
 				}))
@@ -414,10 +415,11 @@
 		display: flex;
 		align-items: center;
 		gap: var(--space-3);
-		margin: var(--space-4) calc(-1 * var(--space-8)) calc(-1 * var(--space-10));
+		margin: var(--space-4) calc(-1 * var(--space-8)) calc(-1 * (var(--space-10) + var(--safe-b)));
 		padding: var(--space-3) var(--space-6) calc(var(--space-6) + var(--safe-b));
 		background: var(--bg);
 		border-top: 1px solid var(--hairline);
+		box-shadow: 0 -1px 0 var(--bg);
 	}
 
 	.nt-plus {
@@ -462,11 +464,11 @@
 		.newtask {
 			margin-inline: calc(-1 * var(--space-8));
 		}
-	}
 
-	@media (max-width: 1023px) and (min-width: 768px) {
-		.newtask {
-			margin-inline: calc(-1 * var(--space-5));
+		/* Reserve the sticky bar's overlay height so scrolled content (cap
+		 * notice, last rows) never hides behind it (Mac bottom safe area). */
+		.inspector-grid {
+			padding-bottom: 76px;
 		}
 	}
 

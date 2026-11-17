@@ -15,8 +15,6 @@
 		earlyBird: '🌅'
 	};
 
-	const RATING_FACES: Record<number, string> = { 1: '😞', 2: '😐', 3: '🙂', 4: '😊', 5: '🔥' };
-
 	// Mac session rows: 24pt mode-colored icon before the mode name.
 	const MODE_COLOR: Record<string, string> = {
 		pomodoro: 'var(--mode-pomodoro)',
@@ -88,7 +86,7 @@
 	/* Mac Today: recent sessions + next-focus columns, adaptive grid min 320 */
 	.panels {
 		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+		grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
 		gap: var(--space-6);
 		align-items: start;
 	}

@@ -46,6 +46,7 @@
 		return d && d.totalFocusSeconds > 0 ? t(WEEKDAY_KEYS[new Date(`${d.date}T12:00:00`).getDay()]) : '—';
 	});
 
+
 	function fmtMin(seconds: number): string {
 		const m = Math.round(seconds / 60);
 		if (m < 60) return `${m}m`;

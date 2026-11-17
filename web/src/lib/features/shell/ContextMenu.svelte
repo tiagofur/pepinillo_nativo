@@ -30,23 +30,22 @@
 	// Clamped position, resolved inside the effect (x/y are the fresh pointer
 	// coords of each mount — the owner recreates the menu per invocation).
 	let pos = $state({ left: 0, top: 0 });
+	// Submenus flip to the left when the menu sits near the right edge.
+	let submenuSide = $state<'right' | 'left'>('right');
 
+	// Synchronous clamp: $effect runs after the DOM insert, so menuEl is
+	// already bound (rAF would never fire for background tabs). Re-runs if
+	// the pointer coords or the element change.
 	$effect(() => {
-		// Seed with the raw pointer, then clamp once the size is known.
-		pos = { left: x, top: y };
-		tickClamp();
+		if (!menuEl) return;
+		const r = menuEl.getBoundingClientRect();
+		const margin = 8;
+		const left = Math.max(margin, Math.min(x, window.innerWidth - r.width - margin));
+		const top = Math.max(margin, Math.min(y, window.innerHeight - r.height - margin));
+		pos = { left, top };
+		// Flip submenus left when there is no room on the right (190px min).
+		submenuSide = left + r.width + 190 > window.innerWidth ? 'left' : 'right';
 	});
-
-	function tickClamp(): void {
-		requestAnimationFrame(() => {
-			if (!menuEl) return;
-			const r = menuEl.getBoundingClientRect();
-			const margin = 8;
-			const left = Math.max(margin, Math.min(x, window.innerWidth - r.width - margin));
-			const top = Math.max(margin, Math.min(y, window.innerHeight - r.height - margin));
-			pos = { left, top };
-		});
-	}
 
 	function pick(item: ContextMenuItem): void {
 		if (item.disabled || item.kind === 'separator' || item.kind === 'submenu') return;
@@ -62,7 +61,7 @@
 	}
 </script>
 
-<svelte:window onkeydown={onKeydown} />
+<svelte:window onkeydown={onKeydown} onscroll={() => onclose()} />
 
 <!-- a11y waiver: pointer-positioned menu; keyboard users keep their existing
 	 shortcuts (row selection + inspector + title edit) and Escape closes. -->
@@ -73,6 +72,7 @@
 		class="ctx material-panel"
 		bind:this={menuEl}
 		style="left: {pos.left}px; top: {pos.top}px;"
+		class:flip={submenuSide === 'left'}
 		role="menu"
 		tabindex="-1"
 		onclick={(e) => e.stopPropagation()}
@@ -85,7 +85,7 @@
 					class="entry has-sub"
 					class:is-open={openSubmenu === item.id}
 					role="menuitem"
-					aria-haspopup="true"
+					aria-haspopup="menu"
 					aria-expanded={openSubmenu === item.id}
 					tabindex="0"
 					onkeydown={(e) => e.key === 'Enter' && (openSubmenu = openSubmenu === item.id ? null : item.id)}
@@ -95,7 +95,7 @@
 					<span class="label" class:destructive={item.destructive}>{item.label}</span>
 					<span class="chev" aria-hidden="true">›</span>
 					{#if openSubmenu === item.id}
-						<div class="submenu material-panel">
+						<div class="submenu material-panel" role="menu">
 							{#each item.children as child (child.id)}
 								<button
 									class="entry child"
@@ -219,10 +219,17 @@
 	.submenu {
 		position: absolute;
 		top: -4px;
-		right: -6px;
-		transform: translateX(100%);
+		left: calc(100% - 6px);
 		min-width: 180px;
+		max-height: min(320px, calc(100vh - 16px));
+		overflow-y: auto;
 		padding: var(--space-1);
+	}
+
+	/* Flipped: open to the left when the menu is near the right edge */
+	.ctx.flip .submenu {
+		left: auto;
+		right: calc(100% - 6px);
 	}
 
 	.sep {
