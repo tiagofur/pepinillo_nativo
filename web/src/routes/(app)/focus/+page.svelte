@@ -25,12 +25,12 @@
 	let confirmEnd = $state(false);
 	let confirmTimer: ReturnType<typeof setTimeout> | null = null;
 
-	// The armed state never crosses a session boundary.
+	// The armed state never crosses a session boundary — any session
+	// transition (start, skip, auto-advance, completion) disarms it.
 	$effect(() => {
-		if (focus.idle) {
-			confirmEnd = false;
-			if (confirmTimer) clearTimeout(confirmTimer);
-		}
+		void focus.session;
+		confirmEnd = false;
+		if (confirmTimer) clearTimeout(confirmTimer);
 	});
 
 	function onEnd(): void {
