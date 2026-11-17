@@ -108,20 +108,30 @@ El deploy web es estático por rsync, no Docker.
 **Creación de sitios (una vez, Plesk CLI por ssh como root):**
 
 ```bash
-plesk bin site --create pepinillo.app -hosting-type vhost -www-root httpdocs
-plesk bin subdomain --create app -domain pepinillo.app -www-root app.pepinillo.app
-plesk bin subdomain --create api -domain pepinillo.app -www-root api.pepinillo.app
-# SPA fallback para los sitios web (no para api):
-#   /var/www/vhosts/system/<dominio>/conf/vhost_nginx.conf con:
-#     location / { try_files $uri $uri/ /index.html; }
-# api.pepinillo.app: proxy del docroot al contenedor, igual que api.ppn.creapolis.dev:
-#   location / { proxy_pass http://127.0.0.1:8090; ...headers... }
-plesk bin httpdmng --reconfigure-server
-# TLS cuando el DNS resuelva (extensión Let's Encrypt de Plesk):
-plesk bin extension --exec letsencrypt-cli -d pepinillo.app -d www.pepinillo.app -d app.pepinillo.app
-plesk bin extension --exec letsencrypt-cli -d api.pepinillo.app
+plesk bin subscription -c pepinillo.app -login pepinillo_app -passwd '<secreto>'
+plesk bin subscription -u pepinillo.app -hosting true -ip 74.208.234.244 -login pepinillo_app -passwd '<secreto>'
+plesk bin site -u pepinillo.app -www-root httpdocs
+plesk bin subdomain -c app -domain pepinillo.app -www-root app.pepinillo.app
+plesk bin subdomain -c api -domain pepinillo.app -www-root api.pepinillo.app
+# nginx custom (vhost_nginx.conf por dominio) + regenerar config + nginx reload:
+#   pepinillo.app y app.pepinillo.app  → SPA fallback sin duplicar location /
+#     (Plesk ya define location /):
+#       location ~ ^/(focus|plan|dashboard|account|upgrade) {
+#           try_files $uri $uri.html $uri/ /index.html;
+#       }
+#       error_page 404 =200 /index.html;
+#   api.pepinillo.app → proxy igual que api.ppn.creapolis.dev:
+#       location ~ ^/.* { proxy_pass http://127.0.0.1:8090; ...headers ws... }
+plesk repair web -y <dominio>          # regenera e incluye vhost_nginx.conf
+nginx -t && nginx -s reload
+# TLS (extensión "letsencrypt", flag de email es -m):
+plesk bin extension --exec letsencrypt cli.php -d <dominio> -m hola@creapolis.dev
+plesk bin site -u <dominio> -certificate-name 'Lets Encrypt <dominio>'  # si no auto-asigna
 ```
-(Sintaxis a verificar en ejecución con `plesk bin site --help` / `plesk bin subdomain --help`.)
+Ejecutado con éxito 2026-11-17. Notas: los docroots se dan al usuario de deploy
+(`usermod -aG psaserv <user>` + chmod 2775) para el rsync del workflow; el rsync
+usa `--no-o --no-g --no-perms -O --exclude=.well-known` (sin chown/chgrp de dirs
+de Plesk; .well-known sobrevive a --delete para renovaciones LE).
 
 **Deploy estático (repetible):**
 
