@@ -259,10 +259,23 @@ struct WatchTimerView: View {
                     if store.countsDown,
                        let end = store.phaseEndDate,
                        !store.isPaused {
-                        Text(end, style: .timer)
-                            .font(.system(.title, design: .rounded, weight: .semibold))
-                            .monospacedDigit()
-                            .minimumScaleFactor(0.7)
+                        // #880 RC1: `Text(date, style: .timer)` counts UP once
+                        // the anchor passes — re-evaluate at the boundary and
+                        // clamp at zero while the authoritative next-phase
+                        // state (or the resync heartbeat) lands.
+                        TimelineView(.periodic(from: end, by: 1)) { _ in
+                            if end.timeIntervalSinceNow > 0 {
+                                Text(end, style: .timer)
+                                    .font(.system(.title, design: .rounded, weight: .semibold))
+                                    .monospacedDigit()
+                                    .minimumScaleFactor(0.7)
+                            } else {
+                                Text(verbatim: "0:00")
+                                    .font(.system(.title, design: .rounded, weight: .semibold))
+                                    .monospacedDigit()
+                                    .minimumScaleFactor(0.7)
+                            }
+                        }
                     } else {
                         Text(store.displayTime)
                             .font(.system(.title, design: .rounded, weight: .semibold))
