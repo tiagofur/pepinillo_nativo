@@ -130,8 +130,10 @@
 	--focus-ring: 0 0 0 2px var(--surface), 0 0 0 4px var(--brand);
 }
 
-/* ---- Desktop density: Mac body (13pt) and control size (36pt) ---- */
-@media (min-width: 1024px) {
+/* ---- Desktop density: Mac body (13pt) and control size (36pt).
+	 * Fine-pointer guard: touch tablets (iPad ≥1024px) keep the 44px
+	 * HIG minimum — TouchTargets.swift scopes macMinimum(36) to Mac. ---- */
+@media (min-width: 1024px) and (pointer: fine) {
 	:root {
 		--text-base: 0.8125rem; /* 13 — Mac body */
 		--text-md: 1rem; /* 16 */
@@ -168,6 +170,7 @@
 		--mode-stopwatch-soft: color-mix(in srgb, var(--mode-stopwatch) 18%, transparent);
 		--streak-soft: color-mix(in srgb, var(--streak) 18%, transparent);
 		--danger: #ff453a;
+		--danger-soft: color-mix(in srgb, var(--danger) 18%, transparent);
 		--glass-bg: rgba(44, 44, 50, 0.52);
 		--glass-stroke: rgba(255, 255, 255, 0.14);
 		--material-bg: rgba(32, 32, 37, 0.84);
@@ -200,6 +203,7 @@
 	--mode-stopwatch-soft: color-mix(in srgb, var(--mode-stopwatch) 18%, transparent);
 	--streak-soft: color-mix(in srgb, var(--streak) 18%, transparent);
 	--danger: #ff453a;
+	--danger-soft: color-mix(in srgb, var(--danger) 18%, transparent);
 	--glass-bg: rgba(44, 44, 50, 0.52);
 	--glass-stroke: rgba(255, 255, 255, 0.14);
 	--material-bg: rgba(32, 32, 37, 0.84);
