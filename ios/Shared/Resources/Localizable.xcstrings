@@ -12846,6 +12846,30 @@
         }
       }
     },
+    "menu.view.zen" : {
+      "comment" : "View menu toggle that hides the link-task chip and today stats on the Mac focus stage.",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Zen Mode"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modo Zen"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modo Zen"
+          }
+        }
+      }
+    },
     "Merge Data" : {
       "extractionState" : "stale",
       "localizations" : {

@@ -12,7 +12,12 @@ struct MacFocusView: View {
 
     @Environment(\.appTheme) private var theme
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     @State private var showStopConfirmation = false
+    /// Zen stage (issue #797): pinch on the stage or View ▸ Zen Mode hides
+    /// the link-task chip and today stats. Shared with the menu command.
+    @AppStorage(FocusZenMode.storageKey) private var isZen = false
     @Namespace private var glassNS
 
     private var currentMode: FocusMode {
@@ -64,6 +69,14 @@ struct MacFocusView: View {
             }
             .scrollIndicators(.hidden)
         }
+        // Two-finger pinch toggles Zen on touch and trackpad alike; any
+        // deliberate pinch counts, direction does not matter.
+        .simultaneousGesture(
+            MagnifyGesture().onEnded { value in
+                guard abs(value.magnification - 1) >= FocusZenMode.pinchThreshold else { return }
+                isZen.toggle()
+            }
+        )
         .toolbar {
             // While a session runs the toolbar stays empty (the stage carries
             // the controls), mirroring the system Clock app on macOS.
@@ -131,9 +144,13 @@ struct MacFocusView: View {
 
             TimerCircleView(store: store, timerFontSize: timerFont)
                 .frame(width: ringSize, height: ringSize)
+                .modifier(MacFocusRingTouch(store: store, ringSize: ringSize))
 
             phaseSection
-            linkedTaskChip
+            if !isZen {
+                linkedTaskChip
+                    .transition(.opacity)
+            }
             // Duration steppers flank Start on Time Block, mirroring the
             // iPhone stage (issue #820 — focus engine parity invariant).
             HStack(spacing: 16) {
@@ -148,10 +165,14 @@ struct MacFocusView: View {
             .animation(MotionTokens.snappy, value: store.selectedMode)
             secondaryControls
                 .animation(MotionTokens.snappy, value: store.isRunning)
-            todayStats
+            if !isZen {
+                todayStats
+                    .transition(.opacity)
+            }
 
             Spacer(minLength: 8)
         }
+        .animation(reduceMotion ? nil : MotionTokens.snappy, value: isZen)
         .frame(maxWidth: .infinity)
         .frame(minHeight: geometry.size.height)
         .padding(.horizontal, 32)
