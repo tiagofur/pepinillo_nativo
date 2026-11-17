@@ -98,6 +98,17 @@
 		font-size: var(--text-xs);
 	}
 
+	/* Desktop: Mac control size */
+	@media (min-width: 1024px) {
+		button {
+			min-height: 28px;
+		}
+
+		.compact button {
+			min-height: 24px;
+		}
+	}
+
 	@media (prefers-reduced-motion: reduce) {
 		.thumb {
 			transition: none;

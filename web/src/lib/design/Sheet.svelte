@@ -89,7 +89,7 @@
 		}
 
 		.sheet {
-			border-radius: var(--radius-lg);
+			border-radius: var(--radius-xl); /* Mac sheet corner 28 */
 			padding-bottom: var(--space-6);
 		}
 	}

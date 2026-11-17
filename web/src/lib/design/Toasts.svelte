@@ -48,9 +48,11 @@
 		align-items: center;
 		gap: var(--space-4);
 		padding: var(--space-3) var(--space-4);
-		border-radius: var(--radius-md);
-		background: var(--surface);
-		border: 1px solid var(--border);
+		border-radius: var(--radius-tile);
+		background: var(--material-bg);
+		backdrop-filter: blur(20px) saturate(1.4);
+		-webkit-backdrop-filter: blur(20px) saturate(1.4);
+		border: 1px solid var(--hairline);
 		color: var(--ink);
 		font-size: var(--text-sm);
 		font-weight: 550;
