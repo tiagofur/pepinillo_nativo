@@ -31,17 +31,35 @@
 
 	// Mac parity: long-press opens the row context menu on touch.
 	let pressTimer: ReturnType<typeof setTimeout> | null = null;
+	let pressX = 0;
+	let pressY = 0;
+	// The gesture's synthesized click must not instantly close the menu.
+	let suppressClick = false;
 
 	function touchStart(e: TouchEvent): void {
 		if (!oncontext) return;
+		if (e.touches.length !== 1) {
+			touchCancel();
+			return;
+		}
 		const t = e.touches[0];
 		if (!t) return;
-		const x = t.clientX;
-		const y = t.clientY;
+		pressX = t.clientX;
+		pressY = t.clientY;
 		pressTimer = setTimeout(() => {
 			pressTimer = null;
-			oncontext?.(x, y);
+			suppressClick = true;
+			setTimeout(() => (suppressClick = false), 450);
+			oncontext?.(pressX, pressY);
 		}, 500);
+	}
+
+	// Movement with a 10px slop: finger jitter never cancels the press.
+	function touchMove(e: TouchEvent): void {
+		if (!pressTimer) return;
+		const t = e.touches[0];
+		if (!t) return;
+		if (Math.abs(t.clientX - pressX) > 10 || Math.abs(t.clientY - pressY) > 10) touchCancel();
 	}
 
 	function touchCancel(): void {
@@ -50,6 +68,20 @@
 			pressTimer = null;
 		}
 	}
+
+	function onClickCapture(e: MouseEvent): void {
+		if (suppressClick) {
+			e.stopPropagation();
+			e.preventDefault();
+		}
+	}
+
+	// Destructors: a pending press must not fire for an unmounted row.
+	$effect(() => {
+		return () => {
+			if (pressTimer) clearTimeout(pressTimer);
+		};
+	});
 
 	// Native PriorityColors.kt: fixed semantic colors (not theme-dependent).
 	const PRIORITY_COLOR: Record<string, string> = {
@@ -94,8 +126,15 @@
 	ondrop={ondrop}
 	ontouchstart={touchStart}
 	ontouchend={touchCancel}
-	ontouchmove={touchCancel}
+	ontouchmove={touchMove}
 	ontouchcancel={touchCancel}
+	onclickcapture={onClickCapture}
+	oncontextmenu={(e) => {
+		if (!oncontext) return;
+		e.preventDefault();
+		touchCancel();
+		oncontext?.(e.clientX || 40, e.clientY || 40);
+	}}
 >
 	<button
 		class="check pressable"
@@ -112,7 +151,7 @@
 				<span class="pill">{subs.done}/{subs.total}</span>
 			{/if}
 			{#if task.estimatedPomodoros > 0}
-				<span class="pill nums">🍅 {task.completedPomodoros ?? 0}/{task.estimatedPomodoros}</span>
+				<span class="pill nums">⏱ {task.completedPomodoros ?? 0}/{task.estimatedPomodoros}</span>
 			{/if}
 			{#if task.recurrenceRule}
 				<span class="pill">🔁</span>
@@ -134,6 +173,8 @@
 
 <style>
 	.row {
+		user-select: none;
+		-webkit-user-select: none;
 		display: flex;
 		align-items: center;
 		gap: var(--space-2);

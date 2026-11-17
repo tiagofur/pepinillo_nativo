@@ -80,7 +80,7 @@
 				<p class="date-sub">{t('dashboard.subtitle')}</p>
 			</div>
 			<div class="date-side nums">
-				<span class="side-chip">🔥 {dashboard.stats.streak} · {t('companion.streak')}</span>
+				<span class="side-chip">🔥 {dashboard.stats.streak > 0 ? dashboard.stats.streak : '—'} · {t('companion.streak')}</span>
 				<span class="side-sep" aria-hidden="true"></span>
 				<span class="side-chip">{fmtMin(dashboard.stats.todayFocusSeconds)} · {t('companion.focusToday')}</span>
 			</div>

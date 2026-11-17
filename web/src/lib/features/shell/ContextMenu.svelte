@@ -31,22 +31,17 @@
 	// coords of each mount — the owner recreates the menu per invocation).
 	let pos = $state({ left: 0, top: 0 });
 
+	// Synchronous clamp: $effect runs after the DOM insert, so menuEl is
+	// already bound (rAF would never fire for background tabs). Re-runs if
+	// the pointer coords or the element change.
 	$effect(() => {
-		// Seed with the raw pointer, then clamp once the size is known.
-		pos = { left: x, top: y };
-		tickClamp();
+		if (!menuEl) return;
+		const r = menuEl.getBoundingClientRect();
+		const margin = 8;
+		const left = Math.max(margin, Math.min(x, window.innerWidth - r.width - margin));
+		const top = Math.max(margin, Math.min(y, window.innerHeight - r.height - margin));
+		pos = { left, top };
 	});
-
-	function tickClamp(): void {
-		requestAnimationFrame(() => {
-			if (!menuEl) return;
-			const r = menuEl.getBoundingClientRect();
-			const margin = 8;
-			const left = Math.max(margin, Math.min(x, window.innerWidth - r.width - margin));
-			const top = Math.max(margin, Math.min(y, window.innerHeight - r.height - margin));
-			pos = { left, top };
-		});
-	}
 
 	function pick(item: ContextMenuItem): void {
 		if (item.disabled || item.kind === 'separator' || item.kind === 'submenu') return;
@@ -62,7 +57,7 @@
 	}
 </script>
 
-<svelte:window onkeydown={onKeydown} />
+<svelte:window onkeydown={onKeydown} onscroll={() => onclose()} onscrollcapture={() => onclose()} />
 
 <!-- a11y waiver: pointer-positioned menu; keyboard users keep their existing
 	 shortcuts (row selection + inspector + title edit) and Escape closes. -->
@@ -85,7 +80,7 @@
 					class="entry has-sub"
 					class:is-open={openSubmenu === item.id}
 					role="menuitem"
-					aria-haspopup="true"
+					aria-haspopup="menu"
 					aria-expanded={openSubmenu === item.id}
 					tabindex="0"
 					onkeydown={(e) => e.key === 'Enter' && (openSubmenu = openSubmenu === item.id ? null : item.id)}
@@ -95,7 +90,7 @@
 					<span class="label" class:destructive={item.destructive}>{item.label}</span>
 					<span class="chev" aria-hidden="true">›</span>
 					{#if openSubmenu === item.id}
-						<div class="submenu material-panel">
+						<div class="submenu material-panel" role="menu">
 							{#each item.children as child (child.id)}
 								<button
 									class="entry child"
@@ -216,13 +211,36 @@
 		position: relative;
 	}
 
+	/* Submenus always stack INLINE below their entry (GitHub/Linear pattern):
+	 * a floating 180px panel can leave the viewport near any edge, on any
+	 * screen size — inline stacking is in-viewport by construction. */
 	.submenu {
-		position: absolute;
-		top: -4px;
-		right: -6px;
-		transform: translateX(100%);
-		min-width: 180px;
+		min-width: 0;
+		width: 100%;
+		max-height: min(280px, 40vh);
+		overflow-y: auto;
 		padding: var(--space-1);
+		box-shadow: none;
+		margin-top: var(--space-1);
+	}
+
+	/* When a submenu opens, the entry drops its row layout so the inline
+	 * submenu stacks BELOW the label (it would otherwise be a flex row
+	 * item beside it). The chevron implied a flyout that no longer exists. */
+	.entry.has-sub.is-open {
+		display: block;
+	}
+
+	.entry.has-sub.is-open .chev {
+		display: none;
+	}
+
+	.entry.has-sub.is-open .submenu {
+		min-width: 0;
+		width: 100%;
+		max-height: min(280px, 40vh);
+		box-shadow: none;
+		margin-top: var(--space-1);
 	}
 
 	.sep {

@@ -46,6 +46,7 @@
 		return d && d.totalFocusSeconds > 0 ? t(WEEKDAY_KEYS[new Date(`${d.date}T12:00:00`).getDay()]) : '—';
 	});
 
+
 	function fmtMin(seconds: number): string {
 		const m = Math.round(seconds / 60);
 		if (m < 60) return `${m}m`;
@@ -60,14 +61,16 @@
 			{#each stats.weekly as d, i (d.date)}
 				<div class="week-col">
 					<span class="nums week-val">{showDayBars && d.totalFocusSeconds > 0 ? fmtMin(d.totalFocusSeconds) : ''}</span>
-					<div
-						class="week-bar"
-						style="height: {(d.totalFocusSeconds / weekMax) * 100}%; background: {d.totalFocusSeconds > 0
-							? d.date === todayKey
-								? 'var(--mode-pomodoro)'
-								: 'color-mix(in srgb, var(--mode-pomodoro) 35%, transparent)'
-							: 'var(--surface-sunken)'}"
-					></div>
+					<div class="week-track">
+						<div
+							class="week-bar"
+							style="height: {(d.totalFocusSeconds / weekMax) * 100}%; background: {d.totalFocusSeconds > 0
+								? d.date === todayKey
+									? 'var(--mode-pomodoro)'
+									: 'color-mix(in srgb, var(--mode-pomodoro) 35%, transparent)'
+								: 'var(--surface-sunken)'}"
+						></div>
+					</div>
 					<span class="week-label">{showDayBars ? t(WEEKDAY_KEYS[new Date(`${d.date}T12:00:00`).getDay()]) : ''}</span>
 				</div>
 			{/each}
@@ -97,7 +100,7 @@
 <style>
 	.charts {
 		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+		grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
 		gap: var(--space-4);
 	}
 
@@ -117,21 +120,20 @@
 	}
 
 	/* Mac weekly chart: bars minHeight 220 area, corner radius 4 */
+	/* Bar track: definite-height wrapper so the bar's percentage height
+	 * resolves exactly — labels sit outside the track (no flex squeeze) */
 	.week-days {
 		display: flex;
 		align-items: stretch;
 		gap: var(--space-2);
-		height: 148px;
 	}
 
 	.week-col {
 		flex: 1;
 		display: flex;
 		flex-direction: column;
-		justify-content: flex-end;
 		align-items: center;
 		gap: var(--space-1);
-		height: 100%;
 	}
 
 	.week-val {
@@ -140,8 +142,18 @@
 		min-height: 14px;
 	}
 
-	.week-bar {
+	.week-track {
+		position: relative;
 		width: 100%;
+		height: 148px;
+		flex: none;
+	}
+
+	.week-bar {
+		position: absolute;
+		bottom: 0;
+		left: 0;
+		right: 0;
 		min-height: 4px;
 		border-radius: 4px 4px 0 0;
 		transition: height var(--dur-slow) var(--ease-out-quint);
@@ -172,6 +184,10 @@
 
 	.week-days.compact .week-bar {
 		border-radius: 1px;
+	}
+
+	.week-days.compact .week-track {
+		height: 100px;
 	}
 
 	.week-days.compact .week-val {

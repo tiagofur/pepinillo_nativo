@@ -135,12 +135,18 @@ a:hover {
 	}
 	to {
 		opacity: 1;
-		transform: translateY(0);
+		/* transform: none — a filled translateY(0) keeps a transform on the
+		 * computed style, which would turn position:fixed descendants (the
+		 * context menu) into anchors of this section instead of the viewport */
+		transform: none;
 	}
 }
 
 .rise-in {
-	animation: rise-in var(--dur-slow) var(--ease-out-quint) both;
+	/* backwards (not both): after the entrance there must be NO filled
+	 * transform — a filled identity matrix still creates a containing
+	 * block and re-anchors position:fixed descendants (context menu) */
+	animation: rise-in var(--dur-slow) var(--ease-out-quint) backwards;
 }
 
 @media (prefers-reduced-motion: reduce) {
