@@ -68,6 +68,11 @@ struct MacFocusView: View {
                 }
             }
             .scrollIndicators(.hidden)
+            // The stage is a fixed composition, not a document: when the
+            // content fits the window there is nothing to scroll (issue
+            // #851) — no elastic bounce for a wheel or a stray finger. Only
+            // a genuinely too-short window still scrolls.
+            .scrollBounceBehavior(.basedOnSize)
         }
         // Two-finger pinch toggles Zen on touch and trackpad alike; any
         // deliberate pinch counts, direction does not matter.
@@ -174,10 +179,13 @@ struct MacFocusView: View {
             Spacer(minLength: 8)
         }
         .animation(reduceMotion ? nil : MotionTokens.snappy, value: isZen)
-        .frame(maxWidth: .infinity)
-        .frame(minHeight: geometry.size.height)
+        // Padding BEFORE the height frame: `minHeight` must cover the
+        // paddings, or the stage always measures viewport + 32px and the
+        // ScrollView keeps a permanent scrollable delta (issue #851).
         .padding(.horizontal, 32)
         .padding(.vertical, 16)
+        .frame(maxWidth: .infinity)
+        .frame(minHeight: geometry.size.height)
     }
 
     /// Mirrors the iPhone control row: Skip only where it applies (active
