@@ -25,6 +25,14 @@
 	let confirmEnd = $state(false);
 	let confirmTimer: ReturnType<typeof setTimeout> | null = null;
 
+	// The armed state never crosses a session boundary.
+	$effect(() => {
+		if (focus.idle) {
+			confirmEnd = false;
+			if (confirmTimer) clearTimeout(confirmTimer);
+		}
+	});
+
 	function onEnd(): void {
 		if (confirmEnd) {
 			confirmEnd = false;
@@ -133,14 +141,14 @@
 		<div class="controls" style="--mode-hex: {focus.phaseColor}">
 			{#if focus.idle && !focus.waiting}
 				{#if focus.mode === 'timeblock'}
-					<button class="stepper glass-btn pressable" aria-label="-5 min" onclick={() => focus.adjustBlock(-5)}>−</button>
+					<button class="stepper pressable" aria-label="-5 min" onclick={() => focus.adjustBlock(-5)}>−</button>
 				{/if}
 				<button class="primary-cta pressable" onclick={() => focus.start()}>
 					<Icon name="play" size={18} />
 					{t('focus.start')}
 				</button>
 				{#if focus.mode === 'timeblock'}
-					<button class="stepper glass-btn pressable" aria-label="+5 min" onclick={() => focus.adjustBlock(5)}>+</button>
+					<button class="stepper pressable" aria-label="+5 min" onclick={() => focus.adjustBlock(5)}>+</button>
 				{/if}
 			{:else if focus.waiting}
 				<button class="primary-cta pressable" onclick={() => focus.start()}>
@@ -167,22 +175,22 @@
 						{t('focus.skip')}
 					</button>
 				{/if}
-				<button class="end-cta pressable" class:armed={confirmEnd} onclick={onEnd}>
-					{confirmEnd ? t('focus.endConfirm') : t('focus.complete')}
-				</button>
-			{:else if focus.paused}
-				<button class="primary-cta pressable" onclick={() => focus.resume()}>
-					<Icon name="play" size={18} />
-					{t('focus.resume')}
-				</button>
-				<button class="btn btn-outline pressable" onclick={() => focus.skip()}>
-					<Icon name="skip" size={16} />
-					{t('focus.skip')}
-				</button>
-				<button class="end-cta pressable" class:armed={confirmEnd} onclick={onEnd}>
-					{confirmEnd ? t('focus.endConfirm') : t('focus.complete')}
-				</button>
-			{/if}
+			<button class="end-cta pressable" class:armed={confirmEnd} aria-live="polite" onclick={onEnd}>
+				{confirmEnd ? t('focus.endConfirm') : t('focus.complete')}
+			</button>
+		{:else if focus.paused}
+			<button class="primary-cta pressable" onclick={() => focus.resume()}>
+				<Icon name="play" size={18} />
+				{t('focus.resume')}
+			</button>
+			<button class="btn btn-outline pressable" onclick={() => focus.skip()}>
+				<Icon name="skip" size={16} />
+				{t('focus.skip')}
+			</button>
+			<button class="end-cta pressable" class:armed={confirmEnd} aria-live="polite" onclick={onEnd}>
+				{confirmEnd ? t('focus.endConfirm') : t('focus.complete')}
+			</button>
+		{/if}
 		</div>
 
 		<AdhdBreak />
@@ -210,7 +218,9 @@
 		z-index: 1;
 	}
 
-	/* ---- Ambient mesh (PepinilloLiquidBackground web port) ---- */
+	/* ---- Ambient mesh (PepinilloLiquidBackground web port) ----
+	 * Bleed matches the shell's per-breakpoint content padding so the mesh
+	 * reaches the window edges without creating horizontal overflow. */
 	.ambient {
 		position: absolute;
 		inset: calc(-1 * var(--space-8)) calc(-1 * var(--space-8)) calc(-1 * var(--space-10));
@@ -218,6 +228,18 @@
 		pointer-events: none;
 		z-index: 0;
 		opacity: 0.12;
+	}
+
+	@media (max-width: 1023px) {
+		.ambient {
+			inset: calc(-1 * var(--space-6)) calc(-1 * var(--space-5)) calc(-1 * var(--space-10));
+		}
+	}
+
+	@media (max-width: 767px) {
+		.ambient {
+			inset: calc(-1 * var(--space-5)) calc(-1 * var(--space-4)) calc(-1 * var(--tabbar-h) - var(--safe-b) - var(--space-8));
+		}
 	}
 
 	.blob {
@@ -336,14 +358,15 @@
 	}
 
 	/* Primary capsule: interactive glass tinted with the mode color at 0.72,
-	 * white label + specular stroke (primaryFocusActionGlass) */
+	 * white label + specular stroke (primaryFocusActionGlass). Height floor
+	 * keeps the touch target honest (34pt Mac, 44px on touch, 36 desktop). */
 	.primary-cta {
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
 		gap: var(--space-2);
 		min-width: 200px;
-		min-height: 34px;
+		min-height: max(34px, var(--touch-target));
 		padding: 0 var(--space-6);
 		border: none;
 		border-radius: var(--radius-pill);
