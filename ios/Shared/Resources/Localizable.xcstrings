@@ -9593,6 +9593,22 @@
         }
       }
     },
+    "Focus on task" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enfocar tarea"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Focar tarefa"
+          }
+        }
+      }
+    },
     "Focus Quality" : {
       "localizations" : {
         "es" : {
@@ -12246,6 +12262,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Registrar no Apple Health"
+          }
+        }
+      }
+    },
+    "Long-press a task to focus it" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mantén pulsada una tarea para enfocarla"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Toque sem soltar uma tarefa para focá-la"
           }
         }
       }
