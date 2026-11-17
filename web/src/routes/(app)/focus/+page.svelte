@@ -25,12 +25,18 @@
 	let confirmEnd = $state(false);
 	let confirmTimer: ReturnType<typeof setTimeout> | null = null;
 
-	// The armed state never crosses a session boundary — any session
-	// transition (start, skip, auto-advance, completion) disarms it.
+	// The armed state never crosses a session boundary. The discriminator is
+	// id|status|waiting — NOT object identity — because the 250ms ticker
+	// reassigns this.session with a fresh object every tick while running.
+	let lastSessionKey = '';
 	$effect(() => {
-		void focus.session;
-		confirmEnd = false;
-		if (confirmTimer) clearTimeout(confirmTimer);
+		const s = focus.session;
+		const key = `${s?.id ?? ''}|${s?.status ?? ''}|${focus.waiting ? 'w' : ''}`;
+		if (key !== lastSessionKey) {
+			lastSessionKey = key;
+			confirmEnd = false;
+			if (confirmTimer) clearTimeout(confirmTimer);
+		}
 	});
 
 	function onEnd(): void {
