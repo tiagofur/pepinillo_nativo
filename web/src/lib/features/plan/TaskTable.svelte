@@ -18,27 +18,44 @@
 		selectedId,
 		onselect,
 		ontoggle,
-		onfocus
+		onfocus,
+		oncontext
 	}: {
 		tasks: Task[];
 		selectedId: string | null;
 		onselect: (id: string) => void;
 		ontoggle: (id: string) => void;
 		onfocus: (task: Task) => void;
+		oncontext?: (task: Task, x: number, y: number) => void;
 	} = $props();
 
+	/** Mac priority arrows: ↑ Alta / − Media / ↓ Baja / — (MacPlanView). */
+	const PRIORITY_ARROW: Record<string, string> = {
+		none: '—',
+		low: '↓',
+		medium: '−',
+		high: '↑'
+	};
+
 	const PRIORITY_COLOR: Record<string, string> = {
-		none: 'transparent',
-		low: '#1e88e5',
-		medium: '#fb8c00',
-		high: '#e53935'
+		none: 'var(--faint)',
+		low: 'var(--mode-flowtime)',
+		medium: 'var(--streak)',
+		high: 'var(--mode-pomodoro)'
 	};
 
 	const ENERGY_COLOR: Record<string, string> = {
-		deep: 'var(--brand)',
+		deep: 'var(--mode-timeblock)',
 		shallow: 'var(--mode-flowtime)',
 		admin: 'var(--streak)'
 	};
+
+	function emitContext(task: Task, e: MouseEvent): void {
+		if (!oncontext) return;
+		e.preventDefault();
+		e.stopPropagation();
+		oncontext(task, e.clientX, e.clientY);
+	}
 
 	const ENERGY_KEYS: Record<string, MessageKey> = {
 		deep: 'plan.energy.deep',
@@ -69,10 +86,10 @@
 	}
 </script>
 
-<div class="task-table card" role="table" aria-label={t('plan.title')}>
+<div class="task-table" role="table" aria-label={t('plan.title')}>
 	<div class="thead" role="row">
 		<span class="col-check" aria-hidden="true"></span>
-		<span class="col-title" role="columnheader">{t('plan.title')}</span>
+		<span class="col-title" role="columnheader">{t('plan.taskTitle' as MessageKey)}</span>
 		<span class="col-pri" role="columnheader">{t('plan.priority')}</span>
 		<span class="col-energy" role="columnheader">{t('plan.energy')}</span>
 		<span class="col-pomo" role="columnheader">🍅</span>
@@ -86,6 +103,7 @@
 			class:selected={selectedId === task.id}
 			role="row"
 			onclick={() => onselect(task.id)}
+			oncontextmenu={(e) => emitContext(task, e)}
 			onkeydown={(e) => e.key === 'Enter' && onselect(task.id)}
 			tabindex="0"
 		>
@@ -132,14 +150,18 @@
 				{/if}
 			</span>
 			<span class="col-pri" role="cell">
-				<span class="dot" title={task.priority} style="background: {PRIORITY_COLOR[task.priority]}"></span>
+				<span class="pri" style="color: {PRIORITY_COLOR[task.priority]}">
+					<span class="arrow" aria-hidden="true">{PRIORITY_ARROW[task.priority]}</span>
+					<span class="pri-label">{t(`plan.priority.${task.priority}` as MessageKey)}</span>
+				</span>
 			</span>
 			<span class="col-energy" role="cell">
-				<span class="energy-chip" style="color: {ENERGY_COLOR[task.energy]}; background: color-mix(in srgb, {ENERGY_COLOR[task.energy]} 10%, transparent)">
+				<span class="energy">
+					<span class="energy-dot" style="background: {ENERGY_COLOR[task.energy]}" aria-hidden="true"></span>
 					{t(ENERGY_KEYS[task.energy])}
 				</span>
 			</span>
-			<span class="col-pomo nums" role="cell">🍅 {task.completedPomodoros ?? 0}/{task.estimatedPomodoros}</span>
+			<span class="col-pomo nums" role="cell">⏱ {task.completedPomodoros ?? 0}/{task.estimatedPomodoros}</span>
 			<span class="col-due nums" role="cell" class:overdue={!!task.dueDate && task.dueDate < todayKey()}>
 				{task.dueDate ?? '—'}
 			</span>
@@ -160,33 +182,33 @@
 </div>
 
 <style>
+	/* MacPlanView: the table sits directly on the window background, rows 30 /
+	 * header 28, hairline separators, no card chrome. */
 	.task-table {
-		overflow: hidden;
+		width: 100%;
 	}
 
 	.thead,
 	.trow {
 		display: grid;
-		grid-template-columns: 44px minmax(0, 1fr) 56px 92px 72px 92px 44px;
+		grid-template-columns: 44px minmax(0, 1fr) 100px 140px 72px 110px 44px;
 		align-items: center;
 		gap: var(--space-2);
 		padding: 0 var(--space-4);
 	}
 
 	.thead {
-		min-height: 40px;
+		min-height: 28px;
 		border-bottom: 1px solid var(--hairline);
 		font-size: var(--text-2xs);
 		font-weight: 700;
-		text-transform: uppercase;
-		letter-spacing: 0.06em;
 		color: var(--muted);
 	}
 
 	.trow {
-		min-height: 48px;
+		min-height: 30px;
 		border-bottom: 1px solid var(--hairline);
-		cursor: pointer;
+		cursor: default;
 		transition: background-color var(--dur-fast) var(--ease-out-quint);
 	}
 
@@ -250,19 +272,38 @@
 		border-color: var(--brand);
 	}
 
-	.dot {
-		display: inline-block;
-		width: 8px;
-		height: 8px;
-		border-radius: 50%;
+	.pri {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+		font-size: var(--text-sm);
+		font-weight: 550;
+		white-space: nowrap;
 	}
 
-	.energy-chip {
-		font-size: var(--text-2xs);
-		font-weight: 650;
-		border-radius: var(--radius-pill);
-		padding: 2px 8px;
+	.arrow {
+		font-weight: 700;
+	}
+
+	.pri-label {
+		color: var(--ink-secondary);
+	}
+
+	.energy {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		font-size: var(--text-sm);
+		font-weight: 550;
+		color: var(--ink-secondary);
 		white-space: nowrap;
+	}
+
+	.energy-dot {
+		width: 9px;
+		height: 9px;
+		border-radius: 50%;
+		flex: none;
 	}
 
 	.col-pomo,

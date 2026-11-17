@@ -10,6 +10,7 @@
 	import ReviewSheet from '$lib/features/dashboard/ReviewSheet.svelte';
 	import PaneToolbar from '$lib/features/shell/PaneToolbar.svelte';
 	import Icon from '$lib/design/Icon.svelte';
+	import { currentLocale } from '$lib/i18n/i18n.svelte';
 	import type { AnalyticsPeriod } from '$lib/domain/dashboard/stats';
 
 	onMount(() => {
@@ -40,6 +41,16 @@
 		if (h === null) return '—';
 		return `${String(h).padStart(2, '0')}:00`;
 	}
+
+	// Mac Today header: localized long date.
+	let dateLabel = $derived(
+		new Intl.DateTimeFormat(currentLocale(), {
+			weekday: 'long',
+			day: 'numeric',
+			month: 'long',
+			year: 'numeric'
+		}).format(new Date())
+	);
 </script>
 
 <svelte:head>
@@ -61,65 +72,58 @@
 		{/snippet}
 	</PaneToolbar>
 
-	<div class="head-actions">
-		<button class="btn btn-soft pressable" onclick={() => dashboard.openReview(7)}>
-			📊 {t('review.weekly')}
-		</button>
-		<button class="btn btn-ghost pressable" onclick={() => dashboard.openReview(30)}>
-			{t('review.monthly')}
-		</button>
-	</div>
-
 	{#if dashboard.stats}
-		<!-- Streak hero -->
-		<div class="hero card">
-			<div class="streak">
-				<span class="streak-num nums">{dashboard.stats.streak > 0 ? `🔥 ${dashboard.stats.streak}` : '—'}</span>
-				<span class="streak-label">{t('companion.streak')}</span>
-				<span class="streak-best">{t('dash.best', { days: dashboard.stats.bestStreak })}</span>
+		<!-- Mac Today header: long date + subtitle, streak/focus on the right -->
+		<header class="date-head">
+			<div class="date-block">
+				<h2 class="date-title">{dateLabel}</h2>
+				<p class="date-sub">{t('dashboard.subtitle')}</p>
 			</div>
-			<div class="score">
-				<span class="score-num nums">{dashboard.stats.focusScore}</span>
-				<span class="score-label">{t(QUALIFIER_KEYS[dashboard.stats.focusScoreQualifier])}</span>
-				<span class="score-name">{t('dash.focusScore')}</span>
+			<div class="date-side nums">
+				<span class="side-chip">🔥 {dashboard.stats.streak} · {t('companion.streak')}</span>
+				<span class="side-sep" aria-hidden="true"></span>
+				<span class="side-chip">{fmtMin(dashboard.stats.todayFocusSeconds)} · {t('companion.focusToday')}</span>
 			</div>
-			<div class="patterns">
-				<div class="pattern">
-					<span class="p-icon">⏰</span>
-					<span class="p-value nums">{hourLabel(dashboard.stats.peakHour)}</span>
-					<span class="p-label">{t('dash.peakHour')}</span>
-				</div>
-				<div class="pattern">
-					<span class="p-icon">📈</span>
-					<span class="p-value nums">{Math.round(dashboard.stats.completionRate * 100)}%</span>
-					<span class="p-label">{t('dash.completion')}</span>
-				</div>
-				<div class="pattern">
-					<span class="p-icon">🤿</span>
-					<span class="p-value nums">{fmtMin(dashboard.stats.longestSessionMs / 1000)}</span>
-					<span class="p-label">{t('dash.longest')}</span>
-				</div>
+		</header>
+
+		<div class="head-actions">
+			<button class="link-btn pressable" onclick={() => dashboard.openReview(7)}>
+				{t('review.weekly')}
+			</button>
+			<span class="ha-sep" aria-hidden="true">·</span>
+			<button class="link-btn pressable" onclick={() => dashboard.openReview(30)}>
+				{t('review.monthly')}
+			</button>
+		</div>
+
+		<!-- Flat KPI row (Mac Today): caption label + rounded semibold value -->
+		<div class="kpis">
+			<div class="kpi">
+				<span class="k-head">⏱ {t('companion.focusToday')}</span>
+				<span class="k-value nums">{fmtMin(dashboard.stats.todayFocusSeconds)}</span>
+			</div>
+			<div class="kpi">
+				<span class="k-head">🌊 {t('companion.sessionsToday')}</span>
+				<span class="k-value nums">{dashboard.stats.todaySessions}</span>
+			</div>
+			<div class="kpi">
+				<span class="k-head">🔥 {t('companion.streak')}</span>
+				<span class="k-value nums">{dashboard.stats.streak > 0 ? dashboard.stats.streak : '—'}</span>
+			</div>
+			<div class="kpi">
+				<span class="k-head">🏅 {t('dash.periodFocus')}</span>
+				<span class="k-value nums">{fmtMin(dashboard.stats.periodFocusSeconds)}</span>
 			</div>
 		</div>
 
-		<!-- Summary cards -->
-		<div class="summary">
-			<div class="card stat">
-				<span class="v nums">{fmtMin(dashboard.stats.todayFocusSeconds)}</span>
-				<span class="l">{t('companion.focusToday')}</span>
-			</div>
-			<div class="card stat">
-				<span class="v nums">{dashboard.stats.todaySessions}</span>
-				<span class="l">{t('companion.sessionsToday')}</span>
-			</div>
-			<div class="card stat">
-				<span class="v nums">{fmtMin(dashboard.stats.periodFocusSeconds)}</span>
-				<span class="l">{t('dash.periodFocus')}</span>
-			</div>
-			<div class="card stat">
-				<span class="v nums">{dashboard.unlockedCount}/6</span>
-				<span class="l">{t('achievements.title')}</span>
-			</div>
+		<!-- Focus score + patterns: flat secondary row -->
+		<div class="meta-row">
+			<span class="meta-score nums">{dashboard.stats.focusScore}</span>
+			<span class="meta-score-name">{t(QUALIFIER_KEYS[dashboard.stats.focusScoreQualifier])}</span>
+			<span class="meta-item"><span class="nums">{hourLabel(dashboard.stats.peakHour)}</span> {t('dash.peakHour')}</span>
+			<span class="meta-item"><span class="nums">{Math.round(dashboard.stats.completionRate * 100)}%</span> {t('dash.completion')}</span>
+			<span class="meta-item"><span class="nums">{fmtMin(dashboard.stats.longestSessionMs / 1000)}</span> {t('dash.longest')}</span>
+			<span class="meta-item"><span class="nums">{dashboard.unlockedCount}/6</span> {t('achievements.title')}</span>
 		</div>
 
 		<!-- Period picker (segmented, Mac style) -->
@@ -152,106 +156,141 @@
 </section>
 
 <style>
+	/* Mac Today: content max 980, padding 24, section spacing 24 */
 	.dash {
 		display: flex;
 		flex-direction: column;
-		gap: var(--space-4);
-		max-width: 860px;
+		gap: var(--space-6);
+		max-width: var(--content-panel-max);
 		margin-inline: auto;
 		width: 100%;
 	}
 
-	.head-actions {
+	/* ---- Header: long date + subtitle | streak/focus ---- */
+	.date-head {
 		display: flex;
-		gap: var(--space-2);
-		margin-bottom: var(--space-2);
-	}
-
-	.hero {
-		display: grid;
-		grid-template-columns: auto auto;
-		gap: var(--space-5) var(--space-8);
-		padding: var(--space-6);
-	}
-
-	.streak,
-	.score {
-		display: flex;
-		flex-direction: column;
-		gap: 2px;
-	}
-
-	.streak-num,
-	.score-num {
-		font-size: clamp(2rem, 5vw, 2.8rem);
-		font-weight: 800;
-		letter-spacing: var(--tracking-tight);
-	}
-
-	.streak-num {
-		color: var(--streak);
-	}
-
-	.score-num {
-		color: var(--brand);
-	}
-
-	.streak-label,
-	.score-label {
-		font-weight: 650;
-		color: var(--ink-secondary);
-	}
-
-	.streak-best,
-	.score-name {
-		font-size: var(--text-xs);
-		color: var(--faint);
-	}
-
-	.patterns {
-		grid-column: 1 / -1;
-		display: flex;
-		gap: var(--space-6);
+		align-items: flex-end;
+		justify-content: space-between;
+		gap: var(--space-4);
 		flex-wrap: wrap;
 	}
 
-	.pattern {
-		display: flex;
-		flex-direction: column;
-		gap: 2px;
-	}
-
-	.p-value {
+	.date-title {
+		font-size: var(--text-xl);
 		font-weight: 700;
+		letter-spacing: var(--tracking-tight);
+		margin: 0;
 	}
 
-	.p-label {
-		font-size: var(--text-xs);
+	.date-sub {
+		margin: var(--space-1) 0 0;
+		color: var(--muted);
+		font-size: var(--text-sm);
+	}
+
+	.date-side {
+		display: flex;
+		align-items: center;
+		gap: var(--space-3);
+		color: var(--ink-secondary);
+		font-weight: 600;
+		font-size: var(--text-sm);
+	}
+
+	.side-sep {
+		width: 1px;
+		height: 18px;
+		background: var(--border);
+	}
+
+	.head-actions {
+		display: flex;
+		align-items: center;
+		gap: var(--space-2);
+		margin-top: calc(-1 * var(--space-4));
+	}
+
+	.link-btn {
+		border: none;
+		background: none;
+		color: var(--brand);
+		font-weight: 600;
+		font-size: var(--text-sm);
+		cursor: pointer;
+		padding: var(--space-1) var(--space-2);
+		border-radius: var(--radius-sm);
+	}
+
+	.link-btn:hover {
+		background: var(--brand-softer);
+	}
+
+	.ha-sep {
 		color: var(--faint);
 	}
 
-	.summary {
+	/* ---- Flat KPI row ---- */
+	.kpis {
 		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-		gap: var(--space-3);
+		grid-template-columns: repeat(4, 1fr);
+		gap: var(--space-6);
 	}
 
-	.stat {
-		padding: var(--space-4);
+	.kpi {
 		display: flex;
 		flex-direction: column;
-		gap: 2px;
+		gap: var(--space-1);
 	}
 
-	.v {
-		font-size: var(--text-lg);
-		font-weight: 700;
-	}
-
-	.l {
+	.k-head {
 		font-size: var(--text-xs);
-		color: var(--muted);
 		font-weight: 600;
+		color: var(--muted);
+	}
+
+	.k-value {
+		font-family: var(--font-rounded);
+		font-size: var(--text-xl);
+		font-weight: 650;
+		letter-spacing: var(--tracking-tight);
+		color: var(--ink);
+		font-variant-numeric: tabular-nums;
+	}
+
+	/* ---- Score + patterns: flat secondary row ---- */
+	.meta-row {
+		display: flex;
+		align-items: baseline;
+		gap: var(--space-5);
+		flex-wrap: wrap;
+		padding: var(--space-4) 0;
+		border-top: 1px solid var(--hairline);
+		border-bottom: 1px solid var(--hairline);
+	}
+
+	.meta-score {
+		font-family: var(--font-rounded);
+		font-size: var(--text-lg);
+		font-weight: 650;
+		color: var(--brand);
+		font-variant-numeric: tabular-nums;
+	}
+
+	.meta-score-name {
+		color: var(--ink-secondary);
+		font-weight: 600;
+		font-size: var(--text-sm);
+		margin-right: var(--space-4);
+	}
+
+	.meta-item {
+		color: var(--muted);
+		font-size: var(--text-sm);
+	}
+
+	.meta-item .nums {
+		color: var(--ink-secondary);
+		font-weight: 650;
 	}
 
 	.period :global(.segmented) {
@@ -271,13 +310,9 @@
 		color: var(--muted);
 	}
 
-	@media (max-width: 599px) {
-		.hero {
-			grid-template-columns: 1fr 1fr;
-			gap: var(--space-4);
-		}
-
-		.patterns {
+	@media (max-width: 767px) {
+		.kpis {
+			grid-template-columns: repeat(2, 1fr);
 			gap: var(--space-4);
 		}
 	}

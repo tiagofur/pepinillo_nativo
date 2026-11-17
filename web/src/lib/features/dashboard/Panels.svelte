@@ -17,6 +17,14 @@
 
 	const RATING_FACES: Record<number, string> = { 1: '😞', 2: '😐', 3: '🙂', 4: '😊', 5: '🔥' };
 
+	// Mac session rows: 24pt mode-colored icon before the mode name.
+	const MODE_COLOR: Record<string, string> = {
+		pomodoro: 'var(--mode-pomodoro)',
+		flowtime: 'var(--mode-flowtime)',
+		timeblock: 'var(--mode-timeblock)',
+		stopwatch: 'var(--mode-stopwatch)'
+	};
+
 	function fmtMin(seconds: number): string {
 		const m = Math.round(seconds / 60);
 		if (m < 60) return `${m}m`;
@@ -58,7 +66,7 @@
 			<ul class="sessions">
 				{#each sessions.slice(0, 8) as s (s.id)}
 					<li class="session-row">
-						<span class="s-face">{RATING_FACES[s.satisfactionRating ?? 0] ?? '◦'}</span>
+						<span class="s-dot" style="background: {MODE_COLOR[s.mode]}" aria-hidden="true"></span>
 						<span class="s-mode">{t(`focus.mode.${s.mode}` as MessageKey)}</span>
 						<span class="s-time nums">{timeOf(s)} · {fmtMin(s.elapsedMs / 1000)}</span>
 						{#if s.journal}
@@ -71,10 +79,20 @@
 	</div>
 {/snippet}
 
-{@render achievementsRow()}
-{@render sessionsPanel()}
+<div class="panels">
+	{@render achievementsRow()}
+	{@render sessionsPanel()}
+</div>
 
 <style>
+	/* Mac Today: recent sessions + next-focus columns, adaptive grid min 320 */
+	.panels {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+		gap: var(--space-6);
+		align-items: start;
+	}
+
 	.panel {
 		padding: var(--space-5);
 		display: flex;
@@ -165,7 +183,10 @@
 		border-top: none;
 	}
 
-	.s-face {
+	.s-dot {
+		width: 12px;
+		height: 12px;
+		border-radius: 50%;
 		flex: none;
 	}
 
