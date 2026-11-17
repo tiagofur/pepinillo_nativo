@@ -89,10 +89,10 @@
 
 <!-- Inline controls row -->
 <div class="extras">
-	<button class="chip pressable" onclick={() => openTaskPicker()}>
+	<button class="chip glass-chip pressable" onclick={() => openTaskPicker()}>
 		📋 {focus.activeTask ? focus.activeTask.title : t('focus.noTask')}
 	</button>
-	<button class="chip pressable" onclick={() => (showSoundscape = true)}>
+	<button class="chip glass-chip pressable" onclick={() => (showSoundscape = true)}>
 		🎧 {t(`soundscape.${app.prefs.soundscape}`)}
 	</button>
 </div>

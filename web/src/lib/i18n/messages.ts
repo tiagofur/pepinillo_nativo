@@ -22,6 +22,7 @@ export type MessageKey =
 	| 'focus.resume'
 	| 'focus.skip'
 	| 'focus.complete'
+	| 'focus.endConfirm'
 	| 'focus.reset'
 	| 'focus.journal'
 	| 'focus.linkTask'
@@ -516,6 +517,7 @@ const en: Dict = {
 	'focus.resume': 'Resume',
 	'focus.skip': 'Skip',
 	'focus.complete': 'Complete',
+	'focus.endConfirm': 'End session?',
 	'focus.reset': 'New session',
 	'focus.journal': 'Session journal',
 	'focus.linkTask': 'Link task',
@@ -1020,6 +1022,7 @@ const es: Dict = {
 	'focus.resume': 'Reanudar',
 	'focus.skip': 'Saltar',
 	'focus.complete': 'Completar',
+	'focus.endConfirm': '¿Terminar la sesión?',
 	'focus.reset': 'Nueva sesión',
 	'focus.journal': 'Diario de sesión',
 	'focus.linkTask': 'Vincular tarea',
@@ -1524,6 +1527,7 @@ const pt: Dict = {
 	'focus.resume': 'Retomar',
 	'focus.skip': 'Pular',
 	'focus.complete': 'Concluir',
+	'focus.endConfirm': 'Encerrar a sessão?',
 	'focus.reset': 'Nova sessão',
 	'focus.journal': 'Diário da sessão',
 	'focus.linkTask': 'Vincular tarefa',
