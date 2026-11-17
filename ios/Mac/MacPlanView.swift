@@ -265,6 +265,9 @@ struct MacPlanView: View {
             }
         }
         .tableStyle(.inset(alternatesRowBackgrounds: false))
+        // Pull-to-refresh for touch (macOS 27; ignored before): the explicit
+        // reload action, held until the fetch finishes.
+        .refreshable { await store.send(.refresh).finish() }
         .contextMenu(forSelectionType: UUID.self) { ids in
             taskContextMenu(ids: ids)
         } primaryAction: { ids in

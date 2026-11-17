@@ -20,6 +20,10 @@ struct MacStatisticsView: View {
     @State private var activityStore: AppActivityUsageStore?
     @State private var topActivity: [AppActivitySummary] = []
 
+    /// Date under the finger or pointer on the chart (issue #800). Charts
+    /// clears it when the touch lifts or the pointer leaves.
+    @State private var selectedDate: Date?
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
@@ -259,14 +263,30 @@ struct MacStatisticsView: View {
     }
 
     private var chart: some View {
-        Chart(buckets) { bucket in
-            BarMark(
-                x: .value("Day", bucket.date, unit: store.period == .year ? .weekOfYear : .day),
-                y: .value("Minutes", bucket.minutes)
-            )
-            .foregroundStyle(theme.color(for: .pomodoro).opacity(0.85))
-            .cornerRadius(3)
+        Chart {
+            ForEach(buckets) { bucket in
+                BarMark(
+                    x: .value("Day", bucket.date, unit: bucketUnit),
+                    y: .value("Minutes", bucket.minutes)
+                )
+                .foregroundStyle(theme.color(for: .pomodoro).opacity(0.85))
+                .cornerRadius(3)
+            }
+
+            // Scrubbing callout: exact day (or week, on Year), focus time
+            // and sessions for the bar under the finger or pointer.
+            if let selected = selectedBucket {
+                RuleMark(x: .value("Day", selected.date, unit: bucketUnit))
+                    .foregroundStyle(.secondary.opacity(0.35))
+                    .annotation(
+                        position: .top,
+                        overflowResolution: .init(x: .fit(to: .chart), y: .disabled)
+                    ) {
+                        chartCallout(for: selected)
+                    }
+            }
         }
+        .chartXSelection(value: $selectedDate)
         .chartXAxis {
             AxisMarks(values: .stride(by: store.period == .year ? .month : .day)) { _ in
                 AxisGridLine()
@@ -293,6 +313,49 @@ struct MacStatisticsView: View {
         .frame(minHeight: 220)
         .accessibilityLabel(Text("Focus minutes for the selected period"))
         .accessibilityValue(Text("\(totalMinutes) minutes"))
+    }
+
+    private var bucketUnit: Calendar.Component {
+        store.period == .year ? .weekOfYear : .day
+    }
+
+    private var selectedBucket: Bucket? {
+        guard let selectedDate else { return nil }
+        let calendar = Calendar.current
+        return buckets.first { bucket in
+            calendar.isDate(bucket.date, equalTo: selectedDate, toGranularity: bucketUnit)
+        }
+    }
+
+    /// The exact day, or the week's date range on the Year period.
+    private func calloutTitle(for bucket: Bucket) -> String {
+        guard store.period == .year,
+              let week = Calendar.current.dateInterval(of: .weekOfYear, for: bucket.date),
+              let lastDay = Calendar.current.date(byAdding: .day, value: -1, to: week.end)
+        else {
+            return bucket.date.formatted(.dateTime.weekday(.wide).day().month(.abbreviated))
+        }
+        return (week.start..<lastDay).formatted(.interval.day().month(.abbreviated))
+    }
+
+    private func chartCallout(for bucket: Bucket) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(calloutTitle(for: bucket))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            HStack(spacing: 6) {
+                Text(durationText(TimeInterval(bucket.minutes) * 60))
+                    .font(.callout.weight(.semibold))
+                    .monospacedDigit()
+                Text("\(bucket.sessions) sessions")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
+        .accessibilityElement(children: .combine)
     }
 
     // MARK: - Formatting

@@ -14,6 +14,10 @@ struct MacTodayView: View {
     @Environment(\.appTheme) private var theme
     @Environment(\.openWindow) private var openWindow
 
+    /// Day under the finger or pointer on the weekly chart (issue #800).
+    /// Charts clears it when the touch lifts or the pointer leaves.
+    @State private var selectedDay: Date?
+
     private var tasksCompletedToday: Int {
         tasks.tasks.filter { task in
             guard task.isCompleted else { return false }
@@ -68,6 +72,10 @@ struct MacTodayView: View {
             .frame(maxWidth: .infinity, alignment: .center)
             .padding(24)
         }
+        // Pull-to-refresh for touch (macOS 27 backs it with the system
+        // refresh control; earlier releases ignore it). Same action as the
+        // toolbar Refresh button, which stays as the pointer/keyboard path.
+        .refreshable { onRefresh() }
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button(action: onRefresh) {
@@ -215,18 +223,39 @@ struct MacTodayView: View {
     /// Focus minutes per day. Today's bar is highlighted; past days render at
     /// reduced emphasis so the current day reads as "where you are".
     private var weeklyChart: some View {
-        Chart(weeklyPoints) { point in
-            BarMark(
-                x: .value("Day", point.date, unit: .day),
-                y: .value("Minutes", point.totalMinutes)
-            )
-            .foregroundStyle(
-                Calendar.current.isDateInToday(point.date)
-                    ? theme.color(for: .pomodoro)
-                    : theme.color(for: .pomodoro).opacity(0.35)
-            )
-            .cornerRadius(4)
+        Chart {
+            ForEach(weeklyPoints) { point in
+                BarMark(
+                    x: .value("Day", point.date, unit: .day),
+                    y: .value("Minutes", point.totalMinutes)
+                )
+                .foregroundStyle(
+                    Calendar.current.isDateInToday(point.date)
+                        ? theme.color(for: .pomodoro)
+                        : theme.color(for: .pomodoro).opacity(0.35)
+                )
+                .cornerRadius(4)
+            }
+
+            // Scrubbing callout: exact day, focus time and sessions for the
+            // bar under the finger or pointer (touch-on-mac guide R1 — the
+            // numbers no longer live only in the axis).
+            if let selected = selectedWeeklyPoint {
+                RuleMark(x: .value("Day", selected.date, unit: .day))
+                    .foregroundStyle(.secondary.opacity(0.35))
+                    .annotation(
+                        position: .top,
+                        overflowResolution: .init(x: .fit(to: .chart), y: .disabled)
+                    ) {
+                        chartCallout(
+                            title: selected.date.formatted(.dateTime.weekday(.wide).day().month(.abbreviated)),
+                            minutes: selected.totalMinutes,
+                            sessions: selected.sessionsCompleted
+                        )
+                    }
+            }
         }
+        .chartXSelection(value: $selectedDay)
         .chartXAxis {
             AxisMarks(values: weeklyPoints.map(\.date)) { _ in
                 AxisValueLabel(format: .dateTime.weekday(.narrow))
@@ -249,6 +278,31 @@ struct MacTodayView: View {
         .frame(height: 148)
         .accessibilityLabel(Text("Focus minutes over the last 7 days"))
         .accessibilityValue(Text("\(weekMinutes) minutes"))
+    }
+
+    private var selectedWeeklyPoint: AnalyticsFeature.State.DayPoint? {
+        guard let selectedDay else { return nil }
+        return weeklyPoints.first { Calendar.current.isDate($0.date, inSameDayAs: selectedDay) }
+    }
+
+    private func chartCallout(title: String, minutes: Int, sessions: Int) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(title)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            HStack(spacing: 6) {
+                Text(durationText(TimeInterval(minutes) * 60))
+                    .font(.callout.weight(.semibold))
+                    .monospacedDigit()
+                Text("\(sessions) sessions")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
+        .accessibilityElement(children: .combine)
     }
 
     private var weeklySummary: some View {
