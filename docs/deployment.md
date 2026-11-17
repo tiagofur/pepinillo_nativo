@@ -63,19 +63,28 @@ tratar como comprometido hasta confirmar rotación.
 | Entorno | URL |
 | :--- | :--- |
 | API producción | `https://api.ppn.creapolis.dev/api/v1` |
+| API producción (nuevo) | `https://api.pepinillo.app/api/v1` — en paralelo hasta migrar las apps nativas |
 | API staging | `https://staging.api.ppn.creapolis.dev/api/v1` |
 | Web marketing | `https://creapolis.dev` (privacy/terms: `/privacy-policy/`, `/terms-of-use/`) |
 | Upgrade URL (paywall) | `https://app.pepinillo.app/upgrade` |
 
 ### 4.1 Dominio propio `pepinillo.app` (comprado 2026-11-17)
 
-Split de dominios decidido por Tiago (issue #855); el despliegue real es el batch
-**W9** del epic #809 (Caddy vhosts + DNS + CORS + QA):
+Split de dominios decidido por Tiago (issues #855 y #859); el despliegue real es
+el batch **W9** del epic #809 (DNS + sitios Plesk + rsync + CORS + QA):
 
 | Superficie | Dominio |
 | :--- | :--- |
 | Landing + guías de usuario (`/`, `/guides*`) | `https://pepinillo.app` |
 | PWA app (`/focus`, `/plan`, `/dashboard`, `/account`, `/upgrade`) | `https://app.pepinillo.app` |
+| API (nuevo hostname) | `https://api.pepinillo.app` — mismo contenedor que el viejo |
+
+**Coexistencia de API (issue #859):** las apps nativas siguen apuntando a
+`api.ppn.creapolis.dev`, así que **ambos hostnames sirven el mismo contenedor
+`pepinillo-api`** (dos sitios Plesk con proxy a `127.0.0.1:8090` — Fiber no
+depende del Host). La migración de clientes (bump de base-URL por plataforma) es
+backlog aparte; el hostname viejo no se retira hasta que todas las apps
+publicadas usen el nuevo.
 
 Notas: los canonical/OG de landing y guías usan `pepinillo.app`; `/upgrade`
 canonicaliza a `app.pepinillo.app` (ver `web/static/sitemap.xml`). CORS del
@@ -94,18 +103,23 @@ El deploy web es estático por rsync, no Docker.
 | :--- | :--- |
 | `A @ (pepinillo.app)` | `74.208.234.244` (hoy apunta a `74.208.236.21`, nginx ajeno — corregir) |
 | `A app.pepinillo.app` | `74.208.234.244` (hoy no existe) |
+| `A api.pepinillo.app` | `74.208.234.244` (hoy no existe) |
 
 **Creación de sitios (una vez, Plesk CLI por ssh como root):**
 
 ```bash
 plesk bin site --create pepinillo.app -hosting-type vhost -www-root httpdocs
 plesk bin subdomain --create app -domain pepinillo.app -www-root app.pepinillo.app
-# SPA fallback para rutas de la PWA (ambos sitios):
+plesk bin subdomain --create api -domain pepinillo.app -www-root api.pepinillo.app
+# SPA fallback para los sitios web (no para api):
 #   /var/www/vhosts/system/<dominio>/conf/vhost_nginx.conf con:
 #     location / { try_files $uri $uri/ /index.html; }
+# api.pepinillo.app: proxy del docroot al contenedor, igual que api.ppn.creapolis.dev:
+#   location / { proxy_pass http://127.0.0.1:8090; ...headers... }
 plesk bin httpdmng --reconfigure-server
 # TLS cuando el DNS resuelva (extensión Let's Encrypt de Plesk):
 plesk bin extension --exec letsencrypt-cli -d pepinillo.app -d www.pepinillo.app -d app.pepinillo.app
+plesk bin extension --exec letsencrypt-cli -d api.pepinillo.app
 ```
 (Sintaxis a verificar en ejecución con `plesk bin site --help` / `plesk bin subdomain --help`.)
 
