@@ -88,9 +88,9 @@ jobs:
             UserKnownHostsFile ~/.ssh/known_hosts
           EOF
 
-          # Ship the static build; target docroots are Plesk-managed
-          # (docs/deployment.md §4.2): pepinillo.app + app.pepinillo.app,
-          # plus a runtime symlink-free copy for the API subdomain page.
+          # Ship the static app build; target docroot is Plesk-managed
+          # (docs/deployment.md §4.2). The marketing site deploys separately
+          # (landing-deploy.yml) from the web-landing/ project.
           tar -czf /tmp/pepinillo_web_bundle.tgz -C web-build .
           scp -P ${SSH_PORT} /tmp/pepinillo_web_bundle.tgz deploy:/tmp/pepinillo_web_bundle.tgz
 
@@ -101,15 +101,13 @@ jobs:
           mkdir -p /tmp/pepinillo_web_build
           tar -xzf /tmp/pepinillo_web_bundle.tgz -C /tmp/pepinillo_web_build
 
-          # Atomic-ish swap: rsync into each docroot. --no-o/--no-g/--no-perms:
+          # Atomic-ish swap: rsync into the app docroot. --no-o/--no-g/--no-perms:
           # the deploy user may not chown/chgrp/chmod dirs owned by the Plesk
           # system user (umask 022 keeps files world-readable for nginx);
           # -O omits dir times; .well-known excluded so Let's Encrypt renewals
           # survive --delete.
-          for target in "$BASE/httpdocs" "$BASE/app.pepinillo.app"; do
-            mkdir -p "$target"
-            rsync -a --no-o --no-g --no-perms -O --delete --exclude='.well-known' /tmp/pepinillo_web_build/ "$target/"
-          done
+          mkdir -p "$BASE/app.pepinillo.app"
+          rsync -a --no-o --no-g --no-perms -O --delete --exclude='.well-known' /tmp/pepinillo_web_build/ "$BASE/app.pepinillo.app/"
           # API subdomain keeps a tiny informational page (the API itself is proxied by nginx)
           printf '%s\n' 'Pepinillo API — see https://pepinillo.app/guides/macos.html' > "$BASE/api.pepinillo.app/index.html"
 

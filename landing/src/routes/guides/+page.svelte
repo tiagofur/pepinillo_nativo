@@ -25,7 +25,7 @@
 			<img src={logoUrl} alt="" width="30" height="30" />
 			<span>Pepinillo</span>
 		</a>
-		<a class="btn btn-soft pressable" href="/focus">{t('landing.nav.open')}</a>
+		<a class="btn btn-soft pressable" href="https://app.pepinillo.app/focus">{t('landing.nav.open')}</a>
 	</header>
 
 	<section class="intro rise-in">
