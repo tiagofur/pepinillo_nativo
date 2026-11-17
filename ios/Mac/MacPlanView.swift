@@ -608,11 +608,13 @@ struct MacPlanView: View {
 
     private var emptyTitle: String {
         if isSearching { return String(localized: "No Results") }
+        // Same shared catalog keys (and garden voice) as `PlanTaskList` on
+        // iPhone/iPad — issue #778, ported to Mac in #877.
         switch filter {
-        case .all:       return String(localized: "No Tasks")
-        case .today:     return String(localized: "Nothing for Today")
-        case .upcoming:  return String(localized: "Nothing Upcoming")
-        case .completed: return String(localized: "No Completed Tasks")
+        case .all:       return String(localized: "plan.empty.all.title", defaultValue: "An Empty Garden")
+        case .today:     return String(localized: "plan.empty.today.title", defaultValue: "Your Garden Awaits")
+        case .upcoming:  return String(localized: "plan.empty.upcoming.title", defaultValue: "Nothing Upcoming")
+        case .completed: return String(localized: "plan.empty.completed.title", defaultValue: "No Completed Tasks")
         }
     }
 
@@ -622,13 +624,17 @@ struct MacPlanView: View {
         }
         switch filter {
         case .all:
-            return String(localized: "Capture what matters and it will show up here.")
+            return String(localized: "plan.empty.all.description",
+                          defaultValue: "Plant your first task — everything grows from there.")
         case .today:
-            return String(localized: "Add a task for today and start focusing.")
+            return String(localized: "plan.empty.today.description",
+                          defaultValue: "Plant your first task — small seeds grow into deep focus.")
         case .upcoming:
-            return String(localized: "No deadlines on the horizon.")
+            return String(localized: "plan.empty.upcoming.description",
+                          defaultValue: "No deadlines on the horizon. Focus on what matters today.")
         case .completed:
-            return String(localized: "Complete a task and your wins will show up here.")
+            return String(localized: "plan.empty.completed.description",
+                          defaultValue: "Complete a task and your wins will show up here.")
         }
     }
 
