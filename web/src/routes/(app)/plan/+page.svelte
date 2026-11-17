@@ -8,6 +8,7 @@
 	import TaskTable from '$lib/features/plan/TaskTable.svelte';
 	import TaskInspector from '$lib/features/plan/TaskInspector.svelte';
 	import PaneToolbar from '$lib/features/shell/PaneToolbar.svelte';
+	import ContextMenu, { type ContextMenuItem } from '$lib/features/shell/ContextMenu.svelte';
 	import Segmented from '$lib/design/Segmented.svelte';
 	import Icon from '$lib/design/Icon.svelte';
 	import { groupByEnergy, PLAN_FILTERS, quickAddDefaults, type PlanFilter } from '$lib/domain/tasks/plan';
@@ -19,7 +20,7 @@
 		// Mac window commands raised by the shell (⌘F / ⌘N / ⌘⌥I).
 		function planCommand(command: string): void {
 			if (command === 'pepinillo:plan-search') searchEl?.focus();
-			else if (command === 'pepinillo:plan-new-task') quickAddEl?.focus();
+			else if (command === 'pepinillo:plan-new-task') focusComposer();
 			else if (command === 'pepinillo:plan-inspector') toggleInspector();
 		}
 		function onPlanCommand(e: Event): void {
@@ -64,6 +65,13 @@
 
 	let searchEl = $state<HTMLInputElement | null>(null);
 	let quickAddEl = $state<HTMLInputElement | null>(null);
+	let newtaskEl = $state<HTMLInputElement | null>(null);
+
+	/** ⌘N: focus whichever composer is visible (bottom row on desktop). */
+	function focusComposer(): void {
+		const el = newtaskEl && newtaskEl.offsetParent !== null ? newtaskEl : quickAddEl;
+		el?.focus();
+	}
 
 	let selectedTask = $derived(plan.tasks.find((x) => x.id === selectedId) ?? null);
 	let suggestion = $derived(suggestEnergy(new Date().getHours()));
@@ -79,6 +87,63 @@
 	function toggleInspector(): void {
 		if (selectedId) selectTask(null);
 		else if (displayed.length > 0) selectTask(displayed[0].id);
+	}
+
+	// ---- Context menu (MacPlanView contextMenu parity) ----
+	let ctx = $state<{ task: Task; x: number; y: number } | null>(null);
+
+	function openContext(task: Task, x: number, y: number): void {
+		selectTask(task.id);
+		ctx = { task, x, y };
+	}
+
+	let ctxItems = $derived<ContextMenuItem[]>(ctx ? buildContextItems(ctx.task) : []);
+
+	function buildContextItems(task: Task): ContextMenuItem[] {
+		const PRIORITY_KEYS = ['high', 'medium', 'low', 'none'] as const;
+		const ENERGY_KEYS = ['deep', 'shallow', 'admin'] as const;
+		return [
+			{
+				id: 'toggle',
+				label: t('plan.complete'),
+				onselect: () => void plan.toggleComplete(task.id)
+			},
+			{
+				id: 'focus',
+				label: t('plan.focusTask'),
+				onselect: () => focusTask(task)
+			},
+			{ id: 'sep1', kind: 'separator' },
+			{
+				id: 'priority',
+				label: t('plan.priority'),
+				kind: 'submenu',
+				children: PRIORITY_KEYS.map((p) => ({
+					id: p,
+					label: p === 'none' ? '—' : t(`plan.priority.${p}` as MessageKey),
+					checked: task.priority === p,
+					onselect: () => void plan.updateTask(task.id, { priority: p })
+				}))
+			},
+			{
+				id: 'energy',
+				label: t('plan.energy'),
+				kind: 'submenu',
+				children: ENERGY_KEYS.map((e) => ({
+					id: e,
+					label: t(`plan.energy.${e}` as MessageKey),
+					checked: task.energy === e,
+					onselect: () => void plan.updateTask(task.id, { energy: e })
+				}))
+			},
+			{ id: 'sep2', kind: 'separator' },
+			{
+				id: 'delete',
+				label: t('plan.delete'),
+				destructive: true,
+				onselect: () => void plan.deleteTask(task.id)
+			}
+		];
 	}
 
 	async function quickAdd(): Promise<void> {
@@ -157,7 +222,7 @@
 					class="pt-btn pressable"
 					title={t('plan.newTask')}
 					aria-label={t('plan.newTask')}
-					onclick={() => quickAddEl?.focus()}
+					onclick={focusComposer}
 				>
 					<Icon name="plus" size={16} />
 				</button>
@@ -197,18 +262,7 @@
 		<button class="btn btn-primary pressable" type="submit">{t('plan.add')}</button>
 	</form>
 
-	{#if plan.filter === 'today' && displayed.length > 0 && app.tier === 'free'}
-		<p class="suggest-hint">✨ {t('plan.energyHint', { energy: t(`plan.energy.${suggestion}`) })}</p>
-	{/if}
-
-	{#if showCapNotice && plan.freeCapReached}
-		<div class="cap card">
-			🔒 {t('plan.capBlocked')}
-			<a class="btn btn-soft pressable" href="/account">{t('plan.upgradeTeaser')}</a>
-		</div>
-	{/if}
-
-	<div class="inspector-grid">
+		<div class="inspector-grid" class:with-inspector={!!selectedTask}>
 		<div class="list-area">
 			{#if displayed.length === 0}
 				<div class="empty card">
@@ -234,6 +288,7 @@
 					onselect={selectTask}
 					ontoggle={(id) => plan.toggleComplete(id)}
 					onfocus={focusTask}
+					oncontext={openContext}
 				/>
 				<div class="mobile-list">
 				{#each groupByEnergy(displayed) as group (group.energy)}
@@ -251,6 +306,7 @@
 									ondragstart={ondragstart(task.id)}
 									ondragover={dragOverHandler()}
 									ondrop={() => ondrop(task.id)}
+									oncontext={(x, y) => openContext(task, x, y)}
 								/>
 							{/each}
 						</ul>
@@ -262,6 +318,41 @@
 
 		<TaskInspector task={selectedTask} onclose={() => selectTask(null)} />
 	</div>
+
+	<!-- Desktop: Reminders-style fixed "New task" row at the foot of the plan -->
+	<form
+		class="newtask"
+		onsubmit={(e) => {
+			e.preventDefault();
+			void quickAdd();
+		}}
+	>
+		<button class="nt-plus pressable" type="submit" aria-label={t('plan.newTask')} tabindex="-1">
+			<Icon name="plus" size={16} />
+		</button>
+		<input
+			bind:this={newtaskEl}
+			placeholder={t('plan.newTask')}
+			bind:value={quickValue}
+			aria-label={t('plan.newTask')}
+		/>
+	</form>
+
+	{#if plan.filter === 'today' && displayed.length > 0 && app.tier === 'free'}
+		<p class="suggest-hint">✨ {t('plan.energyHint', { energy: t(`plan.energy.${suggestion}`) })}</p>
+	{/if}
+
+	{#if showCapNotice && plan.freeCapReached}
+		<div class="cap card">
+			🔒 {t('plan.capBlocked')}
+			<a class="btn btn-soft pressable" href="/account">{t('plan.upgradeTeaser')}</a>
+		</div>
+	{/if}
+
+
+	{#if ctx}
+		<ContextMenu x={ctx.x} y={ctx.y} items={ctxItems} onclose={() => (ctx = null)} />
+	{/if}
 </section>
 
 <style>
@@ -304,8 +395,79 @@
 		gap: var(--space-2);
 	}
 
+	/* Desktop uses the Reminders-style bottom row instead */
+	@media (min-width: 1024px) {
+		.quickadd {
+			display: none;
+		}
+	}
+
 	.quickadd .field {
 		flex: 1;
+	}
+
+	/* Mac bottom "New task" row (MacPlanView bottom safe area): pinned to the
+	 * foot of the content column, bar background, accent plus, plain text. */
+	.newtask {
+		position: sticky;
+		bottom: 0;
+		display: flex;
+		align-items: center;
+		gap: var(--space-3);
+		margin: var(--space-4) calc(-1 * var(--space-8)) calc(-1 * var(--space-10));
+		padding: var(--space-3) var(--space-6) calc(var(--space-6) + var(--safe-b));
+		background: var(--bg);
+		border-top: 1px solid var(--hairline);
+	}
+
+	.nt-plus {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 24px;
+		height: 24px;
+		flex: none;
+		border: none;
+		border-radius: 50%;
+		background: var(--brand);
+		color: var(--on-brand);
+		cursor: pointer;
+	}
+
+	.newtask input {
+		flex: 1;
+		min-width: 0;
+		border: none;
+		background: transparent;
+		color: var(--ink);
+		font-size: var(--text-base);
+	}
+
+	.newtask input::placeholder {
+		color: var(--muted);
+	}
+
+	.newtask input:focus {
+		outline: none;
+		box-shadow: none;
+	}
+
+	@media (max-width: 1023px) {
+		.newtask {
+			display: none;
+		}
+	}
+
+	@media (min-width: 1024px) {
+		.newtask {
+			margin-inline: calc(-1 * var(--space-8));
+		}
+	}
+
+	@media (max-width: 1023px) and (min-width: 768px) {
+		.newtask {
+			margin-inline: calc(-1 * var(--space-5));
+		}
 	}
 
 	.suggest-hint {

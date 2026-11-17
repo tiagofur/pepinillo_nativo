@@ -49,6 +49,7 @@ export type MessageKey =
 	| 'plan.title'
 	| 'plan.add'
 	| 'plan.search'
+	| 'plan.taskTitle'
 	| 'plan.newTask'
 	| 'plan.search.empty'
 	| 'plan.empty.all'
@@ -296,6 +297,7 @@ export type MessageKey =
 	| 'chart.day.fri'
 	| 'chart.day.sat'
 	| 'dash.best'
+	| 'dash.bestDay'
 	| 'dash.focusScore'
 	| 'dash.peakHour'
 	| 'dash.completion'
@@ -545,6 +547,7 @@ const en: Dict = {
 	'plan.title': 'Plan',
 	'plan.add': 'Add task',
 	'plan.search': 'Search tasks',
+	'plan.taskTitle': 'Title',
 	'plan.newTask': 'New task',
 	'plan.search.empty': 'No tasks match your search',
 	'dashboard.refresh': 'Refresh',
@@ -785,6 +788,7 @@ const en: Dict = {
 	'chart.day.fri': 'Fri',
 	'chart.day.sat': 'Sat',
 	'dash.best': 'Best: {days}',
+	'dash.bestDay': 'Best day',
 	'dash.focusScore': 'Focus score',
 	'dash.peakHour': 'Peak hour',
 	'dash.completion': 'Completion',
@@ -1050,6 +1054,7 @@ const es: Dict = {
 	'plan.title': 'Plan',
 	'plan.add': 'Agregar tarea',
 	'plan.search': 'Buscar tareas',
+	'plan.taskTitle': 'Título',
 	'plan.newTask': 'Nueva tarea',
 	'plan.search.empty': 'Ninguna tarea coincide con tu búsqueda',
 	'dashboard.refresh': 'Actualizar',
@@ -1306,6 +1311,7 @@ const es: Dict = {
 	'chart.day.fri': 'Vie',
 	'chart.day.sat': 'Sáb',
 	'dash.best': 'Récord: {days}',
+	'dash.bestDay': 'Mejor día',
 	'dash.focusScore': 'Puntaje de foco',
 	'dash.peakHour': 'Hora pico',
 	'dash.completion': 'Finalización',
@@ -1555,6 +1561,7 @@ const pt: Dict = {
 	'plan.title': 'Plano',
 	'plan.add': 'Adicionar tarefa',
 	'plan.search': 'Buscar tarefas',
+	'plan.taskTitle': 'Título',
 	'plan.newTask': 'Nova tarefa',
 	'plan.search.empty': 'Nenhuma tarefa corresponde à sua busca',
 	'dashboard.refresh': 'Atualizar',
@@ -1811,6 +1818,7 @@ const pt: Dict = {
 	'chart.day.fri': 'Sex',
 	'chart.day.sat': 'Sáb',
 	'dash.best': 'Recorde: {days}',
+	'dash.bestDay': 'Melhor dia',
 	'dash.focusScore': 'Pontuação de foco',
 	'dash.peakHour': 'Hora de pico',
 	'dash.completion': 'Conclusão',

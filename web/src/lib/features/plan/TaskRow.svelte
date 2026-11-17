@@ -14,7 +14,8 @@
 		dragging = false,
 		ondragstart,
 		ondragover,
-		ondrop
+		ondrop,
+		oncontext
 	}: {
 		task: Task;
 		selected: boolean;
@@ -25,7 +26,30 @@
 		ondragstart?: () => void;
 		ondragover?: (e: DragEvent) => void;
 		ondrop?: () => void;
+		oncontext?: (x: number, y: number) => void;
 	} = $props();
+
+	// Mac parity: long-press opens the row context menu on touch.
+	let pressTimer: ReturnType<typeof setTimeout> | null = null;
+
+	function touchStart(e: TouchEvent): void {
+		if (!oncontext) return;
+		const t = e.touches[0];
+		if (!t) return;
+		const x = t.clientX;
+		const y = t.clientY;
+		pressTimer = setTimeout(() => {
+			pressTimer = null;
+			oncontext?.(x, y);
+		}, 500);
+	}
+
+	function touchCancel(): void {
+		if (pressTimer) {
+			clearTimeout(pressTimer);
+			pressTimer = null;
+		}
+	}
 
 	// Native PriorityColors.kt: fixed semantic colors (not theme-dependent).
 	const PRIORITY_COLOR: Record<string, string> = {
@@ -68,6 +92,10 @@
 	ondragstart={ondragstart}
 	ondragover={ondragover}
 	ondrop={ondrop}
+	ontouchstart={touchStart}
+	ontouchend={touchCancel}
+	ontouchmove={touchCancel}
+	ontouchcancel={touchCancel}
 >
 	<button
 		class="check pressable"
