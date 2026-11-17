@@ -70,6 +70,16 @@
 	color: var(--brand);
 }
 
+.btn-danger {
+	background: var(--danger);
+	color: #fff;
+	box-shadow: var(--shadow-1);
+}
+
+.btn-danger:not(:disabled):hover {
+	background: color-mix(in srgb, var(--danger) 85%, black);
+}
+
 /* Square icon button — always ≥ touch target */
 .btn-icon {
 	min-width: var(--touch-target);
@@ -141,15 +151,41 @@
 	background: var(--chip-dot-color, var(--brand));
 }
 
-/* ---------- Sidebar chrome (≥1024px, macOS feel) ---------- */
+/* Desktop chips: Mac tile size */
+@media (min-width: 1024px) {
+	.chip {
+		min-height: 28px;
+		padding: 0 var(--space-3);
+		font-size: var(--text-sm);
+	}
+}
+
+/* ---------- Glass + material (Focus stage, popovers, banners) ----------
+ * The glass-hybrid rule: ambient glass only inside the Focus scene and
+ * transient surfaces; everything else stays matte. */
+.glass-chip {
+	background: var(--glass-bg);
+	backdrop-filter: blur(16px) saturate(1.3);
+	-webkit-backdrop-filter: blur(16px) saturate(1.3);
+	box-shadow: inset 0 0 0 1px var(--glass-stroke);
+}
+
+.material-panel {
+	background: var(--material-bg);
+	backdrop-filter: blur(20px) saturate(1.4);
+	-webkit-backdrop-filter: blur(20px) saturate(1.4);
+	border: 1px solid var(--hairline);
+	border-radius: var(--radius-tile);
+	box-shadow: var(--shadow-2);
+}
+
+/* ---------- Sidebar chrome (≥1024px, matte like the Mac sidebar) ---------- */
 .app-sidebar {
 	display: flex;
 	flex-direction: column;
 	gap: var(--space-2);
 	padding: var(--space-5) var(--space-3);
 	background: var(--sidebar-bg);
-	backdrop-filter: blur(20px) saturate(1.4);
-	-webkit-backdrop-filter: blur(20px) saturate(1.4);
 	border-right: 1px solid var(--border);
 }
 

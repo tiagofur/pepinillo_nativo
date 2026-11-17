@@ -79,8 +79,10 @@ a:hover {
 	border-radius: var(--radius-sm);
 }
 
-/* Tabular numerals for anything that counts or ticks */
+/* Numerals for anything that counts or ticks: rounded design + tabular
+	 figures, like PepinilloMac (NumericFont.timer = .rounded + monospacedDigit) */
 .nums {
+	font-family: var(--font-rounded);
 	font-variant-numeric: tabular-nums;
 	font-feature-settings: 'tnum' 1;
 }
