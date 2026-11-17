@@ -1,0 +1,116 @@
+name: Deploy Web
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'web/**'
+      - '.github/workflows/web-deploy.yml'
+      - 'scripts/deploy_web.sh'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-web-production
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+          cache-dependency-path: web/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Type check
+        run: pnpm check
+
+      - name: Unit tests
+        run: pnpm test
+
+      - name: Build static site
+        run: pnpm build
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-build
+          path: web/build/
+          retention-days: 3
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: web-build
+          path: web-build
+
+      - name: Deploy to VPS via SSH
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_KEY: ${{ secrets.SSH_KEY }}
+          SSH_PORT: ${{ secrets.SSH_PORT || '22' }}
+        run: |
+          if [ -z "${SSH_HOST}" ] || [ -z "${SSH_USER}" ] || [ -z "${SSH_KEY}" ]; then
+            echo "Missing required production secrets: SSH_HOST, SSH_USER, SSH_KEY"
+            exit 1
+          fi
+
+          mkdir -p ~/.ssh
+          echo "$SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -p ${SSH_PORT} ${SSH_HOST} >> ~/.ssh/known_hosts 2>/dev/null || true
+          cat > ~/.ssh/config << EOF
+          Host deploy
+            HostName ${SSH_HOST}
+            User ${SSH_USER}
+            Port ${SSH_PORT}
+            IdentityFile ~/.ssh/deploy_key
+            StrictHostKeyChecking accept-new
+            UserKnownHostsFile ~/.ssh/known_hosts
+          EOF
+
+          # Ship the static build; target docroots are Plesk-managed
+          # (docs/deployment.md §4.2): pepinillo.app + app.pepinillo.app,
+          # plus a runtime symlink-free copy for the API subdomain page.
+          tar -czf /tmp/pepinillo_web_bundle.tgz -C web-build .
+          scp -P ${SSH_PORT} /tmp/pepinillo_web_bundle.tgz deploy:/tmp/pepinillo_web_bundle.tgz
+
+          ssh -p ${SSH_PORT} deploy << DEPLOY_SCRIPT
+          set -e
+          BASE=/var/www/vhosts/pepinillo.app
+          rm -rf /tmp/pepinillo_web_build
+          mkdir -p /tmp/pepinillo_web_build
+          tar -xzf /tmp/pepinillo_web_bundle.tgz -C /tmp/pepinillo_web_build
+
+          # Atomic-ish swap: rsync into each docroot, then swap content dir
+          for target in "$BASE/httpdocs" "$BASE/app.pepinillo.app"; do
+            mkdir -p "$target"
+            rsync -a --delete /tmp/pepinillo_web_build/ "$target/"
+          done
+          # API subdomain keeps a tiny informational page (the API itself is proxied by nginx)
+          printf '%s\n' 'Pepinillo API — see https://pepinillo.app/guides/macos.html' > "$BASE/api.pepinillo.app/index.html"
+
+          sudo /usr/sbin/nginx -t
+          sudo /usr/sbin/nginx -s reload
+          rm -rf /tmp/pepinillo_web_build /tmp/pepinillo_web_bundle.tgz
+          echo "Web deployed: https://pepinillo.app + https://app.pepinillo.app"
+          DEPLOY_SCRIPT
