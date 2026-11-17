@@ -341,9 +341,10 @@ struct MacTodayView: View {
 
             if analytics.recentSessions.isEmpty {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("No sessions yet")
+                    Text(String(localized: "dashboard.empty.title", defaultValue: "Nothing Harvested Yet"))
                         .font(.callout.weight(.medium))
-                    Text("Complete a focus session to see it here.")
+                    Text(String(localized: "dashboard.empty.description",
+                                defaultValue: "Complete your first focus session and your garden's story begins here."))
                         .font(.callout)
                         .foregroundStyle(.secondary)
                 }

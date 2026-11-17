@@ -15273,6 +15273,52 @@
         }
       }
     },
+    "plan.empty.all.description" : {
+      "comment" : "Plan All filter empty state description (Mac).",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Plant your first task — everything grows from there."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Planta tu primera tarea: de ahí crece todo."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Plante sua primeira tarefa: daí tudo cresce."
+          }
+        }
+      }
+    },
+    "plan.empty.all.title" : {
+      "comment" : "Plan All filter empty state title (Mac).",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "An Empty Garden"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un huerto vacío"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Uma horta vazia"
+          }
+        }
+      }
+    },
     "plan.empty.inbox.description" : {
       "comment" : "Plan Inbox filter empty state motivational description.",
       "localizations" : {
