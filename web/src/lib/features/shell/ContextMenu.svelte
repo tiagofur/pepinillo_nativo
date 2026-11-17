@@ -224,27 +224,23 @@
 		margin-top: var(--space-1);
 	}
 
-	/* ≤1023px: floating 180px submenus clip on both edges of a phone, so
-	 * submenus ALWAYS stack inline inside the menu (entry drops its row
-	 * layout). Desktop keeps the floating left/right placement — the menu
-	 * clamp + flip threshold guarantee room there. */
-	@media (max-width: 1023px) {
-		.entry.has-sub.is-open {
-			display: block;
-		}
+	/* When a submenu opens, the entry drops its row layout so the inline
+	 * submenu stacks BELOW the label (it would otherwise be a flex row
+	 * item beside it). The chevron implied a flyout that no longer exists. */
+	.entry.has-sub.is-open {
+		display: block;
+	}
 
-		.entry.has-sub.is-open .chev {
-			display: none;
-		}
+	.entry.has-sub.is-open .chev {
+		display: none;
+	}
 
-		.entry.has-sub.is-open .submenu {
-			position: static;
-			min-width: 0;
-			width: 100%;
-			max-height: 240px;
-			box-shadow: none;
-			margin-top: var(--space-1);
-		}
+	.entry.has-sub.is-open .submenu {
+		min-width: 0;
+		width: 100%;
+		max-height: min(280px, 40vh);
+		box-shadow: none;
+		margin-top: var(--space-1);
 	}
 
 	.sep {
