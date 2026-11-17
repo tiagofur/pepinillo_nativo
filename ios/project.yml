@@ -27,8 +27,8 @@ packages:
 
 settings:
   base:
-    MARKETING_VERSION: "1.2.0"
-    CURRENT_PROJECT_VERSION: "6"
+    MARKETING_VERSION: "1.2.1"
+    CURRENT_PROJECT_VERSION: "7"
     SWIFT_VERSION: "6.0"
     CODE_SIGN_STYLE: Automatic
     ENABLE_BITCODE: "NO"
@@ -184,6 +184,9 @@ targets:
       path: Mac/Info.plist
       properties:
         CFBundleDisplayName: Pepinillo
+        # The app menu title reads the base CFBundleName (not the localized
+        # catalog) — without this it shows the PRODUCT_NAME "PepinilloMac".
+        CFBundleName: Pepinillo
         CFBundleShortVersionString: "$(MARKETING_VERSION)"
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         LSApplicationCategoryType: public.app-category.productivity
