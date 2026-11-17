@@ -101,10 +101,12 @@ jobs:
           mkdir -p /tmp/pepinillo_web_build
           tar -xzf /tmp/pepinillo_web_bundle.tgz -C /tmp/pepinillo_web_build
 
-          # Atomic-ish swap: rsync into each docroot, then swap content dir
+          # Atomic-ish swap: rsync into each docroot. --no-o/--no-g: deploy user
+          # cannot chown/chgrp to root (CI artifact owner); -O omits dir times;
+          # .well-known excluded so Let's Encrypt renewals survive --delete.
           for target in "$BASE/httpdocs" "$BASE/app.pepinillo.app"; do
             mkdir -p "$target"
-            rsync -a --delete /tmp/pepinillo_web_build/ "$target/"
+            rsync -a --no-o --no-g -O --delete --exclude='.well-known' /tmp/pepinillo_web_build/ "$target/"
           done
           # API subdomain keeps a tiny informational page (the API itself is proxied by nginx)
           printf '%s\n' 'Pepinillo API — see https://pepinillo.app/guides/macos.html' > "$BASE/api.pepinillo.app/index.html"
