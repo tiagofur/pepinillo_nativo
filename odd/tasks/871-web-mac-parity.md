@@ -33,7 +33,9 @@ Menu bar, notch panel, dock (badge/arc/menu), separate Statistics window, Servic
 - `web/src/lib/features/settings/**`, `web/src/lib/features/auth/**` (material re-tint only)
 - `web/src/lib/stores/focus.svelte.ts` (phaseColor derivation only)
 - `web/src/lib/domain/tasks/plan.ts` — **expansion (B2, leader-authorized)**: add `'all'` to PlanFilter + filterTasks case for the Mac sidebar filters (Todas/Hoy/Próximas/Completadas)
-- `web/src/lib/i18n/messages.ts` — **expansion (B2, leader-authorized)**: ADDITIVE keys only (`plan.search`, `plan.newTask`, `plan.inspector`, `plan.empty.all`, `dashboard.refresh` × es/en/pt); no existing key altered (exclusion intent preserved)
+- `web/src/lib/i18n/messages.ts` — **expansion (B2, leader-authorized)**: ADDITIVE keys only (`plan.search`, `plan.newTask`, `plan.empty.all`, `plan.search.empty`, `dashboard.refresh` × es/en/pt); no existing key altered (exclusion intent preserved)
+- `web/src/routes/+layout.svelte` — **expansion (B2 round 1, leader-authorized)**: SW registration gated to PROD builds (dev cache-first SW served stale modules and masked edits)
+- `web/tests/unit/**` — **expansion (B2 round 1, leader-authorized)**: regression test for the new `all` filter case (reviewer P1)
 - `landing/src/lib/design/**` (lockstep copies of `web/src/lib/design/`)
 - `odd/tasks/871-web-mac-parity.md`
 
