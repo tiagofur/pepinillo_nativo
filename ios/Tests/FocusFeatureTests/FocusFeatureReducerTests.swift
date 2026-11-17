@@ -407,6 +407,7 @@ struct FocusFeatureReducerTests {
         await store.send(.soundscapeSelected(.forest)) { $0.selectedSoundscape = .forest }
 
         #expect(played.value.isEmpty)
+    }
 
     // MARK: - Custom Duration
 
