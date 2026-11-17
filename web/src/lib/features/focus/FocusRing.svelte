@@ -96,10 +96,11 @@
 		background: color-mix(in srgb, var(--mode-hex) 18%, transparent);
 	}
 
-	/* Count-up idle hint: dashes ≈ SVG [4,10] on a 173.5pt radius (1.32° / 4.62°) */
+	/* Count-up idle hint: dashes ≈ SVG [4,10] on a 173.5pt radius (1.32° / 4.62°).
+	 * CSS conic 0deg is already 12 o'clock — no rotation offset (unlike SVG). */
 	.dashed {
 		background: repeating-conic-gradient(
-			from -90deg,
+			from 0deg,
 			color-mix(in srgb, var(--mode-hex) 30%, transparent) 0deg 1.32deg,
 			transparent 1.32deg 4.62deg
 		);
@@ -108,13 +109,13 @@
 	/* Progress clip: an opaque conic sector growing clockwise from 12 o'clock */
 	.clip {
 		background: none;
-		-webkit-mask: conic-gradient(from -90deg, #000 calc(var(--p) * 360deg), transparent 0deg);
-		mask: conic-gradient(from -90deg, #000 calc(var(--p) * 360deg), transparent 0deg);
+		-webkit-mask: conic-gradient(from 0deg, #000 calc(var(--p) * 360deg), transparent 0deg);
+		mask: conic-gradient(from 0deg, #000 calc(var(--p) * 360deg), transparent 0deg);
 	}
 
 	.arc {
 		background: conic-gradient(
-			from -90deg,
+			from 0deg,
 			color-mix(in srgb, var(--mode-hex) 40%, transparent) 0deg,
 			var(--mode-hex) 180deg,
 			color-mix(in srgb, var(--mode-hex) 40%, transparent) 360deg
@@ -146,7 +147,9 @@
 		font-family: var(--font-rounded);
 		font-variant-numeric: tabular-nums;
 		font-feature-settings: 'tnum' 1;
-		font-size: clamp(56px, calc(var(--ring-size) * 0.22), 84px);
+		/* Mac digits: 72pt at the 360pt reference ring (84pt only above 380pt,
+		 * which the 360px cap never reaches — 0.2 × 360 = 72 exact) */
+		font-size: clamp(52px, calc(var(--ring-size) * 0.2), 72px);
 		font-weight: 600;
 		line-height: 1;
 		letter-spacing: var(--tracking-tight);

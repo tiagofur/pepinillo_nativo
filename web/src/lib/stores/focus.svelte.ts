@@ -133,14 +133,17 @@ class FocusController {
 	paused = $derived(this.session?.status === 'paused');
 	idle = $derived(!this.session || this.session.status === 'idle');
 	/** Mac parity (PhaseColors.swift): break phases derive a calmer variant of
-	 * the CURRENT mode color — they never borrow another mode's color. */
+	 * the CURRENT mode color — they never borrow another mode's color.
+	 * `app.theme` is read so the derivation re-runs on theme switches
+	 * (getComputedStyle is not reactive on its own). */
 	phaseColor = $derived.by(() => {
+		void app.theme; // tracked dependency: re-derive when the theme changes
 		let base = CLASSIC_MODE_HEX[this.mode] ?? '#2eb870';
 		if (browser) {
 			const v = getComputedStyle(document.documentElement)
 				.getPropertyValue(`--mode-${this.mode}`)
 				.trim();
-			if (/^#[0-9a-fA-F]{3,8}$/.test(v)) base = v;
+			if (/^#[0-9a-fA-F]{3}$|^#[0-9a-fA-F]{6}$/.test(v)) base = v;
 		}
 		if (this.phase === 'shortBreak') return breakVariant(base, 'short');
 		if (this.phase === 'longBreak') return breakVariant(base, 'long');
