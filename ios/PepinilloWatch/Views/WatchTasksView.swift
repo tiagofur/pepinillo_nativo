@@ -2,11 +2,11 @@
 // Pepinillo — Deep Work Companion for Apple
 //
 // Apple Watch tasks screen. Shows today's tasks synced from iOS.
-// Tap to toggle completion, long press to link/unlink a task to the timer.
+// Tap to toggle completion; the context menu (long press) links/unlinks
+// a task to the timer — discoverable via a first-use hint (#882).
 
 import SwiftUI
 import ComposableArchitecture
-import WatchKit
 
 // MARK: - WatchTasksView
 
@@ -21,6 +21,9 @@ struct WatchTasksView: View {
             } else {
                 taskList
             }
+        }
+        .onAppear {
+            store.send(.onAppear)
         }
     }
 
@@ -45,13 +48,24 @@ struct WatchTasksView: View {
                 .padding(.horizontal, 8)
                 .padding(.bottom, 6)
 
+                // First-use hint (#882): the link action is invisible until
+                // used once — tell the user it exists, then never again.
+                if !store.hasEverLinkedTask {
+                    Text(String(localized: "Long-press a task to focus it"))
+                        .font(.system(size: 10))
+                        .foregroundStyle(.tertiary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 8)
+                        .padding(.bottom, 6)
+                }
+
                 // Tasks
                 ForEach(sortedTasks) { task in
                     WatchTaskRow(
                         task: task,
                         isLinked: linkedTaskID == task.id,
                         onTap: { store.send(.taskTapped(task.id)) },
-                        onLongPress: { store.send(.taskLongPressed(task.id)) }
+                        onLinkToggle: { store.send(.taskLongPressed(task.id)) }
                     )
                 }
             }
@@ -94,9 +108,28 @@ private struct WatchTaskRow: View {
     let task: WatchTaskItem
     let isLinked: Bool
     let onTap: () -> Void
-    let onLongPress: () -> Void
+    let onLinkToggle: () -> Void
 
     var body: some View {
+        if task.isCompleted {
+            row
+        } else {
+            // #882: the idiomatic watchOS long-press affordance — a context
+            // menu replaces the invisible direct gesture. Same reducer flow.
+            row.contextMenu {
+                Button(action: onLinkToggle) {
+                    Label(
+                        isLinked
+                            ? String(localized: "Unlink Task")
+                            : String(localized: "Focus on task"),
+                        systemImage: isLinked ? "link" : "brain"
+                    )
+                }
+            }
+        }
+    }
+
+    private var row: some View {
         Button(action: onTap) {
             HStack(spacing: 8) {
                 // Completion indicator
@@ -157,9 +190,5 @@ private struct WatchTaskRow: View {
             .clipShape(RoundedRectangle(cornerRadius: 10))
         }
         .buttonStyle(.plain)
-        .onLongPressGesture {
-            WKInterfaceDevice.current().play(.click)
-            onLongPress()
-        }
     }
 }
