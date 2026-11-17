@@ -105,6 +105,17 @@ describe('suggestEnergy (cronobiología)', () => {
 });
 
 describe('filterTasks', () => {
+	it('all: every active task in stable order (Mac sidebar "Todas")', () => {
+		const tasks = [
+			task({ id: 'b', order: 1, scheduledForToday: true }),
+			task({ id: 'a', order: 0, dueDate: '2026-11-20' }),
+			task({ id: 'c', order: 2 }),
+			task({ id: 'done', status: 'completed', scheduledForToday: true })
+		];
+		const ids = filterTasks(tasks, 'all', TODAY).map((t) => t.id);
+		expect(ids).toEqual(['a', 'b', 'c']);
+	});
+
 	it('today: scheduled or due today', () => {
 		const tasks = [
 			task({ id: 'a', scheduledForToday: true }),

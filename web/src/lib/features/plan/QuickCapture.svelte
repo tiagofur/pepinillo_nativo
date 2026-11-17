@@ -136,8 +136,9 @@
 	<!-- svelte-ignore a11y_click_events_have_key_events -->
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<div class="qc-backdrop" onclick={() => (open = false)}>
-		<div class="qc card" role="dialog" aria-modal="true" aria-label={t('quickCapture.title')}>
-			<span class="qc-icon" aria-hidden="true">⌘</span>
+		<!-- Spotlight-style bar (Mac Quick Capture: material r16, top 22%) -->
+		<div class="qc" role="dialog" aria-modal="true" aria-label={t('quickCapture.title')}>
+			<span class="qc-icon" aria-hidden="true"><Icon name="plus" size={18} /></span>
 			<input
 				bind:this={inputEl}
 				bind:value
@@ -147,7 +148,7 @@
 			/>
 			<kbd class="esc">esc</kbd>
 		</div>
-		<div class="results card" bind:this={listEl}>
+		<div class="results" bind:this={listEl}>
 			{#each results as result, i (result.id)}
 				<button
 					class="result pressable"
@@ -187,23 +188,28 @@
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		padding-top: min(16vh, 140px);
+		padding-top: min(22vh, 200px); /* Mac Quick Capture: 22% from top */
 		gap: var(--space-3);
 	}
 
 	.qc {
-		width: min(580px, calc(100vw - var(--space-8)));
+		width: min(520px, calc(100vw - var(--space-8)));
 		display: flex;
 		align-items: center;
 		gap: var(--space-3);
 		padding: var(--space-3) var(--space-4);
+		background: var(--material-bg);
+		backdrop-filter: blur(20px) saturate(1.4);
+		-webkit-backdrop-filter: blur(20px) saturate(1.4);
+		border: 1px solid var(--hairline);
+		border-radius: 16px; /* Mac Quick Capture panel radius */
+		box-shadow: var(--shadow-3);
 		animation: rise-in var(--dur-base) var(--ease-out-quint) both;
 	}
 
 	.qc-icon {
-		font-size: 18px;
+		display: inline-flex;
 		color: var(--brand);
-		font-weight: 700;
 	}
 
 	.qc-input {
@@ -228,10 +234,16 @@
 	}
 
 	.results {
-		width: min(580px, calc(100vw - var(--space-8)));
+		width: min(520px, calc(100vw - var(--space-8)));
 		max-height: 320px;
 		overflow-y: auto;
 		padding: var(--space-2);
+		background: var(--material-bg);
+		backdrop-filter: blur(20px) saturate(1.4);
+		-webkit-backdrop-filter: blur(20px) saturate(1.4);
+		border: 1px solid var(--hairline);
+		border-radius: 16px;
+		box-shadow: var(--shadow-3);
 		animation: rise-in var(--dur-base) var(--ease-out-quint) both;
 	}
 
