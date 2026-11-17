@@ -3,6 +3,7 @@
 	import { page } from '$app/state';
 	import { app } from '$lib/stores/app.svelte';
 	import { auth } from '$lib/stores/auth.svelte';
+	import { plan } from '$lib/stores/plan.svelte';
 	import { t } from '$lib/i18n/i18n.svelte';
 	import type { MessageKey } from '$lib/i18n/messages';
 	import Icon from '$lib/design/Icon.svelte';
@@ -10,6 +11,7 @@
 	import QuickCapture from '$lib/features/plan/QuickCapture.svelte';
 	import Toasts from '$lib/design/Toasts.svelte';
 	import logoUrl from '$lib/assets/logo.svg';
+	import type { PlanFilter } from '$lib/domain/tasks/plan';
 
 	onMount(() => {
 		void (async () => {
@@ -25,19 +27,40 @@
 		})();
 	});
 
-	// Native parity: ⌘1/⌘2/⌘3 jump to Focus/Plan/Dashboard (Mac AppCommands).
+	// Native parity: ⌘1/⌘2/⌘3 jump to Focus/Plan/Dashboard (Mac AppCommands),
+	// ⌘F plan search, ⌘N new task, ⌘⌥I inspector. (⌘N/⌘⌥I are browser-reserved
+	// in some engines — the toolbar buttons are the reliable path.)
 	function onCommandKey(e: KeyboardEvent): void {
-		if (!(e.metaKey || e.ctrlKey) || e.key > '3' || e.key < '1') return;
-		e.preventDefault();
-		const routes: Record<string, '/focus' | '/plan' | '/dashboard'> = {
-			1: '/focus',
-			2: '/plan',
-			3: '/dashboard'
-		};
-		const route = routes[e.key];
-		if (!route) return;
-		void import('$app/navigation').then(({ goto }) => goto(route));
+		if (!(e.metaKey || e.ctrlKey)) return;
+		if (e.key >= '1' && e.key <= '3') {
+			e.preventDefault();
+			const routes: Record<string, '/focus' | '/plan' | '/dashboard'> = {
+				1: '/focus',
+				2: '/plan',
+				3: '/dashboard'
+			};
+			const route = routes[e.key];
+			if (route) void import('$app/navigation').then(({ goto }) => goto(route));
+			return;
+		}
+		const key = e.key.toLowerCase();
+		if (key === 'f' && !e.altKey && !e.shiftKey) {
+			e.preventDefault();
+			void planThenDispatch('pepinillo:plan-search');
+		} else if (key === 'n' && !e.altKey && !e.shiftKey) {
+			void planThenDispatch('pepinillo:plan-new-task');
+		} else if (key === 'i' && e.altKey) {
+			void planThenDispatch('pepinillo:plan-inspector');
+		}
 	}
+
+	/** Navigate to Plan (if needed), then raise a page-level command event. */
+	async function planThenDispatch(event: string): Promise<void> {
+		const { goto } = await import('$app/navigation');
+		if (!page.url.pathname.startsWith('/plan')) await goto('/plan');
+		setTimeout(() => window.dispatchEvent(new CustomEvent(event)), 250);
+	}
+
 	window.addEventListener('keydown', onCommandKey);
 
 	// Daily reminder (native parity): one Notification per day at the configured time.
@@ -55,23 +78,34 @@
 		}, ms);
 	}
 
-	const NAV: { path: string; key: MessageKey; icon: string }[] = [
-		{ path: '/focus', key: 'nav.focus', icon: 'focus' },
-		{ path: '/plan', key: 'nav.plan', icon: 'plan' },
-		{ path: '/dashboard', key: 'nav.dashboard', icon: 'dashboard' }
+	// Mac sidebar model: Focus → Plan filters (MacPlanFilter) → Dashboard.
+	const PLAN_ROWS: { id: PlanFilter; key: MessageKey; icon: string }[] = [
+		{ id: 'all', key: 'plan.filter.all', icon: 'tray' },
+		{ id: 'today', key: 'plan.filter.today', icon: 'sun' },
+		{ id: 'upcoming', key: 'plan.filter.upcoming', icon: 'calendar' },
+		{ id: 'completed', key: 'plan.filter.completed', icon: 'check-circle' }
 	];
 
 	const TABS: { path: string; key: MessageKey; icon: string }[] = [
-		...NAV,
+		{ path: '/focus', key: 'nav.focus', icon: 'focus' },
+		{ path: '/plan', key: 'nav.plan', icon: 'plan' },
+		{ path: '/dashboard', key: 'nav.dashboard', icon: 'dashboard' },
 		{ path: '/account', key: 'nav.account', icon: 'account' }
 	];
 
+	let onPlan = $derived(page.url.pathname.startsWith('/plan'));
 	let current = $derived(page.url.pathname);
+
+	// Sidebar footer identity: initial avatar + name/email when signed in.
+	let displayName = $derived(auth.user?.name || auth.user?.email || t('nav.account'));
+	let displayMail = $derived(auth.user?.email ?? '');
+	let avatarInitial = $derived(displayName.trim().charAt(0).toUpperCase() || 'P');
+
 	let { children } = $props();
 </script>
 
 <div class="shell">
-	<!-- Desktop sidebar / tablet rail -->
+	<!-- Desktop sidebar / tablet rail (MacAppView model) -->
 	<aside class="app-sidebar">
 		<a class="brand pressable" href="/focus" aria-label="Pepinillo">
 			<img src={logoUrl} alt="" width="34" height="34" />
@@ -79,30 +113,63 @@
 		</a>
 
 		<nav class="nav" aria-label={t('app.name')}>
-			{#each NAV as item (item.path)}
+			<a
+				class="nav-row pressable"
+				href="/focus"
+				aria-current={page.url.pathname.startsWith('/focus') ? 'page' : undefined}
+				class:is-active={page.url.pathname.startsWith('/focus')}
+			>
+				<Icon name="focus" size={16} />
+				<span class="nav-label">{t('nav.focus')}</span>
+			</a>
+
+			<span class="nav-section nav-label" aria-hidden="true">{t('nav.plan')}</span>
+			{#each PLAN_ROWS as row (row.id)}
 				<a
-					class="nav-item pressable"
-					href={item.path}
-					aria-current={current.startsWith(item.path) ? 'page' : undefined}
-					class:is-active={current.startsWith(item.path)}
+					class="nav-row pressable"
+					href="/plan"
+					aria-current={onPlan && plan.filter === row.id ? 'page' : undefined}
+					class:is-active={onPlan && plan.filter === row.id}
+					onclick={() => plan.setFilter(row.id)}
 				>
-					<Icon name={item.icon} />
-					<span class="nav-label">{t(item.key)}</span>
+					<Icon name={row.icon} size={16} />
+					<span class="nav-label">{t(row.key)}</span>
 				</a>
 			{/each}
+
+			<a
+				class="nav-row pressable"
+				href="/dashboard"
+				aria-current={page.url.pathname.startsWith('/dashboard') ? 'page' : undefined}
+				class:is-active={page.url.pathname.startsWith('/dashboard')}
+			>
+				<Icon name="dashboard" size={16} />
+				<span class="nav-label">{t('nav.dashboard')}</span>
+			</a>
 		</nav>
 
 		<div class="spacer"></div>
 
-		<a
-			class="nav-item pressable"
-			href="/account"
-			aria-current={current.startsWith('/account') ? 'page' : undefined}
-			class:is-active={current.startsWith('/account')}
-		>
-			<Icon name="account" />
-			<span class="nav-label">{t('nav.account')}</span>
-		</a>
+		<!-- Account footer row (Mac sidebar footer) -->
+		<footer class="sidebar-footer">
+			<a
+				class="account-row pressable"
+				href="/account"
+				aria-current={page.url.pathname.startsWith('/account') ? 'page' : undefined}
+				class:is-active={page.url.pathname.startsWith('/account')}
+			>
+				<span class="avatar" aria-hidden="true">{avatarInitial}</span>
+				<span class="account-meta">
+					<span class="account-name">{displayName}</span>
+					{#if displayMail}
+						<span class="account-mail">{displayMail}</span>
+					{/if}
+				</span>
+			</a>
+			<a class="gear-btn pressable" href="/account" aria-label={t('account.settings')}>
+				<Icon name="gear" size={16} />
+			</a>
+		</footer>
 	</aside>
 
 	<main class="content">
@@ -119,8 +186,8 @@
 		<a
 			class="tabbar-item pressable"
 			href={item.path}
-			aria-current={current.startsWith(item.path) ? 'page' : undefined}
-			class:is-active={current.startsWith(item.path)}
+			aria-current={current?.startsWith(item.path) ? 'page' : undefined}
+			class:is-active={current?.startsWith(item.path)}
 		>
 			<Icon name={item.icon} size={24} />
 			<span>{t(item.key)}</span>
@@ -138,13 +205,13 @@
 	.brand {
 		display: flex;
 		align-items: center;
-		gap: var(--space-3);
+		gap: var(--space-2);
 		min-height: var(--touch-target);
-		padding: 0 var(--space-3) var(--space-2);
+		padding: 0 var(--space-2) var(--space-2);
 		color: var(--ink);
 		font-weight: 800;
 		letter-spacing: var(--tracking-tight);
-		font-size: var(--text-md);
+		font-size: var(--text-base);
 	}
 
 	.brand:hover {
@@ -154,7 +221,7 @@
 	.nav {
 		display: flex;
 		flex-direction: column;
-		gap: var(--space-1);
+		gap: 1px;
 	}
 
 	.spacer {
@@ -176,18 +243,31 @@
 		}
 
 		.brand-name,
-		.nav-label {
+		.nav-label,
+		.account-meta {
 			display: none;
 		}
 
-		.nav-item {
+		.nav-row {
 			justify-content: center;
 			padding: 0;
+		}
+
+		.nav-section {
+			display: none;
 		}
 
 		.brand {
 			justify-content: center;
 			padding-inline: 0;
+		}
+
+		.sidebar-footer {
+			flex-direction: column;
+		}
+
+		.account-row {
+			justify-content: center;
 		}
 
 		.content {

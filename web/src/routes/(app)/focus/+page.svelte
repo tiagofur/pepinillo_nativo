@@ -9,6 +9,8 @@
 	import Sheets from '$lib/features/focus/Sheets.svelte';
 	import CompanionCards from '$lib/features/focus/CompanionCards.svelte';
 	import AdhdBreak from '$lib/features/focus/AdhdBreak.svelte';
+	import PaneToolbar from '$lib/features/shell/PaneToolbar.svelte';
+	import Segmented from '$lib/design/Segmented.svelte';
 	import { FREE_MODES, type FocusMode } from '$lib/domain/entities/types';
 	import type { MessageKey } from '$lib/i18n/messages';
 
@@ -54,6 +56,23 @@
 </svelte:head>
 
 <section class="focus rise-in">
+	<!-- Mac window toolbar: centered mode segmented, empty while a session runs -->
+	<PaneToolbar title={t('focus.title')}>
+		{#snippet center()}
+			{#if focus.idle && !focus.waiting}
+				<Segmented
+					options={MODES.map((m) => ({
+						id: m.id,
+						label: t(m.key),
+						disabled: !(FREE_MODES as readonly string[]).includes(m.id) || !focus.idle
+					}))}
+					value={focus.mode}
+					onchange={(id) => focus.selectMode(id as FocusMode)}
+				/>
+			{/if}
+		{/snippet}
+	</PaneToolbar>
+
 	<header class="modes" role="toolbar" aria-label={t('focus.title')}>
 		{#each MODES as m (m.id)}
 			{@const free = (FREE_MODES as readonly string[]).includes(m.id)}
@@ -158,6 +177,13 @@
 		flex-wrap: wrap;
 		justify-content: center;
 		gap: var(--space-2);
+	}
+
+	/* Desktop: the toolbar segmented replaces the chip row (Mac toolbar) */
+	@media (min-width: 1024px) {
+		.modes {
+			display: none;
+		}
 	}
 
 	.waiting {

@@ -1,13 +1,14 @@
 /**
  * Plan filters and grouping — pure helpers behind the Plan page.
- * Pills mirror the native TaskFilter{Today, Inbox, Upcoming, Completed}.
+ * Pills mirror the Mac sidebar (MacPlanFilter): All / Today / Upcoming /
+ * Completed. `inbox` stays a valid filter for the capture flow.
  */
 
 import type { Task, TaskEnergy } from '$lib/domain/entities/types';
 import { ENERGY_ORDER } from './energy';
 import { localDateKey } from './recurrence';
 
-export type PlanFilter = 'today' | 'inbox' | 'upcoming' | 'completed';
+export type PlanFilter = 'all' | 'today' | 'inbox' | 'upcoming' | 'completed';
 
 export const PLAN_FILTERS: readonly PlanFilter[] = ['today', 'inbox', 'upcoming', 'completed'] as const;
 
@@ -19,6 +20,8 @@ export function filterTasks(tasks: Task[], filter: PlanFilter, today: Date = new
 	const todayKey = localDateKey(today);
 	const active = tasks.filter((t) => t.status === 'active');
 	switch (filter) {
+		case 'all':
+			return [...active].sort(byOrder);
 		case 'today':
 			return active.filter((t) => isToday(t, todayKey)).sort(byOrder);
 		case 'inbox':

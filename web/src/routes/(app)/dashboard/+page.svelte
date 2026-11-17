@@ -8,6 +8,8 @@
 	import Panels from '$lib/features/dashboard/Panels.svelte';
 	import AiCard from '$lib/features/dashboard/AiCard.svelte';
 	import ReviewSheet from '$lib/features/dashboard/ReviewSheet.svelte';
+	import PaneToolbar from '$lib/features/shell/PaneToolbar.svelte';
+	import Icon from '$lib/design/Icon.svelte';
 	import type { AnalyticsPeriod } from '$lib/domain/dashboard/stats';
 
 	onMount(() => {
@@ -45,17 +47,28 @@
 </svelte:head>
 
 <section class="dash rise-in">
-	<header class="head">
-		<h1>{t('dashboard.title')}</h1>
-		<div class="head-actions">
-			<button class="btn btn-soft pressable" onclick={() => dashboard.openReview(7)}>
-				📊 {t('review.weekly')}
+	<!-- Mac window toolbar: refresh on the right (Today toolbar parity) -->
+	<PaneToolbar title={t('dashboard.title')}>
+		{#snippet right()}
+			<button
+				class="pt-btn pressable"
+				title={t('dashboard.refresh')}
+				aria-label={t('dashboard.refresh')}
+				onclick={() => void dashboard.reload()}
+			>
+				<Icon name="refresh" size={16} />
 			</button>
-			<button class="btn btn-ghost pressable" onclick={() => dashboard.openReview(30)}>
-				{t('review.monthly')}
-			</button>
-		</div>
-	</header>
+		{/snippet}
+	</PaneToolbar>
+
+	<div class="head-actions">
+		<button class="btn btn-soft pressable" onclick={() => dashboard.openReview(7)}>
+			📊 {t('review.weekly')}
+		</button>
+		<button class="btn btn-ghost pressable" onclick={() => dashboard.openReview(30)}>
+			{t('review.monthly')}
+		</button>
+	</div>
 
 	{#if dashboard.stats}
 		<!-- Streak hero -->
@@ -148,21 +161,10 @@
 		width: 100%;
 	}
 
-	.head {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: var(--space-3);
-		flex-wrap: wrap;
-	}
-
-	h1 {
-		font-size: var(--text-xl);
-	}
-
 	.head-actions {
 		display: flex;
 		gap: var(--space-2);
+		margin-bottom: var(--space-2);
 	}
 
 	.hero {

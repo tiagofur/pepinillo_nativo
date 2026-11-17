@@ -179,46 +179,148 @@
 	box-shadow: var(--shadow-2);
 }
 
-/* ---------- Sidebar chrome (≥1024px, matte like the Mac sidebar) ---------- */
+/* ---------- Sidebar chrome (≥1024px, matte like the Mac sidebar) ----------
+ * MacAppView model: 30px rows with a radius-10 accent capsule, section
+ * headers, and an account footer row. */
 .app-sidebar {
 	display: flex;
 	flex-direction: column;
-	gap: var(--space-2);
-	padding: var(--space-5) var(--space-3);
+	gap: var(--space-1);
+	padding: var(--space-4) var(--space-2) var(--space-2);
 	background: var(--sidebar-bg);
 	border-right: 1px solid var(--border);
 }
 
-.nav-item {
+.nav-row {
 	display: flex;
 	align-items: center;
-	gap: var(--space-3);
-	min-height: var(--touch-target);
+	gap: var(--space-2);
+	min-height: 30px;
 	padding: 0 var(--space-3);
-	border-radius: var(--radius-md);
-	color: var(--ink-secondary);
-	font-weight: 550;
-	font-size: var(--text-base);
+	border-radius: var(--radius-sm);
+	color: var(--ink);
+	font-weight: 500;
+	font-size: var(--text-sm);
 	cursor: pointer;
 	transition:
-		background-color var(--dur-fast) var(--ease-out-quint),
-		color var(--dur-fast) var(--ease-out-quint);
+		background-color var(--dur-fast) var(--spring-snappy),
+		color var(--dur-fast) var(--spring-snappy);
 }
 
-.nav-item:hover {
+.nav-row svg {
+	flex: none;
+	color: var(--brand);
+}
+
+.nav-row:hover {
 	background: var(--surface-alt);
 	color: var(--ink);
 	text-decoration: none;
 }
 
-.nav-item.is-active {
-	background: var(--brand-soft);
-	color: var(--brand);
+.nav-row.is-active {
+	background: var(--brand);
+	color: var(--on-brand);
 	font-weight: 650;
 }
 
-.nav-item svg {
+.nav-row.is-active svg {
+	color: var(--on-brand);
+}
+
+.nav-section {
+	padding: var(--space-4) var(--space-3) var(--space-1);
+	font-size: var(--text-2xs);
+	font-weight: 700;
+	color: var(--muted);
+}
+
+.sidebar-footer {
+	display: flex;
+	align-items: center;
+	gap: var(--space-1);
+	padding: var(--space-2);
+	margin-top: var(--space-2);
+	border-top: 1px solid var(--hairline);
+}
+
+.account-row {
+	display: flex;
+	align-items: center;
+	gap: var(--space-2);
+	flex: 1;
+	min-width: 0;
+	min-height: 30px;
+	padding: 0 var(--space-2);
+	border-radius: 7px;
+	color: var(--ink);
+}
+
+.account-row:hover {
+	background: var(--surface-alt);
+	text-decoration: none;
+}
+
+.account-row.is-active {
+	background: var(--surface-alt);
+}
+
+.avatar {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 26px;
+	height: 26px;
 	flex: none;
+	border-radius: 50%;
+	background: var(--brand);
+	color: var(--on-brand);
+	font-size: var(--text-xs);
+	font-weight: 700;
+}
+
+.account-meta {
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+	line-height: 1.2;
+}
+
+.account-name {
+	font-size: var(--text-sm);
+	font-weight: 600;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.account-mail {
+	font-size: var(--text-2xs);
+	color: var(--muted);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.gear-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 36px;
+	height: 30px;
+	border: none;
+	background: transparent;
+	border-radius: 7px;
+	color: var(--muted);
+	cursor: pointer;
+	transition:
+		background-color var(--dur-fast) var(--spring-snappy),
+		color var(--dur-fast) var(--spring-snappy);
+}
+
+.gear-btn:hover {
+	background: var(--surface-alt);
+	color: var(--ink);
 }
 
 /* ---------- Bottom tab bar (<768px, iOS/M3 feel) ---------- */

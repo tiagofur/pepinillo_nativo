@@ -52,5 +52,44 @@
 	{:else if name === 'skip'}
 		<path d="M6 5.5v13l9-6.5z" fill="currentColor" stroke="none" />
 		<rect x="16" y="5.5" width="2.6" height="13" rx="1.2" fill="currentColor" stroke="none" />
+	{:else if name === 'tray'}
+		<path d="M3.5 13h4.5l2 3h4l2-3h4.5" />
+		<path d="M3.5 13v4a2 2 0 0 0 2 2h13a2 2 0 0 0 2-2v-4" />
+		<path d="M6.2 13 8 5.5h8l1.8 7.5" />
+	{:else if name === 'sun'}
+		<circle cx="12" cy="12" r="4" />
+		<path d="M12 2.5V5" />
+		<path d="M12 19v2.5" />
+		<path d="M2.5 12H5" />
+		<path d="M19 12h2.5" />
+		<path d="M4.9 4.9l1.8 1.8" />
+		<path d="M17.3 17.3l1.8 1.8" />
+		<path d="M19.1 4.9l-1.8 1.8" />
+		<path d="M6.7 17.3l-1.8 1.8" />
+	{:else if name === 'calendar'}
+		<rect x="3.5" y="5" width="17" height="15.5" rx="2.5" />
+		<path d="M3.5 9.5h17" />
+		<path d="M8 2.5V6" />
+		<path d="M16 2.5V6" />
+	{:else if name === 'check-circle'}
+		<circle cx="12" cy="12" r="8.5" />
+		<path d="M8 12.4l2.7 2.7L16 9.5" />
+	{:else if name === 'gear'}
+		<circle cx="12" cy="12" r="3" />
+		<path
+			d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"
+		/>
+	{:else if name === 'plus'}
+		<path d="M12 5v14" />
+		<path d="M5 12h14" />
+	{:else if name === 'search'}
+		<circle cx="11" cy="11" r="7" />
+		<path d="M16.5 16.5 21 21" />
+	{:else if name === 'inspector'}
+		<rect x="3.5" y="4.5" width="17" height="15" rx="2.5" />
+		<path d="M14.5 4.5v15" />
+	{:else if name === 'refresh'}
+		<path d="M20.5 12a8.5 8.5 0 1 1-2.5-6" />
+		<path d="M18.5 2.5v4h-4" />
 	{/if}
 </svg>

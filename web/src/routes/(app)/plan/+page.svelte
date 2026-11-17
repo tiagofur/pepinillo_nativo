@@ -7,23 +7,42 @@
 	import TaskRow from '$lib/features/plan/TaskRow.svelte';
 	import TaskTable from '$lib/features/plan/TaskTable.svelte';
 	import TaskInspector from '$lib/features/plan/TaskInspector.svelte';
+	import PaneToolbar from '$lib/features/shell/PaneToolbar.svelte';
 	import Segmented from '$lib/design/Segmented.svelte';
+	import Icon from '$lib/design/Icon.svelte';
 	import { groupByEnergy, PLAN_FILTERS, quickAddDefaults, type PlanFilter } from '$lib/domain/tasks/plan';
 	import { suggestEnergy } from '$lib/domain/tasks/energy';
 	import type { Task } from '$lib/domain/entities/types';
 
 	onMount(() => {
 		void plan.init();
+		// Mac window commands raised by the shell (⌘F / ⌘N / ⌘⌥I).
+		function onPlanSearch(): void {
+			searchEl?.focus();
+		}
+		function onPlanNewTask(): void {
+			quickAddEl?.focus();
+		}
+		window.addEventListener('pepinillo:plan-search', onPlanSearch);
+		window.addEventListener('pepinillo:plan-new-task', onPlanNewTask);
+		window.addEventListener('pepinillo:plan-inspector', toggleInspector);
+		return () => {
+			window.removeEventListener('pepinillo:plan-search', onPlanSearch);
+			window.removeEventListener('pepinillo:plan-new-task', onPlanNewTask);
+			window.removeEventListener('pepinillo:plan-inspector', toggleInspector);
+		};
 	});
 
+	// Mac sidebar filters: Todas / Hoy / Próximas / Completadas.
 	const FILTER_KEYS: { id: PlanFilter; key: MessageKey }[] = [
+		{ id: 'all', key: 'plan.filter.all' },
 		{ id: 'today', key: 'plan.filter.today' },
-		{ id: 'inbox', key: 'plan.filter.inbox' },
 		{ id: 'upcoming', key: 'plan.filter.upcoming' },
 		{ id: 'completed', key: 'plan.filter.completed' }
 	];
 
 	const EMPTY_KEYS: Record<PlanFilter, MessageKey> = {
+		all: 'plan.empty.all',
 		today: 'plan.empty.today',
 		inbox: 'plan.empty.inbox',
 		upcoming: 'plan.empty.upcoming',
@@ -34,9 +53,26 @@
 	let selectedId = $state<string | null>(null);
 	let dragId = $state<string | null>(null);
 	let showCapNotice = $state(false);
+	let query = $state('');
+
+	let searchEl = $state<HTMLInputElement | null>(null);
+	let quickAddEl = $state<HTMLInputElement | null>(null);
 
 	let selectedTask = $derived(plan.tasks.find((x) => x.id === selectedId) ?? null);
 	let suggestion = $derived(suggestEnergy(new Date().getHours()));
+
+	/** Toolbar search (Mac `.searchable`): narrows the visible subset by title. */
+	let displayed = $derived.by(() => {
+		const q = query.trim().toLowerCase();
+		if (!q) return plan.visible;
+		return plan.visible.filter((task) => task.title.toLowerCase().includes(q));
+	});
+
+	/** ⌘⌥I / toolbar toggle: open the inspector on the first visible task. */
+	function toggleInspector(): void {
+		if (selectedId) selectTask(null);
+		else if (displayed.length > 0) selectTask(displayed[0].id);
+	}
 
 	async function quickAdd(): Promise<void> {
 		const defaults = quickAddDefaults(plan.filter);
@@ -87,7 +123,42 @@
 </svelte:head>
 
 <section class="plan rise-in">
-	<header class="toolbar">
+	<!-- Mac window toolbar: search + inspector toggle + new task -->
+	<PaneToolbar title={t('plan.title')}>
+		{#snippet right()}
+			<label class="pt-search">
+				<Icon name="search" size={14} />
+				<input
+					bind:this={searchEl}
+					bind:value={query}
+					placeholder={t('plan.search')}
+					aria-label={t('plan.search')}
+				/>
+			</label>
+			<span class="pt-group">
+				<button
+					class="pt-btn pressable"
+					class:is-on={!!selectedTask}
+					title="⌘⌥I — {t('plan.inspector')}"
+					aria-label={t('plan.inspector')}
+					aria-pressed={!!selectedTask}
+					onclick={toggleInspector}
+				>
+					<Icon name="inspector" size={16} />
+				</button>
+				<button
+					class="pt-btn pressable"
+					title="⌘N — {t('plan.newTask')}"
+					aria-label={t('plan.newTask')}
+					onclick={() => quickAddEl?.focus()}
+				>
+					<Icon name="plus" size={16} />
+				</button>
+			</span>
+		{/snippet}
+	</PaneToolbar>
+
+	<div class="toolbar">
 		<Segmented
 			options={FILTER_KEYS.map((f) => ({ id: f.id, label: t(f.key) }))}
 			value={plan.filter}
@@ -100,7 +171,7 @@
 		>
 			⚡ <span class="qc-label">{t('quickCapture.title')}</span>
 		</button>
-	</header>
+	</div>
 
 	<form
 		class="quickadd"
@@ -110,6 +181,7 @@
 		}}
 	>
 		<input
+			bind:this={quickAddEl}
 			class="field"
 			placeholder={t('plan.quickPlaceholder')}
 			bind:value={quickValue}
@@ -118,7 +190,7 @@
 		<button class="btn btn-primary pressable" type="submit">{t('plan.add')}</button>
 	</form>
 
-	{#if plan.filter === 'today' && plan.visible.length > 0 && app.tier === 'free'}
+	{#if plan.filter === 'today' && displayed.length > 0 && app.tier === 'free'}
 		<p class="suggest-hint">✨ {t('plan.energyHint', { energy: t(`plan.energy.${suggestion}`) })}</p>
 	{/if}
 
@@ -131,14 +203,14 @@
 
 	<div class="inspector-grid">
 		<div class="list-area">
-			{#if plan.visible.length === 0}
+			{#if displayed.length === 0}
 				<div class="empty card">
-					<p class="empty-title">{t(EMPTY_KEYS[plan.filter])}</p>
+					<p class="empty-title">{query.trim() ? t('plan.empty.body') : t(EMPTY_KEYS[plan.filter])}</p>
 					<p class="empty-body">{t('plan.empty.body')}</p>
 				</div>
 			{:else if plan.filter === 'completed'}
 				<ul class="list">
-					{#each plan.visible as task (task.id)}
+					{#each displayed as task (task.id)}
 						<TaskRow
 							{task}
 							selected={selectedId === task.id}
@@ -150,14 +222,14 @@
 				</ul>
 			{:else}
 				<TaskTable
-					tasks={plan.visible}
+					tasks={displayed}
 					selectedId={selectedId}
 					onselect={selectTask}
 					ontoggle={(id) => plan.toggleComplete(id)}
 					onfocus={focusTask}
 				/>
 				<div class="mobile-list">
-				{#each groupByEnergy(plan.visible) as group (group.energy)}
+				{#each groupByEnergy(displayed) as group (group.energy)}
 					<section class="group">
 						<h2 class="group-title">{t(`plan.energy.${group.energy}`)}</h2>
 						<ul class="list">
@@ -201,6 +273,13 @@
 		justify-content: space-between;
 		gap: var(--space-3);
 		flex-wrap: wrap;
+	}
+
+	/* Desktop: filters live in the sidebar (Mac model); ⌘K stays global */
+	@media (min-width: 1024px) {
+		.toolbar {
+			display: none;
+		}
 	}
 
 	.qc-open {

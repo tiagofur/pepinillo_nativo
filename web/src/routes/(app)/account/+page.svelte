@@ -7,6 +7,7 @@
 	import Icon from '$lib/design/Icon.svelte';
 	import FocusSettings from '$lib/features/settings/FocusSettings.svelte';
 	import Segmented from '$lib/design/Segmented.svelte';
+	import PaneToolbar from '$lib/features/shell/PaneToolbar.svelte';
 	import AuthPanel from '$lib/features/auth/AuthPanel.svelte';
 	import AccountServer from '$lib/features/auth/AccountServer.svelte';
 	import type { LocaleCode, ThemePreference } from '$lib/domain/entities/types';
@@ -42,7 +43,7 @@
 </svelte:head>
 
 <section class="account rise-in">
-	<h1>{t('account.title')}</h1>
+	<PaneToolbar title={t('account.title')} />
 	<p class="subtitle">{t('account.subtitle')}</p>
 
 	{#if auth.configured}
@@ -111,11 +112,6 @@
 		display: flex;
 		flex-direction: column;
 		gap: var(--space-5);
-		padding-top: var(--space-8);
-	}
-
-	h1 {
-		font-size: var(--text-xl);
 	}
 
 	h2 {
