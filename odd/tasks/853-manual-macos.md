@@ -5,7 +5,7 @@ Branch: `docs/manual-macos` | Delivery: `complete` | Test runners: `pnpm check` 
 ## Specs
 
 - **S1**: Manual covers all inventoried surfaces (main window Focus/Plan/Dashboard/Account, Statistics ⌘4, menu bar + 3 styles, notch panel, Dock, Quick Capture, Spotlight + deep links, Focus scene 4 modes/ring/journal/celebrations, Plan table + inspector + drags, Settings 4 tabs, Help, global hotkeys ⌃⌥*, Services, Siri/Shortcuts, widgets, notifications, Handoff) with a basic→advanced structure and the complete shortcut table (global + menus + touch gestures noted as hardware-gated).
-- **S2**: ≥18 real screenshots in `web/static/guides/img/macos-*.png`, each ≤300KB, visibly rich demo data (charts, streak, sessions).
+- **S2**: ≥18 real screenshots in `web/static/guides/img/macos-*.jpg`, each ≤300KB, visibly rich demo data (charts, streak, sessions).
 - **S3**: Spanish task titles visible in screenshots (added via Quick Capture UI automation; NO changes to `ios/`).
 - **S4**: Mixed appearance — mostly light + 4-6 key dark shots; menu bar shots anonymized/tightly cropped (no personal status icons).
 - **S5**: prd-v2 §claims forbidden words respected in tier/sync sections (scan).
@@ -35,3 +35,15 @@ Branch: `docs/manual-macos` | Delivery: `complete` | Test runners: `pnpm check` 
 - **L2 (2026-11-17, ejecución completa)**: Build firmado Xcode-beta OK; app corrida con `-seedDemoData -proMode -AppleLanguages (es)`; 8 tareas ES añadidas vía Quick Capture con clipboard (keystroke pierde espacios/tilas — key code 49 tampoco); CachedUser de Tiago borrado en BD (app quit) para anonimizar sidebar; capturas por `screencapture -l<CGWindowID>` (SÓLO ventana — un full-screen pilló WhatsApp y se descartó de inmediato); System Events `click at` NO mueve selección SwiftUI → CGEvent real vía `mouse.swift` (click/rightclick/move); journal = ventana separada (no sheet) y solo tras finalización natural (sesión <60s se descarta; hotkey aborta; interrupciones pausan); pill del notch requiere auto-inicios OFF en Ajustes + fin natural de fase. 30 capturas finales (light mayormente + 4 dark) → JPEG ≤300KB en `web/static/guides/img/` (3.9MB total). Manual 1208 líneas/28 figuras; 121/121 tests, svelte-check 0/0, build OK; claims-scan limpio; secrets OK; QA navegador: 28/28 imgs cargan, sin overflow a 390px.
 
 - **L3 (2026-11-17, post-push QA)**: judgment-day dual lanzado pero ambos jueces cayeron por cuota de uso (resetea 2026-11-18 05:31). El barrido parcial del juez B confirmó la píldora del notch EN BLANCO (crop de región transparente aplanada a blanco) y mi re-verificación visual completa de las 30 imágenes encontró además que macos-dock-menu.jpg era el menú de un STACK DE ARCHIVOS del Dock (no el menú de Pepinillo) con nombres de archivo personales visibles — fuga. Ambas retomadas: píldora recortada con precisión (420×72) y menú del Dock real (tile 23 corriendo debug, verificado con analyze). Caption del Dock ajustado al estado real. Todas las demás imágenes verificadas visualmente una a una (context menu, composer, search, stats 7D, dashboard claro, popover menú bar, quick capture).
+
+## Cómo probar (S7)
+
+1. `cd web && pnpm build && (cd build && python3 -m http.server 4178 &)` → abre `http://localhost:4178/guides/macos.html`.
+2. Recorre el índice del sidebar: cada sección abre con capturas reales y captions (lazy-load: baja para verlas). 30 imágenes referenciadas, 28 figuras en el documento.
+3. Modo oscuro del sistema: el manual cambia de tema solo; las capturas oscuras están en §10.
+4. Desde `/guides`, la tarjeta Manual Mac abre este documento (data-sveltekit-reload). Responsive: sin overflow a 390px.
+
+## Log (continuación)
+
+- **L4 (2026-11-17, judgment-day dual sobre head congelado 54591d5a)**: Juez A y Juez B completos, sin contradicciones. Confirmado por ambos: 1 CRÍTICO ("Tareas ilimitadas" vs límite real de 3 tareas activas free, TaskListFeature.swift:989) + 6 WARNINGs (stats 30D/Year Pro, widget Panel Pro, control iPhone→Mac inexistente, ⌘./⌃⌥X sin confirmación, pepinillo://statistics inexistente, "Mac" suelto ×2 en §12) + caption Lluvia + sugerencias (2 imágenes muertas, nombres de soundscapes, etiquetas diario, ⌘N, "tiempo real", hitos 60/100). Seguridad: 30 imágenes sin datos personales (ambos jueces). Previa corrección en L3: píldora en blanco y dock-menu erróneo detectados y retomados.
+- **L5 (2026-11-17, fix round aprobado por Tiago)**: 19 correcciones de texto aplicadas (una por hallazgo, todas con refs de código de los jueces) + 2 figuras muertas ahora referenciadas (dark-dashboard, settings-appearance → 30/30) + residuos 0. Pendiente re-juicio acotado.
