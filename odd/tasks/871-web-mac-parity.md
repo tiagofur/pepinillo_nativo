@@ -24,7 +24,11 @@ Menu bar, notch panel, dock (badge/arc/menu), separate Statistics window, Servic
 ## Allowed edit surfaces
 
 - `web/src/lib/design/**` (tokens.css, base.css, components.css, Icon/Segmented/Sheet/Switch/Toasts.svelte, new ContextMenu.svelte)
-- `web/src/routes/(app)/+layout.svelte` and `(app)/{focus,plan,dashboard,account}/+page.svelte`
+- `web/src/routes/(app)/+layout.svelte`
+- `web/src/routes/(app)/focus/+page.svelte`
+- `web/src/routes/(app)/plan/+page.svelte`
+- `web/src/routes/(app)/dashboard/+page.svelte`
+- `web/src/routes/(app)/account/+page.svelte`
 - `web/src/lib/features/focus/**`, `web/src/lib/features/plan/**`, `web/src/lib/features/dashboard/**`, `web/src/lib/features/shell/**` (new PaneToolbar)
 - `web/src/lib/features/settings/**`, `web/src/lib/features/auth/**` (material re-tint only)
 - `web/src/lib/stores/focus.svelte.ts` (phaseColor derivation only)
