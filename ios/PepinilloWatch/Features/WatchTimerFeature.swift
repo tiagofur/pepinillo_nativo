@@ -68,6 +68,11 @@ struct WatchTimerFeature {
         /// Non-nil between tapping Start and the phone's authoritative
         /// session state arriving.
         var pendingStart: WatchPendingStart? = nil
+
+        /// The countdown anchor the expiry watchdog is currently armed for
+        /// (#880). Dedupes 1Hz re-arming on unchanged anchors; cleared when
+        /// the session leaves the live-countdown state.
+        var expiryWatchdogAnchor: Date? = nil
     }
 
     // MARK: - Action
@@ -92,18 +97,58 @@ struct WatchTimerFeature {
         // System
         case onAppear
         case pendingStartTimedOut
+        /// The countdown anchor expired (end passed) — #880 self-heal check.
+        case phaseAnchorExpired(Date)
     }
 
     // MARK: - Dependencies
 
     @Dependency(\.watchConnectivityClient) var watchClient
+    @Dependency(\.continuousClock) var clock
 
-    private enum CancelID { case pendingStart }
+    private enum CancelID { case pendingStart, anchorWatchdog }
 
     /// Give-up window for an optimistic start: the phone drops queued
     /// commands older than `commandTTLSeconds` (S7), so a confirmation has
     /// TTL + margin seconds to arrive before we admit the start failed.
     static let pendingStartTimeoutSeconds: TimeInterval = 330
+
+    /// #880 RC2: how long a countdown anchor may sit past its end before the
+    /// watch assumes the next-phase push was lost and asks the phone for a
+    /// fresh snapshot. Healthy transitions land within ~1s.
+    static let anchorExpiryGraceSeconds: TimeInterval = 3
+
+    /// #880 RC2: retry cadence while the anchor stays expired.
+    static let anchorRetrySeconds: TimeInterval = 5
+
+    /// #880 RC2: fires `phaseAnchorExpired` once the countdown anchor is
+    /// `anchorExpiryGraceSeconds` past. Uses the injected clock so tests
+    /// advance time deterministically.
+    private static func anchorWatchdogEffect(
+        end: Date,
+        clock: any Clock<Duration>
+    ) -> Effect<Action> {
+        .run { send in
+            let delay = max(0, end.timeIntervalSinceNow) + anchorExpiryGraceSeconds
+            try? await clock.sleep(for: .seconds(delay))
+            await send(.phaseAnchorExpired(end))
+        }
+        .cancellable(id: CancelID.anchorWatchdog, cancelInFlight: true)
+    }
+
+    /// #880 RC2: while the anchor stays expired, re-check on the retry cadence —
+    /// the loop dies on the guard as soon as a fresh anchor (or an inactive
+    /// state) lands.
+    private static func anchorRetryEffect(
+        end: Date,
+        clock: any Clock<Duration>
+    ) -> Effect<Action> {
+        .run { send in
+            try? await clock.sleep(for: .seconds(anchorRetrySeconds))
+            await send(.phaseAnchorExpired(end))
+        }
+        .cancellable(id: CancelID.anchorWatchdog, cancelInFlight: true)
+    }
 
     // MARK: - Reducer
 
@@ -300,11 +345,26 @@ struct WatchTimerFeature {
                     #endif
                 }
 
-                guard wasPendingStart else { return persistEffect }
-                var effects: [Effect<Action>] = [
-                    .cancel(id: CancelID.pendingStart),
-                    persistEffect,
-                ]
+                // #880 RC2: arm the expiry watchdog on live countdown anchors.
+                // If the authoritative next-phase push never lands (lost
+                // transition), self-heal by asking the phone for a fresh
+                // snapshot instead of counting overtime forever.
+                var effects: [Effect<Action>] = [persistEffect]
+                let liveCountdown = s.isActive && !s.isWaiting && !s.isPaused
+                    && s.countsDown && s.phaseEndDate != nil
+                if liveCountdown, let end = s.phaseEndDate,
+                   end != state.expiryWatchdogAnchor {
+                    state.expiryWatchdogAnchor = end
+                    effects.append(Self.anchorWatchdogEffect(end: end, clock: clock))
+                } else if !liveCountdown {
+                    // Left the live-countdown state (pause, hold, stop, count-up):
+                    // drop any armed watchdog and its anchor.
+                    state.expiryWatchdogAnchor = nil
+                    effects.append(.cancel(id: CancelID.anchorWatchdog))
+                }
+
+                guard wasPendingStart else { return .merge(effects) }
+                effects.insert(.cancel(id: CancelID.pendingStart), at: 0)
                 if !s.isActive {
                     // The optimistic start did not stick (stale-dropped or
                     // refused phone-side) — say so.
@@ -331,6 +391,22 @@ struct WatchTimerFeature {
                     state.isProUser = Self.readIsProUser()
                 }
                 return .none
+
+            case .phaseAnchorExpired(let end):
+                // The countdown anchor is past with no authoritative follow-up:
+                // the transition push was lost. Ask the phone for a fresh
+                // snapshot and keep retrying while the session stays stuck on
+                // the expired anchor (#880 RC2).
+                guard state.isSessionActive, !state.isWaiting, !state.isPaused,
+                      state.countsDown, state.phaseEndDate == end,
+                      end.timeIntervalSinceNow <= 0
+                else { return .none }
+                return .merge(
+                    .run { [watchClient] _ in
+                        _ = await watchClient.sendCommand(.requestSession)
+                    },
+                    Self.anchorRetryEffect(end: end, clock: clock)
+                )
 
             case .commandSent:
                 return .none
