@@ -130,12 +130,16 @@ plesk bin site -u pepinillo.app -www-root httpdocs
 plesk bin subdomain -c app -domain pepinillo.app -www-root app.pepinillo.app
 plesk bin subdomain -c api -domain pepinillo.app -www-root api.pepinillo.app
 # nginx custom (vhost_nginx.conf por dominio) + regenerar config + nginx reload:
-#   pepinillo.app y app.pepinillo.app  → SPA fallback sin duplicar location /
-#     (Plesk ya define location /):
+#   app.pepinillo.app → el fallback SPA es app.html (adapter fallback), NUNCA
+#     /index.html (en el build app-only, index.html es un stub meta-refresh →
+#     /focus: usarlo como fallback crea un redirect eterno):
+#       location = / { return 302 /focus; }
 #       location ~ ^/(focus|plan|dashboard|account|upgrade) {
-#           try_files $uri $uri.html $uri/ /index.html;
+#           try_files $uri $uri.html $uri/ /app.html;
 #       }
-#       error_page 404 =200 /index.html;
+#       error_page 404 =200 /app.html;
+#   pepinillo.app (landing): redirects 302 de rutas PWA al subdominio app +
+#     mapeo del índice de guías + fallback a /index.html (landing shell):
 #   api.pepinillo.app → proxy igual que api.ppn.creapolis.dev:
 #       location ~ ^/.* { proxy_pass http://127.0.0.1:8090; ...headers ws... }
 plesk repair web -y <dominio>          # regenera e incluye vhost_nginx.conf
