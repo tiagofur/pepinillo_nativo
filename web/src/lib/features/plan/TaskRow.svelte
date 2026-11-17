@@ -129,7 +129,12 @@
 	ontouchmove={touchMove}
 	ontouchcancel={touchCancel}
 	onclickcapture={onClickCapture}
-	oncontextmenu={(e) => oncontext && e.preventDefault()}
+	oncontextmenu={(e) => {
+		if (!oncontext) return;
+		e.preventDefault();
+		touchCancel();
+		oncontext?.(e.clientX || 40, e.clientY || 40);
+	}}
 >
 	<button
 		class="check pressable"

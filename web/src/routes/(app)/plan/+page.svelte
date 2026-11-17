@@ -382,6 +382,16 @@
 		}
 	}
 
+	/* <=1023px: the wrapper is unstyled, so it must carry the .plan flex gap
+	 * its children lost when they left the parent flex context */
+	@media (max-width: 1023px) {
+		.plan-scroll {
+			display: flex;
+			flex-direction: column;
+			gap: var(--space-4);
+		}
+	}
+
 	.toolbar {
 		display: flex;
 		align-items: center;

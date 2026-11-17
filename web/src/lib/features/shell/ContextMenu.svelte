@@ -30,8 +30,6 @@
 	// Clamped position, resolved inside the effect (x/y are the fresh pointer
 	// coords of each mount — the owner recreates the menu per invocation).
 	let pos = $state({ left: 0, top: 0 });
-	// Submenus flip to the left when the menu sits near the right edge.
-	let submenuSide = $state<'right' | 'left'>('right');
 
 	// Synchronous clamp: $effect runs after the DOM insert, so menuEl is
 	// already bound (rAF would never fire for background tabs). Re-runs if
@@ -43,8 +41,6 @@
 		const left = Math.max(margin, Math.min(x, window.innerWidth - r.width - margin));
 		const top = Math.max(margin, Math.min(y, window.innerHeight - r.height - margin));
 		pos = { left, top };
-		// Flip submenus left when there is no room on the right (190px min).
-		submenuSide = left + r.width + 190 > window.innerWidth ? 'left' : 'right';
 	});
 
 	function pick(item: ContextMenuItem): void {
@@ -61,7 +57,7 @@
 	}
 </script>
 
-<svelte:window onkeydown={onKeydown} onscroll={() => onclose()} />
+<svelte:window onkeydown={onKeydown} onscroll={() => onclose()} onscrollcapture={() => onclose()} />
 
 <!-- a11y waiver: pointer-positioned menu; keyboard users keep their existing
 	 shortcuts (row selection + inspector + title edit) and Escape closes. -->
@@ -72,7 +68,6 @@
 		class="ctx material-panel"
 		bind:this={menuEl}
 		style="left: {pos.left}px; top: {pos.top}px;"
-		class:flip={submenuSide === 'left'}
 		role="menu"
 		tabindex="-1"
 		onclick={(e) => e.stopPropagation()}
@@ -216,24 +211,40 @@
 		position: relative;
 	}
 
+	/* Submenus always stack INLINE below their entry (GitHub/Linear pattern):
+	 * a floating 180px panel can leave the viewport near any edge, on any
+	 * screen size — inline stacking is in-viewport by construction. */
 	.submenu {
-		position: absolute;
-		top: -4px;
-		left: calc(100% - 6px);
-		min-width: 180px;
-		max-height: min(320px, calc(100vh - 16px));
+		min-width: 0;
+		width: 100%;
+		max-height: min(280px, 40vh);
 		overflow-y: auto;
 		padding: var(--space-1);
+		box-shadow: none;
+		margin-top: var(--space-1);
 	}
 
-	/* Flipped (menu near the right edge): on narrow viewports the 180px
-	 * floating submenu would clip on BOTH edges, so it stacks inline inside
-	 * the menu instead — always in-viewport. */
-	.ctx.flip .submenu {
-		position: static;
-		min-width: 100%;
-		max-height: 260px;
-		box-shadow: none;
+	/* ≤1023px: floating 180px submenus clip on both edges of a phone, so
+	 * submenus ALWAYS stack inline inside the menu (entry drops its row
+	 * layout). Desktop keeps the floating left/right placement — the menu
+	 * clamp + flip threshold guarantee room there. */
+	@media (max-width: 1023px) {
+		.entry.has-sub.is-open {
+			display: block;
+		}
+
+		.entry.has-sub.is-open .chev {
+			display: none;
+		}
+
+		.entry.has-sub.is-open .submenu {
+			position: static;
+			min-width: 0;
+			width: 100%;
+			max-height: 240px;
+			box-shadow: none;
+			margin-top: var(--space-1);
+		}
 	}
 
 	.sep {

@@ -295,7 +295,9 @@
 			flex-direction: column;
 			gap: var(--space-4);
 			padding: var(--space-5);
-			max-height: calc(100dvh - var(--space-12));
+			/* Lives inside .plan-scroll (≈100dvh − toolbar/gaps/bar) on desktop */
+			max-height: calc(100dvh - 200px);
+			overflow-y: auto;
 			overflow-y: auto;
 			visibility: hidden;
 			opacity: 0;
