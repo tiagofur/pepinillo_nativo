@@ -32,19 +32,19 @@
 		'chart.day.sat'
 	];
 
-	const SPARK_W = 280;
-	const SPARK_H = 48;
-	let sparkPath = $derived.by(() => {
-		const values = stats.weekly.map((d) => d.totalFocusSeconds);
-		const max = Math.max(1, ...values);
-		const step = SPARK_W / Math.max(1, values.length - 1);
-		const points = values.map((v, i) => `${(i * step).toFixed(1)},${(SPARK_H - (v / max) * (SPARK_H - 6)).toFixed(1)}`);
-		return `M${points.join(' L')}`;
-	});
-	let sparkArea = $derived(`${sparkPath} L${SPARK_W},${SPARK_H} L0,${SPARK_H} Z`);
-
 	let weekMax = $derived(Math.max(1, ...stats.weekly.map((d) => d.totalFocusSeconds)));
 	let modeTotal = $derived(Math.max(1, stats.modeBreakdown.reduce((acc, m) => acc + m.seconds, 0)));
+	let weekTotal = $derived(stats.weekly.reduce((acc, d) => acc + d.totalFocusSeconds, 0));
+	// Mac weekly chart: today's bar full pomodoro color, past days at 0.35.
+	let todayKey = $derived(stats.weekly.at(-1)?.date ?? '');
+	let bestDayLabel = $derived.by(() => {
+		const best = stats.weekly.reduce(
+			(best, d, i) => (d.totalFocusSeconds > stats.weekly[best].totalFocusSeconds ? i : best),
+			0
+		);
+		const d = stats.weekly[best];
+		return d && d.totalFocusSeconds > 0 ? t(WEEKDAY_KEYS[new Date(`${d.date}T12:00:00`).getDay()]) : '—';
+	});
 
 	function fmtMin(seconds: number): string {
 		const m = Math.round(seconds / 60);
@@ -56,18 +56,25 @@
 <div class="charts">
 	<div class="card chart-card">
 		<h3>{periodDays === 7 ? t('chart.week') : t('chart.window', { days: periodDays })}</h3>
-		<svg class="spark" viewBox="0 0 {SPARK_W} {SPARK_H}" preserveAspectRatio="none" aria-hidden="true">
-			<path class="spark-area" d={sparkArea} />
-			<path class="spark-line" d={sparkPath} />
-		</svg>
 		<div class="week-days" class:compact={!showDayBars}>
 			{#each stats.weekly as d, i (d.date)}
 				<div class="week-col">
-					<span class="nums week-val">{d.totalFocusSeconds > 0 ? fmtMin(d.totalFocusSeconds) : ''}</span>
-					<div class="week-bar" style="height: {(d.totalFocusSeconds / weekMax) * 100}%; background: {d.totalFocusSeconds > 0 ? 'var(--brand)' : 'var(--surface-sunken)'}"></div>
+					<span class="nums week-val">{showDayBars && d.totalFocusSeconds > 0 ? fmtMin(d.totalFocusSeconds) : ''}</span>
+					<div
+						class="week-bar"
+						style="height: {(d.totalFocusSeconds / weekMax) * 100}%; background: {d.totalFocusSeconds > 0
+							? d.date === todayKey
+								? 'var(--mode-pomodoro)'
+								: 'color-mix(in srgb, var(--mode-pomodoro) 35%, transparent)'
+							: 'var(--surface-sunken)'}"
+					></div>
 					<span class="week-label">{showDayBars ? t(WEEKDAY_KEYS[new Date(`${d.date}T12:00:00`).getDay()]) : ''}</span>
 				</div>
 			{/each}
+		</div>
+		<div class="chart-summary">
+			<span class="cs-total"><span class="nums">{fmtMin(weekTotal)}</span> {periodDays === 7 ? t('chart.week') : t('chart.window', { days: periodDays })}</span>
+			<span class="cs-best">{t('dash.bestDay')}: <span class="nums">{bestDayLabel}</span></span>
 		</div>
 	</div>
 
@@ -109,34 +116,22 @@
 		letter-spacing: 0.06em;
 	}
 
-	.spark {
-		width: 100%;
-		height: 48px;
-	}
-
-	.spark-line {
-		fill: none;
-		stroke: var(--brand);
-		stroke-width: 2;
-		stroke-linecap: round;
-	}
-
-	.spark-area {
-		fill: var(--brand-softer);
-	}
-
+	/* Mac weekly chart: bars minHeight 220 area, corner radius 4 */
 	.week-days {
 		display: flex;
-		align-items: flex-end;
+		align-items: stretch;
 		gap: var(--space-2);
+		height: 148px;
 	}
 
 	.week-col {
 		flex: 1;
 		display: flex;
 		flex-direction: column;
+		justify-content: flex-end;
 		align-items: center;
 		gap: var(--space-1);
+		height: 100%;
 	}
 
 	.week-val {
@@ -156,6 +151,23 @@
 		font-size: 10px;
 		color: var(--faint);
 		font-weight: 600;
+		min-height: 14px;
+	}
+
+	.chart-summary {
+		display: flex;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: var(--space-3);
+		padding-top: var(--space-3);
+		border-top: 1px solid var(--hairline);
+		font-size: var(--text-sm);
+		color: var(--muted);
+	}
+
+	.cs-total .nums {
+		color: var(--ink);
+		font-weight: 650;
 	}
 
 	.week-days.compact .week-bar {

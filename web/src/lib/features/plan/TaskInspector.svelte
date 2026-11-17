@@ -313,6 +313,11 @@
 			gap: var(--space-6);
 			align-items: start;
 		}
+
+		/* Closed inspector: the table spans the full width (Mac behavior) */
+		:global(.inspector-grid:not(.with-inspector)) {
+			grid-template-columns: minmax(0, 1fr);
+		}
 	}
 
 	.head {
