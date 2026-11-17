@@ -18,6 +18,10 @@ struct MacFocusView: View {
     /// Zen stage (issue #797): pinch on the stage or View ▸ Zen Mode hides
     /// the link-task chip and today stats. Shared with the menu command.
     @AppStorage(FocusZenMode.storageKey) private var isZen = false
+    /// Soundscapes popover (issue #798). Local on purpose: the reducer's
+    /// `showSoundscapePicker` closes on selection, the Mac popover stays
+    /// open so volume and ambience can be adjusted together.
+    @State private var showSoundscapes = false
     @Namespace private var glassNS
 
     private var currentMode: FocusMode {
@@ -148,8 +152,11 @@ struct MacFocusView: View {
 
             phaseSection
             if !isZen {
-                linkedTaskChip
-                    .transition(.opacity)
+                HStack(spacing: 10) {
+                    linkedTaskChip
+                    soundscapeChip
+                }
+                .transition(.opacity)
             }
             // Duration steppers flank Start on the configurable-duration
             // modes (Time Block, Pomodoro — issue #848), mirroring the iPhone
@@ -280,6 +287,43 @@ struct MacFocusView: View {
               ? String(localized: "Link a task to this session")
               : String(localized: "Change or unlink the linked task"))
         .accessibilityLabel(store.linkedTaskTitle.map { String(localized: "Linked task: \($0)") } ?? String(localized: "Link a task"))
+    }
+
+    /// Soundscapes pill beside Link Task: names the current ambience and
+    /// opens the popover. Same glass capsule and 36 pt touch rect as the
+    /// link chip (guide R2).
+    private var soundscapeChip: some View {
+        Button {
+            showSoundscapes = true
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: store.selectedSoundscape.systemImage)
+                    .foregroundStyle(store.selectedSoundscape == .none ? Color.secondary : modeColor)
+                Text(store.selectedSoundscape == .none
+                     ? String(localized: "Soundscape")
+                     : store.selectedSoundscape.displayName)
+                    .lineLimit(1)
+            }
+            .font(.callout)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .adaptiveGlassCapsule(id: "soundscape-chip", namespace: glassNS)
+            .frame(minHeight: TouchTargets.macMinimum)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .help(String(localized: "Choose an ambient soundscape"))
+        .accessibilityLabel(String(localized: "Soundscape: \(store.selectedSoundscape.displayName)"))
+        .popover(isPresented: $showSoundscapes, arrowEdge: .bottom) {
+            MacSoundscapePopover(
+                currentSoundscape: store.selectedSoundscape,
+                volume: store.soundscapeVolume,
+                isProUser: store.isProUser,
+                onSelect: { store.send(.soundscapeSelected($0)) },
+                onVolumeChange: { store.send(.soundscapeVolumeChanged($0)) },
+                onNeedsPro: { store.send(.paywallTapped) }
+            )
+        }
     }
 
     @ViewBuilder

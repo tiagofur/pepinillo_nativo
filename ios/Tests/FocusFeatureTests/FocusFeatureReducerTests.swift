@@ -360,6 +360,54 @@ struct FocusFeatureReducerTests {
         #expect(store.state.displayTime == "20:00")
     }
 
+    // MARK: - Soundscape (issue #798: Mac popover drives these actions)
+
+    @Test func soundscapeVolumeIsClampedAndSilentWhileIdle() async {
+        let setVolumeCalls = LockIsolated<[Float]>([])
+        let store = TestStore(initialState: FocusFeature.State()) {
+            FocusFeature()
+        } withDependencies: {
+            $0.soundscapeClient.setVolume = { volume in setVolumeCalls.withValue { $0.append(volume) } }
+        }
+
+        await store.send(.soundscapeVolumeChanged(1.7)) { $0.soundscapeVolume = 1 }
+        await store.send(.soundscapeVolumeChanged(-0.3)) { $0.soundscapeVolume = 0 }
+        await store.send(.soundscapeVolumeChanged(0.25)) { $0.soundscapeVolume = 0.25 }
+
+        // Idle: the level is remembered for Start, the engine is not touched.
+        #expect(setVolumeCalls.value.isEmpty)
+    }
+
+    @Test func soundscapeVolumeReachesTheEngineDuringASession() async {
+        let setVolumeCalls = LockIsolated<[Float]>([])
+        var state = FocusFeature.State()
+        state.isRunning = true
+        state.selectedSoundscape = .rain
+
+        let store = TestStore(initialState: state) {
+            FocusFeature()
+        } withDependencies: {
+            $0.soundscapeClient.setVolume = { volume in setVolumeCalls.withValue { $0.append(volume) } }
+        }
+
+        await store.send(.soundscapeVolumeChanged(0.8)) { $0.soundscapeVolume = 0.8 }
+        await store.finish()
+
+        #expect(setVolumeCalls.value == [0.8])
+    }
+
+    @Test func soundscapeSelectedWhileIdleIsRememberedWithoutPlaying() async {
+        let played = LockIsolated<[Soundscape]>([])
+        let store = TestStore(initialState: FocusFeature.State()) {
+            FocusFeature()
+        } withDependencies: {
+            $0.soundscapeClient.play = { soundscape, _ in played.withValue { $0.append(soundscape) } }
+        }
+
+        await store.send(.soundscapeSelected(.forest)) { $0.selectedSoundscape = .forest }
+
+        #expect(played.value.isEmpty)
+
     // MARK: - Custom Duration
 
     @Test func startPomodoroPassesCompletedWorkCountToEngine() async {
