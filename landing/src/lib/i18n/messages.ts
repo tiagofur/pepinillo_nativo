@@ -480,6 +480,7 @@ export type MessageKey =
 	| 'guides.list.android'
 	| 'guides.list.wearos'
 	| 'guides.list.web'
+	| 'guides.list.web.body'
 	| 'guides.list.generic.body';
 
 type Dict = Record<MessageKey, string>;
@@ -954,6 +955,7 @@ const en: Dict = {
 	'guides.list.android': 'Android',
 	'guides.list.wearos': 'Wear OS',
 	'guides.list.web': 'Web app',
+	'guides.list.web.body': 'The full Web PWA guide: install, the four focus modes, tasks with context menus, the Panel, shortcuts and offline-first.',
 	'guides.list.generic.body': 'The full guide for this platform is on its way.',
 	'sync.title': 'Cloud sync',
 	'sync.hint': 'Last-Write-Wins with the server clock, like the native apps.',
@@ -1469,7 +1471,6 @@ const es: Dict = {
 	'guides.list.android': 'Android',
 	'guides.list.wearos': 'Wear OS',
 	'guides.list.web': 'App web',
-	'guides.list.web.body': 'O guia completo da PWA: instalação, os quatro modos, tarefas com menus de contexto, o Painel, atalhos e offline-first.',
 	'guides.list.web.body': 'La guía completa de la PWA: instalación, los cuatro modos, tareas con menús contextuales, el Panel, atajos y offline-first.',
 	'guides.list.generic.body': 'La guía completa de esta plataforma está en camino.',
 	'sync.title': 'Sync cloud',
@@ -1970,6 +1971,7 @@ const pt: Dict = {
 	'guides.list.android': 'Android',
 	'guides.list.wearos': 'Wear OS',
 	'guides.list.web': 'App web',
+	'guides.list.web.body': 'O guia completo da PWA: instalação, os quatro modos, tarefas com menus de contexto, o Painel, atalhos e offline-first.',
 	'guides.list.generic.body': 'O guia completo desta plataforma está a caminho.',
 	'sync.title': 'Sync cloud',
 	'sync.hint': 'Last-Write-Wins com o relógio do servidor, como nos apps nativos.',
