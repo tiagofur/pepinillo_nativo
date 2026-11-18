@@ -328,7 +328,10 @@
       place-items: center;
     }
 
-    @media (max-width: 860px) {
+    /* El apilado móvil solo bajo 760px: con la sidebar de 260px, un laptop
+     * estándar (760–1240px) debe mantener sidebar + columna centrada con
+     * márgenes — nunca contenido a pleno ancho sin márgenes. */
+    @media (max-width: 759px) {
       .app-shell { grid-template-columns: 1fr; }
       aside {
         position: static;

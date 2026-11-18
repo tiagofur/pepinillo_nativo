@@ -339,7 +339,9 @@
       place-items: center;
     }
 
-    @media (max-width: 860px) {
+    /* El apilado móvil solo bajo 760px (ver manual web): laptops estándar
+     * mantienen sidebar + columna centrada con márgenes. */
+    @media (max-width: 759px) {
       .app-shell { grid-template-columns: 1fr; }
       aside {
         position: relative;
