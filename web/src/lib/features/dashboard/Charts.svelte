@@ -62,14 +62,14 @@
 				<div class="week-col">
 					<span class="nums week-val">{showDayBars && d.totalFocusSeconds > 0 ? fmtMin(d.totalFocusSeconds) : ''}</span>
 					<div class="week-track">
-						<div
-							class="week-bar"
-							style="height: {(d.totalFocusSeconds / weekMax) * 100}%; background: {d.totalFocusSeconds > 0
-								? d.date === todayKey
+						{#if d.totalFocusSeconds > 0}
+							<div
+								class="week-bar"
+								style="height: {(d.totalFocusSeconds / weekMax) * 100}%; background: {d.date === todayKey
 									? 'var(--mode-pomodoro)'
-									: 'color-mix(in srgb, var(--mode-pomodoro) 35%, transparent)'
-								: 'var(--surface-sunken)'}"
-						></div>
+									: 'color-mix(in srgb, var(--mode-pomodoro) 35%, transparent)'}"
+							></div>
+						{/if}
 					</div>
 					<span class="week-label">{showDayBars ? t(WEEKDAY_KEYS[new Date(`${d.date}T12:00:00`).getDay()]) : ''}</span>
 				</div>
@@ -137,7 +137,7 @@
 	}
 
 	.week-val {
-		font-size: 10px;
+		font-size: var(--text-2xs); /* 11px floor */
 		color: var(--muted);
 		min-height: 14px;
 	}
@@ -160,7 +160,7 @@
 	}
 
 	.week-label {
-		font-size: 10px;
+		font-size: var(--text-2xs); /* 11px floor */
 		color: var(--faint);
 		font-weight: 600;
 		min-height: 14px;

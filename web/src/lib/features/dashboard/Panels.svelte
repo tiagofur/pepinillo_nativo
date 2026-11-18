@@ -116,6 +116,11 @@
 		gap: var(--space-2);
 		overflow-x: auto;
 		padding-bottom: var(--space-1);
+		scrollbar-width: none;
+	}
+
+	.ach-row::-webkit-scrollbar {
+		display: none;
 	}
 
 	.ach {
@@ -149,14 +154,14 @@
 	}
 
 	.ach-name {
-		font-size: 10px;
+		font-size: var(--text-2xs); /* 11px floor */
 		font-weight: 650;
 		color: var(--ink-secondary);
 		text-align: center;
 	}
 
 	.ach-progress {
-		font-size: 10px;
+		font-size: var(--text-2xs); /* 11px floor */
 		color: var(--faint);
 	}
 

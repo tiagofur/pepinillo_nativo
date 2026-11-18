@@ -19,7 +19,8 @@
 		onselect,
 		ontoggle,
 		onfocus,
-		oncontext
+		oncontext,
+		compact = false
 	}: {
 		tasks: Task[];
 		selectedId: string | null;
@@ -27,6 +28,8 @@
 		ontoggle: (id: string) => void;
 		onfocus: (task: Task) => void;
 		oncontext?: (task: Task, x: number, y: number) => void;
+		/** Inspector open: drop the Energy column (Mac narrow-width adaptation) */
+		compact?: boolean;
 	} = $props();
 
 	/** Mac priority arrows: ↑ Alta / − Media / ↓ Baja / — (MacPlanView). */
@@ -192,6 +195,16 @@
 	.trow {
 		display: grid;
 		grid-template-columns: 44px minmax(0, 1fr) 100px 140px 84px 110px 44px;
+
+	/* Inspector open: the narrowed pane drops Energy (like Mac at width) */
+	&.compact {
+		grid-template-columns: 44px minmax(0, 1fr) 100px 84px 110px 44px;
+	}
+
+	&.compact .col-energy {
+		display: none;
+	}
+
 		align-items: center;
 		gap: var(--space-2);
 		padding: 0 var(--space-4);
@@ -322,7 +335,7 @@
 		border: 1px solid var(--border);
 		border-radius: var(--radius-pill);
 		color: var(--brand);
-		font-size: 10px;
+		font-size: var(--text-2xs); /* 11px floor */
 		cursor: pointer;
 		min-width: 32px;
 		min-height: 32px;
