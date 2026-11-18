@@ -112,83 +112,91 @@ private struct WatchTaskRow: View {
 
     var body: some View {
         if task.isCompleted {
-            row
+            content.onTapGesture(perform: onTap)
         } else {
             // #882: the idiomatic watchOS long-press affordance — a context
             // menu replaces the invisible direct gesture. Same reducer flow.
-            row.contextMenu {
-                Button(action: onLinkToggle) {
-                    Label(
-                        isLinked
-                            ? String(localized: "Unlink Task")
-                            : String(localized: "Focus on task"),
-                        systemImage: isLinked ? "link" : "brain"
-                    )
+            content
+                .onTapGesture(perform: onTap)
+                .contextMenu {
+                    Button(action: onLinkToggle) {
+                        Label(
+                            isLinked
+                                ? String(localized: "Unlink Task")
+                                : String(localized: "Focus on task"),
+                            systemImage: isLinked ? "link" : "brain"
+                        )
+                    }
                 }
-            }
         }
     }
 
-    private var row: some View {
-        Button(action: onTap) {
-            HStack(spacing: 8) {
-                // Completion indicator
-                Image(systemName: task.isCompleted ? "checkmark.circle.fill" : "circle")
-                    .font(.system(size: 16))
-                    .foregroundStyle(task.isCompleted ? .green : .secondary)
-                    .frame(width: 24, height: 24)
+    /// #882 live-QA: a Button swallows held presses on watchOS — its action
+    /// fires on release even after seconds, and neither `.contextMenu` nor
+    /// `.onLongPressGesture` ever engages (the pre-fix long-press had the
+    /// same defect — "al soltar marca como terminada"). A discrete tap
+    /// gesture lets gesture arbitration hand the held press to the menu;
+    /// button semantics are preserved via accessibility traits.
+    private var content: some View {
+        HStack(spacing: 8) {
+            // Completion indicator
+            Image(systemName: task.isCompleted ? "checkmark.circle.fill" : "circle")
+                .font(.system(size: 16))
+                .foregroundStyle(task.isCompleted ? .green : .secondary)
+                .frame(width: 24, height: 24)
 
-                // Task info
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(task.title)
-                        .font(.system(size: 13, weight: isLinked ? .semibold : .regular))
-                        .foregroundStyle(task.isCompleted ? .secondary : .primary)
-                        .strikethrough(task.isCompleted)
-                        .lineLimit(2)
+            // Task info
+            VStack(alignment: .leading, spacing: 1) {
+                Text(task.title)
+                    .font(.system(size: 13, weight: isLinked ? .semibold : .regular))
+                    .foregroundStyle(task.isCompleted ? .secondary : .primary)
+                    .strikethrough(task.isCompleted)
+                    .lineLimit(2)
 
-                    HStack(spacing: 4) {
-                        // Priority indicator
-                        if task.priority >= 3 {
-                            Image(systemName: "exclamationmark.triangle.fill")
+                HStack(spacing: 4) {
+                    // Priority indicator
+                    if task.priority >= 3 {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .font(.system(size: 8))
+                            .foregroundStyle(.red)
+                    } else if task.priority >= 2 {
+                        Image(systemName: "exclamationmark")
+                            .font(.system(size: 8))
+                            .foregroundStyle(.orange)
+                    }
+
+                    // Pomodoro progress
+                    if task.estimatedPomodoros > 0 {
+                        HStack(spacing: 2) {
+                            Text("🍅")
                                 .font(.system(size: 8))
-                                .foregroundStyle(.red)
-                        } else if task.priority >= 2 {
-                            Image(systemName: "exclamationmark")
-                                .font(.system(size: 8))
-                                .foregroundStyle(.orange)
-                        }
-
-                        // Pomodoro progress
-                        if task.estimatedPomodoros > 0 {
-                            HStack(spacing: 2) {
-                                Text("🍅")
-                                    .font(.system(size: 8))
-                                Text("\(task.completedPomodoros)/\(task.estimatedPomodoros)")
-                                    .font(.system(size: 9, weight: .medium))
-                                    .foregroundStyle(.secondary)
-                            }
+                            Text("\(task.completedPomodoros)/\(task.estimatedPomodoros)")
+                                .font(.system(size: 9, weight: .medium))
+                                .foregroundStyle(.secondary)
                         }
                     }
                 }
-
-                Spacer(minLength: 0)
-
-                // Link indicator
-                if isLinked {
-                    Image(systemName: "link.circle.fill")
-                        .font(.system(size: 14))
-                        .foregroundStyle(ModeColors.pomodoro)
-                }
             }
-            .padding(.horizontal, 8)
-            .padding(.vertical, 8)
-            .background(
-                isLinked
-                    ? AnyShapeStyle(ModeColors.pomodoro.opacity(0.12))
-                    : AnyShapeStyle(Color.clear)
-            )
-            .clipShape(RoundedRectangle(cornerRadius: 10))
+
+            Spacer(minLength: 0)
+
+            // Link indicator
+            if isLinked {
+                Image(systemName: "link.circle.fill")
+                    .font(.system(size: 14))
+                    .foregroundStyle(ModeColors.pomodoro)
+            }
         }
-        .buttonStyle(.plain)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 8)
+        .background(
+            isLinked
+                ? AnyShapeStyle(ModeColors.pomodoro.opacity(0.12))
+                : AnyShapeStyle(Color.clear)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .contentShape(RoundedRectangle(cornerRadius: 10))
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(.isButton)
     }
 }
