@@ -142,19 +142,21 @@ struct CompleteTaskIntentTests {
         let (container, dir) = try makeContainer(label: "dirty")
         defer { cleanup(dir) }
 
-        let task = insert("Synced first", in: container)
-        // Simulate a previous successful sync: the push pipeline cleared the flag.
+        insert("Synced first", in: container)
+        // Simulate a previous successful sync: fetch through the SAME context
+        // that saves — a cross-context mutation is silently dropped by SwiftData.
         let context = ModelContext(container)
-        task.isDirty = false
-        try? context.save()
+        let stored = try context.fetch(FetchDescriptor<TaskItem>()).first!
+        stored.isDirty = false
+        try context.save()
 
-        let outcome = TaskCompletionService.markCompleted(id: task.id, now: .now, in: container)
+        let outcome = TaskCompletionService.markCompleted(id: stored.id, now: .now, in: container)
 
         guard case .completed = outcome else {
             Issue.record("Expected .completed, got \(outcome)")
             return
         }
-        let reloaded = try reload(task, in: container)
+        let reloaded = try reload(stored, in: container)
         #expect(reloaded.isDirty)
     }
 
