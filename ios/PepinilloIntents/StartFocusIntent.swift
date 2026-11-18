@@ -200,6 +200,16 @@ struct TaskEntityQuery: EntityStringQuery {
 struct PepinilloShortcuts: AppShortcutsProvider {
     static var appShortcuts: [AppShortcut] {
         AppShortcut(
+            intent: CreateTaskIntent(),
+            phrases: [
+                "Create a task in \(.applicationName)",
+                "Add a task to \(.applicationName)",
+                "New task in \(.applicationName)",
+            ],
+            shortTitle: "Create a Task",
+            systemImageName: "checklist"
+        )
+        AppShortcut(
             intent: StartFocusIntent(),
             phrases: [
                 "Start deep work in \(.applicationName)",
