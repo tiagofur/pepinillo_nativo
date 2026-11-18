@@ -288,15 +288,19 @@ jobs:
           defaults write com.apple.dt.Xcode IDESkipPackagePluginFingerprintValidation -bool YES
 
       - name: Build PepinilloMac (Staging, unsigned)
-        # ARCHS=arm64: the target ships universal, but a dual-slice
-        # optimized (Staging) build is 2x the work/memory on 14 GB runners;
-        # one slice still type-checks every Swift source, which is what
-        # this gate verifies.
-        # SWIFT_ENABLE_EXPLICIT_MODULES=NO: Xcode 26's explicit-modules
-        # pipeline hangs silently (~14-19 min stall, then xcodebuild exit
-        # 65 with no error lines) when building this target on GHA runners
-        # (runs 44370270619 and 44374913993). Disabling it is the standard
-        # workaround; the gate still compiles the same sources.
+        # The gate verifies compilation (type-check of every Swift source),
+        # not optimization:
+        # - ARCHS=arm64: the target ships universal; one slice type-checks
+        #   all sources and halves build work/memory on 14 GB runners.
+        # - SWIFT_OPTIMIZATION_LEVEL=-Onone + GCC_OPTIMIZATION_LEVEL=0:
+        #   optimized (Staging default -O -whole-module) builds died
+        #   silently on GHA — three runs (44370270619, 44374913993,
+        #   44378541389) stalled 8-19 min at a *different* phase each time
+        #   (module PCM gen, linking, SentryCppHelper compile) and exited 65
+        #   with no error lines, the signature of the OOM killer reaping
+        #   parallel WMO frontends. -Onone per-file compilation keeps
+        #   memory per frontend small; Debug builds of the same target are
+        #   unaffected by this and always succeed.
         run: |
           set -o pipefail
           xcodebuild \
@@ -310,4 +314,6 @@ jobs:
             COMPILER_INDEX_STORE_ENABLE=NO \
             ARCHS=arm64 \
             SWIFT_ENABLE_EXPLICIT_MODULES=NO \
+            SWIFT_OPTIMIZATION_LEVEL=-Onone \
+            GCC_OPTIMIZATION_LEVEL=0 \
             build
