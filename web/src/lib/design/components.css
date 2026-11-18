@@ -189,6 +189,11 @@
 	padding: var(--space-4) var(--space-2) var(--space-2);
 	background: var(--sidebar-bg);
 	border-right: 1px solid var(--border);
+	/* Viewport-height shell: the sidebar never grows the grid row — if a
+	 * very short viewport cannot fit it, it scrolls internally and the
+	 * account footer stays reachable. */
+	overflow-y: auto;
+	scrollbar-width: thin;
 }
 
 .nav-row {

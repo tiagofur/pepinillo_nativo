@@ -127,18 +127,17 @@ a:hover {
 	}
 }
 
-/* Page-level entrance: content settles in with one calm move */
+/* Page-level entrance: a calm fade. Deliberately opacity-only — a
+ * keyframed translate freezes at its initial transform whenever the tab
+ * is backgrounded mid-animation (CSS animations pause), and that active
+ * transform silently re-anchors every position:fixed descendant (the
+ * context menu, sticky toolbars) to the page section. */
 @keyframes rise-in {
 	from {
 		opacity: 0;
-		transform: translateY(10px);
 	}
 	to {
 		opacity: 1;
-		/* transform: none — a filled translateY(0) keeps a transform on the
-		 * computed style, which would turn position:fixed descendants (the
-		 * context menu) into anchors of this section instead of the viewport */
-		transform: none;
 	}
 }
 
