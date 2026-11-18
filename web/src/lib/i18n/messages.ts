@@ -56,6 +56,10 @@ export type MessageKey =
 	| 'plan.search.empty'
 	| 'plan.empty.all'
 	| 'dashboard.refresh'
+	| 'error.notFound'
+	| 'error.notFoundHint'
+	| 'error.generic'
+	| 'error.genericHint'
 	| 'plan.empty'
 	| 'plan.capBlocked'
 	| 'plan.upgradeTeaser'
@@ -555,6 +559,10 @@ const en: Dict = {
 	'plan.newTask': 'New task',
 	'plan.search.empty': 'No tasks match your search',
 	'dashboard.refresh': 'Refresh',
+	'error.notFound': 'This page wandered off the garden',
+	'error.notFoundHint': 'The page you asked for does not exist — back to the timer.',
+	'error.generic': 'Something got stuck',
+	'error.genericHint': 'Something went wrong — your data is safe. Back to the timer.',
 	'plan.empty': 'No tasks yet. Add up to 3 active tasks on Free.',
 	'plan.capBlocked': 'Free allows up to 3 active tasks.',
 	'plan.upgradeTeaser':
@@ -1064,6 +1072,10 @@ const es: Dict = {
 	'plan.newTask': 'Nueva tarea',
 	'plan.search.empty': 'Ninguna tarea coincide con tu búsqueda',
 	'dashboard.refresh': 'Actualizar',
+	'error.notFound': 'Esta página se salió del huerto',
+	'error.notFoundHint': 'La página que pediste no existe — de vuelta al temporizador.',
+	'error.generic': 'Algo se trabó',
+	'error.genericHint': 'Algo salió mal — tus datos están a salvo. De vuelta al temporizador.',
 	'plan.empty': 'Sin tareas aún. En Free podés tener hasta 3 activas.',
 	'plan.capBlocked': 'Free permite hasta 3 tareas activas.',
 	'plan.upgradeTeaser':
@@ -1573,6 +1585,10 @@ const pt: Dict = {
 	'plan.newTask': 'Nova tarefa',
 	'plan.search.empty': 'Nenhuma tarefa corresponde à sua busca',
 	'dashboard.refresh': 'Atualizar',
+	'error.notFound': 'Esta página saiu da horta',
+	'error.notFoundHint': 'A página pedida não existe — de volta ao temporizador.',
+	'error.generic': 'Algo travou',
+	'error.genericHint': 'Algo deu errado — seus dados estão seguros. De volta ao temporizador.',
 	'plan.empty': 'Nenhuma tarefa ainda. No Free você pode ter até 3 ativas.',
 	'plan.capBlocked': 'Free permite até 3 tarefas ativas.',
 	'plan.upgradeTeaser':
