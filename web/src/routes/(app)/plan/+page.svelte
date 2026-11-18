@@ -150,8 +150,12 @@
 	async function quickAdd(): Promise<void> {
 		const defaults = quickAddDefaults(plan.filter);
 		const created = await plan.addTask(quickValue, defaults);
+		if (!created) {
+			// Cap blocked: keep the typed text so the user loses nothing.
+			showCapNotice = true;
+			return;
+		}
 		quickValue = '';
-		if (!created) showCapNotice = true;
 	}
 
 	function selectTask(id: string | null): void {
@@ -239,7 +243,7 @@
 			onchange={(id) => plan.setFilter(id as PlanFilter)}
 		/>
 		<button
-			class="chip pressable qc-open"
+			class="chip chip-soft pressable qc-open"
 			onclick={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }))}
 			title={t('quickCapture.hint')}
 		>
@@ -326,9 +330,9 @@
 	{/if}
 
 	{#if showCapNotice && plan.freeCapReached}
-		<div class="cap card">
-			🔒 {t('plan.capBlocked')}
-			<a class="btn btn-soft pressable" href="/account">{t('plan.upgradeTeaser')}</a>
+		<div class="cap card" role="alert">
+			<span class="cap-text">🔒 {t('plan.capBlocked')} {t('plan.upgradeTeaser')}</span>
+			<a class="btn btn-soft pressable cap-cta" href="/account">{t('plan.upgradeCta')}</a>
 		</div>
 	{/if}
 	</div>
@@ -408,13 +412,10 @@
 	}
 
 	.qc-open {
-		border-style: dashed;
-	}
-
-	@media (max-width: 599px) {
-		.qc-label {
-			display: none;
-		}
+		background: var(--brand-soft);
+		border-color: transparent;
+		color: var(--brand);
+		font-weight: 650;
 	}
 
 	.quickadd {
@@ -501,11 +502,23 @@
 	.cap {
 		display: flex;
 		align-items: center;
-		justify-content: space-between;
 		gap: var(--space-3);
+		flex-wrap: wrap;
 		padding: var(--space-3) var(--space-4);
 		color: var(--ink-secondary);
-		font-weight: 550;
+		font-size: var(--text-sm);
+	}
+
+	.cap-text {
+		flex: 1;
+		min-width: 200px;
+	}
+
+	.cap-cta {
+		flex: none;
+		padding: 0 var(--space-4);
+		min-height: 34px;
+		font-size: var(--text-sm);
 	}
 
 	.empty {

@@ -115,15 +115,15 @@
 
 	<div class="toggles">
 		<div class="switch-row">
-			<span>t('settings.autoStartBreaks')</span>
+			<span>{t('settings.autoStartBreaks')}</span>
 			<Switch checked={app.prefs.autoStartBreaks} onchange={(v) => app.updatePrefs({ autoStartBreaks: v })} label={t('settings.autoStartBreaks')} />
 		</div>
 		<div class="switch-row">
-			<span>t('settings.autoStartWork')</span>
+			<span>{t('settings.autoStartWork')}</span>
 			<Switch checked={app.prefs.autoStartWork} onchange={(v) => app.updatePrefs({ autoStartWork: v })} label={t('settings.autoStartWork')} />
 		</div>
 		<div class="switch-row">
-			<span>t('settings.timeblock.midpoint')</span>
+			<span>{t('settings.timeblock.midpoint')}</span>
 			<Switch checked={app.prefs.timeBlockMidpointCheckIn} onchange={(v) => app.updatePrefs({ timeBlockMidpointCheckIn: v })} label={t('settings.timeblock.midpoint')} />
 		</div>
 	</div>
@@ -132,7 +132,7 @@
 <div class="card section">
 	<h2>🔔 {t('settings.sound.title')}</h2>
 	<div class="switch-row">
-			<span>t('settings.sound.enabled')</span>
+			<span>{t('settings.sound.enabled')}</span>
 			<Switch checked={app.prefs.soundEnabled} onchange={(v) => app.updatePrefs({ soundEnabled: v })} label={t('settings.sound.enabled')} />
 		</div>
 	<div class="row wrap">
@@ -153,19 +153,19 @@
 	<h2>⚙️ {t('settings.behavior.title')}</h2>
 	<div class="toggles">
 		<div class="switch-row">
-			<span>t('settings.haptics')</span>
+			<span>{t('settings.haptics')}</span>
 			<Switch checked={app.prefs.hapticsEnabled} onchange={(v) => app.updatePrefs({ hapticsEnabled: v })} label={t('settings.haptics')} />
 		</div>
 		<div class="switch-row">
-			<span>t('settings.keepScreenOn')</span>
+			<span>{t('settings.keepScreenOn')}</span>
 			<Switch checked={app.prefs.keepScreenOn} onchange={(v) => app.updatePrefs({ keepScreenOn: v })} label={t('settings.keepScreenOn')} />
 		</div>
 		<div class="switch-row">
-			<span>t('settings.journal')</span>
+			<span>{t('settings.journal')}</span>
 			<Switch checked={app.prefs.showJournalAfterSession} onchange={(v) => app.updatePrefs({ showJournalAfterSession: v })} label={t('settings.journal')} />
 		</div>
 		<div class="switch-row">
-			<span>t('settings.adhd')</span>
+			<span>{t('settings.adhd')}</span>
 			<Switch checked={app.prefs.adhdFriendlyEnabled} onchange={(v) => app.updatePrefs({ adhdFriendlyEnabled: v })} label={t('settings.adhd')} />
 		</div>
 		<div class="switch-row">
@@ -177,7 +177,7 @@
 
 	<div class="toggles">
 		<div class="switch-row">
-			<span>t('settings.dailyReminder')</span>
+			<span>{t('settings.dailyReminder')}</span>
 			<Switch checked={app.prefs.dailyReminderEnabled} onchange={(v) => app.updatePrefs({ dailyReminderEnabled: v })} label={t('settings.dailyReminder')} />
 		</div>
 		{#if app.prefs.dailyReminderEnabled}
@@ -203,7 +203,7 @@
 			</div>
 		{/if}
 		<div class="switch-row">
-			<span>t('settings.weeklyRecap')</span>
+			<span>{t('settings.weeklyRecap')}</span>
 			<Switch checked={app.prefs.weeklyRecapEnabled} onchange={(v) => app.updatePrefs({ weeklyRecapEnabled: v })} label={t('settings.weeklyRecap')} />
 		</div>
 	</div>
@@ -213,7 +213,7 @@
 	<h2>🏆 {t('settings.streak.title')}</h2>
 	<div class="toggles">
 		<div class="switch-row">
-			<span>t('settings.celebrateRecords')</span>
+			<span>{t('settings.celebrateRecords')}</span>
 			<Switch checked={app.prefs.celebrateRecordsEnabled} onchange={(v) => app.updatePrefs({ celebrateRecordsEnabled: v })} label={t('settings.celebrateRecords')} />
 		</div>
 	</div>
@@ -223,7 +223,7 @@
 	<h2>🔒 {t('settings.privacy.title')}</h2>
 	<div class="toggles">
 		<div class="switch-row">
-			<span>t('settings.analytics')</span>
+			<span>{t('settings.analytics')}</span>
 			<Switch checked={app.prefs.analyticsOptIn} onchange={(v) => app.updatePrefs({ analyticsOptIn: v })} label={t('settings.analytics')} />
 		</div>
 	</div>

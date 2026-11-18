@@ -86,15 +86,12 @@
 			</div>
 		</header>
 
-		<div class="head-actions">
-			<button class="link-btn pressable" onclick={() => dashboard.openReview(7)}>
-				{t('review.weekly')}
-			</button>
-			<span class="ha-sep" aria-hidden="true">·</span>
-			<button class="link-btn pressable" onclick={() => dashboard.openReview(30)}>
-				{t('review.monthly')}
-			</button>
-		</div>
+		{#if dashboard.stats && dashboard.stats.todayFocusSeconds === 0 && dashboard.stats.todaySessions === 0}
+			<a class="first-run pressable" href="/focus">
+				<span class="fr-title">🌱 {t('dashboard.empty')}</span>
+				<span class="fr-cta">{t('dashboard.heroCta')} →</span>
+			</a>
+		{/if}
 
 		<!-- Flat KPI row (Mac Today): caption label + rounded semibold value -->
 		<div class="kpis">
@@ -203,11 +200,26 @@
 		background: var(--border);
 	}
 
-	.head-actions {
+	.first-run {
 		display: flex;
 		align-items: center;
-		gap: var(--space-2);
-		margin-top: calc(-1 * var(--space-4));
+		justify-content: space-between;
+		gap: var(--space-3);
+		flex-wrap: wrap;
+		padding: var(--space-4) var(--space-5);
+		border: 1px solid var(--brand-soft);
+		border-radius: var(--radius-lg);
+		background: var(--brand-softer);
+	}
+
+	.fr-title {
+		font-weight: 650;
+		color: var(--ink);
+	}
+
+	.fr-cta {
+		color: var(--brand);
+		font-weight: 700;
 	}
 
 	.link-btn {
