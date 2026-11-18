@@ -1119,6 +1119,10 @@ struct AppFeatureIntegrationTests {
             $0.persistenceClient.resolveAchievements = { derived in derived }
             $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
             $0.persistenceClient.savePreferences = { _ in }
+            // #887: shared-defaults pollution from earlier tests can steer the
+            // launch soft-sync into the capabilities-changed path, whose
+            // reconcile call would trap on the unimplemented test value.
+            $0.syncModeClient.reconcile = { _ in }
         }
         store.exhaustivity = .off
 
