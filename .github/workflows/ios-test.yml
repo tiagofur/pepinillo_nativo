@@ -228,10 +228,14 @@ jobs:
   # MAC_LIVE_ACTIVITIES, which needs the 27.3 SDK (see project.yml) — Staging
   # is the config designed to compile against the stable SDK, same as the
   # archives. Unsigned: compile check only, no signing identity in CI.
-  # Runs in parallel with `test`, so it adds no wall time to PRs.
+  # Runs in parallel with `test`, so it adds no wall time to PRs. Cold
+  # Staging builds measured >18 min, hence the 45-min budget plus a
+  # DerivedData cache for warm rebuilds. The cache key uses a `macdd` prefix
+  # (distinct from `test`'s `dd`) so the iOS and macOS DerivedData stores
+  # never restore each other's products.
   macos-build:
     runs-on: macos-15
-    timeout-minutes: 20
+    timeout-minutes: 45
 
     defaults:
       run:
@@ -239,6 +243,7 @@ jobs:
 
     env:
       CLONED_SOURCE_PACKAGES_PATH: ${{ github.workspace }}/.spm-cache
+      DERIVED_DATA_PATH: ${{ github.workspace }}/ios/DerivedData
 
     steps:
       - uses: actions/checkout@v4
@@ -248,7 +253,10 @@ jobs:
           xcode-version: latest-stable
 
       - name: Print Xcode version
-        run: xcodebuild -version
+        id: xcode
+        run: |
+          xcodebuild -version
+          echo "version=$(xcodebuild -version | awk 'NR==1{print $2}')" >> "$GITHUB_OUTPUT"
 
       - name: Cache Swift Package Manager
         uses: actions/cache@v4
@@ -259,6 +267,14 @@ jobs:
           key: ${{ runner.os }}-spm-${{ hashFiles('ios/project.yml', 'ios/**/Package.resolved') }}
           restore-keys: |
             ${{ runner.os }}-spm-
+
+      - name: Cache DerivedData
+        uses: actions/cache@v4
+        with:
+          path: ios/DerivedData
+          key: ${{ runner.os }}-xcode${{ steps.xcode.outputs.version }}-macdd-${{ hashFiles('ios/**') }}
+          restore-keys: |
+            ${{ runner.os }}-xcode${{ steps.xcode.outputs.version }}-macdd-
 
       - name: Install XcodeGen
         run: brew install xcodegen
@@ -278,6 +294,7 @@ jobs:
             -scheme "PepinilloMac Staging" \
             -destination 'platform=macOS' \
             -configuration Staging \
+            -derivedDataPath "$DERIVED_DATA_PATH" \
             -clonedSourcePackagesDirPath "$CLONED_SOURCE_PACKAGES_PATH" \
             -skipPackageUpdates \
             CODE_SIGNING_ALLOWED=NO \
