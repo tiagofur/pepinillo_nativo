@@ -1,6 +1,28 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "Add a task to ${applicationName}": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Añade una tarea a ${applicationName}"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adiciona uma tarefa ao ${applicationName}"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adiciona uma tarefa ao ${applicationName}"
+          }
+        }
+      }
+    },
     "Am I focusing in ${applicationName}": {
       "extractionState": "extracted_with_value",
       "localizations": {
@@ -316,6 +338,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "Tem uma sessão ativa no ${applicationName}"
+          }
+        }
+      }
+    },
+    "New task in ${applicationName}": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nueva tarea en ${applicationName}"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nova tarefa no ${applicationName}"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nova tarefa no ${applicationName}"
           }
         }
       }
