@@ -2,6 +2,7 @@ package dev.creapolis.pepinillo.appfunctions
 
 import androidx.annotation.RequiresApi
 import androidx.appfunctions.AppFunctionDeclaration
+import dev.creapolis.pepinillo.core.billing.FeatureGate
 import androidx.appfunctions.AppFunctionInvalidArgumentException
 import androidx.appfunctions.AppFunctionService
 import androidx.appfunctions.AppFunctionSerializable
@@ -63,7 +64,7 @@ abstract class BaseTaskAppFunctionService : AppFunctionService() {
                         throw AppFunctionInvalidArgumentException("A task needs a non-blank title.")
                     CreateTaskFunction.RejectionReason.FREE_TIER_LIMIT ->
                         throw AppFunctionInvalidArgumentException(
-                            "The free plan allows up to 3 active tasks. " +
+                            "The free plan allows up to ${FeatureGate.FREE_TASK_LIMIT} active tasks. " +
                                 "Suggest upgrading to Pepinillo+ in the app for unlimited tasks."
                         )
                     CreateTaskFunction.RejectionReason.STORAGE_ERROR ->

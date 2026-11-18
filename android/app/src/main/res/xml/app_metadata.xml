@@ -10,4 +10,4 @@ Operational Patterns:
   - Put extra context the user mentions (where, when, which flavor) into notes rather than the title.
 Constraints:
   - The title cannot be blank.
-  - If the free plan's 3-active-task cap is reached, tell the user to upgrade to Pepinillo+ in the app for unlimited tasks." />
+  - If the free plan's active-task cap is reached, tell the user to upgrade to Pepinillo+ in the app for unlimited tasks." />
