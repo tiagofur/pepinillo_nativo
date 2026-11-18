@@ -119,6 +119,29 @@
         }
       }
     },
+    "Free allows up to 3 active tasks. Upgrade in Pepinillo to add more." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Free allows up to 3 active tasks. Upgrade in Pepinillo to add more."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El plan gratis permite hasta 3 tareas activas. Mejora en Pepinillo para añadir más."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O plano grátis permite até 3 tarefas ativas. Faça upgrade no Pepinillo para adicionar mais."
+          }
+        }
+      }
+    },
     "Give the task a name first." : {
       "extractionState" : "manual",
       "localizations" : {

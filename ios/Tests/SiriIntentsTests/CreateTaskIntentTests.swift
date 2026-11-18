@@ -93,4 +93,31 @@ struct CreateTaskIntentTests {
         #expect(CreateTaskService.normalizedNotes(nil) == nil)
         #expect(CreateTaskService.normalizedNotes(" nota con espacios ") == "nota con espacios")
     }
+
+    // MARK: - Free-tier gate (same rule as in-app creation, #216)
+
+    @Test("activeTaskCount ignores completed tasks and recurring templates")
+    func activeTaskCountIgnoresCompletedAndTemplates() throws {
+        let (container, dir) = try makeContainer(label: "count")
+        defer { cleanup(dir) }
+        let context = ModelContext(container)
+        context.insert(TaskItem(title: "Active", priority: .none, energyLevel: .deep, estimatedPomodoros: 1, sortOrder: 0))
+        let done = TaskItem(title: "Done", priority: .none, energyLevel: .deep, estimatedPomodoros: 1, sortOrder: 1)
+        done.isCompleted = true
+        context.insert(done)
+        let template = TaskItem(title: "Template", priority: .none, energyLevel: .deep, estimatedPomodoros: 1, sortOrder: 2)
+        template.isRecurringTemplate = true
+        context.insert(template)
+        try context.save()
+
+        #expect(CreateTaskService.activeTaskCount(in: container) == 1)
+    }
+
+    @Test("isTaskCreationAllowed blocks free users at the 3-task limit")
+    func creationAllowedBlocksFreeAtLimit() {
+        #expect(CreateTaskService.isTaskCreationAllowed(isProUser: false, activeCount: 3) == false)
+        #expect(CreateTaskService.isTaskCreationAllowed(isProUser: false, activeCount: 2) == true)
+        #expect(CreateTaskService.isTaskCreationAllowed(isProUser: true, activeCount: 3) == true)
+        #expect(CreateTaskService.isTaskCreationAllowed(isProUser: true, activeCount: 99) == true)
+    }
 }

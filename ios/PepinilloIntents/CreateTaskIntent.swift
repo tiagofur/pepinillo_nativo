@@ -35,12 +35,25 @@ struct CreateTaskIntent: AppIntent {
         guard !normalizedTitle.isEmpty else {
             return .result(dialog: "Give the task a name first.")
         }
-        guard let container = try? makeIntentsModelContainer(),
-              CreateTaskService.insertTask(
-                  normalizedTitle,
-                  notes: CreateTaskService.normalizedNotes(notes),
-                  in: container
-              ) != nil else {
+        guard let container = try? makeIntentsModelContainer() else {
+            return .result(dialog: "Pepinillo couldn't save the task. Open the app and try again.")
+        }
+
+        // Free tier: max 3 active (non-completed, non-template) tasks (#216),
+        // same rule as in-app quick-add and imports. Pepinillo+ is unlimited.
+        let activeCount = CreateTaskService.activeTaskCount(in: container)
+        guard CreateTaskService.isTaskCreationAllowed(
+            isProUser: AppGroupDefaults.isProUser,
+            activeCount: activeCount
+        ) else {
+            return .result(dialog: "Free allows up to 3 active tasks. Upgrade in Pepinillo to add more.")
+        }
+
+        guard CreateTaskService.insertTask(
+            normalizedTitle,
+            notes: CreateTaskService.normalizedNotes(notes),
+            in: container
+        ) != nil else {
             return .result(dialog: "Pepinillo couldn't save the task. Open the app and try again.")
         }
         WidgetCenter.shared.reloadAllTimelines()
@@ -52,8 +65,26 @@ struct CreateTaskIntent: AppIntent {
 
 enum CreateTaskService {
 
+    /// Free plan cap on active tasks — mirrors `TaskListFeature.freeActiveTaskLimit` (#216).
+    static let freeActiveTaskLimit = 3
+
     struct InsertResult: Equatable {
         let sortOrder: Int
+    }
+
+    /// Active = not completed and not a recurring template, matching in-app counting.
+    static func activeTaskCount(in container: ModelContainer) -> Int {
+        let context = ModelContext(container)
+        var descriptor = FetchDescriptor<TaskItem>(
+            predicate: #Predicate { !$0.isCompleted && !$0.isRecurringTemplate }
+        )
+        descriptor.fetchLimit = freeActiveTaskLimit
+        return (try? context.fetchCount(descriptor)) ?? 0
+    }
+
+    /// Free users are capped at `freeActiveTaskLimit` active tasks; Pepinillo+ is unlimited.
+    static func isTaskCreationAllowed(isProUser: Bool, activeCount: Int) -> Bool {
+        isProUser || activeCount < freeActiveTaskLimit
     }
 
     /// Trims surrounding whitespace (Siri dictation often adds it).
