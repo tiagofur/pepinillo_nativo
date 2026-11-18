@@ -226,7 +226,7 @@
 	}
 
 	.esc {
-		font-size: 10px;
+		font-size: var(--text-2xs); /* 11px floor */
 		color: var(--faint);
 		border: 1px solid var(--border);
 		border-radius: 6px;
@@ -284,7 +284,7 @@
 	}
 
 	.r-hint {
-		font-size: 10px;
+		font-size: var(--text-2xs); /* 11px floor */
 		color: var(--faint);
 		border: 1px solid var(--border);
 		border-radius: 6px;

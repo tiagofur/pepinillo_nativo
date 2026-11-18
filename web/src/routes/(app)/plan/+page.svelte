@@ -211,6 +211,7 @@
 					placeholder={t('plan.search')}
 					aria-label={t('plan.search')}
 				/>
+				<kbd class="pt-kbd" aria-hidden="true">⌘K</kbd>
 			</label>
 			<span class="pt-group">
 				<button
@@ -291,6 +292,7 @@
 				<TaskTable
 					tasks={displayed}
 					selectedId={selectedId}
+					compact={!!selectedTask}
 					onselect={selectTask}
 					ontoggle={(id) => plan.toggleComplete(id)}
 					onfocus={focusTask}
@@ -579,5 +581,14 @@
 		letter-spacing: 0.06em;
 		color: var(--muted);
 		margin: 0 0 var(--space-1) var(--space-2);
+	}
+	.pt-kbd {
+		flex: none;
+		font-family: var(--font-mono);
+		font-size: 10px;
+		color: var(--faint);
+		border: 1px solid var(--border);
+		border-radius: 4px;
+		padding: 1px 5px;
 	}
 </style>
