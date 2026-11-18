@@ -289,10 +289,14 @@ jobs:
 
       - name: Build PepinilloMac (Staging, unsigned)
         # ARCHS=arm64: the target ships universal, but a dual-slice
-        # optimized (Staging) build OOM-kills the build service on 14 GB
-        # runners — observed as a silent ~19 min stall then xcodebuild exit
-        # 65 with no error lines (run 44370270619). One slice still
-        # type-checks every Swift source, which is what this gate verifies.
+        # optimized (Staging) build is 2x the work/memory on 14 GB runners;
+        # one slice still type-checks every Swift source, which is what
+        # this gate verifies.
+        # SWIFT_ENABLE_EXPLICIT_MODULES=NO: Xcode 26's explicit-modules
+        # pipeline hangs silently (~14-19 min stall, then xcodebuild exit
+        # 65 with no error lines) when building this target on GHA runners
+        # (runs 44370270619 and 44374913993). Disabling it is the standard
+        # workaround; the gate still compiles the same sources.
         run: |
           set -o pipefail
           xcodebuild \
@@ -305,4 +309,5 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             COMPILER_INDEX_STORE_ENABLE=NO \
             ARCHS=arm64 \
+            SWIFT_ENABLE_EXPLICIT_MODULES=NO \
             build
