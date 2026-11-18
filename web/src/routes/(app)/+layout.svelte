@@ -222,6 +222,7 @@
 	.shell {
 		display: grid;
 		grid-template-columns: var(--sidebar-w) 1fr;
+		grid-template-rows: 100dvh;
 		height: 100dvh;
 	}
 
@@ -253,7 +254,9 @@
 
 	.content {
 		min-width: 0;
-		padding: var(--space-8) var(--space-8) calc(var(--space-10) + var(--safe-b));
+		/* No top padding: sticky descendants (pane toolbars) anchor flush
+		 * to the scroll container's top edge — page roots carry the rhythm */
+		padding: 0 var(--space-8) calc(var(--space-10) + var(--safe-b));
 		max-width: var(--content-max);
 		margin: 0 auto;
 		width: 100%;

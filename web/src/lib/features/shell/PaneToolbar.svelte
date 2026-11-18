@@ -28,8 +28,7 @@
 <style>
 	.pane-toolbar {
 		position: sticky;
-		top: 0; /* sticky insets are scrollport-relative — the negative margin
-				 above already seats the toolbar flush with the viewport top */
+		top: 0; /* the scroll container has NO top padding — flush anchor */
 		z-index: 30;
 		width: 100%;
 		display: grid;
@@ -37,7 +36,7 @@
 		align-items: center;
 		gap: var(--space-3);
 		min-height: 52px;
-		margin: calc(-1 * var(--space-8)) calc(-1 * var(--space-8)) var(--space-5);
+		margin: 0 calc(-1 * var(--space-8)) var(--space-5);
 		padding: 0 var(--space-5);
 		background: var(--bg);
 		border-bottom: 1px solid var(--hairline);
@@ -148,7 +147,7 @@
 	 * phone block so phones keep their own tighter margin) */
 	@media (max-width: 1023px) {
 		.pane-toolbar {
-			margin: calc(-1 * var(--space-6)) calc(-1 * var(--space-5)) var(--space-5);
+			margin: 0 calc(-1 * var(--space-5)) var(--space-5);
 		}
 	}
 
@@ -158,7 +157,7 @@
 		.pane-toolbar {
 			grid-template-columns: auto 1fr;
 			min-height: 44px;
-			margin: calc(-1 * var(--space-5)) calc(-1 * var(--space-4)) var(--space-4);
+			margin: 0 calc(-1 * var(--space-4)) var(--space-4);
 			padding: 0 var(--space-4);
 		}
 
