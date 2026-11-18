@@ -752,6 +752,18 @@ struct FocusFeature {
                     AppGroupDefaults.activeSessionPomodoroNumber = pomodoroNumber
                     AppGroupDefaults.activeSessionTotalPomodoros = totalPomodoros
                     AppGroupDefaults.activeSessionTaskTitle = taskTitle
+                    // #880 RC3: re-derive the persisted countdown anchors from
+                    // engine truth. startTapped bakes in the gap between the
+                    // reducer's `now` and the engine's async start (a SwiftData
+                    // fetch runs first), which the watch rendered as a constant
+                    // drift and an early zero crossing. Pause-safe: the engine
+                    // stops ticking while paused, and resume re-anchors with
+                    // this same `now ± value` math.
+                    let anchorNow = Date.now
+                    AppGroupDefaults.activeSessionTimerStart = anchorNow.addingTimeInterval(-elapsed)
+                    AppGroupDefaults.activeSessionTimerEnd = remaining.map {
+                        anchorNow.addingTimeInterval($0)
+                    }
 
                     await liveActivity.update(sessionState, taskTitle)
                     if shouldUpdateNotification {

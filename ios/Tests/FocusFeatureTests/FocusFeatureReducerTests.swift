@@ -1547,3 +1547,106 @@ struct FocusCalendarCleanupTests {
         #expect(removedIDs.value == ["evt-1"])
     }
 }
+
+// MARK: - Watch/Widget anchor re-derivation (#880)
+
+/// RC3 (#880): `startTapped` writes the persisted countdown anchor from the
+/// reducer's `now`, but the engine's async start (behind a SwiftData fetch)
+/// lands later — the baked-in delta makes the watch cross zero early and
+/// drift from the phone the whole session. The throttled tick write must
+/// re-derive both anchors from engine truth.
+@Suite("FocusFeature — Anchor re-derivation", .serialized, .appGroupDefaultsSerialized)
+@MainActor
+struct FocusAnchorReDerivationTests {
+
+    @Test func tickRewritesTimerAnchorsFromEngineTruth() async {
+        let staleDelta: TimeInterval = 30
+        let target: TimeInterval = 25 * 60
+        let staleEnd = Date.now.addingTimeInterval(target - staleDelta)
+        AppGroupDefaults.activeSessionTimerStart = staleEnd.addingTimeInterval(-target)
+        AppGroupDefaults.activeSessionTimerEnd = staleEnd
+        // Force the significant-change gate open for the first tick.
+        AppGroupDefaults.activeSessionElapsed = 100
+
+        var state = FocusFeature.State()
+        state.isRunning = true
+        state.activeMode = .pomodoro
+        state.phase = .work(number: 1, total: 4)
+
+        let store = TestStore(initialState: state) {
+            FocusFeature()
+        } withDependencies: {
+            $0.liveActivityClient.update = { _, _ in }
+        }
+        store.exhaustivity = .off
+
+        let tick = FocusSessionState(
+            id: UUID(),
+            mode: .pomodoro,
+            phase: .work(number: 1, total: 4),
+            startedAt: .now,
+            elapsedSeconds: 0.4,
+            targetDuration: target,
+            remainingSeconds: target - 0.4,
+            progress: 0
+        )
+        await store.send(.timerTicked(tick))
+
+        // The anchor write is a fire-and-forget effect: poll until it moves
+        // off the stale value (RED: it never does).
+        var end = AppGroupDefaults.activeSessionTimerEnd
+        for _ in 0..<40 {
+            if let e = end, abs(e.timeIntervalSince(staleEnd)) > 1 { break }
+            try? await Task.sleep(for: .milliseconds(50))
+            end = AppGroupDefaults.activeSessionTimerEnd
+        }
+
+        let now = Date.now
+        let expectedRemaining = target - 0.4
+        let endDrift = end.map { $0.timeIntervalSince(now) } ?? -expectedRemaining
+        #expect(abs(endDrift - expectedRemaining) < 5,
+                "phaseEndDate must track the engine's remaining, got drift \(endDrift)s vs \(expectedRemaining)s")
+
+        let start = AppGroupDefaults.activeSessionTimerStart
+        let startDrift = start.map { $0.timeIntervalSince(now) } ?? 1
+        #expect(abs(startDrift + 0.4) < 5,
+                "phaseStartDate must track the engine's elapsed, got \(startDrift)s")
+    }
+
+    @Test func tickClearsTimerEndForCountUpModes() async {
+        AppGroupDefaults.activeSessionTimerEnd = Date.now.addingTimeInterval(60)
+        AppGroupDefaults.activeSessionElapsed = 100
+
+        var state = FocusFeature.State()
+        state.isRunning = true
+        state.activeMode = .stopwatch
+        state.phase = .freeform
+
+        let store = TestStore(initialState: state) {
+            FocusFeature()
+        } withDependencies: {
+            $0.liveActivityClient.update = { _, _ in }
+        }
+        store.exhaustivity = .off
+
+        let tick = FocusSessionState(
+            id: UUID(),
+            mode: .stopwatch,
+            phase: .freeform,
+            startedAt: .now,
+            elapsedSeconds: 5,
+            targetDuration: nil,
+            remainingSeconds: nil,
+            progress: nil
+        )
+        await store.send(.timerTicked(tick))
+
+        var end: Date? = Date.now
+        for _ in 0..<40 {
+            if end == nil { break }
+            try? await Task.sleep(for: .milliseconds(50))
+            end = AppGroupDefaults.activeSessionTimerEnd
+        }
+        #expect(end == nil, "count-up modes must not publish a countdown anchor")
+    }
+}

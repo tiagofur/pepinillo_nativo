@@ -924,3 +924,126 @@ struct WatchRingDirectionTests {
         #expect(WatchSessionState.ringFraction(progress: nil, countsDown: true) == 0)
     }
 }
+
+// MARK: - Anchor Expiry Resync (#880)
+
+/// RC2 (#880): the transition push to the next phase can be lost (flaky
+/// transport, suspended watch app). The watch must detect a countdown anchor
+/// stuck past expiry and ask the phone for a fresh snapshot instead of
+/// counting overtime forever.
+@MainActor
+@Suite(.serialized, .appGroupDefaultsSerialized)
+struct WatchAnchorResyncTests {
+
+    private static func countdownState(
+        end: Date,
+        isPaused: Bool = false,
+        isWaiting: Bool = false,
+        sentAt: TimeInterval
+    ) -> WatchSessionState {
+        WatchSessionState(
+            isActive: true,
+            isPaused: isPaused,
+            modeID: "pomodoro",
+            displayTime: "0:03",
+            phaseLabel: "Focus 1/4",
+            isWaiting: isWaiting,
+            sentAt: sentAt,
+            phaseEndDate: end,
+            countsDown: true
+        )
+    }
+
+    @Test("an anchor stuck past expiry asks the phone for a fresh snapshot and retries")
+    func expiredAnchorResyncs() async {
+        let commands = LockIsolated<[WatchCommand]>([])
+        let clock = TestClock()
+
+        let store = TestStore(initialState: WatchTimerFeature.State()) {
+            WatchTimerFeature()
+        } withDependencies: {
+            $0.continuousClock = clock
+            $0.watchConnectivityClient.sendCommand = { command in
+                commands.withValue { $0.append(command) }
+                return true
+            }
+        }
+        store.exhaustivity = .off
+
+        // The phase anchor expired 1s ago and no authoritative next-phase
+        // state arrives — the transition push was lost.
+        let anchor = Date.now.addingTimeInterval(-1)
+        await store.send(.sessionStateReceived(Self.countdownState(end: anchor, sentAt: 100)))
+
+        // Grace elapses → the heartbeat asks the phone for the current snapshot.
+        await clock.advance(by: .seconds(3))
+        await store.receive(.phaseAnchorExpired(anchor))
+        #expect(commands.withValue { $0.contains(.requestSession) })
+
+        // Still stuck → the retry fires again.
+        commands.withValue { $0.removeAll() }
+        await clock.advance(by: .seconds(5))
+        await store.receive(.phaseAnchorExpired(anchor))
+        #expect(commands.withValue { $0.contains(.requestSession) })
+    }
+
+    @Test("a fresh anchor from the phone stops the heartbeat")
+    func freshAnchorStopsHeartbeat() async {
+        let commands = LockIsolated<[WatchCommand]>([])
+        let clock = TestClock()
+
+        let store = TestStore(initialState: WatchTimerFeature.State()) {
+            WatchTimerFeature()
+        } withDependencies: {
+            $0.continuousClock = clock
+            $0.watchConnectivityClient.sendCommand = { command in
+                commands.withValue { $0.append(command) }
+                return true
+            }
+        }
+        store.exhaustivity = .off
+
+        let anchor = Date.now.addingTimeInterval(-1)
+        await store.send(.sessionStateReceived(Self.countdownState(end: anchor, sentAt: 100)))
+        await clock.advance(by: .seconds(3))
+        await store.receive(.phaseAnchorExpired(anchor))
+
+        // The phone's authoritative state lands with a live anchor — the
+        // heartbeat must not fire again for the stale one.
+        let healed = Date.now.addingTimeInterval(60)
+        await store.send(.sessionStateReceived(Self.countdownState(end: healed, sentAt: 200)))
+
+        await clock.advance(by: .seconds(10))
+
+        #expect(commands.withValue { $0.filter { $0 == .requestSession }.count } == 1)
+    }
+
+    @Test("the waiting hold and pause suppress the heartbeat")
+    func waitingAndPauseSuppressHeartbeat() async {
+        let commands = LockIsolated<[WatchCommand]>([])
+        let clock = TestClock()
+
+        let store = TestStore(initialState: WatchTimerFeature.State()) {
+            WatchTimerFeature()
+        } withDependencies: {
+            $0.continuousClock = clock
+            $0.watchConnectivityClient.sendCommand = { command in
+                commands.withValue { $0.append(command) }
+                return true
+            }
+        }
+        store.exhaustivity = .off
+
+        let past = Date.now.addingTimeInterval(-30)
+
+        // Waiting hold: the phone is holding for the user's CTA — no resync.
+        await store.send(.sessionStateReceived(Self.countdownState(end: past, isWaiting: true, sentAt: 100)))
+        await clock.advance(by: .seconds(10))
+
+        // Paused: the anchor is frozen by design — no resync.
+        await store.send(.sessionStateReceived(Self.countdownState(end: past, isPaused: true, sentAt: 200)))
+        await clock.advance(by: .seconds(10))
+
+        #expect(commands.withValue { $0.isEmpty })
+    }
+}
