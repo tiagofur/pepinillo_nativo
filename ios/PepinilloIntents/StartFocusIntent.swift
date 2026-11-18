@@ -182,14 +182,9 @@ struct TaskEntityQuery: EntityStringQuery {
 
     private func fetchActiveTasks(limit: Int?) -> [TaskEntity] {
         guard let container = try? makeIntentsModelContainer() else { return [] }
-        let context = ModelContext(container)
-        var descriptor = FetchDescriptor<TaskItem>(
-            predicate: #Predicate { !$0.isCompleted },
-            sortBy: [SortDescriptor(\.sortOrder)]
-        )
-        if let limit { descriptor.fetchLimit = limit }
-        guard let tasks = try? context.fetch(descriptor) else { return [] }
-        return tasks.map {
+        // Delegates to the shared task-intent seam so voice and Siri pickers
+        // use the same tombstone-/template-aware "active" set as the app (#900).
+        return TaskIntentService.activeTasks(in: container, limit: limit).map {
             TaskEntity(id: $0.id.uuidString, title: $0.title, isCompleted: $0.isCompleted)
         }
     }
@@ -208,6 +203,26 @@ struct PepinilloShortcuts: AppShortcutsProvider {
             ],
             shortTitle: "Create a Task",
             systemImageName: "checklist"
+        )
+        AppShortcut(
+            intent: CompleteTaskIntent(),
+            phrases: [
+                "Complete a task in \(.applicationName)",
+                "Mark a task as done in \(.applicationName)",
+                "Finish a task in \(.applicationName)",
+            ],
+            shortTitle: "Complete Task",
+            systemImageName: "checkmark.circle"
+        )
+        AppShortcut(
+            intent: GetTodayTasksIntent(),
+            phrases: [
+                "What are my tasks today in \(.applicationName)",
+                "Today's tasks in \(.applicationName)",
+                "My plan for today in \(.applicationName)",
+            ],
+            shortTitle: "Today's Tasks",
+            systemImageName: "calendar.day.timeline.left"
         )
         AppShortcut(
             intent: StartFocusIntent(),
@@ -281,26 +296,6 @@ struct PepinilloShortcuts: AppShortcutsProvider {
             ],
             shortTitle: "Pause Focus",
             systemImageName: "pause.circle"
-        )
-        AppShortcut(
-            intent: ResumeFocusIntent(),
-            phrases: [
-                "Resume focus in \(.applicationName)",
-                "Continue my session in \(.applicationName)",
-                "Resume session in \(.applicationName)",
-            ],
-            shortTitle: "Resume Focus",
-            systemImageName: "play.circle"
-        )
-        AppShortcut(
-            intent: GetCurrentSessionIntent(),
-            phrases: [
-                "Am I focusing in \(.applicationName)",
-                "What's my current session in \(.applicationName)",
-                "Is a session active in \(.applicationName)",
-            ],
-            shortTitle: "Current Session",
-            systemImageName: "timer"
         )
     }
 }
