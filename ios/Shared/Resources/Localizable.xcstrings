@@ -50,6 +50,144 @@
         }
       }
     },
+    "Add a new task to your Pepinillo plan with a title and optional notes." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add a new task to your Pepinillo plan with a title and optional notes."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Añade una tarea nueva a tu plan de Pepinillo con título y notas opcionales."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Adiciona uma nova tarefa ao seu plano do Pepinillo com título e notas opcionais."
+          }
+        }
+      }
+    },
+    "Added %@ to your plan ✅" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Added %@ to your plan ✅"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tarea añadida a tu plan: %@ ✅"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tarefa adicionada ao seu plano: %@ ✅"
+          }
+        }
+      }
+    },
+    "Create a Task" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Create a Task"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Crear una tarea"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Criar uma tarefa"
+          }
+        }
+      }
+    },
+    "Free allows up to 3 active tasks. Upgrade in Pepinillo to add more." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Free allows up to 3 active tasks. Upgrade in Pepinillo to add more."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El plan gratis permite hasta 3 tareas activas. Mejora en Pepinillo para añadir más."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O plano grátis permite até 3 tarefas ativas. Faça upgrade no Pepinillo para adicionar mais."
+          }
+        }
+      }
+    },
+    "Give the task a name first." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Give the task a name first."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Primero dale un nombre a la tarea."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Primeiro dê um nome à tarefa."
+          }
+        }
+      }
+    },
+    "Pepinillo couldn't save the task. Open the app and try again." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pepinillo couldn't save the task. Open the app and try again."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pepinillo no pudo guardar la tarea. Abre la app e inténtalo de nuevo."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O Pepinillo não conseguiu salvar a tarefa. Abra o app e tente de novo."
+          }
+        }
+      }
+    },
     "—" : {
       "localizations" : {
         "es" : {
