@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pepinillo Web — Manual de Usuario</title>
+  <meta name="description" content="Manual completo de Pepinillo Web: la PWA de foco profundo que se instala en tu navegador, con los cuatro modos de foco, planificación de tareas, menús contextuales, estadísticas, atajos de teclado y más." />
+  <link rel="canonical" href="https://pepinillo.app/guides/web" />
+  <style>
+    :root {
+      --brand: #2E7D46;
+      --brand-light: #3D9C5E;
+      --brand-soft: rgba(46, 125, 70, 0.12);
+      --pomodoro: #E84D3D;
+      --flowtime: #3387EB;
+      --timeblock: #8F45DE;
+      --stopwatch: #2EB870;
+      --streak: #FF991A;
+
+      --bg: #F5F6F4;
+      --surface: #FFFFFF;
+      --surface-alt: #EFEFF2;
+      --sidebar-bg: rgba(243, 244, 240, 0.92);
+      --ink: #1D1D1F;
+      --muted: #6E6E73;
+      --border: rgba(0, 0, 0, 0.09);
+      --shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+      --radius-card: 18px;
+      --radius-pill: 999px;
+      --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", system-ui, sans-serif;
+      --mono: "SF Mono", ui-monospace, Menlo, monospace;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #141416;
+        --surface: #1E1E22;
+        --surface-alt: #28282E;
+        --sidebar-bg: rgba(34, 34, 37, 0.92);
+        --ink: #F5F5F7;
+        --muted: #A1A1A6;
+        --border: rgba(255, 255, 255, 0.1);
+        --shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+        --brand-soft: rgba(61, 156, 94, 0.18);
+        --pomodoro: #E84D3D;
+        --flowtime: #3387EB;
+        --timeblock: #8F45DE;
+        --stopwatch: #2EB870;
+        --streak: #FF991A;
+      }
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .app-shell {
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      min-height: 100vh;
+    }
+
+    aside {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      padding: 24px 16px;
+      background: var(--sidebar-bg);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      overflow-y: auto;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--brand), var(--brand-light));
+      color: #fff;
+      font-weight: 700;
+      font-size: 20px;
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+    }
+
+    .brand-title { font-weight: 700; font-size: 16px; }
+    .brand-sub { font-size: 12px; color: var(--muted); }
+
+    nav { display: flex; flex-direction: column; gap: 2px; }
+
+    nav a {
+      display: block;
+      padding: 7px 12px;
+      border-radius: 8px;
+      color: var(--ink);
+      text-decoration: none;
+      font-size: 13.5px;
+      transition: background 0.15s ease;
+    }
+    nav a:hover { background: var(--brand-soft); }
+
+    .nav-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin: 14px 0 4px 12px;
+    }
+    .nav-label:first-child { margin-top: 0; }
+
+    .sidebar-footer {
+      margin-top: auto;
+      font-size: 12px;
+      color: var(--muted);
+      padding: 14px 12px;
+      border-top: 1px solid var(--border);
+      line-height: 1.5;
+    }
+
+    main {
+      padding: 32px clamp(20px, 5vw, 56px) 80px;
+      max-width: 980px;
+    }
+
+    .hero { margin-bottom: 36px; }
+    .hero-eyebrow {
+      display: inline-block;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--brand);
+      background: var(--brand-soft);
+      padding: 5px 12px;
+      border-radius: var(--radius-pill);
+      margin-bottom: 14px;
+    }
+    .hero h1 {
+      font-size: clamp(28px, 4.5vw, 40px);
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+      margin: 0 0 14px;
+    }
+    .hero p {
+      font-size: 16px;
+      color: var(--muted);
+      max-width: 640px;
+      margin: 0;
+    }
+
+    section {
+      margin-bottom: 56px;
+      scroll-margin-top: 24px;
+    }
+
+    h2 {
+      font-size: 24px;
+      letter-spacing: -0.015em;
+      margin: 0 0 6px;
+    }
+
+    h3 { font-size: 16.5px; margin: 0 0 8px; }
+
+    .section-lead {
+      color: var(--muted);
+      font-size: 15px;
+      margin: 0 0 20px;
+      max-width: 680px;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 16px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-card);
+      padding: 20px 22px;
+      box-shadow: var(--shadow);
+    }
+
+    .card p { margin: 0 0 8px; font-size: 14px; color: var(--muted); }
+    .card ul { margin: 8px 0 0; padding-left: 18px; font-size: 13.5px; color: var(--muted); }
+    .card li { margin-bottom: 5px; }
+    .card li strong, .card p strong { color: var(--ink); }
+
+    .mode-card { border-top: 4px solid var(--brand); }
+    .mode-pomodoro { border-top-color: var(--pomodoro); }
+    .mode-flowtime { border-top-color: var(--flowtime); }
+    .mode-timeblock { border-top-color: var(--timeblock); }
+    .mode-stopwatch { border-top-color: var(--stopwatch); }
+
+    .badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 9px;
+      border-radius: var(--radius-pill);
+      vertical-align: 2px;
+      margin-left: 6px;
+    }
+    .badge-free { background: var(--brand-soft); color: var(--brand); }
+    .badge-pro { background: rgba(255, 153, 26, 0.16); color: var(--streak); }
+    .badge-web { background: rgba(51, 135, 235, 0.14); color: var(--flowtime); }
+
+    kbd {
+      font-family: var(--mono);
+      font-size: 12px;
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      border-bottom-width: 2px;
+      border-radius: 6px;
+      padding: 2px 7px;
+      white-space: nowrap;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13.5px;
+      background: var(--surface);
+      border-radius: 14px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    th {
+      text-align: left;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+      background: var(--surface-alt);
+      padding: 10px 14px;
+    }
+    td {
+      padding: 10px 14px;
+      border-top: 1px solid var(--border);
+      vertical-align: top;
+    }
+
+    .callout {
+      padding: 16px 18px;
+      border-radius: 14px;
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      font-size: 13.5px;
+      margin-top: 16px;
+    }
+
+    figure { margin: 22px 0; }
+    figure .screenshot {
+      display: block;
+      width: 100%;
+      height: auto;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      background: var(--surface-alt);
+    }
+    figure.half { max-width: 560px; }
+    figure.third { max-width: 380px; }
+    figcaption {
+      font-size: 12.5px;
+      color: var(--muted);
+      margin-top: 8px;
+      padding-left: 2px;
+    }
+    .figure-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px;
+      align-items: start;
+      margin: 22px 0;
+    }
+
+    .steps { counter-reset: step; padding-left: 0; list-style: none; margin: 16px 0; }
+    .steps li {
+      counter-increment: step;
+      position: relative;
+      padding-left: 40px;
+      margin-bottom: 12px;
+      font-size: 14px;
+      color: var(--muted);
+    }
+    .steps li strong { color: var(--ink); }
+    .steps li::before {
+      content: counter(step);
+      position: absolute;
+      left: 0;
+      top: 1px;
+      width: 26px;
+      height: 26px;
+      border-radius: 8px;
+      background: var(--brand-soft);
+      color: var(--brand);
+      font-weight: 700;
+      font-size: 13px;
+      display: grid;
+      place-items: center;
+    }
+
+    @media (max-width: 860px) {
+      .app-shell { grid-template-columns: 1fr; }
+      aside {
+        position: static;
+        height: auto;
+        max-height: none;
+      }
+      nav { display: none; }
+      .sidebar-footer { display: none; }
+      main { padding: 24px 20px 60px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <aside>
+      <div class="brand"><a href="/guides" style="text-decoration:none;color:inherit;margin-right:8px" title="Todas las guías">←</a>
+        <div class="brand-icon">P</div>
+        <div>
+          <div class="brand-title">Pepinillo</div>
+          <div class="brand-sub">Manual para Web</div>
+        </div>
+      </div>
+
+      <nav>
+        <div class="nav-label">Empezando</div>
+        <a href="#instalacion">1. Instalación y primer arranque</a>
+        <a href="#flujo">2. El flujo Plan → Focus → Reflect</a>
+
+        <div class="nav-label">Foco</div>
+        <a href="#modos">3. Los cuatro modos de foco</a>
+        <a href="#sesion">4. Durante la sesión</a>
+
+        <div class="nav-label">Plan</div>
+        <a href="#plan">5. Tareas, tabla e Inspector</a>
+        <a href="#captura">6. Captura rápida y búsqueda</a>
+
+        <div class="nav-label">Progreso</div>
+        <a href="#panel">7. El Panel: KPIs y gráficas</a>
+
+        <div class="nav-label">Ajustes</div>
+        <a href="#cuenta">8. Cuenta, temas y planes</a>
+
+        <div class="nav-label">Referencia</div>
+        <a href="#atajos">9. Todos los atajos</a>
+        <a href="#tips">10. Tips avanzados y FAQ</a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <strong>100% Web · Offline-first</strong><br />
+        PWA instalable · IndexedDB local · SvelteKit · Free y Everywhere
+      </div>
+    </aside>
+
+    <main>
+      <header class="hero">
+        <div class="hero-eyebrow">Manual de Usuario · Pepinillo Web</div>
+        <h1>Todo Pepinillo, de lo básico a lo avanzado</h1>
+        <p>
+          Pepinillo Web es el mismo espacio de trabajo profundo de las apps nativas, viviendo en tu
+          navegador: se instala como una app, funciona offline y comparte la misma gramática visual que
+          Pepinillo para Mac. Este manual cubre <strong>todas</strong> sus funciones con capturas reales
+          de la app: los cuatro modos de foco, la planificación con menús contextuales, el Panel de
+          progreso, los atajos de teclado y cada rincón de la interfaz.
+        </p>
+      </header>
+
+      <!-- 1. INSTALACIÓN -->
+      <section id="instalacion">
+        <h2>1. Instalación y primer arranque</h2>
+        <p class="section-lead">
+          De cero a tu primera sesión de foco en menos de un minuto.
+        </p>
+        <div class="grid-2">
+          <article class="card">
+            <h3>Abrir e instalar la PWA</h3>
+            <ol class="steps">
+              <li><strong>Abre <code>app.pepinillo.app</code></strong> — la app abre directamente en Foco, lista para empezar.</li>
+              <li>Para instalarla como aplicación: en <strong>Chrome / Edge</strong>, pulsa el icono de instalación <strong>⤓</strong> en la barra de direcciones (o menú ▸ <em>Instalar Pepinillo…</em>). En <strong>Safari iOS</strong>: Compartir ▸ <em>Añadir a la pantalla de inicio</em>.</li>
+              <li>Instalada, Pepinillo abre en <strong>su propia ventana</strong>, sin barra del navegador, y aparece en tu dock, lanzador o pantalla de inicio junto a las apps nativas.</li>
+              <li>Elige tu <strong>modo por defecto</strong> y pulsa <em>Comenzar</em>.</li>
+            </ol>
+            <p>Sin cuenta, sin configuración: todo funciona al instante y offline.</p>
+          </article>
+          <article class="card">
+            <h3>Cómo está organizada la app</h3>
+            <ul>
+              <li><strong>Foco</strong> — el temporizador y sus controles (<kbd>⌘1</kbd>).</li>
+              <li><strong>Plan</strong> — tus tareas con filtros <em>Todas, Hoy, Próximas, Completadas</em> en el propio sidebar (<kbd>⌘2</kbd>).</li>
+              <li><strong>Panel</strong> — el resumen del día con racha, gráficas y logros (<kbd>⌘3</kbd>).</li>
+              <li>En el pie del sidebar: tu <strong>cuenta</strong> y el acceso a <strong>Ajustes</strong>.</li>
+              <li>El idioma (Español, English, Português), el tema y la apariencia se cambian en <strong>Cuenta</strong>.</li>
+            </ul>
+          </article>
+        </div>
+        <figure>
+          <img class="screenshot" src="/guides/img/web-01-foco-corriendo-ghost.jpg" alt="Ventana principal de Pepinillo Web con una sesión corriendo y la tarjeta de recuperación" loading="lazy" />
+          <figcaption>La app corriendo con la barra lateral estilo Reminders, el anillo de foco sobre el fondo ambiente y los controles − / Iniciar / +. Si cierras la pestaña a mitad de sesión, la tarjeta <em>Sesión inconclusa</em> te deja Retomar o Descartar al volver.</figcaption>
+        </figure>
+        <div class="callout">
+          <strong>Cerrar la pestaña no pierde tu sesión.</strong> Pepinillo Web ancla el temporizador al
+          <strong>reloj del sistema</strong> y guarda la sesión en curso: al volver, la tarjeta
+          <em>Sesión inconclusa</em> te muestra el tiempo registrado y te deja Retomar donde estaba.
+          Todo tu historial vive <strong>localmente</strong> en tu navegador (IndexedDB); nada sale de tu
+          equipo salvo que actives la sincronización de Everywhere.
+        </div>
+      </section>
+
+      <!-- 2. FLUJO -->
+      <section id="flujo">
+        <h2>2. El flujo Plan → Focus → Complete → Reflect</h2>
+        <p class="section-lead">
+          Todas las funciones de Pepinillo sirven a un mismo ciclo de trabajo profundo.
+        </p>
+        <div class="grid-2">
+          <article class="card">
+            <h3>Las cuatro fases del ciclo</h3>
+            <ul>
+              <li><strong>Plan:</strong> captura y organiza tareas con energía y prioridad, con menú contextual y filtros en el sidebar.</li>
+              <li><strong>Focus:</strong> elige un modo, vincula una tarea y empieza — el escenario se tiñe del color del modo.</li>
+              <li><strong>Complete:</strong> pomodoros contados, tareas cerradas y rachas que crecen.</li>
+              <li><strong>Reflect:</strong> el diario post-sesión, el Panel del día y el histórico.</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>El motor es honesto</h3>
+            <ul>
+              <li>El temporizador está anclado al <strong>reloj del sistema</strong> (<em>wall-clock</em>): cerrar la pestaña, cambiar de app o dormir el equipo no descuadran el tiempo.</li>
+              <li>Las <strong>estadísticas se calculan localmente</strong> en tu navegador; nada sale de él salvo que actives la sincronización de Everywhere.</li>
+              <li>Todo el historial vive en <strong>IndexedDB</strong>, rápido y privado.</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <!-- 3. MODOS -->
+      <section id="modos">
+        <h2>3. Los cuatro modos de foco</h2>
+        <p class="section-lead">
+          Cambia de técnica según tu energía o el tipo de trabajo. Todos comparten el mismo ring, el
+          diario y las estadísticas.
+        </p>
+        <div class="grid-2">
+          <article class="card mode-card mode-pomodoro">
+            <h3>Pomodoro <span class="badge badge-free">Gratis</span></h3>
+            <p>25 minutos de foco, 5 de descanso corto y uno largo cada cuatro ciclos. El ritmo clásico.</p>
+            <ul>
+              <li>Ajusta la duración con los botones <strong>− / +</strong> (5–120 min).</li>
+              <li><strong>Auto-inicio</strong> de descansos y enfoques configurable en Ajustes.</li>
+              <li>Los puntos bajo el reloj marcan tu posición en el ciclo.</li>
+            </ul>
+          </article>
+          <article class="card mode-card mode-flowtime">
+            <h3>Flowtime <span class="badge badge-pro">Everywhere</span></h3>
+            <p>Corre hacia arriba sin límite; al terminar sugiere el descanso proporcional al tiempo trabajado.</p>
+            <ul>
+              <li>Ideal cuando no quieres un contador que baje.</li>
+              <li>El descanso sugerido crece con la sesión: menos de 25 min → 5; más de 90 → 15.</li>
+            </ul>
+          </article>
+          <article class="card mode-card mode-timeblock">
+            <h3>Time Block <span class="badge badge-pro">Everywhere</span></h3>
+            <p>Planifica un bloque (5–480 min, 60 por defecto) y marca el punto medio.</p>
+            <ul>
+              <li>Ajusta el bloque con los botones <strong>− / +</strong> flanqueando el botón de inicio.</li>
+              <li>Aviso de <strong>mitad de bloque</strong> para check-ins.</li>
+            </ul>
+          </article>
+          <article class="card mode-card mode-stopwatch">
+            <h3>Cronómetro <span class="badge badge-free">Gratis</span></h3>
+            <p>Cuenta hacia arriba sin estructura. Registro libre de tiempo para cualquier tarea.</p>
+            <ul>
+              <li>Perfecto para trabajo sin forma o para medir cuánto tarda algo de verdad.</li>
+              <li>Cuenta con el mismo ring, diario y estadísticas que los demás.</li>
+            </ul>
+          </article>
+        </div>
+        <div class="callout">
+          <strong>Cambiar de tema cambia todo el escenario.</strong> Los temas <em>Bosque, Océano y
+          Atardecer</em> (Everywhere) tiñen los cuatro modos y el fondo ambiente con paletas completas:
+          míralo en Ajustes ▸ Tema. El modo Clásico es el verde Pepinillo que ves en este manual.
+        </div>
+      </section>
+
+      <!-- 4. DURANTE LA SESIÓN -->
+      <section id="sesion">
+        <h2>4. Durante la sesión: tareas, sonido y control</h2>
+        <p class="section-lead">
+          El escenario de foco se tiñe del color del modo y desaparece todo lo que no necesita.
+        </p>
+        <figure>
+          <img class="screenshot" src="/guides/img/web-02-foco-corriendo.jpg" alt="Foco corriendo: anillo con arco de progreso, Pausar, Saltar y Terminar" loading="lazy" />
+          <figcaption>Sesión corriendo: el segmented de modos de la barra superior <strong>se vacía</strong> (como el Reloj de Apple), el icono del modo respira y el arco crece en sentido horario. Pausar tintado, Saltar y Terminar en rojo con confirmación.</figcaption>
+        </figure>
+        <div class="grid-2">
+          <article class="card">
+            <h3>Vincular una tarea y sonidos</h3>
+            <ul>
+              <li>El chip <strong>Sin tarea</strong> abre el selector para vincular la sesión a una tarea del Plan: sus pomodoros se contabilizan al terminar.</li>
+              <li>El chip <strong>Ninguno</strong> abre los <strong>ambientes sonoros</strong>: lluvia, bosque, café, ruido blanco, océano, chimenea, binaural y Lo-Fi.</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>Terminar, saltar y recuperar</h3>
+            <ul>
+              <li><strong>Terminar</strong> pide confirmación en dos pasos (se pulsa dos veces, se desarma sola a los 3 segundos).</li>
+              <li><strong>Saltar</strong> avanza a la siguiente fase sin registrar la sesión.</li>
+              <li>Si cierras la pestaña a mitad de sesión, la tarjeta <em>Sesión inconclusa</em> te espera al volver con el tiempo registrado.</li>
+            </ul>
+          </article>
+        </div>
+        <figure class="figure-row">
+          <figure class="half">
+            <img class="screenshot" src="/guides/img/web-03-foco-descanso-corto.jpg" alt="Descanso corto con el descanso guiado Respirá lento" loading="lazy" />
+            <figcaption>Descanso corto tintado en arena: la card <em>Respirá lento</em> guía el descanso.</figcaption>
+          </figure>
+          <figure class="half">
+            <img class="screenshot" src="/guides/img/web-04-foco-descanso-largo.jpg" alt="Descanso largo tras cuatro pomodoros" loading="lazy" />
+            <figcaption>Descanso largo (15 min) al completar cuatro pomodoros, con la tarjeta de recuperación visible si cerraste la pestaña.</figcaption>
+          </figure>
+        </div>
+        <div class="callout">
+          <strong>El hold es tuyo.</strong> Al terminar cada fase, Pepinillo espera: <em>El próximo enfoque
+          está listo cuando vos lo estés</em>, con botón <strong>+5 min</strong> para alargar el descanso.
+          Los auto-inicios son opcionales en Ajustes; por defecto tú decides cuándo seguir.
+        </div>
+      </section>
+
+      <!-- 5. PLAN -->
+      <section id="plan">
+        <h2>5. Tareas, tabla e Inspector</h2>
+        <p class="section-lead">
+          El Plan replica la tabla de Pepinillo para Mac: filas compactas, filtros en el sidebar y un
+          Inspector para el detalle de cada tarea.
+        </p>
+        <figure>
+          <img class="screenshot" src="/guides/img/web-05-plan-tabla-es.jpg" alt="Tabla de tareas del Plan con columnas Título, Prioridad, Energía, Pomodoros y Fecha límite" loading="lazy" />
+          <figcaption>La tabla del Plan: círculos de completado, flechas de prioridad (↑ Alta, − Media, ↓ Baja), energía con punto de color, pomodoros estimados y fecha límite en rojo si venció. La fila <em>Nueva tarea</em> vive fija al pie, estilo Reminders.</figcaption>
+        </figure>
+        <div class="grid-2">
+          <article class="card">
+            <h3>Filtros en el sidebar</h3>
+            <ul>
+              <li><strong>Todas</strong> — todas las tareas activas.</li>
+              <li><strong>Hoy</strong> — programadas para hoy o vencidas hoy.</li>
+              <li><strong>Próximas</strong> — con fecha a futuro.</li>
+              <li><strong>Completadas</strong> — el historial de lo cosechado.</li>
+            </ul>
+            <p>Cada filtro es una entrada de navegación real: el sidebar <em>es</em> el filtro, como en Mac.</p>
+          </article>
+          <article class="card">
+            <h3>El Inspector</h3>
+            <ul>
+              <li>Click en una fila abre el <strong>Inspector</strong>: título editable, prioridad, energía, pomodoros estimados, fecha, repetición y notas.</li>
+              <li><strong>Subtareas</strong> y <strong>recurrencia</strong> (Diaria, Días de semana, Semanal, Cada 2 semanas, Mensual) con Everywhere.</li>
+              <li>El título también se edita con <strong>doble click</strong> directo en la tabla.</li>
+            </ul>
+          </article>
+        </div>
+        <figure>
+          <img class="screenshot" src="/guides/img/web-07-plan-inspector-es.jpg" alt="Inspector de tarea abierto junto a la tabla" loading="lazy" />
+          <figcaption>El Inspector junto a la tabla: al abrirse, la tabla adapta sus columnas (la energía se pliega) para que nada se descuadre.</figcaption>
+        </figure>
+        <figure class="figure-row">
+          <figure class="half">
+            <img class="screenshot" src="/guides/img/web-09-plan-contexto-es.jpg" alt="Menú contextual con Prioridad, Energía y Eliminar" loading="lazy" />
+            <figcaption><strong>Menú contextual</strong> (click derecho en desktop, pulsación larga en móvil): completar, enfocar, prioridad y energía con submenús, y eliminar en rojo.</figcaption>
+          </figure>
+          <figure class="half">
+            <img class="screenshot" src="/guides/img/web-08-plan-busqueda-es.jpg" alt="Búsqueda de tareas filtrando la tabla" loading="lazy" />
+            <figcaption><strong>Búsqueda</strong> (<kbd>⌘F</kbd>) en la barra del Plan: filtra la tabla en vivo por título.</figcaption>
+          </figure>
+        </figure>
+        <figure class="half">
+          <img class="screenshot" src="/guides/img/web-06-plan-composer-es.jpg" alt="Compositor de nueva tarea con texto escrito" loading="lazy" />
+          <figcaption>Crear una tarea: escribe en la fila inferior y pulsa Enter. El límite Free (3 tareas activas) avisa <strong>conservando lo que escribiste</strong>.</figcaption>
+        </figure>
+        <div class="callout">
+          <strong>Eliminar tiene marcha atrás.</strong> Completar y eliminar muestran un aviso con botón
+          <em>Deshacer</em> durante 5 segundos: nada se pierde por un click impulsivo.
+        </div>
+      </section>
+
+      <!-- 6. CAPTURA RÁPIDA -->
+      <section id="captura">
+        <h2>6. Captura rápida y búsqueda</h2>
+        <p class="section-lead">
+          Dos entradas rápidas que funcionan desde cualquier parte de la app.
+        </p>
+        <figure class="half">
+          <img class="screenshot" src="/guides/img/web-10-captura-rapida-es.jpg" alt="Paleta de captura rápida abierta sobre la app" loading="lazy" />
+          <figcaption><strong>⌘K</strong> (o el chip ⌘K junto a la búsqueda): la paleta de captura estilo Spotlight — navega a cualquier sección, inicia una sesión o captura una tarea tecleándola y pulsando Enter.</figcaption>
+        </figure>
+        <div class="grid-2">
+          <article class="card">
+            <h3>Desde el teclado</h3>
+            <ul>
+              <li><kbd>⌘K</kbd> abre la paleta en cualquier momento.</li>
+              <li>Teclea el nombre de una tarea nueva y <kbd>Enter</kbd> la captura en el Plan.</li>
+              <li>Las tareas capturadas aterrizan listas para enfocar.</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>Desde el móvil</h3>
+            <ul>
+              <li>El chip <strong>⚡ Captura rápida</strong> en el Plan abre la misma paleta.</li>
+              <li>La fila <em>Nueva tarea</em> del composer crea la tarea directamente.</li>
+              <li>Ambos caminos respetan el límite Free y la energía sugerida.</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <!-- 7. PANEL -->
+      <section id="panel">
+        <h2>7. El Panel: KPIs, gráficas y logros</h2>
+        <p class="section-lead">
+          El resumen del día en gramática de Mac: cifras grandes, gráficas honestas y cero decoración.
+        </p>
+        <figure>
+          <img class="screenshot" src="/guides/img/web-11-panel-es.jpg" alt="Panel con fecha, KPIs planos, gráfica semanal y sesiones recientes" loading="lazy" />
+          <figcaption>El Panel: fecha de hoy con racha y enfoque a la derecha, KPIs en fila plana (Tiempo de enfoque, Sesiones, Racha, Enfoque del período), la gráfica semanal (el día de hoy a pleno color, los pasados al 35%), sesiones recientes y logros.</figcaption>
+        </figure>
+        <div class="grid-2">
+          <article class="card">
+            <h3>Qué se cuenta</h3>
+            <ul>
+              <li><strong>Tiempo de enfoque</strong> del día y del período (7/30/365 días).</li>
+              <li><strong>Sesiones</strong> de hoy y el histórico reciente con modo y duración.</li>
+              <li><strong>Racha</strong> de días consecutivos con su mejor marca.</li>
+              <li><strong>Logros</strong> desbloqueables: primer foco, semana completa, maestro del pomodoro…</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>Períodos largos con Everywhere</h3>
+            <ul>
+              <li>Free incluye <strong>hoy + últimos 7 días</strong>.</li>
+              <li><strong>30D y 365D</strong> se desbloquean con Everywhere (los segmentos muestran 🔒 hasta entonces).</li>
+              <li>Todo se calcula localmente; el período largo no viaja a ningún servidor.</li>
+            </ul>
+          </article>
+        </div>
+        <figure class="half">
+          <img class="screenshot" src="/guides/img/web-12-panel-30d-es.jpg" alt="Selector de períodos con los segmentos 30D y 365D marcados con candado" loading="lazy" />
+          <figcaption>Los períodos largos muestran 🔒 en el propio segmento: toca para ver qué desbloquea Everywhere.</figcaption>
+        </figure>
+      </section>
+
+      <!-- 8. CUENTA -->
+      <section id="cuenta">
+        <h2>8. Cuenta, temas y planes</h2>
+        <p class="section-lead">
+          Pepinillo funciona sin cuenta; la cuenta solo activa la sincronización y las funciones Everywhere.
+        </p>
+        <figure>
+          <img class="screenshot" src="/guides/img/web-13-cuenta-es.jpg" alt="Sección Cuenta con Idioma, Apariencia, Tema e Id de dispositivo" loading="lazy" />
+          <figcaption>Cuenta: idioma (Español, English, Português), apariencia (Sistema, Claro, Oscuro), temas Classic/Bosque/Océano/Atardecer y el id de dispositivo para emparejar la sincronización.</figcaption>
+        </figure>
+        <div class="grid-2">
+          <article class="card">
+            <h3>Gratis, para siempre</h3>
+            <ul>
+              <li>Pomodoro y Cronómetro completos.</li>
+              <li>Plan con hasta <strong>3 tareas activas</strong>, filtros, búsqueda y menú contextual.</li>
+              <li>Panel con hoy + últimos 7 días, logros y journal post-sesión.</li>
+              <li>Funciona <strong>offline</strong>: instala la PWA y no necesita conexión.</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>Everywhere / AI+ <span class="badge badge-pro">Suscripción</span></h3>
+            <ul>
+              <li><strong>Flowtime y Time Block</strong> completos.</li>
+              <li>Tareas ilimitadas, <strong>subtareas y recurrencia</strong>.</li>
+              <li><strong>Temas</strong> Bosque, Océano y Atardecer.</li>
+              <li><strong>Períodos 30D / 365D</strong> en el Panel.</li>
+              <li><strong>Sincronización cloud</strong> entre tus dispositivos (Last-Write-Wins con reloj del servidor).</li>
+            </ul>
+          </article>
+        </div>
+        <div class="callout">
+          <strong>Free limita a 3 tareas activas conservando lo tuyo.</strong> Si intentas crear la cuarta,
+          el aviso aparece junto al compositor y <strong>el texto que escribiste se conserva</strong>: pulsa
+          <em>Ver Everywhere</em> cuando quieras, o elimina una tarea y sigue sin perder nada.
+        </div>
+      </section>
+
+      <!-- 9. ATAJOS -->
+      <section id="atajos">
+        <h2>9. Todos los atajos de teclado</h2>
+        <p class="section-lead">
+          La gramática de Mac, en el navegador. Todos funcionan con la app abierta.
+        </p>
+        <table>
+          <thead>
+            <tr><th>Atajo</th><th>Acción</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><kbd>⌘1</kbd> / <kbd>⌘2</kbd> / <kbd>⌘3</kbd></td><td>Foco / Plan / Panel</td></tr>
+            <tr><td><kbd>⌘F</kbd></td><td>Buscar tareas en el Plan</td></tr>
+            <tr><td><kbd>⌘N</kbd></td><td>Nueva tarea (enfoca el compositor)</td></tr>
+            <tr><td><kbd>⌘⌥I</kbd></td><td>Abrir / cerrar el Inspector</td></tr>
+            <tr><td><kbd>⌘K</kbd></td><td>Paleta de captura rápida y navegación</td></tr>
+            <tr><td><kbd>Espacio</kbd></td><td>Iniciar / pausar / reanudar la sesión</td></tr>
+            <tr><td><kbd>Esc</kbd></td><td>Cerrar paleta, Inspector y menús</td></tr>
+            <tr><td><kbd>Enter</kbd></td><td>Confirmar el compositor o la tarea capturada</td></tr>
+            <tr><td>Doble click</td><td>Editar el título de una tarea en la tabla</td></tr>
+            <tr><td>Click derecho</td><td>Menú contextual de la tarea</td></tr>
+          </tbody>
+        </table>
+        <div class="callout">
+          <strong>Sobre ⌘N y ⌘⌥I:</strong> algunos navegadores reservan estos atajos para sí mismos
+          (ventana nueva, DevTools). Si el tuyo los intercepta, los botones de la barra del Plan hacen
+          lo mismo.
+        </div>
+      </section>
+
+      <!-- 10. TIPS -->
+      <section id="tips">
+        <h2>10. Tips avanzados y FAQ</h2>
+        <p class="section-lead">
+          Lo que hace la diferencia entre usar la app y dominarla.
+        </p>
+        <div class="grid-2">
+          <article class="card">
+            <h3>Tips avanzados</h3>
+            <ul>
+              <li><strong>Arrastra para reordenar</strong> las tareas en la vista móvil: el orden que defines es el que sugiere el enfoque.</li>
+              <li><strong>Vincula la sesión a una tarea</strong> antes de iniciar: sus pomodoros y su historial se conectan.</li>
+              <li><strong>Energía sugerida</strong>: Pepinillo propone profunda / superficial / administrativa según la hora del día.</li>
+              <li><strong>Instala la PWA</strong> aunque uses el navegador: abre en su ventana, sin pestañas, y arranca al instante.</li>
+              <li><strong>Journal post-sesión</strong>: actívalo en Ajustes para reflexionar 30 segundos al terminar cada sesión.</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>Preguntas frecuentes</h3>
+            <p><strong>¿Necesito cuenta o internet?</strong><br />No. Pepinillo Web es 100% funcional offline tras la primera carga; la cuenta solo activa la sincronización de pago.</p>
+            <p><strong>¿Se descuadra el timer si cierro la pestaña?</strong><br />No: el motor usa el reloj del sistema y al volver la tarjeta <em>Sesión inconclusa</em> te ofrece Retomar con el tiempo registrado.</p>
+            <p><strong>¿Dónde están mis datos?</strong><br />En IndexedDB, la base local de tu navegador. Puedes ver tu correo y plan en la sección Cuenta, y cerrar sesión sin perder nada.</p>
+            <p><strong>¿Funciona en iPad o Chromebook?</strong><br />Sí: la PWA instalada se adapta con la misma gramática; la vista móvil/táctil respeta los objetivos táctiles.</p>
+          </article>
+        </div>
+        <div class="callout">
+          ¿Algo no cuadra? En <strong>Cuenta</strong> tienes el diagnóstico del estado offline y el id de
+          dispositivo para emparejar la sync. Y este manual vive siempre en
+          <strong>pepinillo.app/guides</strong> — también accesible desde la paleta <kbd>⌘K</kbd> ▸ Guides.
+        </div>
+      </section>
+
+      <footer style="margin-top:24px;font-size:12.5px;color:var(--muted);border-top:1px solid var(--border);padding-top:18px">
+        Manual de Pepinillo Web · Capturas reales de la app con datos de demostración ·
+        <a href="/guides" style="color:var(--brand);text-decoration:none">Todas las guías →</a>
+      </footer>
+    </main>
+  </div>
+</body>
+</html>
