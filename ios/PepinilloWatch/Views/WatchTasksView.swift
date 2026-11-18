@@ -2,11 +2,11 @@
 // Pepinillo — Deep Work Companion for Apple
 //
 // Apple Watch tasks screen. Shows today's tasks synced from iOS.
-// Tap to toggle completion, long press to link/unlink a task to the timer.
+// Tap a row to toggle completion; tap the trailing link control to
+// focus/unlink that task on the timer (#882).
 
 import SwiftUI
 import ComposableArchitecture
-import WatchKit
 
 // MARK: - WatchTasksView
 
@@ -51,7 +51,7 @@ struct WatchTasksView: View {
                         task: task,
                         isLinked: linkedTaskID == task.id,
                         onTap: { store.send(.taskTapped(task.id)) },
-                        onLongPress: { store.send(.taskLongPressed(task.id)) }
+                        onLinkToggle: { store.send(.taskLongPressed(task.id)) }
                     )
                 }
             }
@@ -94,72 +94,101 @@ private struct WatchTaskRow: View {
     let task: WatchTaskItem
     let isLinked: Bool
     let onTap: () -> Void
-    let onLongPress: () -> Void
+    let onLinkToggle: () -> Void
 
     var body: some View {
-        Button(action: onTap) {
-            HStack(spacing: 8) {
-                // Completion indicator
-                Image(systemName: task.isCompleted ? "checkmark.circle.fill" : "circle")
-                    .font(.system(size: 16))
-                    .foregroundStyle(task.isCompleted ? .green : .secondary)
-                    .frame(width: 24, height: 24)
+        HStack(spacing: 0) {
+            // Tap-to-complete area (a Button here would swallow held presses —
+            // see #882 QA history; a discrete tap gesture keeps the row calm).
+            mainContent
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
+                .onTapGesture(perform: onTap)
+                .accessibilityElement(children: .combine)
+                .accessibilityAddTraits(.isButton)
 
-                // Task info
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(task.title)
-                        .font(.system(size: 13, weight: isLinked ? .semibold : .regular))
-                        .foregroundStyle(task.isCompleted ? .secondary : .primary)
-                        .strikethrough(task.isCompleted)
-                        .lineLimit(2)
+            // #882 (pivot after live QA): held presses never engage a context
+            // menu inside the verticalPage+ScrollView hierarchy — two gesture
+            // attempts failed — so the link affordance must be explicit.
+            // Compact width so the title keeps the room (QA: the 44pt-wide
+            // control squeezed titles); the vertical hit target stays 44.
+            if !task.isCompleted {
+                Button(action: onLinkToggle) {
+                    Image(systemName: isLinked ? "link.circle.fill" : "link")
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundStyle(isLinked ? ModeColors.pomodoro : Color.secondary)
+                        .frame(width: 30, height: 44)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(
+                    isLinked
+                        ? String(localized: "Unlink Task")
+                        : String(localized: "Focus on task")
+                )
+            } else if isLinked {
+                // Completed rows keep the (non-interactive) link indicator.
+                Image(systemName: "link.circle.fill")
+                    .font(.system(size: 14))
+                    .foregroundStyle(ModeColors.pomodoro)
+                    .frame(width: 30, height: 44)
+            }
+        }
+        .padding(.horizontal, 2)
+        .padding(.vertical, 2)
+        .background(
+            isLinked
+                ? AnyShapeStyle(ModeColors.pomodoro.opacity(0.12))
+                : AnyShapeStyle(Color.clear)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+    }
 
-                    HStack(spacing: 4) {
-                        // Priority indicator
-                        if task.priority >= 3 {
-                            Image(systemName: "exclamationmark.triangle.fill")
+    private var mainContent: some View {
+        HStack(spacing: 6) {
+            // Completion indicator
+            Image(systemName: task.isCompleted ? "checkmark.circle.fill" : "circle")
+                .font(.system(size: 14))
+                .foregroundStyle(task.isCompleted ? .green : .secondary)
+                .frame(width: 19, height: 19)
+
+            // Task info
+            VStack(alignment: .leading, spacing: 1) {
+                Text(task.title)
+                    .font(.system(size: 13, weight: isLinked ? .semibold : .regular))
+                    .foregroundStyle(task.isCompleted ? .secondary : .primary)
+                    .strikethrough(task.isCompleted)
+                    .lineLimit(2)
+
+                HStack(spacing: 4) {
+                    // Priority indicator
+                    if task.priority >= 3 {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .font(.system(size: 8))
+                            .foregroundStyle(.red)
+                    } else if task.priority >= 2 {
+                        Image(systemName: "exclamationmark")
+                            .font(.system(size: 8))
+                            .foregroundStyle(.orange)
+                    }
+
+                    // Pomodoro progress
+                    if task.estimatedPomodoros > 0 {
+                        HStack(spacing: 2) {
+                            Text("🍅")
                                 .font(.system(size: 8))
-                                .foregroundStyle(.red)
-                        } else if task.priority >= 2 {
-                            Image(systemName: "exclamationmark")
-                                .font(.system(size: 8))
-                                .foregroundStyle(.orange)
-                        }
-
-                        // Pomodoro progress
-                        if task.estimatedPomodoros > 0 {
-                            HStack(spacing: 2) {
-                                Text("🍅")
-                                    .font(.system(size: 8))
-                                Text("\(task.completedPomodoros)/\(task.estimatedPomodoros)")
-                                    .font(.system(size: 9, weight: .medium))
-                                    .foregroundStyle(.secondary)
-                            }
+                            Text("\(task.completedPomodoros)/\(task.estimatedPomodoros)")
+                                .font(.system(size: 9, weight: .medium))
+                                .foregroundStyle(.secondary)
                         }
                     }
                 }
-
-                Spacer(minLength: 0)
-
-                // Link indicator
-                if isLinked {
-                    Image(systemName: "link.circle.fill")
-                        .font(.system(size: 14))
-                        .foregroundStyle(ModeColors.pomodoro)
-                }
             }
-            .padding(.horizontal, 8)
-            .padding(.vertical, 8)
-            .background(
-                isLinked
-                    ? AnyShapeStyle(ModeColors.pomodoro.opacity(0.12))
-                    : AnyShapeStyle(Color.clear)
-            )
-            .clipShape(RoundedRectangle(cornerRadius: 10))
+
+            Spacer(minLength: 0)
         }
-        .buttonStyle(.plain)
-        .onLongPressGesture {
-            WKInterfaceDevice.current().play(.click)
-            onLongPress()
-        }
+        .padding(.leading, 3)
+        .padding(.trailing, 0)
+        .padding(.vertical, 6)
     }
 }

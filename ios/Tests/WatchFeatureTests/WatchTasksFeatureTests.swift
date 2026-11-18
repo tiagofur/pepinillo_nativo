@@ -13,7 +13,7 @@ import ComposableArchitecture
 // MARK: - WatchTasksFeature Tests
 
 @MainActor
-@Suite("WatchTasksFeature Reducer")
+@Suite("WatchTasksFeature Reducer", .serialized)
 struct WatchTasksFeatureTests {
 
     // MARK: - Helpers
