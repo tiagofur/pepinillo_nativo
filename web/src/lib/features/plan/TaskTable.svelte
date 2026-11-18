@@ -90,7 +90,7 @@
 </script>
 
 <div class="task-table" role="table" aria-label={t('plan.title')}>
-	<div class="thead" role="row">
+	<div class="thead" class:compact={compact} role="row">
 		<span class="col-check" aria-hidden="true"></span>
 		<span class="col-title" role="columnheader">{t('plan.taskTitle' as MessageKey)}</span>
 		<span class="col-pri" role="columnheader">{t('plan.priority')}</span>
@@ -103,6 +103,7 @@
 	{#each tasks as task (task.id)}
 		<div
 			class="trow"
+			class:compact={compact}
 			class:selected={selectedId === task.id}
 			role="row"
 			onclick={() => onselect(task.id)}

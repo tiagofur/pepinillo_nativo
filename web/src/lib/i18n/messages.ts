@@ -622,7 +622,7 @@ const en: Dict = {
 	'account.syncNow': 'Upload local data (Everywhere)',
 	'account.syncing': 'Syncing…',
 	'account.apiMissing':
-		'API URL not configured. Set PUBLIC_API_BASE_URL in web/.env to enable account + sync.',
+		'Account + sync need the cloud API configured for this build. Everything works offline.',
 	'account.everywhereActive': 'Everywhere active — cloud sync available.',
 	'account.everywhereInactive':
 		'Signed in on Free. Subscribe or restore Everywhere on iOS, Android, or Windows, then refresh.',
@@ -846,7 +846,7 @@ const en: Dict = {
 	'auth.error.apiMissing': 'The sync API is not configured for this build.',
 	'auth.syncHint': 'Sync requires Everywhere/AI+. Your data always stays on this device first.',
 	'auth.verifyPending': 'Check your inbox to verify your email — sync activates after that.',
-	'auth.apiMissing': 'Cloud sync is not configured in this build (PUBLIC_API_BASE_URL empty). Everything works offline.',
+	'auth.apiMissing': 'Cloud sync is not configured in this build — everything works offline.',
 	'auth.dangerTitle': 'Session',
 	'auth.deleteConfirm': 'This removes your cloud account. Your email, to confirm:',
 	'auth.deleteAccount': 'Delete account',
@@ -1147,7 +1147,7 @@ const es: Dict = {
 	'account.syncNow': 'Subir datos locales (Everywhere)',
 	'account.syncing': 'Sincronizando…',
 	'account.apiMissing':
-		'API no configurada. Definí PUBLIC_API_BASE_URL en web/.env para cuenta + sync.',
+		'La cuenta y la sync necesitan la API cloud configurada en este build. Todo funciona offline.',
 	'account.everywhereActive': 'Everywhere activo — sync en la nube disponible.',
 	'account.everywhereInactive':
 		'Sesión Free. Suscribite o restaurá Everywhere en iOS, Android o Windows y refrescá.',
@@ -1371,7 +1371,7 @@ const es: Dict = {
 	'auth.error.apiMissing': 'El API de sync no está configurado en este build.',
 	'auth.syncHint': 'La sync requiere Everywhere/AI+. Tus datos siempre viven primero en este dispositivo.',
 	'auth.verifyPending': 'Revisá tu inbox para verificar el email — la sync se activa después.',
-	'auth.apiMissing': 'La sync cloud no está configurada en este build (PUBLIC_API_BASE_URL vacío). Todo funciona offline.',
+	'auth.apiMissing': 'La sync cloud no está configurada en este build — todo funciona offline.',
 	'auth.dangerTitle': 'Sesión',
 	'auth.deleteConfirm': 'Esto elimina tu cuenta en la nube. Tu email, para confirmar:',
 	'auth.deleteAccount': 'Eliminar cuenta',
@@ -1656,7 +1656,7 @@ const pt: Dict = {
 	'account.syncNow': 'Enviar dados locais (Everywhere)',
 	'account.syncing': 'Sincronizando…',
 	'account.apiMissing':
-		'API não configurada. Defina PUBLIC_API_BASE_URL em web/.env para conta + sync.',
+		'A conta e a sync precisam da API cloud configurada neste build. Tudo funciona offline.',
 	'account.everywhereActive': 'Everywhere ativo — sync na nuvem disponível.',
 	'account.everywhereInactive':
 		'Sessão Free. Assine ou restaure Everywhere no iOS, Android ou Windows e atualize.',
@@ -1880,7 +1880,7 @@ const pt: Dict = {
 	'auth.error.apiMissing': 'O API de sync não está configurado neste build.',
 	'auth.syncHint': 'A sync requer Everywhere/AI+. Seus dados sempre vivem primeiro neste dispositivo.',
 	'auth.verifyPending': 'Verifique seu email na caixa de entrada — a sync ativa depois disso.',
-	'auth.apiMissing': 'A sync cloud não está configurada neste build (PUBLIC_API_BASE_URL vazio). Tudo funciona offline.',
+	'auth.apiMissing': 'A sync cloud não está configurada neste build — tudo funciona offline.',
 	'auth.dangerTitle': 'Sessão',
 	'auth.deleteConfirm': 'Isso remove sua conta na nuvem. Seu email, para confirmar:',
 	'auth.deleteAccount': 'Excluir conta',
