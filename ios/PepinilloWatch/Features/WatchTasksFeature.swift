@@ -13,9 +13,6 @@ import ComposableArchitecture
 @Reducer
 struct WatchTasksFeature {
 
-    /// UserDefaults key for the first-use hint latch (#882).
-    static let hasEverLinkedTaskKey = "watch.hasEverLinkedTask"
-
     // MARK: - State
 
     @ObservableState
@@ -24,9 +21,6 @@ struct WatchTasksFeature {
         var linkedTaskID: UUID? = nil
         /// Ignore out-of-order task list payloads (#243).
         var lastTasksReceivedAt: TimeInterval = 0
-        /// First-use hint (#882): visible until the user links a task once
-        /// on this watch. Persisted locally — a UI cue, not product state.
-        var hasEverLinkedTask: Bool = false
     }
 
     // MARK: - Action
@@ -36,7 +30,6 @@ struct WatchTasksFeature {
         case taskTapped(UUID)
         case taskLongPressed(UUID)
         case setCompleted(UUID, Bool)
-        case onAppear
 
         // Cross-feature (handled by parent WatchAppFeature)
         case taskLinked(UUID, String)
@@ -52,10 +45,6 @@ struct WatchTasksFeature {
         Reduce { state, action in
             switch action {
 
-            case .onAppear:
-                state.hasEverLinkedTask = UserDefaults.standard.bool(forKey: Self.hasEverLinkedTaskKey)
-                return .none
-
             case .taskTapped(let id):
                 guard let task = state.tasks.first(where: { $0.id == id }) else { return .none }
                 return .send(.setCompleted(id, !task.isCompleted))
@@ -69,11 +58,6 @@ struct WatchTasksFeature {
                 guard let task = state.tasks.first(where: { $0.id == id }),
                       !task.isCompleted else { return .none }
                 state.linkedTaskID = id
-                // First link ever latches the flag and hides the first-use hint (#882).
-                if !state.hasEverLinkedTask {
-                    state.hasEverLinkedTask = true
-                    UserDefaults.standard.set(true, forKey: Self.hasEverLinkedTaskKey)
-                }
                 return .send(.taskLinked(id, task.title))
 
             case .setCompleted(let id, let isCompleted):

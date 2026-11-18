@@ -2,8 +2,8 @@
 // Pepinillo — Deep Work Companion for Apple
 //
 // Apple Watch tasks screen. Shows today's tasks synced from iOS.
-// Tap to toggle completion; the context menu (long press) links/unlinks
-// a task to the timer — discoverable via a first-use hint (#882).
+// Tap a row to toggle completion; tap the trailing link control to
+// focus/unlink that task on the timer (#882).
 
 import SwiftUI
 import ComposableArchitecture
@@ -21,9 +21,6 @@ struct WatchTasksView: View {
             } else {
                 taskList
             }
-        }
-        .onAppear {
-            store.send(.onAppear)
         }
     }
 
@@ -47,17 +44,6 @@ struct WatchTasksView: View {
                 }
                 .padding(.horizontal, 8)
                 .padding(.bottom, 6)
-
-                // First-use hint (#882): the link action is invisible until
-                // used once — tell the user it exists, then never again.
-                if !store.hasEverLinkedTask {
-                    Text(String(localized: "Long-press a task to focus it"))
-                        .font(.system(size: 10))
-                        .foregroundStyle(.tertiary)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal, 8)
-                        .padding(.bottom, 6)
-                }
 
                 // Tasks
                 ForEach(sortedTasks) { task in
@@ -111,33 +97,52 @@ private struct WatchTaskRow: View {
     let onLinkToggle: () -> Void
 
     var body: some View {
-        if task.isCompleted {
-            content.onTapGesture(perform: onTap)
-        } else {
-            // #882: the idiomatic watchOS long-press affordance — a context
-            // menu replaces the invisible direct gesture. Same reducer flow.
-            content
+        HStack(spacing: 0) {
+            // Tap-to-complete area (a Button here would swallow held presses —
+            // see #882 QA history; a discrete tap gesture keeps the row calm).
+            mainContent
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
                 .onTapGesture(perform: onTap)
-                .contextMenu {
-                    Button(action: onLinkToggle) {
-                        Label(
-                            isLinked
-                                ? String(localized: "Unlink Task")
-                                : String(localized: "Focus on task"),
-                            systemImage: isLinked ? "link" : "brain"
-                        )
-                    }
+                .accessibilityElement(children: .combine)
+                .accessibilityAddTraits(.isButton)
+
+            // #882 (pivot after live QA): held presses never engage a context
+            // menu inside the verticalPage+ScrollView hierarchy — two gesture
+            // attempts failed — so the link affordance must be explicit.
+            if !task.isCompleted {
+                Button(action: onLinkToggle) {
+                    Image(systemName: isLinked ? "link.circle.fill" : "link")
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundStyle(isLinked ? ModeColors.pomodoro : Color.secondary)
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
                 }
+                .buttonStyle(.plain)
+                .accessibilityLabel(
+                    isLinked
+                        ? String(localized: "Unlink Task")
+                        : String(localized: "Focus on task")
+                )
+            } else if isLinked {
+                // Completed rows keep the (non-interactive) link indicator.
+                Image(systemName: "link.circle.fill")
+                    .font(.system(size: 14))
+                    .foregroundStyle(ModeColors.pomodoro)
+                    .frame(width: 44, height: 44)
+            }
         }
+        .padding(.horizontal, 4)
+        .padding(.vertical, 2)
+        .background(
+            isLinked
+                ? AnyShapeStyle(ModeColors.pomodoro.opacity(0.12))
+                : AnyShapeStyle(Color.clear)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 10))
     }
 
-    /// #882 live-QA: a Button swallows held presses on watchOS — its action
-    /// fires on release even after seconds, and neither `.contextMenu` nor
-    /// `.onLongPressGesture` ever engages (the pre-fix long-press had the
-    /// same defect — "al soltar marca como terminada"). A discrete tap
-    /// gesture lets gesture arbitration hand the held press to the menu;
-    /// button semantics are preserved via accessibility traits.
-    private var content: some View {
+    private var mainContent: some View {
         HStack(spacing: 8) {
             // Completion indicator
             Image(systemName: task.isCompleted ? "checkmark.circle.fill" : "circle")
@@ -179,24 +184,8 @@ private struct WatchTaskRow: View {
             }
 
             Spacer(minLength: 0)
-
-            // Link indicator
-            if isLinked {
-                Image(systemName: "link.circle.fill")
-                    .font(.system(size: 14))
-                    .foregroundStyle(ModeColors.pomodoro)
-            }
         }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 8)
-        .background(
-            isLinked
-                ? AnyShapeStyle(ModeColors.pomodoro.opacity(0.12))
-                : AnyShapeStyle(Color.clear)
-        )
-        .clipShape(RoundedRectangle(cornerRadius: 10))
-        .contentShape(RoundedRectangle(cornerRadius: 10))
-        .accessibilityElement(children: .combine)
-        .accessibilityAddTraits(.isButton)
+        .padding(.horizontal, 4)
+        .padding(.vertical, 6)
     }
 }

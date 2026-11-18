@@ -12266,22 +12266,6 @@
         }
       }
     },
-    "Long-press a task to focus it" : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mantén pulsada una tarea para enfocarla"
-          }
-        },
-        "pt" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Toque sem soltar uma tarefa para focá-la"
-          }
-        }
-      }
-    },
     "Long Break" : {
       "localizations" : {
         "en" : {

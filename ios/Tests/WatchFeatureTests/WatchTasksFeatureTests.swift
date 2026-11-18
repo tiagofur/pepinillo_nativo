@@ -88,7 +88,6 @@ struct WatchTasksFeatureTests {
 
         await store.send(.taskLongPressed(Self.taskA.id)) {
             $0.linkedTaskID = Self.taskA.id
-            $0.hasEverLinkedTask = true
         }
 
         await store.receive(.taskLinked(Self.taskA.id, "Write documentation"))
@@ -98,7 +97,6 @@ struct WatchTasksFeatureTests {
     func taskLongPressedSwitchesLink() async {
         var state = Self.stateWithTasks()
         state.linkedTaskID = Self.taskA.id
-        state.hasEverLinkedTask = true
 
         let store = TestStore(initialState: state) {
             WatchTasksFeature()
@@ -435,7 +433,6 @@ struct WatchTasksFeatureTests {
         // Link task A via long press
         await store.send(.taskLongPressed(Self.taskA.id)) {
             $0.linkedTaskID = Self.taskA.id
-            $0.hasEverLinkedTask = true
         }
         await store.receive(.taskLinked(Self.taskA.id, "Write documentation"))
 
@@ -481,39 +478,5 @@ struct WatchTasksFeatureTests {
 
         // Now try to link the completed task via long press — should fail (guard)
         await store.send(.taskLongPressed(Self.taskA.id))
-    }
-
-    // MARK: - First-use hint (#882)
-
-    @Test("onAppear hydrates the first-use hint flag from defaults")
-    func onAppearHydratesHintFlag() async {
-        UserDefaults.standard.set(true, forKey: WatchTasksFeature.hasEverLinkedTaskKey)
-        defer { UserDefaults.standard.removeObject(forKey: WatchTasksFeature.hasEverLinkedTaskKey) }
-
-        let store = TestStore(initialState: WatchTasksFeature.State()) {
-            WatchTasksFeature()
-        }
-
-        await store.send(.onAppear) {
-            $0.hasEverLinkedTask = true
-        }
-    }
-
-    @Test("linking a task latches and persists the first-use hint flag")
-    func linkingLatchesHintFlag() async {
-        UserDefaults.standard.removeObject(forKey: WatchTasksFeature.hasEverLinkedTaskKey)
-        defer { UserDefaults.standard.removeObject(forKey: WatchTasksFeature.hasEverLinkedTaskKey) }
-
-        let store = TestStore(initialState: Self.stateWithTasks()) {
-            WatchTasksFeature()
-        }
-
-        await store.send(.taskLongPressed(Self.taskA.id)) {
-            $0.linkedTaskID = Self.taskA.id
-            $0.hasEverLinkedTask = true
-        }
-        await store.receive(.taskLinked(Self.taskA.id, "Write documentation"))
-
-        #expect(UserDefaults.standard.bool(forKey: WatchTasksFeature.hasEverLinkedTaskKey))
     }
 }
