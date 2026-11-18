@@ -43,14 +43,15 @@ xcodebuild -scheme "Pepinillo Dev" -destination 'platform=iOS Simulator,name=iPh
 # macOS (sin target de tests; la lógica Mac se prueba en el simulador iOS):
 xcodebuild -scheme "PepinilloMac Dev" -destination 'platform=macOS' build
 ```
-CI: `.github/workflows/ios-test.yml` (macos-15) con **2 jobs en paralelo**:
-`test` (simulador iPhone 16/17, `xcodegen generate`, trust de macros,
-subconjuntos `-only-testing:` — fast en PR, +suites de migración/persistencia/
-engine en push a `main` — y caché de DerivedData para build incremental; la
-cadena watch se compila dentro de este job porque la app iOS la embebe a nivel
-de target) y `macos-build` (compila `PepinilloMac Staging` sin firmar; Staging
-porque el Debug Mac activa `MAC_LIVE_ACTIVITIES`, que requiere el SDK 27.3).
-iPad comparte target con iPhone (app universal): no tiene job propio.
+CI: `.github/workflows/ios-test.yml` (macos-15, `xcodegen generate`, trust de
+macros, simulador iPhone 16/17) ejecuta solo subconjuntos `-only-testing:`
+(fast en PR, +suites de migración/persistencia/engine en push a `main`) con
+**caché de DerivedData** para build incremental (frío ~32 min → caliente
+~15 min, issue #902). La cadena watch se compila dentro del job (la app iOS la
+embebe a nivel de target); iPad comparte target con iPhone (app universal).
+**El target Mac NO compila en GHA** (necesita SDK macOS 27 / Xcode 27.x por
+las APIs touch-on-Mac de #845–#851; GHA solo ofrece 26.x — ver issue de
+seguimiento): la validación de compilación Mac sigue siendo local.
 Trucos: `-parallel-testing-enabled NO`, timeouts por test (120/180 s) para
 evitar hangs de simulador.
 
@@ -95,5 +96,5 @@ aprobación humana.
 | `test.yml` | PR/push `backend/**` | build + `go test -race` contra Postgres/Redis |
 | `deploy.yml` | push `main` tocando `backend/**` | test + SCP + rebuild `api` + healthcheck en VPS |
 | `android-test.yml` | PR/push `android/**` | subconjunto de unit tests |
-| `ios-test.yml` | PR/push `ios/**` | 2 jobs paralelos: `test` (subconjunto `-only-testing:` en simulador iOS + caché DerivedData, cadena watch incluida) y `macos-build` (compila `PepinilloMac Staging`) |
+| `ios-test.yml` | PR/push `ios/**` | subconjunto `-only-testing:` en simulador iOS + caché DerivedData (cadena watch incluida; el target Mac necesita SDK 27 y no compila en GHA) |
 | `windows-build.yml` | PR/push `windows/**` | Core tests + builds x64/ARM64 (plataforma en pausa; se mantiene por si se reanuda) |
