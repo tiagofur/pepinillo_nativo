@@ -66,9 +66,12 @@ enum TaskCompletionService {
     }
 
     /// Marks a task complete in one save: isCompleted, completedAt and
-    /// updatedAt stamped with the same `now`. Tombstoned tasks read as
-    /// unknown — deleted work is not completable. Completing is not
-    /// free-tier gated: the #216 cap guards creation, not completion.
+    /// updatedAt stamped with the same `now`, plus `isDirty` so the sync
+    /// push (fetchDirtyTasks) uploads the completion of an already-synced
+    /// task — every in-app mutation path stamps it; voice is no exception
+    /// (judgment-day F1). Tombstoned tasks read as unknown — deleted work
+    /// is not completable. Completing is not free-tier gated: the #216 cap
+    /// guards creation, not completion.
     static func markCompleted(
         id: UUID,
         now: Date = .now,
@@ -85,6 +88,7 @@ enum TaskCompletionService {
         task.isCompleted = true
         task.completedAt = now
         task.updatedAt = now
+        task.isDirty = true  // Mark dirty for sync — same contract as toggleTaskCompletion
         do {
             try context.save()
         } catch {

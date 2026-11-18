@@ -137,6 +137,27 @@ struct CompleteTaskIntentTests {
         }
     }
 
+    @Test("markCompleted stamps isDirty so the sync push uploads the completion")
+    func markCompletedStampsDirty() throws {
+        let (container, dir) = try makeContainer(label: "dirty")
+        defer { cleanup(dir) }
+
+        let task = insert("Synced first", in: container)
+        // Simulate a previous successful sync: the push pipeline cleared the flag.
+        let context = ModelContext(container)
+        task.isDirty = false
+        try? context.save()
+
+        let outcome = TaskCompletionService.markCompleted(id: task.id, now: .now, in: container)
+
+        guard case .completed = outcome else {
+            Issue.record("Expected .completed, got \(outcome)")
+            return
+        }
+        let reloaded = try reload(task, in: container)
+        #expect(reloaded.isDirty)
+    }
+
     // MARK: - A5: the shared active-task seam excludes tombstones and templates
 
     @Test("activeTasks excludes tombstones, completed and recurring templates")
