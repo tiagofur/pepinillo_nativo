@@ -110,12 +110,14 @@ private struct WatchTaskRow: View {
             // #882 (pivot after live QA): held presses never engage a context
             // menu inside the verticalPage+ScrollView hierarchy — two gesture
             // attempts failed — so the link affordance must be explicit.
+            // Compact width so the title keeps the room (QA: the 44pt-wide
+            // control squeezed titles); the vertical hit target stays 44.
             if !task.isCompleted {
                 Button(action: onLinkToggle) {
                     Image(systemName: isLinked ? "link.circle.fill" : "link")
                         .font(.system(size: 15, weight: .medium))
                         .foregroundStyle(isLinked ? ModeColors.pomodoro : Color.secondary)
-                        .frame(width: 44, height: 44)
+                        .frame(width: 30, height: 44)
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
@@ -129,10 +131,10 @@ private struct WatchTaskRow: View {
                 Image(systemName: "link.circle.fill")
                     .font(.system(size: 14))
                     .foregroundStyle(ModeColors.pomodoro)
-                    .frame(width: 44, height: 44)
+                    .frame(width: 30, height: 44)
             }
         }
-        .padding(.horizontal, 4)
+        .padding(.horizontal, 2)
         .padding(.vertical, 2)
         .background(
             isLinked
@@ -143,12 +145,12 @@ private struct WatchTaskRow: View {
     }
 
     private var mainContent: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 6) {
             // Completion indicator
             Image(systemName: task.isCompleted ? "checkmark.circle.fill" : "circle")
-                .font(.system(size: 16))
+                .font(.system(size: 14))
                 .foregroundStyle(task.isCompleted ? .green : .secondary)
-                .frame(width: 24, height: 24)
+                .frame(width: 19, height: 19)
 
             // Task info
             VStack(alignment: .leading, spacing: 1) {
@@ -185,7 +187,8 @@ private struct WatchTaskRow: View {
 
             Spacer(minLength: 0)
         }
-        .padding(.horizontal, 4)
+        .padding(.leading, 3)
+        .padding(.trailing, 0)
         .padding(.vertical, 6)
     }
 }
