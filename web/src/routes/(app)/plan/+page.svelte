@@ -372,7 +372,7 @@
 	 * statically at the foot — always visible, never overlaying content. */
 	@media (min-width: 1024px) {
 		.plan {
-			height: calc(100dvh - var(--space-8) - var(--space-10) - var(--safe-b));
+			height: 100%;
 		}
 
 		.plan-scroll {

@@ -216,10 +216,13 @@
 </nav>
 
 <style>
+	/* Mac window model: the shell is viewport-height and NEVER scrolls as a
+	 * document — the sidebar (menu + account footer) stays fully visible and
+	 * only the content column scrolls. */
 	.shell {
 		display: grid;
 		grid-template-columns: var(--sidebar-w) 1fr;
-		min-height: 100dvh;
+		height: 100dvh;
 	}
 
 	.brand {
@@ -254,6 +257,10 @@
 		max-width: var(--content-max);
 		margin: 0 auto;
 		width: 100%;
+		height: 100%;
+		overflow-y: auto;
+		scrollbar-width: thin;
+		-webkit-overflow-scrolling: touch;
 	}
 
 	/* Tablet: rail with icons only */
