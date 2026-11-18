@@ -602,7 +602,7 @@ const en: Dict = {
 	'dashboard.recent': 'Recent sessions',
 	'dashboard.avgSession': 'Avg min / session',
 	'account.title': 'Account',
-	'account.subtitle': 'Identity, preferences, companion limits',
+	'account.subtitle': 'Your account, settings and preferences',
 	'account.premiumThemes': 'Forest / Ocean / Sunset unlock with Everywhere.',
 	'account.settings': 'Preferences',
 	'account.storage': 'Local storage',
@@ -1131,7 +1131,7 @@ const es: Dict = {
 	'account.nonGoals':
 		'No en web: bandeja, atajos globales, widgets, Live Activity, reloj, Health, CloudKit, colaboración en equipo, editor de notas.',
 	'account.deviceId': 'Id de dispositivo (local)',
-	'account.subtitle': 'Identidad, preferencias y límites del compañero',
+	'account.subtitle': 'Tu cuenta, ajustes y preferencias',
 	'account.premiumThemes': 'Forest / Ocean / Sunset se desbloquean con Everywhere.',
 	'account.settings': 'Preferencias',
 	'account.storage': 'Almacenamiento local',
@@ -1644,7 +1644,7 @@ const pt: Dict = {
 	'account.nonGoals':
 		'Não na web: bandeja, atalhos globais, widgets, Live Activity, relógio, Health, CloudKit, colaboração em equipe, editor de notas.',
 	'account.deviceId': 'Id do dispositivo (local)',
-	'account.subtitle': 'Identidade, preferências e limites do companion',
+	'account.subtitle': 'Sua conta, ajustes e preferências',
 	'account.premiumThemes': 'Forest / Ocean / Sunset desbloqueiam com Everywhere.',
 	'account.settings': 'Preferências',
 	'account.storage': 'Armazenamento local',
