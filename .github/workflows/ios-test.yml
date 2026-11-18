@@ -29,13 +29,22 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # iOS + watchOS gate (job id `test` kept: required-check names depend on it).
+  # One job builds the whole embedded chain — the app target embeds the watch
+  # app at target level (project.yml), so the watch app + watch widget build
+  # here regardless of scheme; that keeps watchOS compile coverage on every
+  # PR. Tests themselves only take 1.5–2.5 min; the cost is the build, so
+  # DerivedData caching turns the 15–24 min full build into an incremental
+  # rebuild on cache hits.
+  # Rollback note: if the cache ever yields flaky "module not found" builds,
+  # remove the "Cache DerivedData" step and the -derivedDataPath flags —
+  # everything else is independent of it.
   test:
     runs-on: macos-15
     # PRs: fail fast on simulator hangs (the per-step 12-minute caps on the
     # simulator and fast-gate steps still enforce that). Main: allow
-    # integration + timer suites. PR job budget raised 25→35: setup variance
-    # (SPM resolution + simulator boot + build-for-testing) was cancelling
-    # otherwise-green PRs at exactly 25 minutes.
+    # integration + timer suites. Budget stays 35/45 to tolerate cold runs
+    # (first run after this change, runner image or Xcode bumps).
     timeout-minutes: ${{ github.event_name == 'pull_request' && 35 || 45 }}
 
     defaults:
@@ -45,6 +54,8 @@ jobs:
     env:
       # Pin SPM location so cache + xcodebuild share the same package checkout.
       CLONED_SOURCE_PACKAGES_PATH: ${{ github.workspace }}/.spm-cache
+      # Explicit DerivedData path so the cache + every xcodebuild step share it.
+      DERIVED_DATA_PATH: ${{ github.workspace }}/ios/DerivedData
       # auto = fast on PR, full on push/main
       TEST_SUITE: ${{ github.event.inputs.suite || 'auto' }}
 
@@ -56,7 +67,10 @@ jobs:
           xcode-version: latest-stable
 
       - name: Print Xcode version
-        run: xcodebuild -version
+        id: xcode
+        run: |
+          xcodebuild -version
+          echo "version=$(xcodebuild -version | awk 'NR==1{print $2}')" >> "$GITHUB_OUTPUT"
 
       - name: Cache Swift Package Manager
         uses: actions/cache@v4
@@ -67,6 +81,18 @@ jobs:
           key: ${{ runner.os }}-spm-${{ hashFiles('ios/project.yml', 'ios/**/Package.resolved') }}
           restore-keys: |
             ${{ runner.os }}-spm-
+
+      # Incremental build cache: restore the closest previous DerivedData and
+      # let xcodebuild rebuild only what the diff touched. The key pins the
+      # Xcode version (image bumps invalidate cleanly) and hashes every file
+      # under ios/ (sources, assets, xcconfigs, project.yml).
+      - name: Cache DerivedData
+        uses: actions/cache@v4
+        with:
+          path: ios/DerivedData
+          key: ${{ runner.os }}-xcode${{ steps.xcode.outputs.version }}-dd-${{ hashFiles('ios/**') }}
+          restore-keys: |
+            ${{ runner.os }}-xcode${{ steps.xcode.outputs.version }}-dd-
 
       - name: Cache Homebrew downloads
         uses: actions/cache@v4
@@ -116,9 +142,11 @@ jobs:
             -scheme "Pepinillo Dev" \
             -destination "platform=iOS Simulator,id=${{ steps.sim.outputs.id }}" \
             -configuration Debug \
+            -derivedDataPath "$DERIVED_DATA_PATH" \
             -clonedSourcePackagesDirPath "$CLONED_SOURCE_PACKAGES_PATH" \
             -skipPackageUpdates \
             CODE_SIGNING_ALLOWED=NO \
+            COMPILER_INDEX_STORE_ENABLE=NO \
             build-for-testing
 
       - name: Select test suite
@@ -146,6 +174,7 @@ jobs:
             -scheme "Pepinillo Dev" \
             -destination "platform=iOS Simulator,id=${{ steps.sim.outputs.id }}" \
             -configuration Debug \
+            -derivedDataPath "$DERIVED_DATA_PATH" \
             -clonedSourcePackagesDirPath "$CLONED_SOURCE_PACKAGES_PATH" \
             CODE_SIGNING_ALLOWED=NO \
             test-without-building \
@@ -173,6 +202,7 @@ jobs:
             -scheme "Pepinillo Dev" \
             -destination "platform=iOS Simulator,id=${{ steps.sim.outputs.id }}" \
             -configuration Debug \
+            -derivedDataPath "$DERIVED_DATA_PATH" \
             -clonedSourcePackagesDirPath "$CLONED_SOURCE_PACKAGES_PATH" \
             CODE_SIGNING_ALLOWED=NO \
             test-without-building \
