@@ -301,7 +301,7 @@
 		}
 
 		.content {
-			padding: var(--space-6) var(--space-5) calc(var(--space-10) + var(--safe-b));
+			padding: 0 var(--space-5) calc(var(--space-10) + var(--safe-b));
 		}
 	}
 
@@ -316,7 +316,7 @@
 		}
 
 		.content {
-			padding: var(--space-5) var(--space-4) calc(var(--tabbar-h) + var(--safe-b) + var(--space-8));
+			padding: 0 var(--space-4) calc(var(--tabbar-h) + var(--safe-b) + var(--space-8));
 		}
 	}
 
