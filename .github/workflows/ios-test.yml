@@ -228,13 +228,16 @@ jobs:
   # MAC_LIVE_ACTIVITIES, which needs the 27.3 SDK (see project.yml) — Staging
   # is the config designed to compile against the stable SDK, same as the
   # archives. Unsigned: compile check only, no signing identity in CI.
-  # Runs in parallel with `test`, so it adds no wall time to PRs. Cold
-  # Staging builds measured >18 min, hence the 45-min budget plus a
-  # DerivedData cache for warm rebuilds. The cache key uses a `macdd` prefix
-  # (distinct from `test`'s `dd`) so the iOS and macOS DerivedData stores
-  # never restore each other's products.
+  # Runs in parallel with `test`, so it adds no wall time to PRs.
+  # runs-on macos-26: four runs on macos-15 (Xcode 26.3) died silently with
+  # xcodebuild exit 65 at a different phase each time (44363155990,
+  # 44374913993, 44378541389, 44382700900) while the same target compiles
+  # fine locally on macOS 27.2 + Xcode 27.x — the macos-26 image carries the
+  # 27.x toolchain the repo actually develops on.
+  # DerivedData cache for warm rebuilds; key prefix `macdd` (distinct from
+  # `test`'s `dd`) so iOS and macOS stores never restore each other.
   macos-build:
-    runs-on: macos-15
+    runs-on: macos-26
     timeout-minutes: 45
 
     defaults:
