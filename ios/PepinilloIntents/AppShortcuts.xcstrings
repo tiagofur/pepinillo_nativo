@@ -23,39 +23,6 @@
         }
       }
     },
-    "Am I focusing in ${applicationName}": {
-      "extractionState": "extracted_with_value",
-      "localizations": {
-        "en": {
-          "stringSet": {
-            "state": "new",
-            "values": [
-              "Am I focusing in ${applicationName}",
-              "What's my current session in ${applicationName}",
-              "Is a session active in ${applicationName}"
-            ]
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Estoy enfocándome en ${applicationName}"
-          }
-        },
-        "pt-BR": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Estou focando no ${applicationName}"
-          }
-        },
-        "pt": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Estou focando no ${applicationName}"
-          }
-        }
-      }
-    },
     "Check my stats in ${applicationName}": {
       "localizations": {
         "es": {
@@ -78,24 +45,35 @@
         }
       }
     },
-    "Continue my session in ${applicationName}": {
+    "Complete a task in ${applicationName}": {
+      "extractionState": "extracted_with_value",
       "localizations": {
+        "en": {
+          "stringSet": {
+            "state": "new",
+            "values": [
+              "Complete a task in ${applicationName}",
+              "Mark a task as done in ${applicationName}",
+              "Finish a task in ${applicationName}"
+            ]
+          }
+        },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Continuar mi sesión en ${applicationName}"
+            "value": "Completar una tarea en ${applicationName}"
           }
         },
         "pt-BR": {
           "stringUnit": {
             "state": "translated",
-            "value": "Continuar minha sessão no ${applicationName}"
+            "value": "Concluir uma tarefa em ${applicationName}"
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Continuar minha sessão no ${applicationName}"
+            "value": "Completar uma tarefa em ${applicationName}"
           }
         }
       }
@@ -151,6 +129,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "Encerrar sessão de foco no ${applicationName}"
+          }
+        }
+      }
+    },
+    "Finish a task in ${applicationName}": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Termina una tarea en ${applicationName}"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Finalize uma tarefa em ${applicationName}"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Termina uma tarefa em ${applicationName}"
           }
         }
       }
@@ -320,24 +320,46 @@
         }
       }
     },
-    "Is a session active in ${applicationName}": {
+    "Mark a task as done in ${applicationName}": {
       "localizations": {
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hay una sesión activa en ${applicationName}"
+            "value": "Marca una tarea como hecha en ${applicationName}"
           }
         },
         "pt-BR": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tem uma sessão ativa no ${applicationName}"
+            "value": "Marque uma tarefa como concluída em ${applicationName}"
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tem uma sessão ativa no ${applicationName}"
+            "value": "Marca uma tarefa como feita em ${applicationName}"
+          }
+        }
+      }
+    },
+    "My plan for today in ${applicationName}": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mi plan para hoy en ${applicationName}"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Meu plano para hoje em ${applicationName}"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O meu plano para hoje em ${applicationName}"
           }
         }
       }
@@ -415,61 +437,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Pausar minha sessão no ${applicationName}"
-          }
-        }
-      }
-    },
-    "Resume focus in ${applicationName}": {
-      "extractionState": "extracted_with_value",
-      "localizations": {
-        "en": {
-          "stringSet": {
-            "state": "new",
-            "values": [
-              "Resume focus in ${applicationName}",
-              "Continue my session in ${applicationName}",
-              "Resume session in ${applicationName}"
-            ]
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Reanudar enfoque en ${applicationName}"
-          }
-        },
-        "pt-BR": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Retomar foco no ${applicationName}"
-          }
-        },
-        "pt": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Retomar foco no ${applicationName}"
-          }
-        }
-      }
-    },
-    "Resume session in ${applicationName}": {
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Reanudar sesión en ${applicationName}"
-          }
-        },
-        "pt-BR": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Retomar sessão no ${applicationName}"
-          }
-        },
-        "pt": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Retomar sessão no ${applicationName}"
           }
         }
       }
@@ -697,6 +664,28 @@
         }
       }
     },
+    "Today's tasks in ${applicationName}": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tareas de hoy en ${applicationName}"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tarefas de hoje em ${applicationName}"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tarefas de hoje em ${applicationName}"
+          }
+        }
+      }
+    },
     "Weekly focus summary in ${applicationName}": {
       "localizations": {
         "es": {
@@ -763,6 +752,39 @@
         }
       }
     },
+    "What are my tasks today in ${applicationName}": {
+      "extractionState": "extracted_with_value",
+      "localizations": {
+        "en": {
+          "stringSet": {
+            "state": "new",
+            "values": [
+              "What are my tasks today in ${applicationName}",
+              "Today's tasks in ${applicationName}",
+              "My plan for today in ${applicationName}"
+            ]
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "¿Qué tareas tengo hoy en ${applicationName}?"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quais são as minhas tarefas hoje em ${applicationName}?"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Que tarefas tenho hoje em ${applicationName}?"
+          }
+        }
+      }
+    },
     "What focus mode should I use in ${applicationName}": {
       "extractionState": "extracted_with_value",
       "localizations": {
@@ -792,28 +814,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Qual modo de foco devo usar no ${applicationName}"
-          }
-        }
-      }
-    },
-    "What's my current session in ${applicationName}": {
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Cuál es mi sesión actual en ${applicationName}"
-          }
-        },
-        "pt-BR": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Qual é minha sessão atual no ${applicationName}"
-          }
-        },
-        "pt": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Qual é minha sessão atual no ${applicationName}"
           }
         }
       }
