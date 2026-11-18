@@ -267,6 +267,11 @@ targets:
         ENABLE_HARDENED_RUNTIME: "YES"
         PROVISIONING_PROFILE_SPECIFIER: ""
         SWIFT_EMIT_LOC_STRINGS: "YES"
+        # The Dock tooltip (and process name) reads PRODUCT_NAME, not
+        # CFBundleName — without this the running app shows "PepinilloMac"
+        # even though the app menu says "Pepinillo" (#892; #876 fixed the
+        # menu side only). Target and scheme names stay PepinilloMac.
+        PRODUCT_NAME: Pepinillo
       configs:
         Debug:
           CODE_SIGN_ENTITLEMENTS: Mac/PepinilloMacDebug.entitlements
