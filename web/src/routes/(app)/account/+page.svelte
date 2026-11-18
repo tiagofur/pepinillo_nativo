@@ -103,6 +103,9 @@
 	</div>
 
 	<FocusSettings />
+	<a class="guides-link pressable" href="/guides">
+		📖 {t('landing.nav.guides')} →
+	</a>
 </section>
 
 <style>

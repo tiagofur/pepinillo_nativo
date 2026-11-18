@@ -211,7 +211,12 @@
 					placeholder={t('plan.search')}
 					aria-label={t('plan.search')}
 				/>
-				<kbd class="pt-kbd" aria-hidden="true">⌘K</kbd>
+				<button
+					class="pt-kbd pressable"
+					title={t('quickCapture.hint')}
+					aria-label={t('quickCapture.title')}
+					onclick={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }))}
+				>⌘K</button>
 			</label>
 			<span class="pt-group">
 				<button
@@ -585,10 +590,12 @@
 	.pt-kbd {
 		flex: none;
 		font-family: var(--font-mono);
-		font-size: 10px;
+		font-size: var(--text-2xs);
 		color: var(--faint);
 		border: 1px solid var(--border);
 		border-radius: 4px;
 		padding: 1px 5px;
+		background: none;
+		cursor: pointer;
 	}
 </style>

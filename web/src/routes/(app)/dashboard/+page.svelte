@@ -129,7 +129,7 @@
 				compact
 				options={PERIODS.map((p) => ({
 					id: String(p.days),
-					label: p.days === 7 ? t(p.key) : `${p.days}D`,
+					label: dashboard.periodGated(p.days) ? `🔒 ${p.days}D` : p.days === 7 ? t(p.key) : `${p.days}D`,
 					disabled: dashboard.periodGated(p.days),
 					title: dashboard.periodGated(p.days) ? t('common.proLocked') : undefined
 				}))}
