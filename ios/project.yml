@@ -43,6 +43,9 @@ settings:
       SWIFT_ACTIVE_COMPILATION_CONDITIONS: STAGING
     Release:
       SWIFT_ACTIVE_COMPILATION_CONDITIONS: ""
+      # App Store Connect warns (and Sentry cannot symbolicate) when Release
+      # archives ship without dSYMs — the xcodegen default is DWARF-only.
+      DEBUG_INFORMATION_FORMAT: dwarf-with-dsym
 
 configs:
   Debug: debug
