@@ -1469,6 +1469,8 @@ const es: Dict = {
 	'guides.list.android': 'Android',
 	'guides.list.wearos': 'Wear OS',
 	'guides.list.web': 'App web',
+	'guides.list.web.body': 'O guia completo da PWA: instalação, os quatro modos, tarefas com menus de contexto, o Painel, atalhos e offline-first.',
+	'guides.list.web.body': 'La guía completa de la PWA: instalación, los cuatro modos, tareas con menús contextuales, el Panel, atajos y offline-first.',
 	'guides.list.generic.body': 'La guía completa de esta plataforma está en camino.',
 	'sync.title': 'Sync cloud',
 	'sync.hint': 'Last-Write-Wins con el reloj del servidor, como en las apps nativas.',

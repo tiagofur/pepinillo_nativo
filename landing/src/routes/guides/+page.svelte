@@ -9,7 +9,7 @@
 		{ href: '/guides/watchos', title: 'guides.list.watchos', body: 'guides.list.generic.body', emoji: '⌚️', ready: false },
 		{ href: '/guides/android', title: 'guides.list.android', body: 'guides.list.generic.body', emoji: '🤖', ready: false },
 		{ href: '/guides/wearos', title: 'guides.list.wearos', body: 'guides.list.generic.body', emoji: '⌚️', ready: false },
-		{ href: '/guides/web', title: 'guides.list.web', body: 'guides.list.generic.body', emoji: '🌐', ready: false }
+		{ href: '/guides/web.html', title: 'guides.list.web', body: 'guides.list.web.body', emoji: '🌐', ready: true }
 	];
 </script>
 
