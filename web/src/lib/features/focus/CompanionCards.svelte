@@ -1,12 +1,11 @@
 <script lang="ts">
 	import { focus } from '$lib/stores/focus.svelte';
-	import { app } from '$lib/stores/app.svelte';
-	import { t } from '$lib/i18n/i18n.svelte';
+		import { t } from '$lib/i18n/i18n.svelte';
 	import { suggestMode } from '$lib/domain/intelligence/modeSuggest';
 	import { FREE_MODES } from '$lib/domain/entities/types';
 
 	const suggestion = suggestMode();
-	let suggestionLocked = $derived(!(FREE_MODES as readonly string[]).includes(suggestion.mode));
+	let suggestionUsable = $derived((FREE_MODES as readonly string[]).includes(suggestion.mode));
 
 	function fmtSeconds(sec: number): string {
 		const m = Math.floor(sec / 60);
@@ -14,102 +13,124 @@
 		const h = Math.floor(m / 60);
 		return `${h}h ${m % 60}m`;
 	}
+
+	// Mac Focus stage parity: ONE slim stat line under the controls — no cards.
+	let stats = $derived.by(() => {
+		const focusMin = focus.todayStat ? fmtSeconds(focus.todayStat.totalFocusSeconds) : '0m';
+		const sessions = focus.todayStat ? String(focus.todayStat.sessionsCompleted) : '0';
+		const streak = focus.streak > 0 ? String(focus.streak) : '—';
+		return [
+			{ icon: '⏱', label: t('companion.focusToday'), value: focusMin },
+			{ icon: '🌊', label: t('companion.sessionsToday'), value: sessions },
+			{ icon: '🔥', label: t('companion.streak'), value: streak },
+			{ icon: '🍅', label: t('companion.pomodoroNumber'), value: String(focus.cycle.pomodoroNumber) }
+		];
+	});
 </script>
 
-<div class="cards">
-	{#if focus.todayStat}
-		<div class="card stat">
-			<span class="value nums">{fmtSeconds(focus.todayStat.totalFocusSeconds)}</span>
-			<span class="label">{t('companion.focusToday')}</span>
-		</div>
-		<div class="card stat">
-			<span class="value nums">{focus.todayStat.sessionsCompleted}</span>
-			<span class="label">{t('companion.sessionsToday')}</span>
-		</div>
-	{:else}
-		<div class="card stat">
-			<span class="value nums">0m</span>
-			<span class="label">{t('companion.focusToday')}</span>
-		</div>
-		<div class="card stat">
-			<span class="value nums">0</span>
-			<span class="label">{t('companion.sessionsToday')}</span>
-		</div>
-	{/if}
-
-	<div class="card stat">
-		<span class="value">{focus.streak > 0 ? `🔥 ${focus.streak}` : '🌱'}</span>
-		<span class="label">{focus.streak > 0 ? t('companion.streak') : t('companion.streakEmpty')}</span>
-	</div>
-
-	<div class="card stat">
-		<span class="value nums">
-			🍅 {focus.cycle.pomodoroNumber}
+<div class="statline">
+	{#each stats as s (s.label)}
+		<span class="stat">
+			<span class="stat-label">{s.icon} {s.label}</span>
+			<span class="stat-value nums">{s.value}</span>
 		</span>
-		<span class="label">{t('companion.pomodoroNumber')}</span>
-	</div>
-
-	{#if focus.activeTask}
-		<div class="card task-card">
-			<span class="label">{t('companion.activeTask')}</span>
-			<span class="task-title">{focus.activeTask.title}</span>
-		</div>
-	{/if}
-
-	<button
-		class="card suggest pressable"
-		onclick={() => focus.selectMode(suggestion.mode)}
-		disabled={suggestionLocked}
-		title={suggestionLocked ? t('common.proLocked') : t('companion.suggest.apply')}
-	>
-		<span class="label">{t('companion.suggest.title')}</span>
-		<span class="task-title">
-			{t(`focus.suggest.${suggestion.reasonKey}`)}
-			{#if suggestionLocked}🔒{/if}
-		</span>
-	</button>
+	{/each}
 </div>
 
+{#if focus.activeTask}
+	<p class="task-line">
+		<span class="task-label">{t('companion.activeTask')}</span>
+		<span class="task-title">{focus.activeTask.title}</span>
+	</p>
+{/if}
+
+{#if suggestionUsable}
+	<button
+		class="suggest-line pressable"
+		onclick={() => focus.selectMode(suggestion.mode)}
+		title={t('companion.suggest.apply')}
+	>
+		<span class="suggest-label">{t('companion.suggest.title')}:</span>
+		<span class="suggest-value">{t(`focus.suggest.${suggestion.reasonKey}`)}</span>
+	</button>
+{/if}
+
 <style>
-	.cards {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-		gap: var(--space-3);
+	/* Mac Focus stage: one slim stat line — quiet surfaces, no cards */
+	.statline {
+		display: flex;
+		align-items: baseline;
+		justify-content: center;
+		gap: var(--space-5);
+		flex-wrap: wrap;
 		width: min(560px, 100%);
 	}
 
-	.card {
-		padding: var(--space-4);
-		display: flex;
-		flex-direction: column;
-		gap: var(--space-1);
+	.stat {
+		display: inline-flex;
+		align-items: baseline;
+		gap: var(--space-2);
 	}
 
-	.value {
-		font-size: var(--text-lg);
-		font-weight: 700;
-		letter-spacing: var(--tracking-tight);
-	}
-
-	.label {
-		color: var(--muted);
+	.stat-label {
 		font-size: var(--text-xs);
+		color: var(--muted);
 		font-weight: 600;
 	}
 
-	.task-card .task-title,
-	.suggest .task-title {
+	.stat-value {
+		font-family: var(--font-rounded);
+		font-size: var(--text-base);
 		font-weight: 650;
+		color: var(--ink-secondary);
+		font-variant-numeric: tabular-nums;
+	}
+
+	.task-line {
+		margin: 0;
+		display: flex;
+		align-items: baseline;
+		gap: var(--space-2);
 		font-size: var(--text-sm);
 	}
 
-	.suggest {
-		cursor: pointer;
-		text-align: start;
+	.task-label {
+		color: var(--muted);
+		font-weight: 600;
 	}
 
-	.suggest:disabled {
-		cursor: not-allowed;
-		color: var(--faint);
+	.task-title {
+		font-weight: 650;
+		color: var(--ink);
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+		max-width: 40ch;
+	}
+
+	.suggest-line {
+		display: flex;
+		align-items: baseline;
+		gap: var(--space-2);
+		border: none;
+		background: none;
+		padding: var(--space-1) var(--space-2);
+		border-radius: var(--radius-sm);
+		cursor: pointer;
+		font-size: var(--text-sm);
+	}
+
+	.suggest-line:hover {
+		background: var(--brand-softer);
+	}
+
+	.suggest-label {
+		color: var(--muted);
+		font-weight: 600;
+	}
+
+	.suggest-value {
+		color: var(--brand);
+		font-weight: 650;
 	}
 </style>

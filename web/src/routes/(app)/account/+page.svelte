@@ -147,4 +147,21 @@
 		color: var(--muted);
 		word-break: break-all;
 	}
+	.guides-link {
+		display: flex;
+		align-items: center;
+		gap: var(--space-2);
+		padding: var(--space-3) var(--space-4);
+		border: 1px solid var(--border);
+		border-radius: var(--radius-md);
+		background: var(--surface);
+		color: var(--brand);
+		font-weight: 650;
+		font-size: var(--text-sm);
+	}
+
+	.guides-link:hover {
+		text-decoration: none;
+		border-color: var(--brand);
+	}
 </style>

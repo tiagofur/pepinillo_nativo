@@ -49,6 +49,8 @@ export type MessageKey =
 	| 'plan.title'
 	| 'plan.add'
 	| 'plan.search'
+	| 'plan.upgradeCta'
+	| 'plan.pomodoros'
 	| 'plan.taskTitle'
 	| 'plan.newTask'
 	| 'plan.search.empty'
@@ -547,6 +549,8 @@ const en: Dict = {
 	'plan.title': 'Plan',
 	'plan.add': 'Add task',
 	'plan.search': 'Search tasks',
+	'plan.upgradeCta': 'See Everywhere',
+	'plan.pomodoros': 'Pomodoros',
 	'plan.taskTitle': 'Title',
 	'plan.newTask': 'New task',
 	'plan.search.empty': 'No tasks match your search',
@@ -554,7 +558,7 @@ const en: Dict = {
 	'plan.empty': 'No tasks yet. Add up to 3 active tasks on Free.',
 	'plan.capBlocked': 'Free allows up to 3 active tasks.',
 	'plan.upgradeTeaser':
-		'Need more than 3 active tasks, subtasks, or recurrence? Everywhere unlocks them after you restore on a store app.',
+		'Need more than 3 active tasks, subtasks, or recurrence? Everywhere unlocks them — see Plans in your account.',
 	'plan.priority': 'Priority',
 	'plan.energy': 'Energy',
 	'plan.estPomos': 'Est. pomodoros',
@@ -1054,6 +1058,8 @@ const es: Dict = {
 	'plan.title': 'Plan',
 	'plan.add': 'Agregar tarea',
 	'plan.search': 'Buscar tareas',
+	'plan.upgradeCta': 'Ver Everywhere',
+	'plan.pomodoros': 'Pomodoros',
 	'plan.taskTitle': 'Título',
 	'plan.newTask': 'Nueva tarea',
 	'plan.search.empty': 'Ninguna tarea coincide con tu búsqueda',
@@ -1061,7 +1067,7 @@ const es: Dict = {
 	'plan.empty': 'Sin tareas aún. En Free podés tener hasta 3 activas.',
 	'plan.capBlocked': 'Free permite hasta 3 tareas activas.',
 	'plan.upgradeTeaser':
-		'¿Más de 3 tareas activas, subtareas o recurrencia? Everywhere las desbloquea al restaurar en una app de tienda.',
+		'¿Más de 3 tareas activas, subtareas o recurrencia? Everywhere las desbloquea — mirá los planes en tu cuenta.',
 	'plan.priority': 'Prioridad',
 	'plan.energy': 'Energía',
 	'plan.estPomos': 'Pomodoros est.',
@@ -1561,6 +1567,8 @@ const pt: Dict = {
 	'plan.title': 'Plano',
 	'plan.add': 'Adicionar tarefa',
 	'plan.search': 'Buscar tarefas',
+	'plan.upgradeCta': 'Ver Everywhere',
+	'plan.pomodoros': 'Pomodoros',
 	'plan.taskTitle': 'Título',
 	'plan.newTask': 'Nova tarefa',
 	'plan.search.empty': 'Nenhuma tarefa corresponde à sua busca',
@@ -1568,7 +1576,7 @@ const pt: Dict = {
 	'plan.empty': 'Nenhuma tarefa ainda. No Free você pode ter até 3 ativas.',
 	'plan.capBlocked': 'Free permite até 3 tarefas ativas.',
 	'plan.upgradeTeaser':
-		'Precisa de mais de 3 tarefas ativas, subtarefas ou recorrência? Everywhere desbloqueia após restaurar em um app de loja.',
+		'Precisa de mais de 3 tarefas ativas, subtarefas ou recorrência? Everywhere desbloqueia — veja os planos na sua conta.',
 	'plan.priority': 'Prioridade',
 	'plan.energy': 'Energia',
 	'plan.estPomos': 'Pomodoros est.',

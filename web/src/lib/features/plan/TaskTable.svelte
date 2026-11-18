@@ -92,7 +92,7 @@
 		<span class="col-title" role="columnheader">{t('plan.taskTitle' as MessageKey)}</span>
 		<span class="col-pri" role="columnheader">{t('plan.priority')}</span>
 		<span class="col-energy" role="columnheader">{t('plan.energy')}</span>
-		<span class="col-pomo" role="columnheader">⏱</span>
+		<span class="col-pomo" role="columnheader">{t('plan.pomodoros' as MessageKey)}</span>
 		<span class="col-due" role="columnheader">{t('plan.dueDate')}</span>
 		<span class="col-actions" aria-hidden="true"></span>
 	</div>
@@ -191,7 +191,7 @@
 	.thead,
 	.trow {
 		display: grid;
-		grid-template-columns: 44px minmax(0, 1fr) 100px 140px 72px 110px 44px;
+		grid-template-columns: 44px minmax(0, 1fr) 100px 140px 84px 110px 44px;
 		align-items: center;
 		gap: var(--space-2);
 		padding: 0 var(--space-4);
