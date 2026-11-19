@@ -61,6 +61,8 @@ export type MessageKey =
 	| 'error.genericHint'
 	| 'plan.empty'
 	| 'plan.capBlocked'
+	| 'plan.capCounter'
+	| 'plan.capInline'
 	| 'plan.upgradeTeaser'
 	| 'plan.priority'
 	| 'plan.energy'
@@ -614,6 +616,8 @@ const en: Dict = {
 	'error.genericHint': 'Something went wrong — your data is safe. Back to the timer.',
 	'plan.empty': 'No tasks yet. Add up to 3 active tasks on Free.',
 	'plan.capBlocked': 'Free allows up to 3 active tasks.',
+	'plan.capCounter': '{n}/3 tasks',
+	'plan.capInline': 'Cap reached — this task was not saved.',
 	'plan.upgradeTeaser':
 		'Need more than 3 active tasks, subtasks, or recurrence? Everywhere unlocks them — see Plans in your account.',
 	'plan.priority': 'Priority',
@@ -1163,6 +1167,8 @@ const es: Dict = {
 	'error.genericHint': 'Algo salió mal — tus datos están a salvo. De vuelta al temporizador.',
 	'plan.empty': 'Sin tareas aún. En Free podés tener hasta 3 activas.',
 	'plan.capBlocked': 'Free permite hasta 3 tareas activas.',
+	'plan.capCounter': '{n}/3 tareas',
+	'plan.capInline': 'Cap alcanzado — esta tarea no se guardó.',
 	'plan.upgradeTeaser':
 		'¿Más de 3 tareas activas, subtareas o recurrencia? Everywhere las desbloquea — mirá los planes en tu cuenta.',
 	'plan.priority': 'Prioridad',
@@ -1712,6 +1718,8 @@ const pt: Dict = {
 	'error.genericHint': 'Algo deu errado — seus dados estão seguros. De volta ao temporizador.',
 	'plan.empty': 'Nenhuma tarefa ainda. No Free você pode ter até 3 ativas.',
 	'plan.capBlocked': 'Free permite até 3 tarefas ativas.',
+	'plan.capCounter': '{n}/3 tarefas',
+	'plan.capInline': 'Limite atingido — esta tarefa não foi salva.',
 	'plan.upgradeTeaser':
 		'Precisa de mais de 3 tarefas ativas, subtarefas ou recorrência? Everywhere desbloqueia — veja os planos na sua conta.',
 	'plan.priority': 'Prioridade',
