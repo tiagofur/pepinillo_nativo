@@ -9,7 +9,7 @@
 	];
 </script>
 
-<div class="lang" role="group">
+<div class="lang" role="group" aria-label="Idioma / Language">
 	{#each LOCALES as l (l.code)}
 		<button
 			class="lang-btn"

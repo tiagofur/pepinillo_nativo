@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { t } from '$lib/i18n/i18n.svelte';
-	import { APP_STORE_URL, PLAY_STORE_URL, WEB_APP_URL } from '$lib/domain/links';
+	import { APP_STORE_URL, PLAY_STORE_URL, WEB_APP_URL } from './links';
 	import DeviceFrame from './DeviceFrame.svelte';
 </script>
 
@@ -31,6 +31,7 @@
 			</a>
 		</div>
 		<p class="hint">{t('landing.hero.hint')}</p>
+		<p class="hint">{t('landing.download.pikle')}</p>
 	</div>
 
 	<div class="scene" role="img" aria-label={t('landing.hero.scene.label')}>
@@ -38,7 +39,12 @@
 			<DeviceFrame variant="iphone" src="/img/hero/iphone-focus.jpg" alt={t('landing.hero.scene.iphone')} />
 		</div>
 		<div class="sc-mac">
-			<DeviceFrame variant="mac" src="/guides/img/macos-focus-running.jpg" alt={t('landing.hero.scene.mac')} />
+			<DeviceFrame
+				variant="mac"
+				src="/guides/img/macos-focus-running.jpg"
+				alt={t('landing.hero.scene.mac')}
+				loading="eager"
+			/>
 		</div>
 		<div class="sc-watch">
 			<DeviceFrame variant="watch" src="/img/hero/watch-timer.jpg" alt={t('landing.hero.scene.watch')} />

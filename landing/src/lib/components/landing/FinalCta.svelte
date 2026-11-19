@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { t } from '$lib/i18n/i18n.svelte';
-	import { APP_STORE_URL, PLAY_STORE_URL, WEB_APP_URL } from '$lib/domain/links';
+	import { APP_STORE_URL, PLAY_STORE_URL, WEB_APP_URL } from './links';
 </script>
 
 <section class="final">

@@ -2,6 +2,7 @@
 	import { t } from '$lib/i18n/i18n.svelte';
 	import logoUrl from '$lib/assets/logo.svg';
 	import LangSelector from './LangSelector.svelte';
+	import { WEB_APP_URL } from './links';
 
 	let scrolled = $state(false);
 </script>
@@ -21,7 +22,7 @@
 	</nav>
 	<div class="top-actions">
 		<LangSelector />
-		<a class="btn btn-soft pressable btn-sm" href="https://app.pepinillo.app/focus">{t('landing.nav.open')}</a>
+		<a class="btn btn-soft pressable btn-sm" href={WEB_APP_URL}>{t('landing.nav.open')}</a>
 	</div>
 </header>
 
@@ -42,9 +43,8 @@
 	}
 
 	.top.scrolled {
-		background: var(--material-bg);
-		backdrop-filter: blur(20px) saturate(1.4);
-		-webkit-backdrop-filter: blur(20px) saturate(1.4);
+		/* matte, per the glass-hybrid rule: ambient glass only in Focus scenes */
+		background: var(--surface);
 		box-shadow: 0 1px 0 var(--hairline);
 	}
 

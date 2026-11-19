@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { t } from '$lib/i18n/i18n.svelte';
 	import type { MessageKey } from '$lib/i18n/messages';
-	import { UPGRADE_URL, WEB_APP_URL } from '$lib/domain/links';
+	import { UPGRADE_URL, WEB_APP_URL } from './links';
 
 	type Plan = {
 		key: 'free' | 'plus' | 'everywhere';

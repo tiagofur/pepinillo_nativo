@@ -9,8 +9,16 @@
 		src,
 		alt,
 		href,
+		loading = 'lazy',
 		class: klass = ''
-	}: { variant?: string; src: string; alt: string; href?: string; class?: string } = $props();
+	}: {
+		variant?: string;
+		src: string;
+		alt: string;
+		href?: string;
+		loading?: 'lazy' | 'eager';
+		class?: string;
+	} = $props();
 </script>
 
 {#if href}
@@ -19,11 +27,11 @@
 		href={href}
 		data-sveltekit-reload={href.endsWith('.html') ? true : undefined}
 	>
-		<img {src} {alt} loading="lazy" />
+		<img {src} {alt} {loading} />
 	</a>
 {:else}
 	<figure class="frame frame--{variant} {klass}">
-		<img {src} {alt} loading="lazy" />
+		<img {src} {alt} {loading} />
 	</figure>
 {/if}
 

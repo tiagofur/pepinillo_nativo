@@ -140,8 +140,6 @@ export type MessageKey =
 	| 'account.theme.forest'
 	| 'account.theme.ocean'
 	| 'account.theme.sunset'
-	| 'landing.openApp'
-	| 'landing.wipNote'
 	| 'common.wip.title'
 	| 'common.wip.body'
 	| 'common.proLocked'
@@ -428,9 +426,6 @@ export type MessageKey =
 	| 'landing.nav.guides'
 	| 'landing.nav.macmanual'
 	| 'landing.nav.pricing'
-	| 'landing.guides.title'
-	| 'landing.guides.sub'
-	| 'landing.guides.cta'
 	| 'landing.nav.open'
 	| 'landing.nav.home'
 	| 'landing.nav.faq'
@@ -441,7 +436,6 @@ export type MessageKey =
 	| 'landing.hero.sub'
 	| 'landing.hero.hint'
 	| 'landing.cta.web'
-	| 'landing.cta.stores'
 	| 'landing.flow.label'
 	| 'landing.flow.plan'
 	| 'landing.flow.focus'
@@ -455,13 +449,7 @@ export type MessageKey =
 	| 'landing.feat.stats.body'
 	| 'landing.feat.sync.title'
 	| 'landing.feat.sync.body'
-	| 'landing.download.title'
-	| 'landing.download.body'
-	| 'landing.download.ios'
-	| 'landing.download.android'
-	| 'landing.download.web'
 	| 'landing.pricing.title'
-	| 'landing.pricing.cta'
 	| 'landing.faq.title'
 	| 'landing.faq.offline.q'
 	| 'landing.faq.offline.a'
@@ -661,8 +649,6 @@ const en: Dict = {
 	'account.theme.forest': 'Forest',
 	'account.theme.ocean': 'Ocean',
 	'account.theme.sunset': 'Sunset',
-	'landing.openApp': 'Open the app',
-	'landing.wipNote': 'The new web app is being built with everything from the native apps.',
 	'common.wip.title': 'It arrives in the next batch',
 	'common.wip.body': 'This surface is being rebuilt with everything from the native apps.',
 	'common.proLocked': 'Pepinillo+ feature',
@@ -940,9 +926,6 @@ const en: Dict = {
 	'landing.nav.guides': 'Guides',
 	'landing.nav.macmanual': 'macOS manual',
 	'landing.nav.pricing': 'Pricing',
-	'landing.guides.title': 'Learn to use every corner',
-	'landing.guides.sub': 'The complete macOS user manual, with real screenshots of the app: from your first session to every keyboard shortcut.',
-	'landing.guides.cta': 'Read the macOS manual',
 	'landing.nav.open': 'Open app',
 	'landing.nav.home': 'Home',
 	'landing.nav.faq': 'FAQ',
@@ -994,7 +977,6 @@ const en: Dict = {
 	'landing.hero.sub': 'Pepinillo is a native companion for deep work on every screen you own — a pomodoro timer that respects your brain, tasks organized by energy, and stats that help you understand your patterns.',
 	'landing.hero.hint': 'The web app works offline and installs like a native app.',
 	'landing.cta.web': 'Open the web app',
-	'landing.cta.stores': 'Get the native apps',
 	'landing.flow.label': 'The Pepinillo flow',
 	'landing.flow.plan': 'Plan',
 	'landing.flow.focus': 'Focus',
@@ -1008,13 +990,7 @@ const en: Dict = {
 	'landing.feat.stats.body': 'Weekly and monthly reviews, focus score, personal records and milestones that fire exactly when you earn them. Your garden grows with every session.',
 	'landing.feat.sync.title': 'Everywhere you work',
 	'landing.feat.sync.body': 'Everywhere/AI+ syncs your data between devices the same way the native apps do, and adds AI insights: reviews, tips and predictions.',
-	'landing.download.title': 'Native on every screen',
-	'landing.download.body': 'Widgets, watch complications, Live Activities, menu bar — Pepinillo feels at home on each platform. This web app is the newest member of the family.',
-	'landing.download.ios': 'iPhone & iPad',
-	'landing.download.android': 'Android',
-	'landing.download.web': 'Use the web app',
 	'landing.pricing.title': 'Simple, honest pricing',
-	'landing.pricing.cta': 'See full pricing',
 	'landing.faq.title': 'Frequently asked',
 	'landing.faq.offline.q': 'Does it work offline?',
 	'landing.faq.offline.a': 'Yes — everything runs on your device first. The web app stores your data locally and works without connection; cloud sync is an Everywhere/AI+ extra.',
@@ -1220,8 +1196,6 @@ const es: Dict = {
 	'account.theme.forest': 'Bosque',
 	'account.theme.ocean': 'Océano',
 	'account.theme.sunset': 'Atardecer',
-	'landing.openApp': 'Abrir la app',
-	'landing.wipNote': 'La nueva web se está construyendo con todo de las apps nativas.',
 	'common.wip.title': 'Llega en el próximo lote',
 	'common.wip.body': 'Esta superficie se está reconstruyendo con todo de las apps nativas.',
 	'common.proLocked': 'Función de Pepinillo+',
@@ -1499,9 +1473,6 @@ const es: Dict = {
 	'landing.nav.guides': 'Guías',
 	'landing.nav.macmanual': 'Manual de macOS',
 	'landing.nav.pricing': 'Precios',
-	'landing.guides.title': 'Aprende a usar cada rincón',
-	'landing.guides.sub': 'El manual de usuario completo de macOS, con capturas reales de la app: desde tu primera sesión hasta cada atajo de teclado.',
-	'landing.guides.cta': 'Leer el manual de macOS',
 	'landing.nav.open': 'Abrir app',
 	'landing.nav.home': 'Inicio',
 	'landing.nav.faq': 'Preguntas',
@@ -1553,7 +1524,6 @@ const es: Dict = {
 	'landing.hero.sub': 'Pepinillo es un compañero nativo de deep work en todas tus pantallas — un timer que respeta tu cerebro, tareas organizadas por energía y estadísticas que te ayudan a entender tus patrones.',
 	'landing.hero.hint': 'La app web funciona offline y se instala como una app nativa.',
 	'landing.cta.web': 'Abrir la app web',
-	'landing.cta.stores': 'Descargar las apps nativas',
 	'landing.flow.label': 'El flujo Pepinillo',
 	'landing.flow.plan': 'Planificá',
 	'landing.flow.focus': 'Enfocate',
@@ -1567,13 +1537,7 @@ const es: Dict = {
 	'landing.feat.stats.body': 'Repasos semanales y mensuales, puntaje de foco, récords personales e hitos que se disparan justo cuando te los ganás. Tu huerto crece con cada sesión.',
 	'landing.feat.sync.title': 'En todos lados donde trabajás',
 	'landing.feat.sync.body': 'Everywhere/AI+ sincroniza tus datos entre dispositivos igual que las apps nativas, y suma insights de IA: repasos, tips y predicciones.',
-	'landing.download.title': 'Nativo en cada pantalla',
-	'landing.download.body': 'Widgets, complicaciones de reloj, Live Activities, barra de menú — Pepinillo se siente de casa en cada plataforma. Esta app web es el nuevo miembro de la familia.',
-	'landing.download.ios': 'iPhone y iPad',
-	'landing.download.android': 'Android',
-	'landing.download.web': 'Usar la app web',
 	'landing.pricing.title': 'Precios simples y honestos',
-	'landing.pricing.cta': 'Ver precios completos',
 	'landing.faq.title': 'Preguntas frecuentes',
 	'landing.faq.offline.q': '¿Funciona sin conexión?',
 	'landing.faq.offline.a': 'Sí — todo corre primero en tu dispositivo. La app web guarda tus datos localmente y funciona sin conexión; la sync cloud es un extra de Everywhere/AI+.',
@@ -1763,8 +1727,6 @@ const pt: Dict = {
 	'account.theme.forest': 'Floresta',
 	'account.theme.ocean': 'Oceano',
 	'account.theme.sunset': 'Pôr do sol',
-	'landing.openApp': 'Abrir o app',
-	'landing.wipNote': 'A nova web está sendo construída com tudo dos apps nativos.',
 	'common.wip.title': 'Chega no próximo lote',
 	'common.wip.body': 'Esta superfície está sendo reconstruída com tudo dos apps nativos.',
 	'common.proLocked': 'Recurso do Pepinillo+',
@@ -2042,9 +2004,6 @@ const pt: Dict = {
 	'landing.nav.guides': 'Guias',
 	'landing.nav.macmanual': 'Manual do macOS',
 	'landing.nav.pricing': 'Preços',
-	'landing.guides.title': 'Aprenda a usar cada canto',
-	'landing.guides.sub': 'O manual de usuário completo do macOS, com capturas de tela reais do app: da sua primeira sessão a cada atalho de teclado.',
-	'landing.guides.cta': 'Ler o manual do macOS',
 	'landing.nav.open': 'Abrir app',
 	'landing.nav.home': 'Início',
 	'landing.nav.faq': 'Perguntas',
@@ -2096,7 +2055,6 @@ const pt: Dict = {
 	'landing.hero.sub': 'Pepinillo é um companheiro nativo de deep work em todas as suas telas — um timer que respeita seu cérebro, tarefas organizadas por energia e estatísticas que ajudam você a entender seus padrões.',
 	'landing.hero.hint': 'O app web funciona offline e se instala como um app nativo.',
 	'landing.cta.web': 'Abrir o app web',
-	'landing.cta.stores': 'Baixar os apps nativos',
 	'landing.flow.label': 'O fluxo Pepinillo',
 	'landing.flow.plan': 'Planeje',
 	'landing.flow.focus': 'Concentre-se',
@@ -2110,13 +2068,7 @@ const pt: Dict = {
 	'landing.feat.stats.body': 'Revisões semanais e mensuais, pontuação de foco, recordes pessoais e marcos que disparam exatamente quando você os ganha. Sua horta cresce a cada sessão.',
 	'landing.feat.sync.title': 'Onde você trabalha',
 	'landing.feat.sync.body': 'Everywhere/AI+ sincroniza seus dados entre dispositivos como os apps nativos, e adiciona insights de IA: revisões, dicas e previsões.',
-	'landing.download.title': 'Nativo em cada tela',
-	'landing.download.body': 'Widgets, complicações de relógio, Live Activities, barra de menu — o Pepinillo se sente em casa em cada plataforma. Este app web é o novo membro da família.',
-	'landing.download.ios': 'iPhone e iPad',
-	'landing.download.android': 'Android',
-	'landing.download.web': 'Usar o app web',
 	'landing.pricing.title': 'Preços simples e honestos',
-	'landing.pricing.cta': 'Ver preços completos',
 	'landing.faq.title': 'Perguntas frequentes',
 	'landing.faq.offline.q': 'Funciona offline?',
 	'landing.faq.offline.a': 'Sim — tudo roda primeiro no seu dispositivo. O app web guarda seus dados localmente e funciona sem conexão; a sync cloud é um extra do Everywhere/AI+.',
