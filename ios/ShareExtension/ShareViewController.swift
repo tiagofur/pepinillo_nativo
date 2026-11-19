@@ -53,11 +53,13 @@ final class ShareViewController: UIViewController {
             $0.hasItemConformingToTypeIdentifier(UTType.text.identifier)
         }) {
             textProvider.loadItem(forTypeIdentifier: UTType.text.identifier) { [weak self] item, _ in
-                // Rich-text providers may hand an NSAttributedString or a
-                // plist dictionary instead of a String — coerce before giving up.
+                // Rich-text providers hand more than plain String: coerce the
+                // known shapes; anything else (untyped plist dictionaries)
+                // falls through to manual typing.
                 let text = (item as? String)
                     ?? (item as? NSAttributedString)?.string
                     ?? (item as? NSURL)?.absoluteString
+                    ?? Self.text(fromDictionary: item)
                     ?? ""
                 Task { @MainActor in self?.adoptCaptured(text) }
             }
@@ -82,14 +84,19 @@ final class ShareViewController: UIViewController {
         titleBinding.value = text.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
+    /// Some rich-text providers deliver `loadItem` payloads as a plist
+    /// dictionary keyed by type identifier.
+    private nonisolated static func text(fromDictionary item: Any?) -> String? {
+        guard let dict = item as? NSDictionary else { return nil }
+        if let typed = dict[UTType.text.identifier] as? String { return typed }
+        return dict.allValues.first(where: { $0 is String }) as? String
+    }
+
     // MARK: UI
 
     private func installView() {
         let view = ShareCaptureView(
-            title: Binding(
-                get: { [weak self] in self?.titleBinding.value ?? "" },
-                set: { [weak self] in self?.titleBinding.value = $0 }
-            ),
+            holder: titleBinding,
             onSave: { [weak self] title in self?.save(title) },
             onCancel: { [weak self] in self?.cancel() }
         )
@@ -134,7 +141,10 @@ final class ShareViewController: UIViewController {
 // MARK: - Binding holder
 //
 // The view controller owns the title so content resolution can update it in
-// place after the single SwiftUI mount (no re-install flash).
+// place after the single SwiftUI mount. The view observes the holder via
+// @ObservedObject — without that subscription, @Published invalidation never
+// reaches SwiftUI and the resolved text would never appear (judgment-day
+// round-2 finding).
 
 private final class BindingHolder: ObservableObject {
     @Published var value: String
@@ -144,7 +154,7 @@ private final class BindingHolder: ObservableObject {
 // MARK: - ShareCaptureView
 
 private struct ShareCaptureView: View {
-    @Binding var title: String
+    @ObservedObject var holder: BindingHolder
     let onSave: (String) -> Void
     let onCancel: () -> Void
 
@@ -168,7 +178,7 @@ private struct ShareCaptureView: View {
 
             TextField(
                 String(localized: "New task"),
-                text: $title,
+                text: $holder.value,
                 axis: .vertical
             )
             .textFieldStyle(.roundedBorder)
@@ -176,19 +186,19 @@ private struct ShareCaptureView: View {
             .lineLimit(1...4)
 
             Button {
-                onSave(title)
+                onSave(holder.value)
             } label: {
                 Label(String(localized: "Save"), systemImage: "checkmark")
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
-            .disabled(title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            .disabled(holder.value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
         }
         .padding(16)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         .padding(12)
         .onAppear {
-            if title.isEmpty { isFieldFocused = true }
+            if holder.value.isEmpty { isFieldFocused = true }
         }
     }
 }
