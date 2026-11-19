@@ -81,13 +81,13 @@
 		title={t('focus.chip.taskHelp')}
 	>
 		{#if focus.activeTask}
-			<Icon name="check-circle" size={15} class="chip-icon mode" />
+			<Icon name="check-circle" size={15} style="color: var(--mode-hex, var(--brand))" />
 			<span class="chip-label">{focus.activeTask.title}</span>
-			<Icon name="chevron" size={13} class="chip-icon dim" />
+			<Icon name="chevron" size={13} style="color: var(--faint)" />
 		{:else}
-			<Icon name="plus" size={15} class="chip-icon" />
+			<Icon name="plus" size={15} style="color: var(--muted)" />
 			{t('focus.noTask')}
-			<Icon name="chevron" size={13} class="chip-icon dim" />
+			<Icon name="chevron" size={13} style="color: var(--faint)" />
 		{/if}
 	</button>
 	<button
@@ -98,7 +98,7 @@
 		<Icon
 			name="waveform"
 			size={15}
-			class="chip-icon {app.prefs.soundscape !== 'none' ? 'mode' : ''}"
+			style="color: {app.prefs.soundscape !== 'none' ? 'var(--mode-hex, var(--brand))' : 'var(--muted)'}"
 		/>
 		<span class="chip-label">
 			{app.prefs.soundscape === 'none'
@@ -189,19 +189,6 @@
 
 	.extras .chip {
 		max-width: 260px;
-	}
-
-	.chip-icon {
-		color: var(--muted);
-		flex: none;
-	}
-
-	.chip-icon.mode {
-		color: var(--mode-hex, var(--brand));
-	}
-
-	.chip-icon.dim {
-		color: var(--faint);
 	}
 
 	.chip-label {

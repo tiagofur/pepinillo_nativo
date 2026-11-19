@@ -167,7 +167,12 @@ class FocusController {
 	ringProgress = $derived.by(() => {
 		const s = this.session;
 		if (this.mode === 'flowtime' || this.mode === 'stopwatch') {
-			if (s && s.status === 'running') {
+			// Native keeps the session "running" through pause/hold
+			// (FocusFeature:424-427): the arc freezes at the last position.
+			// holdFor preserves the ended phase's elapsedMs so the frozen
+			// arc survives the hold; liveElapsedMs already freezes paused.
+			const frozen = s && (s.status === 'paused' || (this.waiting && s.status === 'idle'));
+			if (s && (s.status === 'running' || frozen)) {
 				const cycleSeconds = 60 * 60;
 				const position = (liveElapsedMs(s, new Date()) / 1000) % cycleSeconds;
 				return Math.max(Math.min(position / cycleSeconds, 1), 0.04);
@@ -392,7 +397,11 @@ class FocusController {
 	private holdFor(next: FocusPhase): void {
 		this.nextAfterHold = next;
 		this.waiting = true;
-		this.session = { ...createIdleSession(this.mode, {}), phase: next };
+		// Keep the ended phase's elapsed: idle display reads targetMs only,
+		// but the count-up ring freezes at this position during the hold
+		// (native isRunning stays true through the hold).
+		const frozenMs = this.session ? liveElapsedMs(this.session, new Date()) : 0;
+		this.session = { ...createIdleSession(this.mode, {}), phase: next, elapsedMs: frozenMs };
 		this.refreshDisplay();
 	}
 

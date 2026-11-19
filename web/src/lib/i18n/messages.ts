@@ -87,7 +87,6 @@ export type MessageKey =
 	| 'plan.context.rename'
 	| 'plan.markIncomplete'
 	| 'plan.moveToday'
-	| 'plan.undo.completed'
 	| 'plan.undo.deleted'
 	| 'plan.reorder'
 	| 'dashboard.title'
@@ -98,6 +97,22 @@ export type MessageKey =
 	| 'dashboard.minutes'
 	| 'dashboard.extendedGated'
 	| 'dashboard.empty'
+	| 'dash.kpi.focusTime'
+	| 'dash.kpi.sessions'
+	| 'dash.kpi.streak'
+	| 'dash.kpi.tasksCompleted'
+	| 'dash.nextFocus.title'
+	| 'dash.nextFocus.start'
+	| 'dash.nextFocus.empty.title'
+	| 'dash.nextFocus.empty.body'
+	| 'dash.nextFocus.openPlan'
+	| 'dash.nextFocus.pomodoros'
+	| 'dash.streak.one'
+	| 'dash.streak.many'
+	| 'dash.focus.side'
+	| 'sessions.last5'
+	| 'sessions.stopped'
+	| 'sessions.empty.desc'
 	| 'dashboard.heroCta'
 	| 'dashboard.recent'
 	| 'dashboard.avgSession'
@@ -291,7 +306,6 @@ export type MessageKey =
 	| 'plan.empty.inbox'
 	| 'plan.empty.upcoming'
 	| 'plan.empty.completed'
-	| 'plan.empty.body'
 	| 'plan.empty.all.desc'
 	| 'plan.empty.today.desc'
 	| 'plan.empty.inbox.desc'
@@ -592,7 +606,6 @@ const en: Dict = {
 	'plan.context.rename': 'Rename Task',
 	'plan.markIncomplete': 'Mark Incomplete',
 	'plan.moveToday': 'Move to Today',
-	'plan.undo.completed': 'Task completed',
 	'plan.undo.deleted': '"{title}" deleted',
 	'dashboard.refresh': 'Refresh',
 	'error.notFound': 'This page wandered off the garden',
@@ -826,7 +839,6 @@ const en: Dict = {
 	'plan.empty.all': 'An Empty Garden',
 	'plan.empty.upcoming': 'Nothing Upcoming',
 	'plan.empty.completed': 'No Completed Tasks',
-	'plan.empty.body': 'Add your first task above — your garden starts here.',
 	'plan.empty.all.desc': 'Plant your first task — everything grows from there.',
 	'plan.empty.today.desc': 'Plant your first task — small seeds grow into deep focus.',
 	'plan.empty.inbox.desc': 'Everything captured is planted where it belongs. Enjoy the calm.',
@@ -1143,7 +1155,6 @@ const es: Dict = {
 	'plan.context.rename': 'Renombrar tarea',
 	'plan.markIncomplete': 'Marcar como incompleta',
 	'plan.moveToday': 'Mover a Hoy',
-	'plan.undo.completed': 'Tarea completada',
 	'plan.undo.deleted': '"{title}" eliminada',
 	'dashboard.refresh': 'Actualizar',
 	'error.notFound': 'Esta página se salió del huerto',
@@ -1393,7 +1404,6 @@ const es: Dict = {
 	'plan.empty.all': 'Un huerto vacío',
 	'plan.empty.upcoming': 'Nada próximo',
 	'plan.empty.completed': 'Sin tareas completadas',
-	'plan.empty.body': 'Agregá tu primera tarea arriba — tu huerto empieza acá.',
 	'plan.empty.all.desc': 'Plantá tu primera tarea: de ahí crece todo.',
 	'plan.empty.today.desc': 'Plantá tu primera tarea: las semillas pequeñas crecen hasta el foco profundo.',
 	'plan.empty.inbox.desc': 'Todo lo capturado está donde corresponde. Disfrutá la calma.',
@@ -1694,7 +1704,6 @@ const pt: Dict = {
 	'plan.context.rename': 'Renomear tarefa',
 	'plan.markIncomplete': 'Marcar como incompleta',
 	'plan.moveToday': 'Mover para Hoje',
-	'plan.undo.completed': 'Tarefa concluída',
 	'plan.undo.deleted': '"{title}" excluída',
 	'dashboard.refresh': 'Atualizar',
 	'error.notFound': 'Esta página saiu da horta',
@@ -1944,7 +1953,6 @@ const pt: Dict = {
 	'plan.empty.all': 'Uma horta vazia',
 	'plan.empty.upcoming': 'Nada próximo',
 	'plan.empty.completed': 'Sem tarefas concluídas',
-	'plan.empty.body': 'Adicione sua primeira tarefa acima — sua horta começa aqui.',
 	'plan.empty.all.desc': 'Plante sua primeira tarefa: daí tudo cresce.',
 	'plan.empty.today.desc': 'Plante sua primeira tarefa — pequenas sementes viram foco profundo.',
 	'plan.empty.inbox.desc': 'Tudo capturado está onde deve estar. Aproveite a calma.',

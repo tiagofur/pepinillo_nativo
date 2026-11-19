@@ -28,10 +28,11 @@
 
 	let countUp = $derived(focus.mode === 'flowtime' || focus.mode === 'stopwatch');
 
-	/** Mac TimerCircleView: dashed [4,10] overlay whenever the count-up ring
-	 * is not ticking (idle, hold, paused); countdown idle/hold shows the
-	 * full ring of the pending phase instead (FocusView.swift:1021-1031). */
-	let dashed = $derived(countUp && !focus.running);
+	/** Mac TimerCircleView: dashed [4,10] overlay at pure idle only —
+	 * pause/hold keep the frozen arc (native isRunning stays true through
+	 * both, FocusFeature:424-427); countdown idle/hold shows the full ring
+	 * of the pending phase instead (FocusView.swift:1021-1031). */
+	let dashed = $derived(countUp && !focus.running && !focus.paused && !focus.waiting);
 
 	/** Store-derived display arc (ringProgress): countdown depletes from
 	 * full; count-up fills its 60-minute cycle while running. `null` → no

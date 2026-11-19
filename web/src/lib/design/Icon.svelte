@@ -4,13 +4,18 @@
 	 * SF-Symbols-like weight: 1.8 stroke, round caps — reads native on
 	 * Apple and Android alike. 24×24 grid.
 	 */
-	let { name, size = 24 }: { name: string; size?: number } = $props();
+	let {
+		name,
+		size = 24,
+		style = ''
+	}: { name: string; size?: number; style?: string } = $props();
 </script>
 
 <svg
 	width={size}
 	height={size}
 	viewBox="0 0 24 24"
+	{style}
 	fill="none"
 	stroke="currentColor"
 	stroke-width="1.8"
