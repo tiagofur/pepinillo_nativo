@@ -122,7 +122,9 @@ class FocusController {
 		this.reevaluateStats(sessions);
 		this.detectGhost(sessions);
 		this.blockMinutes = app.prefs.timeBlockMinutes;
-		this.resetIdle();
+		// A session started from another surface (Plan "Start Focus") must
+		// survive this late init — only reset when nothing is live.
+		if (!this.session || this.session.status === 'idle') this.resetIdle();
 		this.startTicker();
 	}
 
@@ -155,6 +157,30 @@ class FocusController {
 		const elapsed = liveElapsedMs(s, new Date());
 		if (s.targetMs != null && s.targetMs > 0) return Math.min(1, Math.max(0, elapsed / s.targetMs));
 		return Math.min(1, elapsed / (25 * 60_000));
+	});
+	/** Display arc for the ring — Mac TimerCircleView.timerRingProgress
+	 * (FocusView.swift:1021): countdown rings start FULL and deplete
+	 * (idle/hold show the full ring of the pending phase); count-up rings
+	 * fill one 60-minute cycle while running (floor 4%) and show no arc
+	 * otherwise — the dashed overlay covers idle/hold/paused. `null` = no
+	 * arc layer. */
+	ringProgress = $derived.by(() => {
+		const s = this.session;
+		if (this.mode === 'flowtime' || this.mode === 'stopwatch') {
+			// Native keeps the session "running" through pause/hold
+			// (FocusFeature:424-427): the arc freezes at the last position.
+			// holdFor preserves the ended phase's elapsedMs so the frozen
+			// arc survives the hold; liveElapsedMs already freezes paused.
+			const frozen = s && (s.status === 'paused' || (this.waiting && s.status === 'idle'));
+			if (s && (s.status === 'running' || frozen)) {
+				const cycleSeconds = 60 * 60;
+				const position = (liveElapsedMs(s, new Date()) / 1000) % cycleSeconds;
+				return Math.max(Math.min(position / cycleSeconds, 1), 0.04);
+			}
+			return null;
+		}
+		if (!s || s.status === 'idle') return 1;
+		return Math.min(Math.max(1 - this.progress, 0), 1);
 	});
 	beforeLongBreak = $derived(pomodoroConfigFrom(app.prefs).beforeLongBreak);
 
@@ -371,7 +397,11 @@ class FocusController {
 	private holdFor(next: FocusPhase): void {
 		this.nextAfterHold = next;
 		this.waiting = true;
-		this.session = { ...createIdleSession(this.mode, {}), phase: next };
+		// Keep the ended phase's elapsed: idle display reads targetMs only,
+		// but the count-up ring freezes at this position during the hold
+		// (native isRunning stays true through the hold).
+		const frozenMs = this.session ? liveElapsedMs(this.session, new Date()) : 0;
+		this.session = { ...createIdleSession(this.mode, {}), phase: next, elapsedMs: frozenMs };
 		this.refreshDisplay();
 	}
 

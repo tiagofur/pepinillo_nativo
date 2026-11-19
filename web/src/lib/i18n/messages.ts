@@ -53,7 +53,6 @@ export type MessageKey =
 	| 'plan.pomodoros'
 	| 'plan.taskTitle'
 	| 'plan.newTask'
-	| 'plan.search.empty'
 	| 'plan.empty.all'
 	| 'dashboard.refresh'
 	| 'error.notFound'
@@ -84,6 +83,11 @@ export type MessageKey =
 	| 'plan.showOptions'
 	| 'plan.hideOptions'
 	| 'plan.focusTask'
+	| 'plan.focusSession'
+	| 'plan.context.rename'
+	| 'plan.markIncomplete'
+	| 'plan.moveToday'
+	| 'plan.undo.deleted'
 	| 'plan.reorder'
 	| 'dashboard.title'
 	| 'dashboard.subtitle'
@@ -93,6 +97,22 @@ export type MessageKey =
 	| 'dashboard.minutes'
 	| 'dashboard.extendedGated'
 	| 'dashboard.empty'
+	| 'dash.kpi.focusTime'
+	| 'dash.kpi.sessions'
+	| 'dash.kpi.streak'
+	| 'dash.kpi.tasksCompleted'
+	| 'dash.nextFocus.title'
+	| 'dash.nextFocus.start'
+	| 'dash.nextFocus.empty.title'
+	| 'dash.nextFocus.empty.body'
+	| 'dash.nextFocus.openPlan'
+	| 'dash.nextFocus.pomodoros'
+	| 'dash.streak.one'
+	| 'dash.streak.many'
+	| 'dash.focus.side'
+	| 'sessions.last5'
+	| 'sessions.stopped'
+	| 'sessions.empty.desc'
 	| 'dashboard.heroCta'
 	| 'dashboard.recent'
 	| 'dashboard.avgSession'
@@ -159,13 +179,26 @@ export type MessageKey =
 	| 'common.wip.body'
 	| 'common.proLocked'
 	| 'focus.phase.work'
+	| 'focus.phase.workNumbered'
+	| 'focus.phase.flow'
+	| 'focus.phase.freeform'
+	| 'focus.phase.block'
+	| 'focus.phase.flowBreak'
 	| 'focus.phase.shortBreak'
 	| 'focus.phase.longBreak'
+	| 'focus.a11y.remaining'
+	| 'focus.a11y.complete'
 	| 'focus.waitingBreak'
 	| 'focus.waitingWork'
-	| 'focus.startBreak'
-	| 'focus.startWork'
-	| 'focus.takeBreak'
+	| 'focus.startNext'
+	| 'focus.chip.soundscape'
+	| 'focus.chip.taskHelp'
+	| 'focus.chip.soundHelp'
+	| 'companion.stat.session'
+	| 'companion.stat.sessions'
+	| 'companion.stat.min'
+	| 'companion.stat.daystreak1'
+	| 'companion.stat.daystreak'
 	| 'focus.ghost.title'
 	| 'focus.ghost.body'
 	| 'focus.ghost.resume'
@@ -206,10 +239,7 @@ export type MessageKey =
 	| 'soundscape.lofi'
 	| 'soundscape.volume'
 	| 'soundscape.hint'
-	| 'companion.focusToday'
-	| 'companion.sessionsToday'
 	| 'companion.streak'
-	| 'companion.pomodoroNumber'
 	| 'companion.activeTask'
 	| 'companion.streakEmpty'
 	| 'companion.suggest.title'
@@ -251,6 +281,7 @@ export type MessageKey =
 	| 'plan.energySuggest'
 	| 'plan.energyHint'
 	| 'plan.due.today'
+	| 'plan.due.tomorrow'
 	| 'plan.due.overdue'
 	| 'plan.dueDate'
 	| 'plan.focusToday'
@@ -275,7 +306,14 @@ export type MessageKey =
 	| 'plan.empty.inbox'
 	| 'plan.empty.upcoming'
 	| 'plan.empty.completed'
-	| 'plan.empty.body'
+	| 'plan.empty.all.desc'
+	| 'plan.empty.today.desc'
+	| 'plan.empty.inbox.desc'
+	| 'plan.empty.upcoming.desc'
+	| 'plan.empty.completed.desc'
+	| 'plan.empty.search.title'
+	| 'plan.empty.search.desc'
+	| 'plan.empty.action.clear'
 	| 'quickCapture.title'
 	| 'quickCapture.placeholder'
 	| 'quickCapture.hint'
@@ -292,7 +330,6 @@ export type MessageKey =
 	| 'period.7'
 	| 'period.30'
 	| 'period.365'
-	| 'chart.week'
 	| 'chart.window'
 	| 'chart.modes'
 	| 'chart.day.sun'
@@ -308,7 +345,6 @@ export type MessageKey =
 	| 'dash.peakHour'
 	| 'dash.completion'
 	| 'dash.longest'
-	| 'dash.periodFocus'
 	| 'score.exceptional'
 	| 'score.strong'
 	| 'score.steady'
@@ -523,17 +559,26 @@ const en: Dict = {
 	'focus.start': 'Start',
 	'focus.pause': 'Pause',
 	'focus.resume': 'Resume',
-	'focus.skip': 'Skip',
-	'focus.complete': 'Complete',
-	'focus.endConfirm': 'End session?',
+	'focus.skip': 'Skip Phase',
+	'focus.complete': 'End Session',
+	'focus.endConfirm': 'End Session?',
 	'focus.reset': 'New session',
 	'focus.journal': 'Session journal',
 	'focus.linkTask': 'Link task',
-	'focus.noTask': 'No task',
+	'focus.noTask': 'Link Task',
 	'focus.mode.pomodoro': 'Pomodoro',
 	'focus.mode.stopwatch': 'Stopwatch',
 	'focus.mode.flowtime': 'Flowtime',
 	'focus.mode.timeblock': 'Time Block',
+	'focus.chip.soundscape': 'Soundscape',
+	'focus.chip.taskHelp': 'Link a task to this session',
+	'focus.chip.soundHelp': 'Choose an ambient soundscape',
+	'focus.startNext': 'Start next phase',
+	'companion.stat.session': 'session',
+	'companion.stat.sessions': 'sessions',
+	'companion.stat.min': 'min',
+	'companion.stat.daystreak1': 'day streak',
+	'companion.stat.daystreak': 'days streak',
 	'focus.mode.locked': 'Everywhere',
 	'focus.upgradeTeaser':
 		'Flowtime and Time Block unlock with Everywhere (subscribe or restore on iOS, Android, or Windows). No purchase on web yet.',
@@ -551,13 +596,17 @@ const en: Dict = {
 	'focus.phase.paused': 'Paused',
 	'focus.phase.completed': 'Done',
 	'plan.title': 'Plan',
-	'plan.add': 'Add task',
+	'plan.add': 'Add',
 	'plan.search': 'Search tasks',
 	'plan.upgradeCta': 'See Everywhere',
 	'plan.pomodoros': 'Pomodoros',
 	'plan.taskTitle': 'Title',
 	'plan.newTask': 'New task',
-	'plan.search.empty': 'No tasks match your search',
+	'plan.focusSession': 'Start Focus Session',
+	'plan.context.rename': 'Rename Task',
+	'plan.markIncomplete': 'Mark Incomplete',
+	'plan.moveToday': 'Move to Today',
+	'plan.undo.deleted': '"{title}" deleted',
 	'dashboard.refresh': 'Refresh',
 	'error.notFound': 'This page wandered off the garden',
 	'error.notFoundHint': 'The page you asked for does not exist — back to the timer.',
@@ -587,17 +636,33 @@ const en: Dict = {
 	'plan.listLabel': 'List',
 	'plan.showOptions': 'More',
 	'plan.hideOptions': 'Less',
-	'plan.focusTask': 'Focus',
+	'plan.focusTask': 'Start Focus',
 	'plan.reorder': 'Reorder',
 	'dashboard.title': 'Dashboard',
-	'dashboard.subtitle': 'Reflect on what worked',
+	'dashboard.subtitle': 'Your focus summary for today',
+	'dash.kpi.focusTime': 'Focus Time',
+	'dash.kpi.sessions': 'Sessions',
+	'dash.kpi.streak': 'Streak',
+	'dash.kpi.tasksCompleted': 'Tasks Completed',
+	'dash.nextFocus.title': 'Next Focus',
+	'dash.nextFocus.start': 'Start Next Focus',
+	'dash.nextFocus.empty.title': 'No task scheduled for today',
+	'dash.nextFocus.empty.body': 'Start a free session or choose a task in Plan.',
+	'dash.nextFocus.openPlan': 'Open Plan',
+	'dash.nextFocus.pomodoros': 'Pomodoros: {n}',
+	'dash.streak.one': '1 day streak',
+	'dash.streak.many': '{n} days streak',
+	'dash.focus.side': '{time} focused',
+	'sessions.last5': 'Last 5',
+	'sessions.stopped': 'Stopped',
+	'sessions.empty.desc': "Complete your first focus session and your garden's story begins here.",
 	'dashboard.today': 'Today',
 	'dashboard.last7': 'Last 7 days',
 	'dashboard.sessions': 'Sessions',
 	'dashboard.minutes': 'Focus minutes',
 	'dashboard.extendedGated':
 		'30-day and 1-year views unlock with Everywhere. Free shows today + last 7 days.',
-	'dashboard.empty': 'Complete a session to see your summary here.',
+	'dashboard.empty': "Complete your first focus session and your garden's story begins here.",
 	'dashboard.heroCta': 'Start focusing',
 	'dashboard.recent': 'Recent sessions',
 	'dashboard.avgSession': 'Avg min / session',
@@ -655,13 +720,17 @@ const en: Dict = {
 	'common.wip.body': 'This surface is being rebuilt with everything from the native apps.',
 	'common.proLocked': 'Pepinillo+ feature',
 	'focus.phase.work': 'Focus',
-	'focus.phase.shortBreak': 'Short break',
-	'focus.phase.longBreak': 'Long break',
+	'focus.phase.workNumbered': 'Focus {n}/{total}',
+	'focus.phase.flow': 'Flow',
+	'focus.phase.freeform': 'Free Focus',
+	'focus.phase.block': 'Time Block',
+	'focus.phase.flowBreak': 'Break',
+	'focus.phase.shortBreak': 'Short Break',
+	'focus.phase.longBreak': 'Long Break',
+	'focus.a11y.remaining': '{pct}% remaining',
+	'focus.a11y.complete': '{pct}% complete',
 	'focus.waitingBreak': 'Break ready when you are.',
 	'focus.waitingWork': 'Next focus phase is ready when you are.',
-	'focus.startBreak': 'Start break',
-	'focus.startWork': 'Start focus',
-	'focus.takeBreak': 'Take a break',
 	'focus.ghost.title': 'Unfinished session',
 	'focus.ghost.body': 'You left a {mode} session running ({time} recorded). Resume it or discard it.',
 	'focus.ghost.resume': 'Resume',
@@ -689,8 +758,8 @@ const en: Dict = {
 	'journal.skip': 'Skip',
 	'taskPicker.title': 'Focus on a task',
 	'taskPicker.empty': 'No active tasks yet — create some in Plan.',
-	'taskPicker.unlink': 'No linked task',
-	'soundscape.title': 'Soundscapes',
+	'taskPicker.unlink': 'Unlink Task',
+	'soundscape.title': 'Choose soundscape',
 	'soundscape.none': 'None',
 	'soundscape.rain': 'Rain',
 	'soundscape.forest': 'Forest',
@@ -702,11 +771,8 @@ const en: Dict = {
 	'soundscape.lofi': 'Lo-fi',
 	'soundscape.volume': 'Volume',
 	'soundscape.hint': 'Procedurally generated audio — synthesized live in your browser.',
-	'companion.focusToday': 'Focus today',
-	'companion.sessionsToday': 'Sessions today',
 	'companion.streak': 'Streak',
 	'companion.streakEmpty': 'Start your streak',
-	'companion.pomodoroNumber': 'Pomodoro #',
 	'companion.activeTask': 'Active task',
 	'companion.suggest.title': 'Suggested for now',
 	'companion.suggest.apply': 'Tap to apply',
@@ -747,8 +813,9 @@ const en: Dict = {
 	'plan.energySuggest': 'Suggest for now',
 	'plan.energyHint': 'Suggested energy right now: {energy}',
 	'plan.due.today': 'Today',
+	'plan.due.tomorrow': 'Tomorrow',
 	'plan.due.overdue': 'Overdue',
-	'plan.dueDate': 'Due date',
+	'plan.dueDate': 'Due',
 	'plan.focusToday': 'Focus today',
 	'plan.recurrence': 'Repeat',
 	'plan.recurrence.daily': 'Daily',
@@ -767,12 +834,19 @@ const en: Dict = {
 	'plan.analytics.focus': '{time} of focus',
 	'plan.deleteConfirm': 'Tap again to delete',
 	'plan.inspector': 'Task details',
-	'plan.empty.today': 'Nothing for today',
-	'plan.empty.inbox': 'Inbox zero',
-	'plan.empty.all': 'Nothing here yet',
-	'plan.empty.upcoming': 'Nothing scheduled ahead',
-	'plan.empty.completed': 'No harvest yet',
-	'plan.empty.body': 'Add your first task above — your garden starts here.',
+	'plan.empty.today': 'Your Garden Awaits',
+	'plan.empty.inbox': 'The Garden Is Quiet',
+	'plan.empty.all': 'An Empty Garden',
+	'plan.empty.upcoming': 'Nothing Upcoming',
+	'plan.empty.completed': 'No Completed Tasks',
+	'plan.empty.all.desc': 'Plant your first task — everything grows from there.',
+	'plan.empty.today.desc': 'Plant your first task — small seeds grow into deep focus.',
+	'plan.empty.inbox.desc': 'Everything captured is planted where it belongs. Enjoy the calm.',
+	'plan.empty.upcoming.desc': 'No deadlines on the horizon. Focus on what matters today.',
+	'plan.empty.completed.desc': 'Complete a task and your wins will show up here.',
+	'plan.empty.search.title': 'No Results',
+	'plan.empty.search.desc': 'No tasks match your search.',
+	'plan.empty.action.clear': 'Clear Search',
 	'quickCapture.title': 'Quick Capture',
 	'quickCapture.placeholder': 'Capture a task…',
 	'quickCapture.hint': '⌘K / Ctrl+K from anywhere',
@@ -789,7 +863,6 @@ const en: Dict = {
 	'period.7': '7D',
 	'period.30': '30D',
 	'period.365': '1Y',
-	'chart.week': 'This week',
 	'chart.window': 'Last {days} days',
 	'chart.modes': 'Modes',
 	'chart.day.sun': 'Sun',
@@ -805,7 +878,6 @@ const en: Dict = {
 	'dash.peakHour': 'Peak hour',
 	'dash.completion': 'Completion',
 	'dash.longest': 'Longest session',
-	'dash.periodFocus': 'Period focus',
 	'score.exceptional': 'Exceptional week',
 	'score.strong': 'Strong rhythm',
 	'score.steady': 'Steady',
@@ -818,8 +890,8 @@ const en: Dict = {
 	'achievements.deepDiver.title': 'Deep Diver',
 	'achievements.centuryClub.title': 'Century Club',
 	'achievements.earlyBird.title': 'Early Bird',
-	'sessions.recent': 'Recent sessions',
-	'sessions.empty': 'Complete your first session to see it here.',
+	'sessions.recent': 'Recent Sessions',
+	'sessions.empty': 'Nothing Harvested Yet',
 	'review.weekly': 'Weekly review',
 	'review.monthly': 'Monthly review',
 	'review.dataTab': 'Data',
@@ -1036,17 +1108,26 @@ const es: Dict = {
 	'focus.start': 'Iniciar',
 	'focus.pause': 'Pausar',
 	'focus.resume': 'Reanudar',
-	'focus.skip': 'Saltar',
-	'focus.complete': 'Completar',
-	'focus.endConfirm': '¿Terminar la sesión?',
+	'focus.skip': 'Saltar fase',
+	'focus.complete': 'Terminar sesión',
+	'focus.endConfirm': '¿Terminar sesión?',
 	'focus.reset': 'Nueva sesión',
 	'focus.journal': 'Diario de sesión',
 	'focus.linkTask': 'Vincular tarea',
-	'focus.noTask': 'Sin tarea',
+	'focus.noTask': 'Vincular tarea',
 	'focus.mode.pomodoro': 'Pomodoro',
 	'focus.mode.stopwatch': 'Cronómetro',
-	'focus.mode.flowtime': 'Flowtime',
-	'focus.mode.timeblock': 'Time Block',
+	'focus.mode.flowtime': 'Tiempo fluido',
+	'focus.mode.timeblock': 'Bloque de tiempo',
+	'focus.chip.soundscape': 'Ambiente sonoro',
+	'focus.chip.taskHelp': 'Vincular una tarea a esta sesión',
+	'focus.chip.soundHelp': 'Elegir paisaje sonoro',
+	'focus.startNext': 'Iniciar siguiente fase',
+	'companion.stat.session': 'sesión',
+	'companion.stat.sessions': 'sesiones',
+	'companion.stat.min': 'min',
+	'companion.stat.daystreak1': 'día de racha',
+	'companion.stat.daystreak': 'días de racha',
 	'focus.mode.locked': 'Everywhere',
 	'focus.upgradeTeaser':
 		'Flowtime y Time Block se desbloquean con Everywhere (suscribite o restaurá en iOS, Android o Windows). Aún no hay compra en web.',
@@ -1064,13 +1145,17 @@ const es: Dict = {
 	'focus.phase.paused': 'Pausado',
 	'focus.phase.completed': 'Listo',
 	'plan.title': 'Plan',
-	'plan.add': 'Agregar tarea',
+	'plan.add': 'Añadir',
 	'plan.search': 'Buscar tareas',
 	'plan.upgradeCta': 'Ver Everywhere',
 	'plan.pomodoros': 'Pomodoros',
 	'plan.taskTitle': 'Título',
 	'plan.newTask': 'Nueva tarea',
-	'plan.search.empty': 'Ninguna tarea coincide con tu búsqueda',
+	'plan.focusSession': 'Iniciar Sesión de Enfoque',
+	'plan.context.rename': 'Renombrar tarea',
+	'plan.markIncomplete': 'Marcar como incompleta',
+	'plan.moveToday': 'Mover a Hoy',
+	'plan.undo.deleted': '"{title}" eliminada',
 	'dashboard.refresh': 'Actualizar',
 	'error.notFound': 'Esta página se salió del huerto',
 	'error.notFoundHint': 'La página que pediste no existe — de vuelta al temporizador.',
@@ -1100,7 +1185,7 @@ const es: Dict = {
 	'plan.listLabel': 'Lista',
 	'plan.showOptions': 'Más',
 	'plan.hideOptions': 'Menos',
-	'plan.focusTask': 'Foco',
+	'plan.focusTask': 'Iniciar Enfoque',
 	'plan.reorder': 'Orden',
 	'dashboard.title': 'Panel',
 	'dashboard.today': 'Hoy',
@@ -1109,8 +1194,24 @@ const es: Dict = {
 	'dashboard.minutes': 'Minutos de foco',
 	'dashboard.extendedGated':
 		'Las vistas de 30 días y 1 año se desbloquean con Everywhere. Free muestra hoy + últimos 7 días.',
-	'dashboard.empty': 'Completá una sesión para ver el resumen aquí.',
-	'dashboard.subtitle': 'Reflexioná sobre lo que funcionó',
+	'dashboard.empty': 'Completá tu primera sesión de foco y la historia de tu huerto empieza acá.',
+	'dashboard.subtitle': 'Tu resumen de enfoque de hoy',
+	'dash.kpi.focusTime': 'Tiempo de Enfoque',
+	'dash.kpi.sessions': 'Sesiones',
+	'dash.kpi.streak': 'Racha',
+	'dash.kpi.tasksCompleted': 'Tareas completadas',
+	'dash.nextFocus.title': 'Próximo enfoque',
+	'dash.nextFocus.start': 'Comenzar próximo enfoque',
+	'dash.nextFocus.empty.title': 'Ninguna tarea programada para hoy',
+	'dash.nextFocus.empty.body': 'Iniciá una sesión libre o elegí una tarea en Plan.',
+	'dash.nextFocus.openPlan': 'Abrir Plan',
+	'dash.nextFocus.pomodoros': 'Pomodoros: {n}',
+	'dash.streak.one': '1 día de racha',
+	'dash.streak.many': '{n} días de racha',
+	'dash.focus.side': '{time} de enfoque',
+	'sessions.last5': 'Últimas 5',
+	'sessions.stopped': 'Detenida',
+	'sessions.empty.desc': 'Completá tu primera sesión de foco y la historia de tu huerto empieza acá.',
 	'dashboard.heroCta': 'Empezar a enfocarme',
 	'dashboard.recent': 'Sesiones recientes',
 	'dashboard.avgSession': 'Min prom. / sesión',
@@ -1184,13 +1285,17 @@ const es: Dict = {
 	'common.wip.body': 'Esta superficie se está reconstruyendo con todo de las apps nativas.',
 	'common.proLocked': 'Función de Pepinillo+',
 	'focus.phase.work': 'Enfoque',
-	'focus.phase.shortBreak': 'Descanso corto',
-	'focus.phase.longBreak': 'Descanso largo',
+	'focus.phase.workNumbered': 'Enfoque {n}/{total}',
+	'focus.phase.flow': 'Flujo',
+	'focus.phase.freeform': 'Enfoque Libre',
+	'focus.phase.block': 'Bloque de tiempo',
+	'focus.phase.flowBreak': 'Pausa',
+	'focus.phase.shortBreak': 'Pausa corta',
+	'focus.phase.longBreak': 'Pausa larga',
+	'focus.a11y.remaining': '{pct}% restante',
+	'focus.a11y.complete': '{pct}% completado',
 	'focus.waitingBreak': 'El descanso está listo cuando vos lo estés.',
 	'focus.waitingWork': 'El próximo enfoque está listo cuando vos lo estés.',
-	'focus.startBreak': 'Comenzar descanso',
-	'focus.startWork': 'Comenzar enfoque',
-	'focus.takeBreak': 'Tomar un descanso',
 	'focus.ghost.title': 'Sesión inconclusa',
 	'focus.ghost.body': 'Dejaste una sesión de {mode} corriendo ({time} registrados). Retomalá o descartala.',
 	'focus.ghost.resume': 'Retomar',
@@ -1218,8 +1323,8 @@ const es: Dict = {
 	'journal.skip': 'Omitir',
 	'taskPicker.title': 'Enfocate en una tarea',
 	'taskPicker.empty': 'Todavía no hay tareas activas — crealas en Plan.',
-	'taskPicker.unlink': 'Sin tarea vinculada',
-	'soundscape.title': 'Paisajes sonoros',
+	'taskPicker.unlink': 'Desvincular tarea',
+	'soundscape.title': 'Elegir paisaje sonoro',
 	'soundscape.none': 'Ninguno',
 	'soundscape.rain': 'Lluvia',
 	'soundscape.forest': 'Bosque',
@@ -1231,11 +1336,8 @@ const es: Dict = {
 	'soundscape.lofi': 'Lo-fi',
 	'soundscape.volume': 'Volumen',
 	'soundscape.hint': 'Audio generado por síntesis en tu navegador, sin descargas.',
-	'companion.focusToday': 'Enfoque hoy',
-	'companion.sessionsToday': 'Sesiones hoy',
 	'companion.streak': 'Racha',
 	'companion.streakEmpty': 'Empezá tu racha',
-	'companion.pomodoroNumber': 'Pomodoro n.º',
 	'companion.activeTask': 'Tarea activa',
 	'companion.suggest.title': 'Sugerido para ahora',
 	'companion.suggest.apply': 'Tocá para aplicarlo',
@@ -1276,8 +1378,9 @@ const es: Dict = {
 	'plan.energySuggest': 'Sugerir para ahora',
 	'plan.energyHint': 'Energía sugerida ahora: {energy}',
 	'plan.due.today': 'Hoy',
-	'plan.due.overdue': 'Atrasada',
-	'plan.dueDate': 'Fecha límite',
+	'plan.due.tomorrow': 'Mañana',
+	'plan.due.overdue': 'Vencida',
+	'plan.dueDate': 'Vence',
 	'plan.focusToday': 'Enfoque hoy',
 	'plan.recurrence': 'Repetir',
 	'plan.recurrence.daily': 'Diaria',
@@ -1296,12 +1399,19 @@ const es: Dict = {
 	'plan.analytics.focus': '{time} de foco',
 	'plan.deleteConfirm': 'Tocá de nuevo para eliminar',
 	'plan.inspector': 'Detalle de tarea',
-	'plan.empty.today': 'Nada para hoy',
-	'plan.empty.inbox': 'Bandeja en cero',
-	'plan.empty.all': 'Nada por aquí todavía',
-	'plan.empty.upcoming': 'Nada agendado',
-	'plan.empty.completed': 'Aún sin cosecha',
-	'plan.empty.body': 'Agregá tu primera tarea arriba — tu huerto empieza acá.',
+	'plan.empty.today': 'Tu huerto te espera',
+	'plan.empty.inbox': 'El huerto está en calma',
+	'plan.empty.all': 'Un huerto vacío',
+	'plan.empty.upcoming': 'Nada próximo',
+	'plan.empty.completed': 'Sin tareas completadas',
+	'plan.empty.all.desc': 'Plantá tu primera tarea: de ahí crece todo.',
+	'plan.empty.today.desc': 'Plantá tu primera tarea: las semillas pequeñas crecen hasta el foco profundo.',
+	'plan.empty.inbox.desc': 'Todo lo capturado está donde corresponde. Disfrutá la calma.',
+	'plan.empty.upcoming.desc': 'Sin plazos a la vista. Enfocate en lo que importa hoy.',
+	'plan.empty.completed.desc': 'Completá una tarea y tus logros aparecerán acá.',
+	'plan.empty.search.title': 'Sin resultados',
+	'plan.empty.search.desc': 'Ninguna tarea coincide con tu búsqueda.',
+	'plan.empty.action.clear': 'Limpiar búsqueda',
 	'quickCapture.title': 'Captura rápida',
 	'quickCapture.placeholder': 'Capturar una tarea…',
 	'quickCapture.hint': '⌘K / Ctrl+K desde cualquier lugar',
@@ -1318,7 +1428,6 @@ const es: Dict = {
 	'period.7': '7D',
 	'period.30': '30D',
 	'period.365': '1A',
-	'chart.week': 'Esta semana',
 	'chart.window': 'Últimos {days} días',
 	'chart.modes': 'Modos',
 	'chart.day.sun': 'Dom',
@@ -1334,7 +1443,6 @@ const es: Dict = {
 	'dash.peakHour': 'Hora pico',
 	'dash.completion': 'Finalización',
 	'dash.longest': 'Sesión más larga',
-	'dash.periodFocus': 'Foco del período',
 	'score.exceptional': 'Semana excepcional',
 	'score.strong': 'Ritmo sólido',
 	'score.steady': 'Constante',
@@ -1549,17 +1657,26 @@ const pt: Dict = {
 	'focus.start': 'Iniciar',
 	'focus.pause': 'Pausar',
 	'focus.resume': 'Retomar',
-	'focus.skip': 'Pular',
-	'focus.complete': 'Concluir',
-	'focus.endConfirm': 'Encerrar a sessão?',
+	'focus.skip': 'Pular fase',
+	'focus.complete': 'Encerrar sessão',
+	'focus.endConfirm': 'Encerrar sessão?',
 	'focus.reset': 'Nova sessão',
 	'focus.journal': 'Diário da sessão',
 	'focus.linkTask': 'Vincular tarefa',
-	'focus.noTask': 'Sem tarefa',
+	'focus.noTask': 'Vincular tarefa',
 	'focus.mode.pomodoro': 'Pomodoro',
 	'focus.mode.stopwatch': 'Cronômetro',
-	'focus.mode.flowtime': 'Flowtime',
-	'focus.mode.timeblock': 'Time Block',
+	'focus.mode.flowtime': 'Fluxo',
+	'focus.mode.timeblock': 'Bloco de tempo',
+	'focus.chip.soundscape': 'Ambiente sonoro',
+	'focus.chip.taskHelp': 'Vincular uma tarefa a esta sessão',
+	'focus.chip.soundHelp': 'Escolher um ambiente sonoro',
+	'focus.startNext': 'Iniciar próxima fase',
+	'companion.stat.session': 'sessão',
+	'companion.stat.sessions': 'sessões',
+	'companion.stat.min': 'min',
+	'companion.stat.daystreak1': 'dia de sequência',
+	'companion.stat.daystreak': 'dias de sequência',
 	'focus.mode.locked': 'Everywhere',
 	'focus.upgradeTeaser':
 		'Flowtime e Time Block desbloqueiam com Everywhere (assine ou restaure no iOS, Android ou Windows). Ainda sem compra na web.',
@@ -1577,13 +1694,17 @@ const pt: Dict = {
 	'focus.phase.paused': 'Pausado',
 	'focus.phase.completed': 'Concluído',
 	'plan.title': 'Plano',
-	'plan.add': 'Adicionar tarefa',
+	'plan.add': 'Adicionar',
 	'plan.search': 'Buscar tarefas',
 	'plan.upgradeCta': 'Ver Everywhere',
 	'plan.pomodoros': 'Pomodoros',
 	'plan.taskTitle': 'Título',
 	'plan.newTask': 'Nova tarefa',
-	'plan.search.empty': 'Nenhuma tarefa corresponde à sua busca',
+	'plan.focusSession': 'Iniciar Sessão de Foco',
+	'plan.context.rename': 'Renomear tarefa',
+	'plan.markIncomplete': 'Marcar como incompleta',
+	'plan.moveToday': 'Mover para Hoje',
+	'plan.undo.deleted': '"{title}" excluída',
 	'dashboard.refresh': 'Atualizar',
 	'error.notFound': 'Esta página saiu da horta',
 	'error.notFoundHint': 'A página pedida não existe — de volta ao temporizador.',
@@ -1613,7 +1734,7 @@ const pt: Dict = {
 	'plan.listLabel': 'Lista',
 	'plan.showOptions': 'Mais',
 	'plan.hideOptions': 'Menos',
-	'plan.focusTask': 'Foco',
+	'plan.focusTask': 'Iniciar Foco',
 	'plan.reorder': 'Ordem',
 	'dashboard.title': 'Painel',
 	'dashboard.today': 'Hoje',
@@ -1622,8 +1743,24 @@ const pt: Dict = {
 	'dashboard.minutes': 'Minutos de foco',
 	'dashboard.extendedGated':
 		'Visões de 30 dias e 1 ano desbloqueiam com Everywhere. Free mostra hoje + últimos 7 dias.',
-	'dashboard.empty': 'Conclua uma sessão para ver o resumo aqui.',
-	'dashboard.subtitle': 'Reflita sobre o que funcionou',
+	'dashboard.empty': 'Conclua sua primeira sessão de foco e a história da sua horta começa aqui.',
+	'dashboard.subtitle': 'Seu resumo de foco de hoje',
+	'dash.kpi.focusTime': 'Tempo de Foco',
+	'dash.kpi.sessions': 'Sessões',
+	'dash.kpi.streak': 'Sequência',
+	'dash.kpi.tasksCompleted': 'Tarefas concluídas',
+	'dash.nextFocus.title': 'Próximo foco',
+	'dash.nextFocus.start': 'Iniciar próximo foco',
+	'dash.nextFocus.empty.title': 'Nenhuma tarefa agendada para hoje',
+	'dash.nextFocus.empty.body': 'Inicie uma sessão livre ou escolha uma tarefa no Plano.',
+	'dash.nextFocus.openPlan': 'Abrir Plano',
+	'dash.nextFocus.pomodoros': 'Pomodoros: {n}',
+	'dash.streak.one': '1 dia de sequência',
+	'dash.streak.many': '{n} dias de sequência',
+	'dash.focus.side': '{time} de foco',
+	'sessions.last5': 'Últimas 5',
+	'sessions.stopped': 'Interrompida',
+	'sessions.empty.desc': 'Conclua sua primeira sessão de foco e a história da sua horta começa aqui.',
 	'dashboard.heroCta': 'Começar a focar',
 	'dashboard.recent': 'Sessões recentes',
 	'dashboard.avgSession': 'Min méd. / sessão',
@@ -1697,13 +1834,17 @@ const pt: Dict = {
 	'common.wip.body': 'Esta superfície está sendo reconstruída com tudo dos apps nativos.',
 	'common.proLocked': 'Recurso do Pepinillo+',
 	'focus.phase.work': 'Foco',
+	'focus.phase.workNumbered': 'Foco {n}/{total}',
+	'focus.phase.flow': 'Fluxo',
+	'focus.phase.freeform': 'Foco Livre',
+	'focus.phase.block': 'Bloco de tempo',
+	'focus.phase.flowBreak': 'Pausa',
 	'focus.phase.shortBreak': 'Pausa curta',
 	'focus.phase.longBreak': 'Pausa longa',
+	'focus.a11y.remaining': '{pct}% restante',
+	'focus.a11y.complete': '{pct}% concluído',
 	'focus.waitingBreak': 'A pausa fica pronta quando você estiver pronto.',
 	'focus.waitingWork': 'O próximo foco fica pronto quando você estiver pronto.',
-	'focus.startBreak': 'Iniciar pausa',
-	'focus.startWork': 'Iniciar foco',
-	'focus.takeBreak': 'Fazer uma pausa',
 	'focus.ghost.title': 'Sessão inacabada',
 	'focus.ghost.body': 'Você deixou uma sessão de {mode} rodando ({time} registrados). Retome ou descarte.',
 	'focus.ghost.resume': 'Retomar',
@@ -1731,8 +1872,8 @@ const pt: Dict = {
 	'journal.skip': 'Pular',
 	'taskPicker.title': 'Focar em uma tarefa',
 	'taskPicker.empty': 'Ainda não há tarefas ativas — crie-as no Plano.',
-	'taskPicker.unlink': 'Sem tarefa vinculada',
-	'soundscape.title': 'Paisagens sonoras',
+	'taskPicker.unlink': 'Desvincular tarefa',
+	'soundscape.title': 'Escolher paisagem sonora',
 	'soundscape.none': 'Nenhuma',
 	'soundscape.rain': 'Chuva',
 	'soundscape.forest': 'Floresta',
@@ -1744,11 +1885,8 @@ const pt: Dict = {
 	'soundscape.lofi': 'Lo-fi',
 	'soundscape.volume': 'Volume',
 	'soundscape.hint': 'Áudio gerado por síntese no seu navegador, sem downloads.',
-	'companion.focusToday': 'Foco hoje',
-	'companion.sessionsToday': 'Sessões hoje',
 	'companion.streak': 'Sequência',
 	'companion.streakEmpty': 'Comece sua sequência',
-	'companion.pomodoroNumber': 'Pomodoro n.º',
 	'companion.activeTask': 'Tarefa ativa',
 	'companion.suggest.title': 'Sugerido para agora',
 	'companion.suggest.apply': 'Toque para aplicar',
@@ -1789,8 +1927,9 @@ const pt: Dict = {
 	'plan.energySuggest': 'Sugerir para agora',
 	'plan.energyHint': 'Energia sugerida agora: {energy}',
 	'plan.due.today': 'Hoje',
-	'plan.due.overdue': 'Atrasada',
-	'plan.dueDate': 'Data limite',
+	'plan.due.tomorrow': 'Amanhã',
+	'plan.due.overdue': 'Vencida',
+	'plan.dueDate': 'Vence',
 	'plan.focusToday': 'Foco hoje',
 	'plan.recurrence': 'Repetir',
 	'plan.recurrence.daily': 'Diária',
@@ -1809,12 +1948,19 @@ const pt: Dict = {
 	'plan.analytics.focus': '{time} de foco',
 	'plan.deleteConfirm': 'Toque de novo para excluir',
 	'plan.inspector': 'Detalhes da tarefa',
-	'plan.empty.today': 'Nada para hoje',
-	'plan.empty.inbox': 'Caixa zerada',
-	'plan.empty.all': 'Nada por aqui ainda',
-	'plan.empty.upcoming': 'Nada agendado',
-	'plan.empty.completed': 'Ainda sem colheita',
-	'plan.empty.body': 'Adicione sua primeira tarefa acima — sua horta começa aqui.',
+	'plan.empty.today': 'Sua horta te espera',
+	'plan.empty.inbox': 'A horta está calma',
+	'plan.empty.all': 'Uma horta vazia',
+	'plan.empty.upcoming': 'Nada próximo',
+	'plan.empty.completed': 'Sem tarefas concluídas',
+	'plan.empty.all.desc': 'Plante sua primeira tarefa: daí tudo cresce.',
+	'plan.empty.today.desc': 'Plante sua primeira tarefa — pequenas sementes viram foco profundo.',
+	'plan.empty.inbox.desc': 'Tudo capturado está onde deve estar. Aproveite a calma.',
+	'plan.empty.upcoming.desc': 'Sem prazos no horizonte. Foque no que importa hoje.',
+	'plan.empty.completed.desc': 'Conclua uma tarefa e suas vitórias aparecerão aqui.',
+	'plan.empty.search.title': 'Sem resultados',
+	'plan.empty.search.desc': 'Nenhuma tarefa corresponde à sua busca.',
+	'plan.empty.action.clear': 'Limpar busca',
 	'quickCapture.title': 'Captura rápida',
 	'quickCapture.placeholder': 'Capturar uma tarefa…',
 	'quickCapture.hint': '⌘K / Ctrl+K de qualquer lugar',
@@ -1831,7 +1977,6 @@ const pt: Dict = {
 	'period.7': '7D',
 	'period.30': '30D',
 	'period.365': '1A',
-	'chart.week': 'Esta semana',
 	'chart.window': 'Últimos {days} dias',
 	'chart.modes': 'Modos',
 	'chart.day.sun': 'Dom',
@@ -1847,7 +1992,6 @@ const pt: Dict = {
 	'dash.peakHour': 'Hora de pico',
 	'dash.completion': 'Conclusão',
 	'dash.longest': 'Sessão mais longa',
-	'dash.periodFocus': 'Foco do período',
 	'score.exceptional': 'Semana excepcional',
 	'score.strong': 'Ritmo forte',
 	'score.steady': 'Constante',

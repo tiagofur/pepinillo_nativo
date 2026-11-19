@@ -4,13 +4,18 @@
 	 * SF-Symbols-like weight: 1.8 stroke, round caps — reads native on
 	 * Apple and Android alike. 24×24 grid.
 	 */
-	let { name, size = 24 }: { name: string; size?: number } = $props();
+	let {
+		name,
+		size = 24,
+		style = ''
+	}: { name: string; size?: number; style?: string } = $props();
 </script>
 
 <svg
 	width={size}
 	height={size}
 	viewBox="0 0 24 24"
+	{style}
 	fill="none"
 	stroke="currentColor"
 	stroke-width="1.8"
@@ -91,5 +96,30 @@
 	{:else if name === 'refresh'}
 		<path d="M20.5 12a8.5 8.5 0 1 1-2.5-6" />
 		<path d="M18.5 2.5v4h-4" />
+	{:else if name === 'chevron'}
+		<path d="M6 9l6 6 6-6" />
+	{:else if name === 'waveform'}
+		<path d="M3 12h2" />
+		<path d="M8 8v8" />
+		<path d="M12 5v14" />
+		<path d="M16 8v8" />
+		<path d="M19 12h2" />
+	{:else if name === 'cup'}
+		<path d="M5 8h12v5a5 5 0 01-5 5h-2a5 5 0 01-5-5V8z" />
+		<path d="M17 9h1.5a2.5 2.5 0 010 5H17" />
+		<path d="M7 21h8" />
+	{:else if name === 'clock'}
+		<circle cx="12" cy="12" r="8.5" />
+		<path d="M12 7.5V12l3 2" />
+	{:else if name === 'flame'}
+		<path d="M12 3c1 3-2 4.5-2 7a4 4 0 008 0c0-1.5-.6-2.6-1.4-3.6C15.4 8 14 8.6 14 10" />
+		<path d="M8 13.5A6.5 6.5 0 0012 21a6.5 6.5 0 004-7.5" />
+	{:else if name === 'checklist'}
+		<path d="M4 6.5l1.4 1.4L8 5.3" />
+		<path d="M4 12.5l1.4 1.4L8 11.3" />
+		<path d="M4 18.5l1.4 1.4L8 17.3" />
+		<path d="M11 6.5h9" />
+		<path d="M11 12.5h9" />
+		<path d="M11 18.5h9" />
 	{/if}
 </svg>

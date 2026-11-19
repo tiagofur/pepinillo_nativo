@@ -56,7 +56,7 @@
 
 <div class="charts">
 	<div class="card chart-card">
-		<h3>{periodDays === 7 ? t('chart.week') : t('chart.window', { days: periodDays })}</h3>
+		<h3>{t('chart.window', { days: periodDays })}</h3>
 		<div class="week-days" class:compact={!showDayBars}>
 			{#each stats.weekly as d, i (d.date)}
 				<div class="week-col">
@@ -76,7 +76,7 @@
 			{/each}
 		</div>
 		<div class="chart-summary">
-			<span class="cs-total"><span class="nums">{fmtMin(weekTotal)}</span> {periodDays === 7 ? t('chart.week') : t('chart.window', { days: periodDays })}</span>
+			<span class="cs-total"><span class="nums">{fmtMin(weekTotal)}</span> {t('chart.window', { days: periodDays })}</span>
 			<span class="cs-best">{t('dash.bestDay')}: <span class="nums">{bestDayLabel}</span></span>
 		</div>
 	</div>

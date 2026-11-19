@@ -1,10 +1,12 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { goto } from '$app/navigation';
 	import { focus } from '$lib/stores/focus.svelte';
 	import { app } from '$lib/stores/app.svelte';
 	import { t } from '$lib/i18n/i18n.svelte';
 	import Icon from '$lib/design/Icon.svelte';
 	import FocusRing from '$lib/features/focus/FocusRing.svelte';
+	import FocusChips from '$lib/features/focus/FocusChips.svelte';
 	import Overlays from '$lib/features/focus/Overlays.svelte';
 	import Sheets from '$lib/features/focus/Sheets.svelte';
 	import CompanionCards from '$lib/features/focus/CompanionCards.svelte';
@@ -12,6 +14,7 @@
 	import PaneToolbar from '$lib/features/shell/PaneToolbar.svelte';
 	import Segmented from '$lib/design/Segmented.svelte';
 	import { FREE_MODES, type FocusMode } from '$lib/domain/entities/types';
+	import { isBreakPhase } from '$lib/domain/focus/phases';
 	import type { MessageKey } from '$lib/i18n/messages';
 
 	const MODES: { id: FocusMode; key: MessageKey; color: string }[] = [
@@ -79,6 +82,23 @@
 	let waitingLabel = $derived(
 		focus.nextAfterHold !== 'work' ? t('focus.waitingBreak') : t('focus.waitingWork')
 	);
+
+	/** Mac showsSkip (MacFocusView:235): Skip only where it applies — an
+	 * active Flowtime flow or any break phase. Pomodoro/TimeBlock/Stopwatch
+	 * work shows only End Session. */
+	let flowWork = $derived(focus.mode === 'flowtime' && focus.phase === 'work');
+	let skipVisible = $derived(
+		focus.mode === 'flowtime' ? flowWork || isBreakPhase(focus.phase) : isBreakPhase(focus.phase)
+	);
+
+	/** Mac parity: locked modes stay selectable and surface the paywall. */
+	function pickMode(id: FocusMode): void {
+		if (!(FREE_MODES as readonly string[]).includes(id)) {
+			void goto('/upgrade');
+			return;
+		}
+		focus.selectMode(id);
+	}
 </script>
 
 <svelte:head>
@@ -96,108 +116,101 @@
 		<div class="blob s"></div>
 	</div>
 
-	<div class="scene">
-		<!-- Mac window toolbar: centered mode segmented, empty while a session runs -->
-		<PaneToolbar title={t('focus.title')}>
-			{#snippet center()}
-				{#if focus.idle && !focus.waiting}
-					<Segmented
-						options={MODES.map((m) => ({
-							id: m.id,
-							label: t(m.key),
-							disabled: !(FREE_MODES as readonly string[]).includes(m.id) || !focus.idle
-						}))}
-						value={focus.mode}
-						onchange={(id) => focus.selectMode(id as FocusMode)}
-					/>
-				{/if}
-			{/snippet}
-		</PaneToolbar>
-
-		<header class="modes" role="toolbar" aria-label={t('focus.title')}>
-			{#each MODES as m (m.id)}
-				{@const free = (FREE_MODES as readonly string[]).includes(m.id)}
-				<button
-					class="chip pressable"
-					aria-pressed={focus.mode === m.id}
-					class:is-active={focus.mode === m.id}
-					class:is-locked={!free}
-					disabled={!free || !focus.idle}
-					onclick={() => focus.selectMode(m.id)}
-					title={free ? t(m.key) : t('focus.mode.locked')}
-				>
-					{#if free}
-						<span class="chip-dot" style="--chip-dot-color: {m.color}"></span>
-					{:else}
-						<Icon name="lock" size={14} />
+		<div class="scene">
+			<!-- Mac window toolbar: centered mode segmented, visible whenever no
+				 session is RUNNING (hold and pause included — MacFocusView:92) -->
+			<PaneToolbar title={t('focus.title')}>
+				{#snippet center()}
+					{#if !focus.running}
+						<Segmented
+							options={MODES.map((m) => ({ id: m.id, label: t(m.key) }))}
+							value={focus.mode}
+							onchange={(id) => pickMode(id as FocusMode)}
+						/>
 					{/if}
-					{t(m.key)}
-				</button>
-			{/each}
-		</header>
+				{/snippet}
+			</PaneToolbar>
 
-		<Overlays />
+			<header class="modes" role="toolbar" aria-label={t('focus.title')}>
+				{#each MODES as m (m.id)}
+					{@const free = (FREE_MODES as readonly string[]).includes(m.id)}
+					<button
+						class="chip pressable"
+						aria-pressed={focus.mode === m.id}
+						class:is-active={focus.mode === m.id}
+						class:is-locked={!free}
+						onclick={() => pickMode(m.id)}
+						title={free ? t(m.key) : t('common.proLocked')}
+					>
+						<span class="chip-dot" style="--chip-dot-color: {m.color}"></span>
+						{t(m.key)}
+					</button>
+				{/each}
+			</header>
 
-		<FocusRing />
+			<Overlays />
 
-		{#if focus.waiting}
-			<p class="waiting">{waitingLabel}</p>
-		{/if}
+			<FocusRing />
 
-		<div class="controls" style="--mode-hex: {focus.phaseColor}">
-			{#if focus.idle && !focus.waiting}
-				{#if focus.mode === 'timeblock'}
-					<button class="stepper pressable" aria-label="-5 min" onclick={() => focus.adjustBlock(-5)}>−</button>
-				{/if}
-				<button class="primary-cta pressable" onclick={() => focus.start()}>
-					<Icon name="play" size={18} />
-					{t('focus.start')}
-				</button>
-				{#if focus.mode === 'timeblock'}
-					<button class="stepper pressable" aria-label="+5 min" onclick={() => focus.adjustBlock(5)}>+</button>
-				{/if}
-			{:else if focus.waiting}
-				<button class="primary-cta pressable" onclick={() => focus.start()}>
-					<Icon name="play" size={18} />
-					{t(focus.nextAfterHold !== 'work' ? 'focus.startBreak' : 'focus.startWork')}
-				</button>
-				{#if focus.nextAfterHold === 'work'}
-					<button class="btn btn-outline pressable" onclick={() => focus.extendHold(5)}>
-						+5 min
+			{#if focus.waiting}
+				<p class="waiting">{waitingLabel}</p>
+			{/if}
+
+			<FocusChips />
+
+			<div class="controls" style="--mode-hex: {focus.phaseColor}">
+				{#if focus.idle && !focus.waiting}
+					{#if focus.mode === 'timeblock'}
+						<button class="stepper pressable" aria-label="-5 min" onclick={() => focus.adjustBlock(-5)}>−</button>
+					{/if}
+					<button class="primary-cta pressable" onclick={() => focus.start()}>
+						<Icon name="play" size={18} />
+						{t('focus.start')}
+					</button>
+					{#if focus.mode === 'timeblock'}
+						<button class="stepper pressable" aria-label="+5 min" onclick={() => focus.adjustBlock(5)}>+</button>
+					{/if}
+				{:else if focus.waiting}
+					<button class="primary-cta pressable" onclick={() => focus.start()}>
+						<Icon name="play" size={18} />
+						{t('focus.startNext')}
+					</button>
+					{#if focus.nextAfterHold === 'work'}
+						<button class="btn btn-outline pressable" onclick={() => focus.extendHold(5)}>
+							+5 min
+						</button>
+					{/if}
+				{:else if focus.running}
+					<button class="primary-cta pressable" onclick={() => focus.pause()}>
+						<Icon name="pause" size={18} />
+						{t('focus.pause')}
+					</button>
+				{:else if focus.paused}
+					<button class="primary-cta pressable" onclick={() => focus.resume()}>
+						<Icon name="play" size={18} />
+						{t('focus.resume')}
 					</button>
 				{/if}
-			{:else if focus.running}
-				<button class="primary-cta pressable" onclick={() => focus.pause()}>
-					<Icon name="pause" size={18} />
-					{t('focus.pause')}
-				</button>
-				{#if focus.mode === 'flowtime' && focus.breakSuggested}
-					<button class="btn btn-soft pressable" onclick={() => focus.takeFlowBreak()}>
-						🌊 {t('focus.takeBreak')}
+			</div>
+
+			<!-- Mac secondaryControls: Skip + destructive End Session. Mac's
+				 isRunning stays true through pause (FocusFeature:424-432 only
+				 sets isPaused), so the row survives the pause; the hold is
+				 excluded (session idle there). -->
+			{#if focus.running || focus.paused}
+				<div class="secondary">
+					{#if skipVisible}
+						<button class="btn btn-outline pressable" onclick={() => (flowWork ? focus.takeFlowBreak() : focus.skip())}>
+							<Icon name={flowWork ? 'cup' : 'skip'} size={16} />
+							{t('focus.skip')}
+						</button>
+					{/if}
+					<button class="end-cta pressable" class:armed={confirmEnd} aria-live="polite" onclick={onEnd}>
+						<Icon name="stop" size={15} />
+						{confirmEnd ? t('focus.endConfirm') : t('focus.complete')}
 					</button>
-				{:else}
-					<button class="btn btn-outline pressable" onclick={() => focus.skip()}>
-						<Icon name="skip" size={16} />
-						{t('focus.skip')}
-					</button>
-				{/if}
-			<button class="end-cta pressable" class:armed={confirmEnd} aria-live="polite" onclick={onEnd}>
-				{confirmEnd ? t('focus.endConfirm') : t('focus.complete')}
-			</button>
-		{:else if focus.paused}
-			<button class="primary-cta pressable" onclick={() => focus.resume()}>
-				<Icon name="play" size={18} />
-				{t('focus.resume')}
-			</button>
-			<button class="btn btn-outline pressable" onclick={() => focus.skip()}>
-				<Icon name="skip" size={16} />
-				{t('focus.skip')}
-			</button>
-			<button class="end-cta pressable" class:armed={confirmEnd} aria-live="polite" onclick={onEnd}>
-				{confirmEnd ? t('focus.endConfirm') : t('focus.complete')}
-			</button>
-		{/if}
-		</div>
+				</div>
+			{/if}
 
 		<AdhdBreak />
 
@@ -425,17 +438,33 @@
 		transform: scale(0.94);
 	}
 
-	/* End Session: destructive, two-step confirm (confirmation dialog parity) */
+	/* Mac secondaryControls row: Skip + End Session under the primary row */
+	.secondary {
+		display: flex;
+		gap: var(--space-3);
+		flex-wrap: wrap;
+		justify-content: center;
+		align-items: center;
+	}
+
+	/* End Session: bordered destructive with stop glyph (Mac secondaryControls),
+	 * two-step arm instead of a dialog */
 	.end-cta {
-		border: 1px solid transparent;
+		display: inline-flex;
+		align-items: center;
+		gap: var(--space-2);
+		border: 1px solid color-mix(in srgb, var(--danger) 45%, transparent);
 		background: transparent;
 		color: var(--danger);
 		font-weight: 600;
 		font-size: var(--text-sm);
-		padding: 0 var(--space-3);
+		padding: 0 var(--space-4);
 		min-height: var(--touch-target);
 		border-radius: var(--radius-pill);
 		cursor: pointer;
+		transition:
+			background var(--dur-fast) var(--spring-snappy),
+			color var(--dur-fast) var(--spring-snappy);
 	}
 
 	.end-cta:hover {
@@ -444,6 +473,7 @@
 
 	.end-cta.armed {
 		background: var(--danger);
+		border-color: var(--danger);
 		color: #ffffff;
 		font-weight: 650;
 	}

@@ -141,7 +141,7 @@ class PlanStore {
 		await removeTask(id);
 		if (snapshot) {
 			this.offerUndo({
-				label: `'${snapshot.title}' deleted`,
+				label: translate('plan.undo.deleted', { title: snapshot.title }),
 				apply: async () => {
 					await upsertTask($state.snapshot(snapshot));
 					await this.reload();

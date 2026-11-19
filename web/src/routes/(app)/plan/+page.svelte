@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { plan } from '$lib/stores/plan.svelte';
+	import { focus } from '$lib/stores/focus.svelte';
 	import { app } from '$lib/stores/app.svelte';
 	import { t } from '$lib/i18n/i18n.svelte';
 	import type { MessageKey } from '$lib/i18n/messages';
@@ -57,6 +58,15 @@
 		completed: 'plan.empty.completed'
 	};
 
+	/** Mac ContentUnavailableView per-filter garden descriptions. */
+	const EMPTY_DESC_KEYS: Record<PlanFilter, MessageKey> = {
+		all: 'plan.empty.all.desc',
+		today: 'plan.empty.today.desc',
+		inbox: 'plan.empty.inbox.desc',
+		upcoming: 'plan.empty.upcoming.desc',
+		completed: 'plan.empty.completed.desc'
+	};
+
 	let quickValue = $state('');
 	let selectedId = $state<string | null>(null);
 	let dragId = $state<string | null>(null);
@@ -100,19 +110,38 @@
 
 	let ctxItems = $derived<ContextMenuItem[]>(ctx ? buildContextItems(ctx.task) : []);
 
+	/** Context-menu "Rename Task": desktop enters the table's inline title
+	 * edit (consumed by TaskTable); mobile has no table, so it opens the
+	 * inspector where title editing lives. */
+	let renameRequest = $state<string | null>(null);
+
+	function requestRename(task: Task): void {
+		if (window.matchMedia('(max-width: 1023px)').matches) selectTask(task.id);
+		else renameRequest = task.id;
+	}
+
 	function buildContextItems(task: Task): ContextMenuItem[] {
+		// Mac menu order: Priority sorted(by: >) → high, medium, low, none.
 		const PRIORITY_KEYS = ['high', 'medium', 'low', 'none'] as const;
 		const ENERGY_KEYS = ['deep', 'shallow', 'admin'] as const;
+		const completed = task.status === 'completed';
 		return [
 			{
-				id: 'toggle',
-				label: t('plan.complete'),
-				onselect: () => void plan.toggleComplete(task.id)
+				id: 'rename',
+				label: t('plan.context.rename'),
+				onselect: () => requestRename(task)
 			},
+			{ id: 'sep0', kind: 'separator' },
 			{
 				id: 'focus',
 				label: t('plan.focusTask'),
+				disabled: completed,
 				onselect: () => focusTask(task)
+			},
+			{
+				id: 'toggle',
+				label: completed ? t('plan.markIncomplete') : t('plan.complete'),
+				onselect: () => void plan.toggleComplete(task.id)
 			},
 			{ id: 'sep1', kind: 'separator' },
 			{
@@ -136,6 +165,11 @@
 					checked: task.energy === e,
 					onselect: () => void plan.updateTask(task.id, { energy: e })
 				}))
+			},
+			{
+				id: 'moveToday',
+				label: t('plan.moveToday'),
+				onselect: () => void plan.updateTask(task.id, { scheduledForToday: true })
 			},
 			{ id: 'sep2', kind: 'separator' },
 			{
@@ -164,7 +198,10 @@
 
 	function focusTask(task: Task): void {
 		plan.focusOn(task);
-		gotoFocus();
+		// Mac startFocusOnTask parity: the session starts immediately, not
+		// just pre-linked (only when nothing is live).
+		if (focus.idle && !focus.waiting) focus.start();
+		void gotoFocus();
 	}
 
 	async function gotoFocus(): Promise<void> {
@@ -277,9 +314,28 @@
 		<div class="inspector-grid" class:with-inspector={!!selectedTask}>
 		<div class="list-area">
 			{#if displayed.length === 0}
-				<div class="empty card">
-					<p class="empty-title">{query.trim() ? t('plan.search.empty') : t(EMPTY_KEYS[plan.filter])}</p>
-					<p class="empty-body">{query.trim() ? '' : t('plan.empty.body')}</p>
+				<!-- Mac ContentUnavailableView: symbol, title, description and the
+					 contextual action directly on the content background -->
+				<div class="empty">
+					<span class="empty-icon" aria-hidden="true">
+						<Icon name={query.trim() ? 'search' : 'plan'} size={40} />
+					</span>
+					<p class="empty-title">
+						{query.trim() ? t('plan.empty.search.title') : t(EMPTY_KEYS[plan.filter])}
+					</p>
+					<p class="empty-body">
+						{query.trim() ? t('plan.empty.search.desc') : t(EMPTY_DESC_KEYS[plan.filter])}
+					</p>
+					{#if query.trim()}
+						<button class="btn btn-soft pressable" onclick={() => (query = '')}>
+							{t('plan.empty.action.clear')}
+						</button>
+					{:else if plan.filter !== 'completed'}
+						<button class="btn btn-primary pressable" onclick={focusComposer}>
+							<Icon name="plus" size={15} />
+							{t('plan.newTask')}
+						</button>
+					{/if}
 				</div>
 			{:else if plan.filter === 'completed'}
 				<ul class="list">
@@ -300,8 +356,9 @@
 					compact={!!selectedTask}
 					onselect={selectTask}
 					ontoggle={(id) => plan.toggleComplete(id)}
-					onfocus={focusTask}
 					oncontext={openContext}
+					startRenameId={renameRequest}
+					onrenamehandled={() => (renameRequest = null)}
 				/>
 				<div class="mobile-list">
 				{#each groupByEnergy(displayed) as group (group.energy)}
@@ -533,7 +590,16 @@
 		text-align: center;
 		display: flex;
 		flex-direction: column;
-		gap: var(--space-2);
+		align-items: center;
+		gap: var(--space-3);
+	}
+
+	.empty-icon {
+		color: var(--faint);
+	}
+
+	.empty :global(.btn) {
+		min-height: 34px;
 	}
 
 	.empty-title {

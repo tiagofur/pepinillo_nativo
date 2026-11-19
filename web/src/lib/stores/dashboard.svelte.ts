@@ -10,6 +10,7 @@ import { evaluateAchievements, type Achievement } from '$lib/domain/achievements
 import { buildPeriodReview, type PeriodReview } from '$lib/domain/reviews/reviews';
 import { canUseAnalyticsPeriod } from '$lib/domain/gates/freeLimits';
 import { isWorkPhase } from '$lib/domain/stats/daily';
+import { localDateKey } from '$lib/domain/tasks/recurrence';
 import { app } from '$lib/stores/app.svelte';
 import { plan } from '$lib/stores/plan.svelte';
 import type { FocusSession, Task } from '$lib/domain/entities/types';
@@ -68,6 +69,31 @@ class DashboardStore {
 	}
 
 	unlockedCount = $derived(this.achievements.filter((a) => a.unlocked).length);
+
+	/** Mac Today "Tasks Completed" KPI (MacTodayView:138-168). */
+	tasksCompletedToday = $derived.by(() => {
+		const todayKey = localDateKey(new Date());
+		return this.tasks.filter(
+			(t) => t.status === 'completed' && t.completedAt && localDateKey(new Date(t.completedAt)) === todayKey
+		).length;
+	});
+
+	/** Mac nextFocusCard: strictly scheduled-for-today active tasks by
+	 * priority then order (MacTodayView:31-40) — a due date alone does not
+	 * schedule a task for today. */
+	nextTask = $derived.by(() => {
+		const PRIORITY_RANK: Record<string, number> = { high: 3, medium: 2, low: 1, none: 0 };
+		return (
+			this.tasks
+				.filter((t) => t.status === 'active' && t.scheduledForToday === true)
+				.sort((a, b) => {
+					const pa = PRIORITY_RANK[a.priority] ?? 0;
+					const pb = PRIORITY_RANK[b.priority] ?? 0;
+					if (pa !== pb) return pb - pa;
+					return a.order - b.order;
+				})[0] ?? null
+		);
+	});
 
 	periodGated(period: AnalyticsPeriod): boolean {
 		return !canUseAnalyticsPeriod(period, app.tier);

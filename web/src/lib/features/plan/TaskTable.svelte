@@ -9,8 +9,8 @@
 	import { plan } from '$lib/stores/plan.svelte';
 	import { t } from '$lib/i18n/i18n.svelte';
 	import type { MessageKey } from '$lib/i18n/messages';
-	import { subtaskProgress } from '$lib/domain/tasks/plan';
-	import { localDateKey } from '$lib/domain/tasks/recurrence';
+	import { subtaskProgress, dueInfo, formatDueShort } from '$lib/domain/tasks/plan';
+	import { currentLocale } from '$lib/i18n/i18n.svelte';
 	import type { Task } from '$lib/domain/entities/types';
 
 	let {
@@ -18,18 +18,21 @@
 		selectedId,
 		onselect,
 		ontoggle,
-		onfocus,
 		oncontext,
-		compact = false
+		compact = false,
+		startRenameId = null,
+		onrenamehandled
 	}: {
 		tasks: Task[];
 		selectedId: string | null;
 		onselect: (id: string) => void;
 		ontoggle: (id: string) => void;
-		onfocus: (task: Task) => void;
 		oncontext?: (task: Task, x: number, y: number) => void;
 		/** Inspector open: drop the Energy column (Mac narrow-width adaptation) */
 		compact?: boolean;
+		/** Context-menu "Rename Task": the row enters inline title edit. */
+		startRenameId?: string | null;
+		onrenamehandled?: () => void;
 	} = $props();
 
 	/** Mac priority arrows: ↑ Alta / − Media / ↓ Baja / — (MacPlanView). */
@@ -40,11 +43,13 @@
 		high: '↑'
 	};
 
+	// Native PriorityColors.kt fixed semantic colors — glyph only; the label
+	// stays secondary (MacPlanView priority cell treatment).
 	const PRIORITY_COLOR: Record<string, string> = {
 		none: 'var(--faint)',
-		low: 'var(--mode-flowtime)',
-		medium: 'var(--streak)',
-		high: 'var(--mode-pomodoro)'
+		low: '#1e88e5',
+		medium: '#fb8c00',
+		high: '#e53935'
 	};
 
 	const ENERGY_COLOR: Record<string, string> = {
@@ -84,8 +89,25 @@
 		editingId = null;
 	}
 
-	function todayKey(): string {
-		return localDateKey(new Date());
+	$effect(() => {
+		if (!startRenameId) return;
+		const task = tasks.find((x) => x.id === startRenameId);
+		onrenamehandled?.();
+		if (task) startEdit(task);
+	});
+
+	/** MacPlanView.dueText: Hoy / Mañana / Vencida / abbreviated date. */
+	function dueLabel(task: Task): string {
+		const info = dueInfo(task);
+		if (info.kind === 'none') return '—';
+		if (info.kind === 'date' && info.dateKey) return formatDueShort(info.dateKey, currentLocale());
+		return t(
+			info.kind === 'today'
+				? 'plan.due.today'
+				: info.kind === 'tomorrow'
+					? 'plan.due.tomorrow'
+					: 'plan.due.overdue'
+		);
 	}
 </script>
 
@@ -154,8 +176,8 @@
 				{/if}
 			</span>
 			<span class="col-pri" role="cell">
-				<span class="pri" style="color: {PRIORITY_COLOR[task.priority]}">
-					<span class="arrow" aria-hidden="true">{PRIORITY_ARROW[task.priority]}</span>
+				<span class="pri">
+					<span class="arrow" style="color: {PRIORITY_COLOR[task.priority]}" aria-hidden="true">{PRIORITY_ARROW[task.priority]}</span>
 					<span class="pri-label">{t(`plan.priority.${task.priority}` as MessageKey)}</span>
 				</span>
 			</span>
@@ -166,19 +188,25 @@
 				</span>
 			</span>
 			<span class="col-pomo nums" role="cell">⏱ {task.completedPomodoros ?? 0}/{task.estimatedPomodoros}</span>
-			<span class="col-due nums" role="cell" class:overdue={!!task.dueDate && task.dueDate < todayKey()}>
-				{task.dueDate ?? '—'}
+			<span class="col-due" role="cell" class:overdue={dueInfo(task).kind === 'overdue'}>
+				{dueLabel(task)}
 			</span>
 			<span class="col-actions" role="cell">
+				<!-- Mac: hover/selection-only inspector affordance (no per-row ▶) -->
 				<button
-					class="row-focus pressable"
-					title={t('plan.focusTask')}
+					class="row-inspect pressable"
+					title={t('plan.inspector')}
+					aria-label={t('plan.inspector')}
 					onclick={(e) => {
 						e.stopPropagation();
-						onfocus(task);
+						onselect(task.id);
 					}}
 				>
-					▶
+					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+						<circle cx="12" cy="12" r="9" />
+						<path d="M12 11v5" />
+						<path d="M12 8h.01" />
+					</svg>
 				</button>
 			</span>
 		</div>
@@ -331,19 +359,30 @@
 		font-weight: 650;
 	}
 
-	.row-focus {
+	/* Inspector ⓘ: revealed on row hover or selection (Mac affordance) */
+	.row-inspect {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 32px;
+		height: 32px;
 		background: none;
-		border: 1px solid var(--border);
-		border-radius: var(--radius-pill);
-		color: var(--brand);
-		font-size: var(--text-2xs); /* 11px floor */
+		border: none;
+		border-radius: 50%;
+		color: var(--muted);
 		cursor: pointer;
-		min-width: 32px;
-		min-height: 32px;
+		opacity: 0;
+		transition: opacity var(--dur-fast) var(--ease-out-quint);
 	}
 
-	.row-focus:hover {
-		background: var(--brand-soft);
-		border-color: transparent;
+	.trow:hover .row-inspect,
+	.trow.selected .row-inspect,
+	.row-inspect:focus-visible {
+		opacity: 1;
+	}
+
+	.trow:hover .row-inspect:hover {
+		color: var(--ink);
+		background: var(--surface-alt);
 	}
 </style>

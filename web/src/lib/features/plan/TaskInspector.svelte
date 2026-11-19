@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { plan } from '$lib/stores/plan.svelte';
+	import { focus } from '$lib/stores/focus.svelte';
 	import { app } from '$lib/stores/app.svelte';
 	import { t } from '$lib/i18n/i18n.svelte';
 	import type { MessageKey } from '$lib/i18n/messages';
@@ -9,6 +10,7 @@
 	import { RECURRENCE_PRESETS, type RecurrencePresetKey } from '$lib/domain/tasks/recurrence';
 	import type { Task, TaskEnergy, TaskPriority } from '$lib/domain/entities/types';
 	import { suggestEnergy } from '$lib/domain/tasks/energy';
+	import Icon from '$lib/design/Icon.svelte';
 
 	let {
 		task,
@@ -28,11 +30,12 @@
 		return () => mq.removeEventListener('change', onChange);
 	});
 
+	// Mac order: high → none (MacTaskInspectorView:173)
 	const PRIORITIES: { id: TaskPriority; key: MessageKey }[] = [
-		{ id: 'none', key: 'plan.priority.none' },
-		{ id: 'low', key: 'plan.priority.low' },
+		{ id: 'high', key: 'plan.priority.high' },
 		{ id: 'medium', key: 'plan.priority.medium' },
-		{ id: 'high', key: 'plan.priority.high' }
+		{ id: 'low', key: 'plan.priority.low' },
+		{ id: 'none', key: 'plan.priority.none' }
 	];
 
 	const ENERGIES: { id: TaskEnergy; key: MessageKey }[] = [
@@ -78,7 +81,7 @@
 
 	function setPomodoros(delta: number): void {
 		if (!task) return;
-		const next = Math.max(1, Math.min(20, task.estimatedPomodoros + delta));
+		const next = Math.max(1, Math.min(8, task.estimatedPomodoros + delta));
 		void plan.updateTask(task.id, { estimatedPomodoros: next });
 	}
 
@@ -96,6 +99,8 @@
 	async function focusTask(): Promise<void> {
 		if (!task) return;
 		plan.focusOn(task);
+		// Mac inspector footer parity: starts the session, not just links it.
+		if (focus.idle && !focus.waiting) focus.start();
 		onclose();
 		const { goto } = await import('$app/navigation');
 		await goto('/focus');
@@ -264,8 +269,9 @@
 	{/if}
 
 	<div class="actions">
-		<button class="btn btn-primary pressable" onclick={focusTask}>
-			▶ {t('plan.focusTask')}
+		<button class="btn btn-primary pressable focus-cta" onclick={focusTask}>
+			<Icon name="play" size={15} />
+			{t('plan.focusSession')}
 		</button>
 		{#if confirmDelete}
 			<button class="btn pressable danger-confirm" onclick={remove}>
@@ -459,6 +465,12 @@
 		display: flex;
 		flex-wrap: wrap;
 		gap: var(--space-3);
+	}
+
+	/* Mac footer: the prominent Start Focus Session spans the full width */
+	.focus-cta {
+		flex: 1 0 100%;
+		justify-content: center;
 	}
 
 	.danger {

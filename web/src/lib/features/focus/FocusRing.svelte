@@ -2,68 +2,105 @@
 	import { focus } from '$lib/stores/focus.svelte';
 	import { t } from '$lib/i18n/i18n.svelte';
 	import Icon from '$lib/design/Icon.svelte';
-	import type { MessageKey } from '$lib/i18n/messages';
 
-	let phaseKey = $derived<MessageKey>(
-		focus.phase === 'work'
-			? 'focus.phase.work'
-			: focus.phase === 'shortBreak'
-				? 'focus.phase.shortBreak'
-				: focus.phase === 'longBreak'
-					? 'focus.phase.longBreak'
-					: 'focus.phase.idle'
-	);
+	/** Phase label — Mac FocusPhase.displayName: the cycle position is
+	 * expressed ONCE, here ("Enfoque 2/4"); the numeric counter was removed
+	 * from the ring center (#789). Flowtime/Stopwatch name their work phase
+	 * by mode; a flowtime break is its own "Break" phase (flowBreak). */
+	let phaseLabel = $derived.by(() => {
+		if (focus.idle && !focus.waiting) return t('focus.phase.idle');
+		if (focus.paused) return t('focus.phase.paused');
+		const pending = focus.waiting ? focus.nextAfterHold : focus.phase;
+		if (pending === 'work') {
+			if (focus.mode === 'pomodoro')
+				return t('focus.phase.workNumbered', {
+					n: focus.cycle.pomodoroNumber,
+					total: focus.beforeLongBreak
+				});
+			if (focus.mode === 'flowtime') return t('focus.phase.flow');
+			if (focus.mode === 'stopwatch') return t('focus.phase.freeform');
+			return t('focus.phase.block');
+		}
+		if (pending === 'shortBreak')
+			return focus.mode === 'flowtime' ? t('focus.phase.flowBreak') : t('focus.phase.shortBreak');
+		return t('focus.phase.longBreak');
+	});
 
-	/** Count-up modes at idle show the dashed [4,10] overlay (Mac TimerCircleView). */
-	let dashedIdle = $derived(
-		(focus.mode === 'flowtime' || focus.mode === 'stopwatch') && focus.idle && !focus.waiting
-	);
+	let countUp = $derived(focus.mode === 'flowtime' || focus.mode === 'stopwatch');
 
-	/** Progress 0–1 as a conic stop; idle count-up floors at 4% like Mac. */
-	let arcP = $derived(
-		focus.idle && !focus.waiting && (focus.mode === 'flowtime' || focus.mode === 'stopwatch')
-			? 0.04
-			: focus.progress
-	);
+	/** Mac TimerCircleView: dashed [4,10] overlay at pure idle only —
+	 * pause/hold keep the frozen arc (native isRunning stays true through
+	 * both, FocusFeature:424-427); countdown idle/hold shows the full ring
+	 * of the pending phase instead (FocusView.swift:1021-1031). */
+	let dashed = $derived(countUp && !focus.running && !focus.paused && !focus.waiting);
+
+	/** Store-derived display arc (ringProgress): countdown depletes from
+	 * full; count-up fills its 60-minute cycle while running. `null` → no
+	 * arc layer at all. */
+	let arcP = $derived(focus.ringProgress ?? 0);
+	let hasArc = $derived(focus.ringProgress !== null);
+
+	/** Mac tap-to-pause: the ring toggles pause while a session is live. */
+	let interactive = $derived(focus.running || focus.paused);
+	function onRingTap(): void {
+		if (focus.running) focus.pause();
+		else if (focus.paused) focus.resume();
+	}
+	function onRingKey(e: KeyboardEvent): void {
+		if (e.code === 'Enter' || e.code === 'Space') {
+			e.preventDefault();
+			onRingTap();
+		}
+	}
+
+	/** Native accessibility value: digits + percent remaining/complete. */
+	let ariaLabel = $derived.by(() => {
+		if (!interactive || focus.ringProgress == null) return focus.displayTime;
+		const pct = Math.round(focus.ringProgress * 100);
+		const tail = countUp ? t('focus.a11y.complete', { pct }) : t('focus.a11y.remaining', { pct });
+		return `${focus.displayTime}, ${tail}`;
+	});
 </script>
 
 <div class="stage" style="--mode-hex: {focus.phaseColor}; --p: {arcP}">
-	<div class="ring" role="img" aria-label={focus.displayTime}>
+	<div
+		class="ring"
+		role={interactive ? 'button' : 'img'}
+		tabindex={interactive ? 0 : undefined}
+		aria-label={ariaLabel}
+		class:interactive
+		onclick={interactive ? onRingTap : undefined}
+		onkeydown={interactive ? onRingKey : undefined}
+	>
 		<div class="layer track"></div>
-		{#if dashedIdle}
+		{#if dashed}
 			<div class="layer dashed"></div>
 		{/if}
-		<div class="layer clip">
-			<div class="layer arc"></div>
-		</div>
+		{#if hasArc}
+			<div class="layer clip">
+				<div class="layer arc"></div>
+			</div>
+		{/if}
 		<div class="center">
 			<span class="mode-icon" class:breathing={focus.running} aria-hidden="true">
-				<Icon name="focus" size={30} />
+				<Icon name="focus" />
 			</span>
 			<span class="time nums">{focus.displayTime}</span>
-			{#if focus.mode === 'pomodoro' && focus.phase === 'work'}
-				<span class="pips" aria-hidden="true">
-					{#each { length: focus.beforeLongBreak } as _, i (i)}
-						<span
-							class="pip"
-							class:done={i < focus.cycle.completedInCycle}
-							class:current={i === focus.cycle.completedInCycle}
-						></span>
-					{/each}
-				</span>
-			{/if}
 		</div>
 	</div>
-	<p class="phase">{t(phaseKey)}</p>
+	<p class="phase">{phaseLabel}</p>
 </div>
 
 <style>
 	/* Mac TimerCircleView: ring floats on the ambient stage — no card.
 	 * stroke 13, track = mode color at 18%, arc = angular gradient
-	 * [0.4c, c, 0.4c] from 12 o'clock, dashed [4,10] idle overlay. */
+	 * [0.4c, c, 0.4c] from 12 o'clock, dashed [4,10] count-up overlay.
+	 * Countdown arcs start FULL and deplete anchored at 12 o'clock
+	 * (rotationEffect(-90) native ≡ conic from 0deg here). */
 	.stage {
 		--stroke: 13px;
 		--ring-size: min(360px, max(260px, calc(100dvh - 340px)));
+		--digit-px: clamp(52px, calc(var(--ring-size) * 0.2), 72px);
 		display: flex;
 		flex-direction: column;
 		align-items: center;
@@ -74,6 +111,16 @@
 		position: relative;
 		width: var(--ring-size);
 		aspect-ratio: 1;
+	}
+
+	.ring.interactive {
+		cursor: pointer;
+	}
+
+	.ring.interactive:focus-visible {
+		outline: 2px solid color-mix(in srgb, var(--mode-hex) 60%, transparent);
+		outline-offset: 8px;
+		border-radius: 50%;
 	}
 
 	.layer {
@@ -106,7 +153,9 @@
 		);
 	}
 
-	/* Progress clip: an opaque conic sector growing clockwise from 12 o'clock */
+	/* Progress clip: an opaque conic sector growing clockwise from 12 o'clock.
+	 * The sector length is the REMAINING fraction for countdown (starts full,
+	 * shrinks back to 12) or the in-cycle fraction for count-up. */
 	.clip {
 		background: none;
 		-webkit-mask: conic-gradient(from 0deg, #000 calc(var(--p) * 360deg), transparent 0deg);
@@ -138,6 +187,13 @@
 		display: inline-flex;
 	}
 
+	/* Mac: the icon inherits the digit scale (28/84 ≈ 0.33 ratio, floor 28)
+	 * so the composition stays proportional at every ring size. */
+	.mode-icon :global(svg) {
+		width: max(28px, calc(var(--digit-px) * 0.33));
+		height: max(28px, calc(var(--digit-px) * 0.33));
+	}
+
 	.mode-icon.breathing {
 		color: var(--mode-hex);
 		animation: breathe 2s var(--ease-out-quint) infinite alternate;
@@ -149,42 +205,21 @@
 		font-feature-settings: 'tnum' 1;
 		/* Mac digits: 72pt at the 360pt reference ring (84pt only above 380pt,
 		 * which the 360px cap never reaches — 0.2 × 360 = 72 exact) */
-		font-size: clamp(52px, calc(var(--ring-size) * 0.2), 72px);
+		font-size: var(--digit-px);
 		font-weight: 600;
 		line-height: 1;
 		letter-spacing: var(--tracking-tight);
 		color: var(--ink);
 	}
 
-	.pips {
-		display: flex;
-		gap: 6px;
-	}
-
-	.pip {
-		width: 7px;
-		height: 7px;
-		border-radius: 50%;
-		background: color-mix(in srgb, var(--ink) 15%, transparent);
-	}
-
-	.pip.done {
-		background: var(--mode-pomodoro);
-	}
-
-	.pip.current {
-		background: color-mix(in srgb, var(--mode-pomodoro) 25%, transparent);
-		box-shadow: 0 0 0 2px color-mix(in srgb, var(--mode-pomodoro) 30%, transparent);
-	}
-
-	/* Phase label under the ring: subheadline semibold, tracking 1.1 (Mac) */
+	/* Phase label under the ring: subheadline semibold, tracking 1.1 — no
+	 * uppercase transform (Mac renders the label as written). */
 	.phase {
 		margin: 0;
 		color: var(--muted);
 		font-size: var(--text-sm);
 		font-weight: 650;
 		letter-spacing: var(--tracking-phase);
-		text-transform: uppercase;
 	}
 
 	@keyframes breathe {

@@ -39,6 +39,36 @@ export function filterTasks(tasks: Task[], filter: PlanFilter, today: Date = new
 	}
 }
 
+/** Mac dueText (MacPlanView:355): Today / Tomorrow / Overdue / abbreviated
+ * date. A task scheduled for today reads as Today even without a due date. */
+export type DueKind = 'today' | 'tomorrow' | 'overdue' | 'date' | 'none';
+
+export function dueInfo(
+	task: Task,
+	today: Date = new Date()
+): { kind: DueKind; dateKey: string | null } {
+	const todayKey = localDateKey(today);
+	if (!task.dueDate) {
+		return { kind: task.scheduledForToday === true ? 'today' : 'none', dateKey: null };
+	}
+	const tomorrow = new Date(today);
+	tomorrow.setDate(tomorrow.getDate() + 1);
+	if (task.dueDate === todayKey) return { kind: 'today', dateKey: task.dueDate };
+	if (task.dueDate === localDateKey(tomorrow)) return { kind: 'tomorrow', dateKey: task.dueDate };
+	// Mac dueText: Overdue requires !isCompleted — a completed task with a
+	// past date shows the plain abbreviated date.
+	if (task.dueDate < todayKey && task.status !== 'completed')
+		return { kind: 'overdue', dateKey: task.dueDate };
+	return { kind: 'date', dateKey: task.dueDate };
+}
+
+/** Abbreviated localized date for the Due column (Mac .abbreviated). */
+export function formatDueShort(dateKey: string, locale: string): string {
+	return new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short' }).format(
+		new Date(`${dateKey}T12:00:00`)
+	);
+}
+
 function byOrder(a: Task, b: Task): number {
 	return a.order - b.order || a.createdAt.localeCompare(b.createdAt);
 }
