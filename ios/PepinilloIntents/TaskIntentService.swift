@@ -43,6 +43,10 @@ enum TaskIntentService {
     }
 
     /// Routes a deep link through the OS so the running app navigates to it.
+    /// `UIApplication.shared`/`NSWorkspace.shared` are Main-actor isolated:
+    /// the helper must hop too, so callers `await` it from `perform()` —
+    /// otherwise Swift 6 surfaces the isolation as a build diagnostic.
+    @MainActor
     static func open(_ url: URL) {
         #if os(iOS)
         UIApplication.shared.open(url)
