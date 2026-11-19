@@ -150,10 +150,25 @@ struct PepinilloCommands: Commands {
             }
             .keyboardShortcut(.return, modifiers: .command)
 
+            // ⌘→ (iPad hardware keyboard parity, #670): skip the running
+            // phase, or advance the pending one during the auto-start-OFF
+            // hold — the same MacSessionCommand decision as the ⌃⌥→ global,
+            // so menu, hotkey and iPad cannot drift. Idle stays disabled.
             Button(String(localized: "menu.focus.skipphase", defaultValue: "Skip Phase")) {
-                store.send(.focus(.skipPhaseTapped))
+                switch MacSessionCommand.nextPhaseDecision(
+                    isRunning: store.focus.isRunning,
+                    isWaitingForNextPhase: store.focus.isWaitingForNextPhase
+                ) {
+                case .startNextPhase: store.send(.focus(.startNextPhaseTapped))
+                case .skip: store.send(.focus(.skipPhaseTapped))
+                case .none: break
+                }
             }
-            .disabled(!store.focus.isRunning)
+            .keyboardShortcut(.rightArrow, modifiers: .command)
+            .disabled(MacSessionCommand.nextPhaseDecision(
+                isRunning: store.focus.isRunning,
+                isWaitingForNextPhase: store.focus.isWaitingForNextPhase
+            ) == .none)
 
             Button(String(localized: "menu.focus.stopsession", defaultValue: "Stop Session")) {
                 store.send(.focus(.stopTapped))
