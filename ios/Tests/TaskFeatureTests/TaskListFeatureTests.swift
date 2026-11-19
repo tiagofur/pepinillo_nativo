@@ -1839,4 +1839,147 @@ struct TaskListFeatureTests {
         #expect(!reopened.isCompleted)
         #expect(reopened.completedAt == nil)
     }
+
+    // MARK: - Share-extension captured task (#669)
+
+    @Test("capturedTaskReady creates the task immediately when data is loaded")
+    func capturedTaskReadyCreatesWhenLoaded() async {
+        let testID = UUID(9)
+        let testDate = Date(timeIntervalSince1970: 1_000_000)
+        var initialState = TaskListFeature.State()
+        initialState.hasLoadedData = true
+        initialState.pendingCapturedTaskTitle = "Read the share extension spec"
+
+        let store = TestStore(initialState: initialState) {
+            TaskListFeature()
+        } withDependencies: {
+            $0.persistenceClient.saveTask = { _ in }
+            $0.uuid = .constant(testID)
+            $0.date = .constant(testDate)
+        }
+
+        store.exhaustivity = .off
+
+        await store.send(.capturedTaskReady)
+        await store.receive(.addTaskTapped)
+
+        #expect(store.state.pendingCapturedTaskTitle == nil)
+        #expect(store.state.isNewTaskComposerPresented == false)
+        #expect(store.state.tasks.map(\.title) == ["Read the share extension spec"])
+    }
+
+    @Test("capturedTaskReady truncates a multi-KB share to the Mac quick-capture cap")
+    func capturedTaskReadyTruncatesLongTitle() async {
+        let testID = UUID(11)
+        let testDate = Date(timeIntervalSince1970: 1_000_000)
+        var initialState = TaskListFeature.State()
+        initialState.hasLoadedData = true
+        initialState.pendingCapturedTaskTitle = String(repeating: "x", count: 500)
+
+        let store = TestStore(initialState: initialState) {
+            TaskListFeature()
+        } withDependencies: {
+            $0.persistenceClient.saveTask = { _ in }
+            $0.uuid = .constant(testID)
+            $0.date = .constant(testDate)
+        }
+
+        store.exhaustivity = .off
+
+        await store.send(.capturedTaskReady)
+        await store.receive(.addTaskTapped)
+
+        #expect(store.state.tasks.map(\.title) == [String(repeating: "x", count: 200)])
+    }
+
+    @Test("capturedTaskReady at the free cap routes to the paywall keeping the title")
+    func capturedTaskReadyHitsPaywallKeepsTitle() async {
+        var initialState = TaskListFeature.State()
+        initialState.hasLoadedData = true
+        initialState.isProUser = false
+        initialState.pendingCapturedTaskTitle = "One more capture"
+        initialState.tasks = IdentifiedArrayOf(uniqueElements: (0..<3).map { i in
+            TaskListFeature.TaskItemState(
+                id: UUID(i),
+                title: "Task \(i)",
+                isCompleted: false,
+                priority: .none,
+                energyLevel: .deep,
+                estimatedPomodoros: 1,
+                completedPomodoros: 0,
+                subtaskProgress: .init(completed: 0, total: 0),
+                recurrenceRule: nil,
+                isRecurringTemplate: false,
+                scheduledForToday: false,
+                sortOrder: i,
+                createdAt: Date(timeIntervalSince1970: 1_000)
+            )
+        })
+
+        let store = TestStore(initialState: initialState) {
+            TaskListFeature()
+        } withDependencies: {
+            $0.persistenceClient.saveTask = { _ in }
+        }
+
+        store.exhaustivity = .off
+
+        await store.send(.capturedTaskReady)
+        await store.receive(.addTaskTapped)
+        await store.receive(.delegate(.showPaywall))
+
+        // The capture must survive for the retry after the paywall.
+        #expect(store.state.newTaskTitle == "One more capture")
+        #expect(store.state.tasks.count == 3)
+    }
+
+    @Test("capturedTaskReady keeps the title parked until tasks load (cold start)")
+    func capturedTaskReadyParksUntilLoaded() async {
+        let testID = UUID(10)
+        let testDate = Date(timeIntervalSince1970: 1_000_000)
+        var initialState = TaskListFeature.State()
+        initialState.pendingCapturedTaskTitle = "Cold-start capture"
+
+        let store = TestStore(initialState: initialState) {
+            TaskListFeature()
+        } withDependencies: {
+            $0.persistenceClient.saveTask = { _ in }
+            $0.spotlightClient.indexTasks = { _ in }
+            $0.uuid = .constant(testID)
+            $0.date = .constant(testDate)
+        }
+
+        store.exhaustivity = .off
+
+        // Not loaded yet: the capture must survive, not be dropped or created
+        // into a list that the imminent load would overwrite.
+        await store.send(.capturedTaskReady)
+        #expect(store.state.pendingCapturedTaskTitle == "Cold-start capture")
+        #expect(store.state.tasks.isEmpty)
+
+        // The load lands, then the parked capture is created on top of it.
+        await store.send(.tasksLoaded([]))
+        await store.receive(.addTaskTapped)
+        #expect(store.state.pendingCapturedTaskTitle == nil)
+        #expect(store.state.tasks.map(\.title) == ["Cold-start capture"])
+    }
+
+    @Test("capturedTaskReady with a blank parked title is a safe no-op")
+    func capturedTaskReadyBlankTitleNoop() async {
+        var initialState = TaskListFeature.State()
+        initialState.hasLoadedData = true
+        initialState.pendingCapturedTaskTitle = "   "
+
+        let store = TestStore(initialState: initialState) {
+            TaskListFeature()
+        } withDependencies: {
+            $0.persistenceClient.saveTask = { _ in }
+        }
+
+        store.exhaustivity = .off
+
+        await store.send(.capturedTaskReady)
+        #expect(store.state.pendingCapturedTaskTitle == nil)
+        #expect(store.state.tasks.isEmpty)
+    }
 }

@@ -461,6 +461,34 @@ enum AppGroupDefaults {
         return id
     }
 
+    // MARK: Share-Extension captured task (#669)
+    //
+    // The Share Extension writes these raw suite keys directly (it stays
+    // model-free); only the app consumes them. No TTL by design — capture is
+    // not time-sensitive, and `clearExternalCommands` doesn't know these keys
+    // so early exits leave the title queued for the next drain round (S7).
+
+    /// Raw key the Share Extension writes. Extensions must not compile this
+    /// file, so the string is duplicated there on purpose — keep in sync.
+    static let externalCapturedTaskTitleKey = "externalCapturedTaskTitle"
+
+    /// Queue a captured title (the Share Extension's Save button).
+    static func queueExternalCapturedTask(_ title: String) {
+        defaults?.set(title, forKey: externalCapturedTaskTitleKey)
+        postExternalCommandSignal()
+    }
+
+    /// Reads + clears a pending captured title atomically (S7). Nil when
+    /// nothing is pending (or the title is blank).
+    static func takeExternalCapturedTaskTitle() -> String? {
+        guard let title = defaults?.string(forKey: externalCapturedTaskTitleKey),
+              !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            return nil
+        }
+        defaults?.removeObject(forKey: externalCapturedTaskTitleKey)
+        return title
+    }
+
     /// The focus mode currently selected in the widget (interactive selection).
     /// Changes post the cross-process signal so the running app mirrors the
     /// widget's mode pick while idle (same path widget start commands use).

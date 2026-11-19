@@ -747,6 +747,44 @@ struct AppFeatureIntegrationTests {
         #expect(AppGroupDefaults.externalCompleteTaskID == nil)
     }
 
+    @Test func consumeExternalCommandsRoutesCapturedShareTask() async {
+        let savedDefaults = AppGroupDefaultsSnapshot.capture()
+        defer { savedDefaults.restore() }
+
+        AppGroupDefaults.clearExternalCommands()
+        AppGroupDefaults.clearActiveSession()
+        AppGroupDefaults.widgetSelectedMode = nil
+
+        AppGroupDefaults.queueExternalCapturedTask("Call the dentist")
+
+        let testID = UUID(7)
+        let testDate = Date(timeIntervalSince1970: 1_000_000)
+        var initialState = AppFeature.State()
+        initialState.tasks.hasLoadedData = true
+
+        let store = TestStore(initialState: initialState) {
+            AppFeature()
+        } withDependencies: {
+            $0.persistenceClient.resolveAchievements = { derived in derived }
+            $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
+            $0.persistenceClient.saveTask = { _ in }
+            $0.uuid = .constant(testID)
+            $0.date = .constant(testDate)
+        }
+        store.exhaustivity = .off
+
+        await store.send(.consumeExternalCommands)
+        await store.receive(.tabSelected(.plan))
+        await store.receive(.tasks(.capturedTaskReady))
+        await store.receive(.tasks(.addTaskTapped))
+
+        // Drained from the app group and created through the quick-add pipeline.
+        #expect(AppGroupDefaults.takeExternalCapturedTaskTitle() == nil)
+        #expect(store.state.tasks.pendingCapturedTaskTitle == nil)
+        #expect(store.state.selectedTab == .plan)
+        #expect(store.state.tasks.tasks.map(\.title) == ["Call the dentist"])
+    }
+
     @Test func appBecameActiveConsumesWidgetStartedSessionWithAnchors() async throws {
         let savedDefaults = AppGroupDefaultsSnapshot.capture()
         defer { savedDefaults.restore() }
