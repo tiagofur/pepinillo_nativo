@@ -3,13 +3,13 @@
 	import type { MessageKey } from '$lib/i18n/messages';
 	import logoUrl from '$lib/assets/logo.svg';
 
-	const GUIDE_LIST: { href: string; title: MessageKey; body: MessageKey; emoji: string; ready: boolean }[] = [
-		{ href: '/guides/macos.html', title: 'guides.list.macos', body: 'guides.list.macos.body', emoji: '💻', ready: true },
+	const GUIDE_LIST: { href: string; title: MessageKey; body: MessageKey; emoji: string; ready: boolean; img?: string }[] = [
+		{ href: '/guides/macos.html', title: 'guides.list.macos', body: 'guides.list.macos.body', emoji: '💻', ready: true, img: '/guides/img/macos-dashboard.jpg' },
 		{ href: '/guides/iphone', title: 'guides.list.iphone', body: 'guides.list.generic.body', emoji: '📱', ready: false },
 		{ href: '/guides/watchos', title: 'guides.list.watchos', body: 'guides.list.generic.body', emoji: '⌚️', ready: false },
 		{ href: '/guides/android', title: 'guides.list.android', body: 'guides.list.generic.body', emoji: '🤖', ready: false },
 		{ href: '/guides/wearos', title: 'guides.list.wearos', body: 'guides.list.generic.body', emoji: '⌚️', ready: false },
-		{ href: '/guides/web.html', title: 'guides.list.web', body: 'guides.list.web.body', emoji: '🌐', ready: true }
+		{ href: '/guides/web.html', title: 'guides.list.web', body: 'guides.list.web.body', emoji: '🌐', ready: true, img: '/guides/img/web-02-foco-corriendo.jpg' }
 	];
 </script>
 
@@ -38,9 +38,11 @@
 			{#if g.ready}
 				<!-- data-sveltekit-reload: standalone static doc -->
 				<a class="card guide pressable" href={g.href} data-sveltekit-reload>
-					<span class="emoji">{g.emoji}</span>
-					<div>
-						<h2>{t(g.title)}</h2>
+					{#if g.img}
+						<img class="thumb" src={g.img} alt="" loading="lazy" width="220" height="136" />
+					{/if}
+					<div class="guide-copy">
+						<h2><span class="emoji">{g.emoji}</span> {t(g.title)}</h2>
 						<p class="muted">{t(g.body)}</p>
 					</div>
 					<span class="arrow" aria-hidden="true">→</span>
@@ -126,9 +128,38 @@
 		opacity: 0.6;
 	}
 
+	.thumb {
+		flex: none;
+		width: 220px;
+		height: 136px;
+		object-fit: cover;
+		border-radius: var(--radius-md, 14px);
+		border: 1px solid var(--hairline);
+	}
+
+	.guide-copy {
+		flex: 1;
+		min-width: 0;
+	}
+
+	.guide-copy .emoji {
+		font-size: 18px;
+	}
+
 	.emoji {
 		font-size: 26px;
 		flex: none;
+	}
+
+	@media (max-width: 559px) {
+		.thumb {
+			width: 132px;
+			height: 84px;
+		}
+
+		.guide {
+			gap: var(--space-3);
+		}
 	}
 
 	.guide h2 {

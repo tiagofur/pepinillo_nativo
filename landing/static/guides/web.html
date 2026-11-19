@@ -6,345 +6,12 @@
   <title>Pepinillo Web — Manual de Usuario</title>
   <meta name="description" content="Manual completo de Pepinillo Web: la PWA de foco profundo que se instala en tu navegador, con los cuatro modos de foco, planificación de tareas, menús contextuales, estadísticas, atajos de teclado y más." />
   <link rel="canonical" href="https://pepinillo.app/guides/web" />
-  <style>
-    :root {
-      --brand: #2E7D46;
-      --brand-light: #3D9C5E;
-      --brand-soft: rgba(46, 125, 70, 0.12);
-      --pomodoro: #E84D3D;
-      --flowtime: #3387EB;
-      --timeblock: #8F45DE;
-      --stopwatch: #2EB870;
-      --streak: #FF991A;
-
-      --bg: #F5F6F4;
-      --surface: #FFFFFF;
-      --surface-alt: #EFEFF2;
-      --sidebar-bg: rgba(243, 244, 240, 0.92);
-      --ink: #1D1D1F;
-      --muted: #6E6E73;
-      --border: rgba(0, 0, 0, 0.09);
-      --shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
-      --radius-card: 18px;
-      --radius-pill: 999px;
-      --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", system-ui, sans-serif;
-      --mono: "SF Mono", ui-monospace, Menlo, monospace;
-    }
-
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --bg: #141416;
-        --surface: #1E1E22;
-        --surface-alt: #28282E;
-        --sidebar-bg: rgba(34, 34, 37, 0.92);
-        --ink: #F5F5F7;
-        --muted: #A1A1A6;
-        --border: rgba(255, 255, 255, 0.1);
-        --shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
-        --brand-soft: rgba(61, 156, 94, 0.18);
-        --pomodoro: #E84D3D;
-        --flowtime: #3387EB;
-        --timeblock: #8F45DE;
-        --stopwatch: #2EB870;
-        --streak: #FF991A;
-      }
-    }
-
-    * { box-sizing: border-box; }
-    html { scroll-behavior: smooth; }
-    body {
-      margin: 0;
-      font-family: var(--font);
-      background: var(--bg);
-      color: var(--ink);
-      line-height: 1.55;
-      -webkit-font-smoothing: antialiased;
-    }
-
-    .app-shell {
-      display: grid;
-      grid-template-columns: 260px 1fr;
-      min-height: 100vh;
-    }
-
-    aside {
-      position: sticky;
-      top: 0;
-      height: 100vh;
-      padding: 24px 16px;
-      background: var(--sidebar-bg);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border-right: 1px solid var(--border);
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-      overflow-y: auto;
-    }
-
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .brand-icon {
-      width: 40px;
-      height: 40px;
-      border-radius: 12px;
-      background: linear-gradient(135deg, var(--brand), var(--brand-light));
-      color: #fff;
-      font-weight: 700;
-      font-size: 20px;
-      display: grid;
-      place-items: center;
-      flex-shrink: 0;
-    }
-
-    .brand-title { font-weight: 700; font-size: 16px; }
-    .brand-sub { font-size: 12px; color: var(--muted); }
-
-    nav { display: flex; flex-direction: column; gap: 2px; }
-
-    nav a {
-      display: block;
-      padding: 7px 12px;
-      border-radius: 8px;
-      color: var(--ink);
-      text-decoration: none;
-      font-size: 13.5px;
-      transition: background 0.15s ease;
-    }
-    nav a:hover { background: var(--brand-soft); }
-
-    .nav-label {
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      color: var(--muted);
-      margin: 14px 0 4px 12px;
-    }
-    .nav-label:first-child { margin-top: 0; }
-
-    .sidebar-footer {
-      margin-top: auto;
-      font-size: 12px;
-      color: var(--muted);
-      padding: 14px 12px;
-      border-top: 1px solid var(--border);
-      line-height: 1.5;
-    }
-
-    main {
-      /* Centrado en la columna de contenido: márgenes laterales siempre
-       * equilibrados, independientemente del ancho de la ventana. */
-      margin-inline: auto;
-      padding: 32px clamp(20px, 5vw, 56px) 80px;
-      max-width: 980px;
-    }
-
-    .hero { margin-bottom: 36px; }
-    .hero-eyebrow {
-      display: inline-block;
-      font-size: 12.5px;
-      font-weight: 600;
-      color: var(--brand);
-      background: var(--brand-soft);
-      padding: 5px 12px;
-      border-radius: var(--radius-pill);
-      margin-bottom: 14px;
-    }
-    .hero h1 {
-      font-size: clamp(28px, 4.5vw, 40px);
-      line-height: 1.15;
-      letter-spacing: -0.02em;
-      margin: 0 0 14px;
-    }
-    .hero p {
-      font-size: 16px;
-      color: var(--muted);
-      max-width: 68ch;
-      margin: 0;
-    }
-
-    section {
-      margin-bottom: 56px;
-      scroll-margin-top: 24px;
-    }
-
-    h2 {
-      font-size: 24px;
-      letter-spacing: -0.015em;
-      margin: 0 0 6px;
-    }
-
-    h3 { font-size: 16.5px; margin: 0 0 8px; }
-
-    .section-lead {
-      color: var(--muted);
-      font-size: 15px;
-      margin: 0 0 20px;
-      max-width: 68ch;
-    }
-
-    .grid-2 {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 16px;
-    }
-
-    .grid-3 {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-      gap: 16px;
-    }
-
-    .card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-card);
-      padding: 20px 22px;
-      box-shadow: var(--shadow);
-    }
-
-    .card p { margin: 0 0 8px; font-size: 14px; color: var(--muted); }
-    .card ul { margin: 8px 0 0; padding-left: 18px; font-size: 13.5px; color: var(--muted); }
-    .card li { margin-bottom: 5px; }
-    .card li strong, .card p strong { color: var(--ink); }
-
-    .mode-card { border-top: 4px solid var(--brand); }
-    .mode-pomodoro { border-top-color: var(--pomodoro); }
-    .mode-flowtime { border-top-color: var(--flowtime); }
-    .mode-timeblock { border-top-color: var(--timeblock); }
-    .mode-stopwatch { border-top-color: var(--stopwatch); }
-
-    .badge {
-      display: inline-block;
-      font-size: 11px;
-      font-weight: 600;
-      padding: 2px 9px;
-      border-radius: var(--radius-pill);
-      vertical-align: 2px;
-      margin-left: 6px;
-    }
-    .badge-free { background: var(--brand-soft); color: var(--brand); }
-    .badge-pro { background: rgba(255, 153, 26, 0.16); color: var(--streak); }
-    .badge-web { background: rgba(51, 135, 235, 0.14); color: var(--flowtime); }
-
-    kbd {
-      font-family: var(--mono);
-      font-size: 12px;
-      background: var(--surface-alt);
-      border: 1px solid var(--border);
-      border-bottom-width: 2px;
-      border-radius: 6px;
-      padding: 2px 7px;
-      white-space: nowrap;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 13.5px;
-      background: var(--surface);
-      border-radius: 14px;
-      overflow: hidden;
-      border: 1px solid var(--border);
-    }
-    th {
-      text-align: left;
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: var(--muted);
-      background: var(--surface-alt);
-      padding: 10px 14px;
-    }
-    td {
-      padding: 10px 14px;
-      border-top: 1px solid var(--border);
-      vertical-align: top;
-    }
-
-    .callout {
-      padding: 16px 18px;
-      border-radius: 14px;
-      background: var(--surface-alt);
-      border: 1px solid var(--border);
-      font-size: 13.5px;
-      margin-top: 16px;
-    }
-
-    figure { margin: 22px 0; }
-    figure .screenshot {
-      display: block;
-      width: 100%;
-      height: auto;
-      border-radius: 12px;
-      border: 1px solid var(--border);
-      box-shadow: var(--shadow);
-      background: var(--surface-alt);
-    }
-    figure.half { max-width: 560px; }
-    figure.third { max-width: 380px; }
-    figcaption {
-      font-size: 12.5px;
-      color: var(--muted);
-      margin-top: 8px;
-      padding-left: 2px;
-    }
-    .figure-row {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      gap: 16px;
-      align-items: start;
-      margin: 22px 0;
-    }
-
-    .steps { counter-reset: step; padding-left: 0; list-style: none; margin: 16px 0; }
-    .steps li {
-      counter-increment: step;
-      position: relative;
-      padding-left: 40px;
-      margin-bottom: 12px;
-      font-size: 14px;
-      color: var(--muted);
-    }
-    .steps li strong { color: var(--ink); }
-    .steps li::before {
-      content: counter(step);
-      position: absolute;
-      left: 0;
-      top: 1px;
-      width: 26px;
-      height: 26px;
-      border-radius: 8px;
-      background: var(--brand-soft);
-      color: var(--brand);
-      font-weight: 700;
-      font-size: 13px;
-      display: grid;
-      place-items: center;
-    }
-
-    /* El apilado móvil solo bajo 760px: con la sidebar de 260px, un laptop
-     * estándar (760–1240px) debe mantener sidebar + columna centrada con
-     * márgenes — nunca contenido a pleno ancho sin márgenes. */
-    @media (max-width: 759px) {
-      .app-shell { grid-template-columns: 1fr; }
-      aside {
-        position: static;
-        height: auto;
-        max-height: none;
-      }
-      nav { display: none; }
-      .sidebar-footer { display: none; }
-      main { padding: 24px 20px 60px; }
-    }
-  </style>
+  <link rel="stylesheet" href="/guides/manual.css">
 </head>
 <body>
+  <div class="progress" id="progress" aria-hidden="true"></div>
+  <button class="toc-toggle" id="toc-toggle" aria-label="Índice de secciones" aria-expanded="false">☰</button>
+  <div class="toc-overlay" id="toc-overlay"></div>
   <div class="app-shell">
     <aside>
       <div class="brand"><a href="/guides" style="text-decoration:none;color:inherit;margin-right:8px" title="Todas las guías">←</a>
@@ -354,6 +21,8 @@
           <div class="brand-sub">Manual para Web</div>
         </div>
       </div>
+
+      <div class="guide-chip">🌐 Estás en la guía de Web</div>
 
       <nav>
         <div class="nav-label">Empezando</div>
@@ -779,10 +448,18 @@
       </section>
 
       <footer style="margin-top:24px;font-size:12.5px;color:var(--muted);border-top:1px solid var(--border);padding-top:18px">
-        Manual de Pepinillo Web · Capturas reales de la app con datos de demostración ·
-        <a href="/guides" style="color:var(--brand);text-decoration:none">Todas las guías →</a>
+        Manual de Pepinillo Web · Capturas reales de la app con datos de demostración
       </footer>
+            <nav class="guide-nav" aria-label="Navegación entre guías">
+        <a href="/guides/macos.html">
+          <span class="nav-dir">Guía anterior</span>
+          <span class="nav-title">← Manual para macOS</span>
+        </a>
+        <a class="guide-index" href="/guides">Todas las guías</a>
+        <span></span>
+      </nav>
     </main>
   </div>
+  <script src="/guides/manual.js" defer></script>
 </body>
 </html>
