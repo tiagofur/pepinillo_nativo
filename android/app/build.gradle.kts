@@ -60,7 +60,7 @@ extensions.configure<ApplicationExtension> {
         applicationId = "dev.creapolis.pepinillo"
         minSdk = 29
         targetSdk = 36
-        versionCode = 30
+        versionCode = 31
         versionName = "3.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"

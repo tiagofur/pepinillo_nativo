@@ -2,12 +2,17 @@
 <!--
   Agent-facing metadata for Pepinillo AppFunctions (issue #912).
   Instructions guide agents (Gemini) on when and how to call the functions.
+  Note: since androidx.appfunctions 1.0.0-beta01 the agent attribute is
+  appfn:instructions (appfn:description is the legacy name). Play Console
+  validates the new names and rejects the AAB when description or
+  displayDescription are empty (issue #918).
 -->
 <AppFunctionAppMetadata xmlns:appfn="http://schemas.android.com/apk/androidx.appfunctions"
-    appfn:description="Pepinillo is a deep work and focus companion. Use its functions to capture to-dos into the user's plan.
+    appfn:instructions="Pepinillo is a deep work and focus companion. Use its functions to capture to-dos into the user's plan.
 Operational Patterns:
   - When the user asks to remember, note down, or plan something, create a task with a concise title derived from their words.
   - Put extra context the user mentions (where, when, which flavor) into notes rather than the title.
 Constraints:
   - The title cannot be blank.
-  - If the free plan's active-task cap is reached, tell the user to upgrade to Pepinillo+ in the app for unlimited tasks." />
+  - If the free plan's active-task cap is reached, tell the user to upgrade to Pepinillo+ in the app for unlimited tasks."
+    appfn:displayDescription="@string/appfunctions_display_description" />
