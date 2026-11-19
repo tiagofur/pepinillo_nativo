@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pepinillo para Android — Manual de Usuario</title>
+  <meta name="description" content="Manual completo de Pepinillo para Android: los cuatro modos de foco, el plan con energía, el Panel, Material You, widgets Glance, Assistant y cada rincón de la app.">
+  <link rel="canonical" href="https://pepinillo.app/guides/android">
+  <link rel="stylesheet" href="/guides/manual.css">
+</head>
+<body>
+  <div class="progress" id="progress" aria-hidden="true"></div>
+  <button class="toc-toggle" id="toc-toggle" aria-label="Índice de secciones" aria-expanded="false">☰</button>
+  <div class="toc-overlay" id="toc-overlay"></div>
+
+  <div class="app-shell">
+    <aside>
+      <div class="brand"><a href="/guides" style="text-decoration:none;color:inherit;margin-right:8px" title="Todas las guías">←</a>
+        <div class="brand-icon">P</div>
+        <div>
+          <div class="brand-title">Pepinillo</div>
+          <div class="brand-sub">Manual para Android</div>
+        </div>
+      </div>
+      <div class="guide-chip">🤖 Estás en la guía de Android</div>
+
+      <nav>
+        <div class="nav-label">Empezando</div>
+        <a href="#instalacion">1. Instalación y primeros pasos</a>
+        <a href="#flujo">2. El flujo Plan → Focus → Reflect</a>
+
+        <div class="nav-label">Foco</div>
+        <a href="#modos">3. Los cuatro modos de foco</a>
+        <a href="#sesion">4. Durante la sesión</a>
+
+        <div class="nav-label">Plan</div>
+        <a href="#plan">5. Tareas, energía y filtros</a>
+
+        <div class="nav-label">Progreso</div>
+        <a href="#panel">6. Dashboard, estadísticas y rachas</a>
+
+        <div class="nav-label">Siempre presente</div>
+        <a href="#widgets">7. Widgets y notificación persistente</a>
+        <a href="#assistant">8. Assistant y atajos</a>
+
+        <div class="nav-label">Ajustes</div>
+        <a href="#cuenta">9. Cuenta, Pepinillo+ y ajustes</a>
+
+        <div class="nav-label">Referencia</div>
+        <a href="#tips">10. Tips avanzados y FAQ</a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div style="font-size:11.5px;font-weight:700;color:var(--ink);margin-bottom:3px">100% Android · Offline-first</div>
+        <div style="color:var(--muted)">Kotlin · Jetpack Compose · Material 3</div>
+      </div>
+    </aside>
+
+    <main>
+      <header class="hero">
+        <span class="badge">Manual de Usuario · Pepinillo para Android</span>
+        <h1>Deep work con gramática Material</h1>
+        <p class="section-lead">Pepinillo para Android es el compañero de foco con gramática Material 3 Expressive: los cuatro modos, el plan con energía y estadísticas honestas — 100% offline, con widgets Glance y notificación persistente.</p>
+      </header>
+
+      <!-- 1. INSTALACIÓN -->
+      <section id="instalacion">
+        <h2>1. Instalación y primeros pasos</h2>
+        <p class="section-lead">De cero a tu primera sesión de foco en menos de un minuto.</p>
+
+        <div class="grid-2">
+          <article class="card">
+            <h3>Instalar y conceder permisos</h3>
+            <ol class="steps">
+              <li><strong>Descargá Pepinillo</strong> de Google Play y abrilo (en Play lo encontrás como “Pikle - Pomodoro &amp; Tasks”).</li>
+              <li>Al primer arranque verás una breve <strong>introducción a los cuatro modos</strong> de foco. Podés saltarla con <em>Omitir</em>.</li>
+              <li>Pepinillo te pedirá permiso para <strong>notificaciones</strong>: aceptalo para los avisos de fin de fase.</li>
+              <li>Concedé <strong>ignorar optimizaciones de batería</strong> si querés que el temporizador siga corriendo en segundo plano sin ser detenido.</li>
+            </ol>
+            <p>Sin cuenta, sin configuración: todo funciona al instante y offline.</p>
+          </article>
+          <article class="card">
+            <h3>Cómo está organizada la app</h3>
+            <ul>
+              <li><strong>Enfoque</strong> — el temporizador y sus controles <span class="badge">1</span>.</li>
+              <li><strong>Plan</strong> — tus tareas con chips <em>Hoy, Inbox, Próximas, Completadas</em> <span class="badge">2</span>.</li>
+              <li><strong>Dashboard</strong> — el resumen del día con racha y gráficas <span class="badge">3</span>.</li>
+              <li><strong>Más</strong> — cuenta, ajustes, exportación y acerca de <span class="badge">4</span>.</li>
+            </ul>
+            <p>Los cuatro puntos viven en la <strong>barra inferior</strong>, siempre a un toque.</p>
+          </article>
+        </div>
+
+        <figure class="half">
+          <img class="screenshot" src="/guides/img/android-01-foco-idle.jpg" alt="Pepinillo para Android en la pestaña Enfoque, listo para iniciar" loading="lazy">
+          <figcaption>La app al abrir: anillo de foco, modos arriba con el activo resaltado, tarea vinculada y el botón <em>Iniciar Enfoque</em>.</figcaption>
+        </figure>
+
+        <div class="callout"><strong>Todo offline, de verdad.</strong> Tus tareas y sesiones viven en el dispositivo (Room). La nube solo entra si activás la sincronización con Everywhere/AI+ (opcional).</div>
+      </section>
+
+      <!-- 2. FLUJO -->
+      <section id="flujo">
+        <h2>2. El flujo Plan → Focus → Reflect</h2>
+        <p class="section-lead">Todas las funciones de Pepinillo sirven a un mismo ciclo de trabajo profundo.</p>
+
+        <div class="grid-2">
+          <article class="card">
+            <h3>Las cuatro fases del ciclo</h3>
+            <ul>
+              <li><strong>Plan:</strong> capturá y organizá tareas con energía y prioridad en <em>Plan</em>.</li>
+              <li><strong>Focus:</strong> elegí un modo, vinculá una tarea y empezá la sesión.</li>
+              <li><strong>Complete:</strong> pomodoros contados, tareas cerradas y racha que crece.</li>
+              <li><strong>Reflect:</strong> el diario de sesión te pregunta cómo fue — 10 segundos que alimentan tus estadísticas.</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>El motor es honesto</h3>
+            <ul>
+              <li>El temporizador está anclado al <strong>reloj del sistema</strong>: cerrar la app, el reposo del teléfono o un reinicio no descuaran el tiempo.</li>
+              <li>Las <strong>estadísticas se calculan localmente</strong> en tu dispositivo; nada sale de él salvo que actives la sincronización de Everywhere/AI+.</li>
+              <li>La <strong>racha</strong> cuenta días consecutivos con al menos una sesión y tiene protección: un día perdido no la rompe.</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <!-- 3. MODOS -->
+      <section id="modos">
+        <h2>3. Los cuatro modos de foco</h2>
+        <p class="section-lead">Los chips superiores de <em>Enfoque</em> cambian el color del anillo: rojo pomodoro, azul flowtime, violeta bloques, verde cronómetro.</p>
+
+        <div class="grid-2">
+          <article class="card">
+            <h3><span class="badge badge-pro">🍅 Pomodoro</span></h3>
+            <p>Ciclos de trabajo y descanso: 25 + 5 por defecto, con el índice del ciclo bajo el anillo. Los auto-inicios se ajustan en <em>Más ▸ Ajustes de App</em>.</p>
+          </article>
+          <article class="card">
+            <h3><span class="badge badge-pro">🌊 Flowtime</span></h3>
+            <p>Trabajo continuo con descansos sugeridos cuando tu concentración cae. Ideal para estados de flow largos.</p>
+          </article>
+          <article class="card">
+            <h3><span class="badge badge-pro">🧱 Bloques</span></h3>
+            <p>Reservás un bloque del día para una tarea: el anillo marca el avance y al terminar entra el descanso.</p>
+          </article>
+          <article class="card">
+            <h3><span class="badge badge-pro">⏱️ Crono</span></h3>
+            <p>Sin estructura: contá hacia arriba y terminá cuando quieras. El modo más honesto para tareas con tiempo impredecible.</p>
+          </article>
+        </div>
+
+        <div class="callout"><strong>¿Cuál elegir?</strong> Si sabés cuándo arrancás y terminás → Bloques. Si querés estructura clásica → Pomodoro. Si el flow manda → Flowtime. Si nada de eso aplica → Crono.</div>
+      </section>
+
+      <!-- 4. SESIÓN -->
+      <section id="sesion">
+        <h2>4. Durante la sesión: tarea, sonido y control</h2>
+        <p class="section-lead">El escenario de foco se tiñe del color del modo y desaparece todo lo que no necesitás.</p>
+
+        <figure class="half">
+          <img class="screenshot" src="/guides/img/android-02-foco-corriendo.jpg" alt="Sesión de foco corriendo con tarea vinculada en Android" loading="lazy">
+          <figcaption>Sesión corriendo: el arco crece en sentido horario, la fase actual bajo el anillo y los controles grandes para un toque.</figcaption>
+        </figure>
+
+        <div class="grid-2">
+          <article class="card">
+            <h3>Vincular una tarea y sonidos</h3>
+            <ul>
+              <li>El chip <strong>Toca para vincular una tarea</strong> abre el selector del Plan: sus pomodoros se contabilizan al terminar.</li>
+              <li><strong>Elegir paisaje sonoro</strong> abre los ambientes: lluvia, bosque, café, ruido blanco, océano, chimenea, binaural y Lo-Fi.</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>Terminar, saltar y recuperar</h3>
+            <ul>
+              <li><strong>Detener</strong> abre un diálogo de confirmación antes de cortar la sesión.</li>
+              <li><strong>Saltar</strong> avanza a la siguiente fase sin registrarla.</li>
+              <li>Si cerrás la app a mitad de sesión, la tarjeta de <em>sesión sin terminar</em> te espera al volver con el tiempo registrado.</li>
+            </ul>
+          </article>
+        </div>
+
+        <div class="callout"><strong>Optimización de batería.</strong> Al iniciar por primera vez, Pepinillo te ofrece desactivar la restricción de batería para que el temporizador no muera en segundo plano — recomendado para sesiones largas.</div>
+      </section>
+
+      <!-- 5. PLAN -->
+      <section id="plan">
+        <h2>5. Plan: tareas, energía y filtros</h2>
+        <p class="section-lead">El Plan muestra tus tareas como tarjetas compactas con chips de filtro arriba y <em>Nueva tarea</em> siempre al pie.</p>
+
+        <figure class="half">
+          <img class="screenshot" src="/guides/img/android-03-plan.jpg" alt="Plan con lista de tareas y filtros en Android" loading="lazy">
+          <figcaption>El Plan con el filtro <em>Inbox</em>: círculo de completado, chip de energía con su ícono de batería, pomodoros estimados y el botón de foco en cada fila.</figcaption>
+        </figure>
+
+        <div class="grid-2">
+          <article class="card">
+            <h3>Crear y organizar</h3>
+            <ul>
+              <li><strong>+ Nueva tarea</strong> (o <em>Crear mi primera tarea</em> en el estado vacío) abre el compositor: título, prioridad, energía y estimación de pomodoros.</li>
+              <li>Chips de filtro: <strong>Hoy</strong> (tu día planificado), <strong>Inbox</strong>, <strong>Próximas</strong> (con fecha) y <strong>Completadas</strong>.</li>
+              <li>El botón <strong>▶</strong> de cada fila vincula la tarea y arranca el foco directo.</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>Energía y límites</h3>
+            <ul>
+              <li>La <strong>energía</strong> (Ligera, Regular, Trabajo profundo) te ayuda a elegir tareas según cómo estás: el chip con el ícono de batería te lo recuerda de un vistazo.</li>
+              <li>El plan gratuito permite <strong>3 tareas activas</strong>; con Pepinillo+ son ilimitadas, con subtareas y recurrencia.</li>
+              <li>El planificador <em>3/3 activas</em> del encabezado te marca cuándo llegás al tope.</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <!-- 6. PANEL -->
+      <section id="panel">
+        <h2>6. Dashboard, estadísticas y rachas</h2>
+        <p class="section-lead">El Dashboard resume el día; los períodos largos y los resúmenes viven aquí también.</p>
+
+        <figure class="half">
+          <img class="screenshot" src="/guides/img/android-04-panel.jpg" alt="Dashboard con racha, gráfica de la semana y resúmenes en Android" loading="lazy">
+          <figcaption>El Dashboard: <strong>racha de días</strong> con su flama, <strong>Enfoque esta semana</strong> en barras, foco y sesiones acumuladas, y los resúmenes Semanal/Mensual.</figcaption>
+        </figure>
+
+        <div class="grid-2">
+          <article class="card">
+            <h3>Qué se cuenta</h3>
+            <ul>
+              <li><strong>Tiempo de enfoque</strong> del día y del período (7/30/365 días).</li>
+              <li><strong>Sesiones</strong> de hoy y del histórico, con modo y duración.</li>
+              <li><strong>Racha</strong> de días consecutivos, con protección de descanso.</li>
+              <li><strong>Resumen Semanal y Mensual</strong> generados de tus datos locales.</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>Periodos largos con Pepinillo+</h3>
+            <ul>
+              <li>Free incluye <strong>hoy + últimos 7 días</strong>.</li>
+              <li><strong>30D y 1 año</strong> se desbloquean con Pepinillo+.</li>
+              <li>Todo se calcula localmente en el dispositivo; el período largo no viaja a ningún servidor.</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <!-- 7. WIDGETS -->
+      <section id="widgets">
+        <h2>7. Widgets y notificación persistente</h2>
+        <p class="section-lead">Pepinillo vive fuera de la app: widgets Glance en el escritorio y una notificación persistente con controles.</p>
+
+        <div class="grid-2">
+          <article class="card">
+            <h3>Widgets Glance</h3>
+            <ul>
+              <li>Mantené pulsado el escritorio → <strong>Widgets</strong> → buscá <strong>Pepinillo</strong>. Hay widgets de <em>timer</em>, <em>racha</em> y <em>tarea del día</em>.</li>
+              <li>Tocar el widget de timer abre la app directamente en <em>Enfoque</em>.</li>
+              <li>Se redimensionan y adoptan el color dinámico de Material You.</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>Notificación persistente</h3>
+            <ul>
+              <li>Durante una sesión, la <strong>notificación en curso</strong> muestra tiempo restante, fase y color del modo.</li>
+              <li>Incluye botones para <strong>pausar y terminar</strong> sin abrir la app.</li>
+              <li>Vive en el segundo plano con el canal de notificación de foco — configurable en <em>Más ▸ Permisos</em>.</li>
+            </ul>
+          </article>
+        </div>
+
+        <div class="callout"><strong>Presencia antes de abrir.</strong> El principio de Pepinillo: el timer debe alcanzarse en un toque desde cualquier pantalla del sistema.</div>
+      </section>
+
+      <!-- 8. ASSISTANT -->
+      <section id="assistant">
+        <h2>8. Gemini, App Functions y atajos</h2>
+        <p class="section-lead">Pepinillo registra App Functions: asistentes como Gemini pueden crear tareas en tu Plan con una frase.</p>
+
+        <table>
+          <thead>
+            <tr><th>Decile a Gemini (Connected Apps)</th><th>Qué hace</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><em>"Creá la tarea [nombre] en Pepinillo"</em></td><td>Agrega la tarea al final del Plan, con notas opcionales.</td></tr>
+          </tbody>
+        </table>
+
+        <div class="grid-2">
+          <article class="card">
+            <h3>Atajos manuales</h3>
+            <ul>
+              <li>Mantené pulsado el ícono de la app para los <strong>atajos rápidos</strong>: iniciar sesión de foco, ir al Plan.</li>
+              <li>Los atajos funcionan offline en español, inglés y portugués.</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>Cómo se activa</h3>
+            <ul>
+              <li>Las App Functions viven en <em>Más ▸ Permisos y segundo plano</em>: conectá tu asistente (Gemini y las Connected Apps compatibles).</li>
+              <li>La función disponible hoy es <strong>crear tareas</strong>; el foco por voz queda en el radar del producto.</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <!-- 9. CUENTA -->
+      <section id="cuenta">
+        <h2>9. Cuenta, Pepinillo+ y ajustes</h2>
+        <p class="section-lead">Todo vive en <em>Más</em>: la cuenta es opcional y los ajustes son cortos a propósito.</p>
+
+        <figure class="half">
+          <img class="screenshot" src="/guides/img/android-05-mas.jpg" alt="Pantalla Más de Pepinillo en Android con cuenta, configuración y recursos" loading="lazy">
+          <figcaption>La pantalla <em>Más</em>: Cuenta (Iniciar Sesión / Crear Cuenta), Configuración (Ajustes de App, Permisos y segundo plano, Sincro en la Nube) y Recursos (Exportar Datos, Ayuda y Soporte, Acerca de).</figcaption>
+        </figure>
+
+        <div class="grid-2">
+          <article class="card">
+            <h3>Ajustes que importan</h3>
+            <ul>
+              <li><strong>Ajustes de App</strong> — duraciones de trabajo y descanso, auto-inicios, tema y apariencia (sistema, claro, oscuro; temas premium con Pepinillo+).</li>
+              <li><strong>Permisos y segundo plano</strong> — notificaciones, optimización de batería y segundo plano exacto, todo desde un lugar.</li>
+              <li><strong>Sincro en la Nube</strong> — Everywhere/AI+ para llevar tus datos entre Android, iPhone, iPad, Mac y la web.</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>Pepinillo+ y Everywhere/AI+</h3>
+            <ul>
+              <li><strong>Pepinillo+</strong> (compra única): Flowtime y Bloques, tareas ilimitadas, subtareas, recurrencia, temas y estadísticas de 30 días + 1 año.</li>
+              <li><strong>Everywhere/AI+</strong> (suscripción): añade sincronización entre dispositivos y recuperación de cuenta.</li>
+              <li>La compra se gestiona desde la sección <em>Suscripción</em> de Más (visible con sesión iniciada) o desde la Play Store.</li>
+            </ul>
+          </article>
+        </div>
+
+        <div class="callout"><strong>Cuenta ≠ uso.</strong> Pepinillo funciona completo sin cuenta; crearla solo activa la sincronización Everywhere y la recuperación de datos.</div>
+      </section>
+
+      <!-- 10. TIPS -->
+      <section id="tips">
+        <h2>10. Tips avanzados y FAQ</h2>
+        <p class="section-lead">Detalles que hacen la diferencia después de la primera semana.</p>
+
+        <div class="grid-2">
+          <article class="card">
+            <h3>Tips</h3>
+            <ul>
+              <li><strong>Planificá el día antes de cerrar</strong>: al abrir, <em>Plan ▸ Hoy</em> ya te espera con lo que decidiste.</li>
+              <li><strong>Una tarea por sesión.</strong> Vincular la sesión a una tarea alimenta sus pomodoros estimados y tus estadísticas.</li>
+              <li><strong>Si el descanso te corta el flow</strong>, pasá a Flowtime o subí la duración del pomodoro en <em>Ajustes de App</em>.</li>
+              <li><strong>La racha se defiende</strong> con sesiones cortas: un pomodoro chico cuenta igual que uno largo.</li>
+              <li><strong>Tema dinámico:</strong> Pepinillo respeta Material You — el color del sistema pinta los widgets.</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>FAQ</h3>
+            <ul>
+              <li><strong>¿Funciona sin internet?</strong> Sí, al 100%: tareas, sesiones y estadísticas son locales (Room).</li>
+              <li><strong>¿Se sincroniza con mi iPhone o la web?</strong> Con Everywhere/AI+, sí — last-write-wins con reloj de servidor.</li>
+              <li><strong>¿Y mi reloj?</strong> Con Wear OS tenés el timer, las tareas y tiles en la muñeca — <a href="/guides/wearos.html">ver la guía de Wear OS</a>.</li>
+              <li><strong>¿Dónde están mis datos?</strong> En Room en tu dispositivo, con exportación desde <em>Más ▸ Exportar Datos</em>.</li>
+              <li><strong>¿El timer sigue si cambio de app?</strong> Sí: la notificación persistente y los avisos siguen corriendo; concedé la excepción de batería para sesiones largas.</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+        <footer style="margin-top:24px;font-size:12.5px;color:var(--muted);border-top:1px solid var(--border);padding-top:18px">
+          Manual de Pepinillo para Android · Capturas reales de la app con datos de demostración
+        </footer>
+        <nav class="guide-nav" aria-label="Navegación entre guías">
+          <a href="/guides/watchos.html">
+            <span class="nav-dir">Guía anterior</span>
+            <span class="nav-title">← Manual para Apple Watch</span>
+          </a>
+          <a class="guide-index" href="/guides">Todas las guías</a>
+          <a class="next" href="/guides/wearos.html">
+            <span class="nav-dir">Siguiente guía</span>
+            <span class="nav-title">Manual para Wear OS →</span>
+          </a>
+        </nav>
+    </main>
+  </div>
+  <script src="/guides/manual.js" defer></script>
+</body>
+</html>

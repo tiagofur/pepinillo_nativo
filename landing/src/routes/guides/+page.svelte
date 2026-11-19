@@ -7,8 +7,8 @@
 		{ href: '/guides/macos.html', title: 'guides.list.macos', body: 'guides.list.macos.body', emoji: '💻', ready: true, img: '/guides/img/macos-dashboard.jpg' },
 		{ href: '/guides/iphone.html', title: 'guides.list.iphone', body: 'guides.list.iphone.body', emoji: '📱', ready: true, img: '/guides/img/iphone-03-foco-corriendo.jpg' },
 		{ href: '/guides/watchos.html', title: 'guides.list.watchos', body: 'guides.list.watchos.body', emoji: '⌚️', ready: true, img: '/guides/img/watchos-01-timer.jpg' },
-		{ href: '/guides/android', title: 'guides.list.android', body: 'guides.list.generic.body', emoji: '🤖', ready: false },
-		{ href: '/guides/wearos', title: 'guides.list.wearos', body: 'guides.list.generic.body', emoji: '⌚️', ready: false },
+		{ href: '/guides/android.html', title: 'guides.list.android', body: 'guides.list.android.body', emoji: '🤖', ready: true, img: '/guides/img/android-02-foco-corriendo.jpg' },
+		{ href: '/guides/wearos.html', title: 'guides.list.wearos', body: 'guides.list.wearos.body', emoji: '⌚️', ready: true, img: '/guides/img/wearos-01-timer.jpg' },
 		{ href: '/guides/web.html', title: 'guides.list.web', body: 'guides.list.web.body', emoji: '🌐', ready: true, img: '/guides/img/web-02-foco-corriendo.jpg' }
 	];
 </script>
