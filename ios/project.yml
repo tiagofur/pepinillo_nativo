@@ -165,6 +165,8 @@ targets:
         embed: true
       - target: PepinilloControlCenter
         embed: true
+      - target: PepinilloShareExtension
+        embed: true
       - target: PepinilloWatch
         embed: true
         buildPhase: embedWatchContent
@@ -334,6 +336,43 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.pepinillo.app.widget
+        SKIP_INSTALL: "YES"
+
+  PepinilloShareExtension:
+    type: app-extension
+    platform: iOS
+    deploymentTarget: "17.0"
+    bundleId: com.pepinillo.app.share
+    configFiles:
+      Debug: Config/Dev.xcconfig
+      Staging: Config/Staging.xcconfig
+      Release: Config/Production.xcconfig
+    info:
+      path: ShareExtension/Info.plist
+      properties:
+        CFBundleDisplayName: Pepinillo
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.share-services
+          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).ShareViewController
+          NSExtensionAttributes:
+            NSExtensionActivationRule:
+              NSExtensionActivationSupportsTextWithMaxCount: 1
+              NSExtensionActivationSupportsWebURLWithMaxCount: 1
+    entitlements:
+      path: ShareExtension/PepinilloShareExtension.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.com.pepinillo.app
+    sources:
+      - path: ShareExtension
+    resources:
+      - path: Shared/Resources/Localizable.xcstrings
+        optional: true
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.pepinillo.app.share
         SKIP_INSTALL: "YES"
 
   PepinilloWidgetMacExtension:
@@ -557,6 +596,7 @@ schemes:
       targets:
         Pepinillo: all
         PepinilloWidgetExtension: [build]
+        PepinilloShareExtension: [build]
         PepinilloWatch: [build]
         PepinilloTests: [test]
     run:
@@ -581,6 +621,7 @@ schemes:
       targets:
         Pepinillo: all
         PepinilloWidgetExtension: [build]
+        PepinilloShareExtension: [build]
         PepinilloWatch: [build]
         PepinilloTests: [test]
     run:
@@ -605,6 +646,7 @@ schemes:
       targets:
         Pepinillo: all
         PepinilloWidgetExtension: [build]
+        PepinilloShareExtension: [build]
         PepinilloWatch: [build]
         PepinilloTests: [test]
     run:
