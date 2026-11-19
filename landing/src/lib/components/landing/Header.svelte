@@ -91,4 +91,10 @@
 			display: none;
 		}
 	}
+
+	@media (max-width: 559px) {
+		.top-actions .btn {
+			display: none;
+		}
+	}
 </style>

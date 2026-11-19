@@ -92,6 +92,7 @@
 		display: flex;
 		flex-direction: column;
 		gap: var(--space-10);
+		scroll-margin-top: 84px;
 	}
 
 	.pricing-head {

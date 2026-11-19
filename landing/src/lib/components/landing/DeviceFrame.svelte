@@ -77,15 +77,44 @@
 		border-radius: 28px;
 	}
 
-	/* Round watches (watchOS / Wear OS) */
+	/* Round watches (watchOS / Wear OS) — silver aluminum case so the
+	 * silhouette reads as a watch even small on dark heroes */
 	.frame--watch,
 	.frame--wear {
 		border-radius: 50%;
-		border: 10px solid #1c1c20;
-		background: #1c1c20;
+		border: 9px solid #9a9aa2;
+		background: #9a9aa2;
 		box-shadow:
 			var(--shadow-3),
-			0 0 0 1px rgba(255, 255, 255, 0.08);
+			inset 0 0 0 2px rgba(0, 0, 0, 0.35);
+	}
+
+	/* digital crown + side button — what makes a circle read as a watch */
+	.frame--watch::before,
+	.frame--wear::before {
+		content: '';
+		position: absolute;
+		right: -15px;
+		top: 26%;
+		width: 8px;
+		height: 15%;
+		min-height: 18px;
+		border-radius: 4px;
+		background: #c2c2ca;
+		box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.18);
+	}
+
+	.frame--watch::after,
+	.frame--wear::after {
+		content: '';
+		position: absolute;
+		right: -10px;
+		top: 48%;
+		width: 5px;
+		height: 11%;
+		min-height: 14px;
+		border-radius: 3px;
+		background: #a8a8b0;
 	}
 
 	.frame--watch img,

@@ -61,7 +61,7 @@
 		flex-direction: column;
 		align-items: center;
 		text-align: center;
-		padding: var(--space-12) var(--space-4) 0;
+		padding: var(--space-12) var(--space-4) var(--space-8);
 	}
 
 	.hero-copy {
@@ -109,21 +109,36 @@
 
 	/* Ecosystem scene: iPhone — Mac — Watch, organic offsets */
 	.scene {
+		position: relative;
 		display: grid;
 		grid-template-columns: 1fr minmax(0, 620px) 1fr;
 		align-items: center;
 		justify-items: center;
-		gap: var(--space-4);
+		gap: var(--space-8);
 		width: 100%;
 		max-width: 1040px;
 		margin-top: var(--space-12);
 	}
 
+	/* soft ground shadow so the light Mac window sits in the scene */
+	.scene::after {
+		content: '';
+		position: absolute;
+		left: 50%;
+		bottom: -40px;
+		width: 76%;
+		height: 84px;
+		transform: translateX(-50%);
+		background: radial-gradient(50% 100% at 50% 50%, color-mix(in srgb, var(--ink) 20%, transparent), transparent 70%);
+		filter: blur(42px);
+		pointer-events: none;
+	}
+
 	.sc-iphone {
 		width: 100%;
-		max-width: 190px;
+		max-width: 186px;
 		justify-self: end;
-		transform: translateY(34px);
+		transform: translateY(22px);
 	}
 
 	.sc-mac {
@@ -134,9 +149,9 @@
 
 	.sc-watch {
 		width: 100%;
-		max-width: 148px;
+		max-width: 154px;
 		justify-self: start;
-		transform: translateY(-14px);
+		transform: translateY(16px);
 	}
 
 	/* Companion strip: Android + Web */
@@ -147,7 +162,7 @@
 		gap: var(--space-10);
 		width: 100%;
 		max-width: 880px;
-		margin-top: var(--space-8);
+		margin-top: var(--space-10);
 	}
 
 	.strip-android {
@@ -161,6 +176,10 @@
 	}
 
 	@media (max-width: 859px) {
+		h1 {
+			font-size: clamp(2rem, 8.4vw, 2.75rem);
+		}
+
 		.scene {
 			grid-template-columns: 1fr;
 			gap: var(--space-6);

@@ -27,7 +27,7 @@
 		flex-direction: column;
 		align-items: center;
 		gap: var(--space-4);
-		padding-top: var(--space-8);
+		padding: var(--space-8) var(--space-4) calc(var(--space-8) + var(--safe-b));
 		border-top: 1px solid var(--hairline);
 	}
 

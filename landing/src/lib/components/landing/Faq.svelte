@@ -35,6 +35,7 @@
 		max-width: 720px;
 		margin-inline: auto;
 		width: 100%;
+		scroll-margin-top: 84px;
 	}
 
 	.faq h2 {

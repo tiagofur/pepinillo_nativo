@@ -28,7 +28,9 @@
 	<div class="gallery">
 		{#each PLATFORMS as p (p.key)}
 			<article class="platform platform--{p.key}">
-				<DeviceFrame variant={p.variant} src={p.src} alt={t(`landing.showcase.${p.key}.body`)} href={p.guide} />
+				<div class="platform-frame">
+					<DeviceFrame variant={p.variant} src={p.src} alt={t(`landing.showcase.${p.key}.body`)} href={p.guide} />
+				</div>
 				<h3>{t(`landing.showcase.${p.key}`)}</h3>
 				<p>{t(`landing.showcase.${p.key}.body`)}</p>
 				<a class="guide-link" href={p.guide} data-sveltekit-reload={p.guide.endsWith('.html') ? true : undefined}>
@@ -44,6 +46,7 @@
 		display: flex;
 		flex-direction: column;
 		gap: var(--space-10);
+		scroll-margin-top: 84px;
 	}
 
 	.showcase-head {
@@ -59,13 +62,15 @@
 		color: var(--muted);
 	}
 
-	/* Gallery: natural per-platform sizes, not identical cards */
+	/* Gallery: natural per-platform sizes, not identical cards.
+	 * Frames anchor to a shared baseline inside a fixed-height zone so
+	 * captions and guide links align across each row. */
 	.gallery {
 		display: flex;
 		flex-wrap: wrap;
 		justify-content: center;
 		align-items: flex-start;
-		gap: var(--space-10) var(--space-12);
+		gap: var(--space-8) var(--space-12);
 	}
 
 	.platform {
@@ -75,6 +80,13 @@
 		max-width: 340px;
 	}
 
+	.platform-frame {
+		height: 500px;
+		display: flex;
+		align-items: flex-end;
+		justify-content: center;
+	}
+
 	.platform--mac,
 	.platform--web {
 		width: min(420px, 100%);
@@ -82,7 +94,7 @@
 
 	.platform--iphone,
 	.platform--android {
-		width: 216px;
+		width: 204px;
 	}
 
 	.platform--watch,
@@ -92,7 +104,7 @@
 
 	.platform h3 {
 		font-size: var(--text-base);
-		margin-top: var(--space-2);
+		margin-top: 0;
 	}
 
 	.platform p {
@@ -116,14 +128,18 @@
 			gap: var(--space-8) var(--space-6);
 		}
 
+		.platform-frame {
+			height: 400px;
+		}
+
 		.platform--iphone,
 		.platform--android {
-			width: 180px;
+			width: 168px;
 		}
 
 		.platform--watch,
 		.platform--wear {
-			width: 140px;
+			width: 132px;
 		}
 	}
 </style>
