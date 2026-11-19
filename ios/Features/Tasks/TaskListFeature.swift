@@ -26,6 +26,11 @@ struct TaskListFeature {
         /// Native macOS inline composer. The menu command and the Plan toolbar
         /// open it without presenting a sheet (S6).
         var isNewTaskComposerPresented: Bool = false
+        /// Title captured by the iOS Share Extension (#669), parked until the
+        /// list is loaded — a cold-start `tasksLoaded` would otherwise
+        /// overwrite a task appended before it. `capturedTaskReady` adopts it
+        /// when data is already on screen; `tasksLoaded` adopts it otherwise.
+        var pendingCapturedTaskTitle: String?
         var importError: String?
         /// Success summary after Reminders import (#187).
         var importSummary: String?
@@ -191,6 +196,9 @@ struct TaskListFeature {
         case newTaskRequested
         case newTaskComposerDismissed
         case addTaskTapped
+        /// A Share-Extension capture landed in the app group (#669); adopt the
+        /// parked title into the quick-add pipeline when the list can take it.
+        case capturedTaskReady
         case taskTapped(UUID)
         case taskDetailDismissed
         case taskRenamed(UUID, String)
@@ -302,6 +310,15 @@ struct TaskListFeature {
                 state.tasks = IdentifiedArrayOf(uniqueElements: tasks)
                 state.isLoading = false
                 state.hasLoadedData = true
+                // #669: a Share-Extension capture parked before the first load
+                // is created on top of the freshly loaded list.
+                var capturedTaskEffect: Effect<Action> = .none
+                if let captured = state.pendingCapturedTaskTitle,
+                   !captured.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    state.pendingCapturedTaskTitle = nil
+                    state.newTaskTitle = captured
+                    capturedTaskEffect = .send(.addTaskTapped)
+                }
                 let dtos = tasks.map { task in
                     TaskItemDTO(
                         id: task.id, title: task.title, notes: task.notes,
@@ -311,11 +328,14 @@ struct TaskListFeature {
                         dueDate: task.dueDate, scheduledForToday: task.scheduledForToday
                     )
                 }
-                return .run { [spotlight] _ in
-                    try? await Task.sleep(for: .seconds(4))
-                    try? await spotlight.indexTasks(dtos)
-                }
-                .cancellable(id: _SpotlightIndexID.indexTasks, cancelInFlight: true)
+                return .merge(
+                    capturedTaskEffect,
+                    .run { [spotlight] _ in
+                        try? await Task.sleep(for: .seconds(4))
+                        try? await spotlight.indexTasks(dtos)
+                    }
+                    .cancellable(id: _SpotlightIndexID.indexTasks, cancelInFlight: true)
+                )
 
             case .tasksLoadFailed(let message):
                 state.isLoading = false
@@ -424,6 +444,22 @@ struct TaskListFeature {
                         )))
                     }
                 }
+
+            // #669: Share-Extension capture. Loaded → adopt the parked title
+            // through the same quick-add pipeline (cap → paywall keeps the
+            // title, quick-add defaults, composer closes). Cold start → keep
+            // it parked; `tasksLoaded` adopts it after the list lands.
+            case .capturedTaskReady:
+                guard let captured = state.pendingCapturedTaskTitle,
+                      !captured.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                else {
+                    state.pendingCapturedTaskTitle = nil
+                    return .none
+                }
+                guard state.hasLoadedData else { return .none }
+                state.pendingCapturedTaskTitle = nil
+                state.newTaskTitle = captured
+                return .send(.addTaskTapped)
 
             case .taskTapped(let id):
                 state.selectedTaskID = id
