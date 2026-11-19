@@ -36,8 +36,15 @@ jobs:
   # PR. Tests themselves only take 1.5–2.5 min; the cost is the build, so
   # DerivedData caching turns the 15–24 min full build into an incremental
   # rebuild on cache hits.
+  # Cache write policy (issue #921): ONLY pushes to main save caches. Every
+  # PR writing its own full DerivedData into the 10 GB repo cache evicted the
+  # canonical entries — restores went cold and builds jumped from ~12-14 min
+  # to 25+. PRs restore main's latest cache and build their delta on top; the
+  # post-job save step (~2 min) also disappears from the PR critical path.
+  # Simulator boot (1.5 min) overlaps the build via a background process and
+  # is only awaited right before test execution.
   # Rollback note: if the cache ever yields flaky "module not found" builds,
-  # remove the "Cache DerivedData" step and the -derivedDataPath flags —
+  # remove the "Restore DerivedData" step and the -derivedDataPath flags —
   # everything else is independent of it.
   test:
     runs-on: macos-15
@@ -72,8 +79,9 @@ jobs:
           xcodebuild -version
           echo "version=$(xcodebuild -version | awk 'NR==1{print $2}')" >> "$GITHUB_OUTPUT"
 
-      - name: Cache Swift Package Manager
-        uses: actions/cache@v4
+      - name: Restore Swift Package Manager cache
+        id: spm
+        uses: actions/cache/restore@v4
         with:
           path: |
             ${{ env.CLONED_SOURCE_PACKAGES_PATH }}
@@ -85,9 +93,11 @@ jobs:
       # Incremental build cache: restore the closest previous DerivedData and
       # let xcodebuild rebuild only what the diff touched. The key pins the
       # Xcode version (image bumps invalidate cleanly) and hashes every file
-      # under ios/ (sources, assets, xcconfigs, project.yml).
-      - name: Cache DerivedData
-        uses: actions/cache@v4
+      # under ios/ (sources, assets, xcconfigs, project.yml). Saved only from
+      # main (see the job comment for the eviction rationale).
+      - name: Restore DerivedData cache
+        id: dd
+        uses: actions/cache/restore@v4
         with:
           path: ios/DerivedData
           key: ${{ runner.os }}-xcode${{ steps.xcode.outputs.version }}-dd-${{ hashFiles('ios/**') }}
@@ -111,7 +121,7 @@ jobs:
           defaults write com.apple.dt.Xcode IDESkipMacroFingerprintValidation -bool YES
           defaults write com.apple.dt.Xcode IDESkipPackagePluginFingerprintValidation -bool YES
 
-      - name: Resolve and boot simulator
+      - name: Resolve simulator and start boot in background
         id: sim
         run: |
           pick_simulator() {
@@ -131,9 +141,12 @@ jobs:
             exit 1
           fi
           xcrun simctl boot "$DEST" 2>/dev/null || true
-          xcrun simctl bootstatus "$DEST" -b
+          # Boot overlaps the build: background process survives across steps,
+          # "Wait for simulator" awaits it right before test execution.
+          nohup xcrun simctl bootstatus "$DEST" -b > /tmp/bootstatus.log 2>&1 &
+          echo $! > /tmp/boot.pid
           echo "id=$DEST" >> "$GITHUB_OUTPUT"
-          echo "Using simulator ID: $DEST"
+          echo "Using simulator ID: $DEST (booting in background)"
 
       - name: Build for testing
         run: |
@@ -148,6 +161,16 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             COMPILER_INDEX_STORE_ENABLE=NO \
             build-for-testing
+
+      - name: Wait for simulator
+        timeout-minutes: 5
+        run: |
+          DEST="${{ steps.sim.outputs.id }}"
+          # The background bootstatus already exited if the boot finished
+          # during the build; re-run bootstatus as an idempotent barrier.
+          wait "$(cat /tmp/boot.pid)" 2>/dev/null || true
+          xcrun simctl bootstatus "$DEST" -b
+          echo "Simulator booted: $DEST"
 
       - name: Select test suite
         id: suite
@@ -222,3 +245,22 @@ jobs:
             -only-testing:PepinilloTests/FocusFeatureTests/FocusFeatureReducerTests \
             -only-testing:PepinilloTests/SiriIntentsTests/SiriPauseResumeIntentTests \
             -only-testing:PepinilloTests/TaskListFeatureTests
+
+      # Canonical caches are written by main only (issue #921): PR builds
+      # consume main's cache without adding entries, so the 10 GB repo cache
+      # stops evicting the warm DerivedData every PR run used to push out.
+      - name: Save Swift Package Manager cache
+        if: github.event_name == 'push'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            ${{ env.CLONED_SOURCE_PACKAGES_PATH }}
+            ~/Library/Caches/org.swift.swiftpm
+          key: ${{ steps.spm.outputs.cache-primary-key }}
+
+      - name: Save DerivedData cache
+        if: github.event_name == 'push'
+        uses: actions/cache/save@v4
+        with:
+          path: ios/DerivedData
+          key: ${{ steps.dd.outputs.cache-primary-key }}
