@@ -433,6 +433,8 @@ export type MessageKey =
 	| 'landing.guides.cta'
 	| 'landing.nav.open'
 	| 'landing.nav.home'
+	| 'landing.nav.faq'
+	| 'landing.title'
 	| 'landing.meta'
 	| 'landing.kicker'
 	| 'landing.hero.title'
@@ -481,7 +483,42 @@ export type MessageKey =
 	| 'guides.list.wearos'
 	| 'guides.list.web'
 	| 'guides.list.web.body'
-	| 'guides.list.generic.body';
+	| 'guides.list.generic.body'
+	| 'landing.hero.cta.ios'
+	| 'landing.hero.cta.android'
+	| 'landing.hero.scene.label'
+	| 'landing.hero.scene.mac'
+	| 'landing.hero.scene.iphone'
+	| 'landing.hero.scene.watch'
+	| 'landing.hero.scene.android'
+	| 'landing.hero.scene.web'
+	| 'landing.download.pikle'
+	| 'landing.showcase.title'
+	| 'landing.showcase.sub'
+	| 'landing.showcase.guide'
+	| 'landing.showcase.mac'
+	| 'landing.showcase.mac.body'
+	| 'landing.showcase.iphone'
+	| 'landing.showcase.iphone.body'
+	| 'landing.showcase.watch'
+	| 'landing.showcase.watch.body'
+	| 'landing.showcase.android'
+	| 'landing.showcase.android.body'
+	| 'landing.showcase.wear'
+	| 'landing.showcase.wear.body'
+	| 'landing.showcase.web'
+	| 'landing.showcase.web.body'
+	| 'landing.pricing.sub'
+	| 'landing.faq.privacy.q'
+	| 'landing.faq.privacy.a'
+	| 'landing.faq.sync.q'
+	| 'landing.faq.sync.a'
+	| 'landing.faq.ai.q'
+	| 'landing.faq.ai.a'
+	| 'landing.faq.platforms.q'
+	| 'landing.faq.platforms.a'
+	| 'landing.cta.final.title'
+	| 'landing.cta.final.body';
 
 type Dict = Record<MessageKey, string>;
 
@@ -908,7 +945,50 @@ const en: Dict = {
 	'landing.guides.cta': 'Read the macOS manual',
 	'landing.nav.open': 'Open app',
 	'landing.nav.home': 'Home',
+	'landing.nav.faq': 'FAQ',
+	'landing.title': 'Pepinillo — native deep work to plan, focus and celebrate',
 	'landing.meta': 'Pepinillo is a native companion for deep work: plan with intention, focus without noise, and celebrate your progress. iPhone, iPad, Mac, Android, Wear OS and web.',
+	'landing.hero.cta.ios': 'App Store',
+	'landing.hero.cta.android': 'Google Play',
+	'landing.hero.scene.label': 'Pepinillo on Mac, iPhone, Apple Watch, Android and web',
+	'landing.hero.scene.mac': 'Pepinillo for Mac: focus session with the live ring',
+	'landing.hero.scene.iphone': 'Pepinillo on iPhone: pomodoro in progress',
+	'landing.hero.scene.watch': 'Pepinillo on Apple Watch: timer',
+	'landing.hero.scene.android': 'Pepinillo on Android: focus session with a task',
+	'landing.hero.scene.web': 'Pepinillo web: the focus app in your browser',
+	'landing.download.pikle': 'On Google Play, Pepinillo is published as “Pikle - Pomodoro & Tasks”.',
+	'landing.showcase.title': 'Native on every screen',
+	'landing.showcase.sub':
+		'The same calm on all your screens: HIG grammar on Apple, Material 3 Expressive on Android.',
+	'landing.showcase.guide': 'Read guide',
+	'landing.showcase.mac': 'Mac',
+	'landing.showcase.mac.body': 'Sidebar, menu bar, notch panel and keyboard shortcuts.',
+	'landing.showcase.iphone': 'iPhone',
+	'landing.showcase.iphone.body': 'Widgets, Live Activity and Dynamic Island at a glance.',
+	'landing.showcase.watch': 'Apple Watch',
+	'landing.showcase.watch.body': 'The timer from your wrist, with complications.',
+	'landing.showcase.android': 'Android',
+	'landing.showcase.android.body': 'Material You, Glance widgets and a rich ongoing notification.',
+	'landing.showcase.wear': 'Wear OS',
+	'landing.showcase.wear.body': 'Tiles and complications to start in one tap.',
+	'landing.showcase.web': 'Web',
+	'landing.showcase.web.body': 'Installable PWA, 100% offline, built for touch.',
+	'landing.pricing.sub':
+		'Start free forever. Pepinillo+ is one purchase, yours forever; Everywhere/AI+ adds sync and AI across your screens.',
+	'landing.faq.privacy.q': 'What happens to my data?',
+	'landing.faq.privacy.a':
+		'Your sessions and tasks live on your device. Cloud sync is optional (Everywhere/AI+) and we never sell or share your data.',
+	'landing.faq.sync.q': 'How does sync between devices work?',
+	'landing.faq.sync.a':
+		'With Everywhere/AI+, every change uploads and merges last-write-wins using the server clock: the latest change you saved wins.',
+	'landing.faq.ai.q': 'What does the AI include?',
+	'landing.faq.ai.a':
+		'With Everywhere/AI+ you get session reviews, suggestions and predictions that learn your patterns. Without a subscription, everything else works just as well.',
+	'landing.faq.platforms.q': 'Which platforms is it available on?',
+	'landing.faq.platforms.a':
+		'iPhone, iPad, Mac, Apple Watch, Android, Wear OS and the web (PWA). On Google Play you will find us as “Pikle”.',
+	'landing.cta.final.title': 'Your next pomodoro starts in one tap.',
+	'landing.cta.final.body': 'Free forever on every screen. No account needed to start.',
 	'landing.kicker': 'Deep work, native',
 	'landing.hero.title': 'Plan with intention. Focus without noise. Celebrate what you grow.',
 	'landing.hero.sub': 'Pepinillo is a native companion for deep work on every screen you own — a pomodoro timer that respects your brain, tasks organized by energy, and stats that help you understand your patterns.',
@@ -1424,7 +1504,50 @@ const es: Dict = {
 	'landing.guides.cta': 'Leer el manual de macOS',
 	'landing.nav.open': 'Abrir app',
 	'landing.nav.home': 'Inicio',
+	'landing.nav.faq': 'Preguntas',
+	'landing.title': 'Pepinillo — deep work nativo para planificar, enfocar y celebrar',
 	'landing.meta': 'Pepinillo es un compañero nativo de deep work: planificá con intención, enfocate sin ruido y celebrá lo que cultivás. iPhone, iPad, Mac, Android, Wear OS y web.',
+	'landing.hero.cta.ios': 'App Store',
+	'landing.hero.cta.android': 'Google Play',
+	'landing.hero.scene.label': 'Pepinillo en Mac, iPhone, Apple Watch, Android y web',
+	'landing.hero.scene.mac': 'Pepinillo para Mac: sesión de foco con el anillo en vivo',
+	'landing.hero.scene.iphone': 'Pepinillo en iPhone: pomodoro en curso',
+	'landing.hero.scene.watch': 'Pepinillo en Apple Watch: temporizador',
+	'landing.hero.scene.android': 'Pepinillo en Android: sesión de foco con tarea',
+	'landing.hero.scene.web': 'Pepinillo web: la app de foco en tu navegador',
+	'landing.download.pikle': 'En Google Play, Pepinillo se publica como “Pikle - Pomodoro & Tasks”.',
+	'landing.showcase.title': 'Nativo en cada pantalla',
+	'landing.showcase.sub':
+		'La misma calma en todas tus pantallas: gramática HIG en Apple, Material 3 Expressive en Android.',
+	'landing.showcase.guide': 'Ver guía',
+	'landing.showcase.mac': 'Mac',
+	'landing.showcase.mac.body': 'Sidebar, barra de menú, panel del notch y atajos de teclado.',
+	'landing.showcase.iphone': 'iPhone',
+	'landing.showcase.iphone.body': 'Widgets, Live Activity e Isla Dinámica a simple vista.',
+	'landing.showcase.watch': 'Apple Watch',
+	'landing.showcase.watch.body': 'El temporizador desde la muñeca, con complications.',
+	'landing.showcase.android': 'Android',
+	'landing.showcase.android.body': 'Material You, widgets Glance y notificación persistente.',
+	'landing.showcase.wear': 'Wear OS',
+	'landing.showcase.wear.body': 'Tiles y complications para arrancar en un toque.',
+	'landing.showcase.web': 'Web',
+	'landing.showcase.web.body': 'PWA instalable, 100% offline, pensada para touch.',
+	'landing.pricing.sub':
+		'Empezá gratis para siempre. Pepinillo+ es una única compra tuya para siempre; Everywhere/AI+ suma sync e IA en todas tus pantallas.',
+	'landing.faq.privacy.q': '¿Qué pasa con mis datos?',
+	'landing.faq.privacy.a':
+		'Tus sesiones y tareas viven en tu dispositivo. La sync en la nube es opcional (Everywhere/AI+) y nunca vendemos ni compartimos tus datos.',
+	'landing.faq.sync.q': '¿Cómo funciona la sync entre dispositivos?',
+	'landing.faq.sync.a':
+		'Con Everywhere/AI+, cada cambio se sube y se combina con la estrategia last-write-wins usando el reloj del servidor: lo último que guardaste gana.',
+	'landing.faq.ai.q': '¿Qué incluye la IA?',
+	'landing.faq.ai.a':
+		'Con Everywhere/AI+ obtenés reseñas de sesiones, sugerencias y predicciones que aprenden tus patrones. Sin suscripción, todo lo demás funciona igual de bien.',
+	'landing.faq.platforms.q': '¿En qué plataformas está disponible?',
+	'landing.faq.platforms.a':
+		'iPhone, iPad, Mac, Apple Watch, Android, Wear OS y web (PWA). En Google Play nos encontrás como “Pikle”.',
+	'landing.cta.final.title': 'Tu próximo pomodoro arranca en un toque.',
+	'landing.cta.final.body': 'Gratis para siempre en todas tus pantallas. Sin cuenta para empezar.',
 	'landing.kicker': 'Deep work, nativo',
 	'landing.hero.title': 'Planificá con intención. Enfocate sin ruido. Celebrá lo que cultivás.',
 	'landing.hero.sub': 'Pepinillo es un compañero nativo de deep work en todas tus pantallas — un timer que respeta tu cerebro, tareas organizadas por energía y estadísticas que te ayudan a entender tus patrones.',
@@ -1924,7 +2047,50 @@ const pt: Dict = {
 	'landing.guides.cta': 'Ler o manual do macOS',
 	'landing.nav.open': 'Abrir app',
 	'landing.nav.home': 'Início',
+	'landing.nav.faq': 'Perguntas',
+	'landing.title': 'Pepinillo — deep work nativo para planejar, focar e celebrar',
 	'landing.meta': 'Pepinillo é um companheiro nativo de deep work: planeje com intenção, concentre-se sem ruído e celebre o que você cultiva. iPhone, iPad, Mac, Android, Wear OS e web.',
+	'landing.hero.cta.ios': 'App Store',
+	'landing.hero.cta.android': 'Google Play',
+	'landing.hero.scene.label': 'Pepinillo no Mac, iPhone, Apple Watch, Android e web',
+	'landing.hero.scene.mac': 'Pepinillo para Mac: sessão de foco com o anel ao vivo',
+	'landing.hero.scene.iphone': 'Pepinillo no iPhone: pomodoro em andamento',
+	'landing.hero.scene.watch': 'Pepinillo no Apple Watch: temporizador',
+	'landing.hero.scene.android': 'Pepinillo no Android: sessão de foco com tarefa',
+	'landing.hero.scene.web': 'Pepinillo web: o app de foco no seu navegador',
+	'landing.download.pikle': 'No Google Play, o Pepinillo é publicado como “Pikle - Pomodoro & Tasks”.',
+	'landing.showcase.title': 'Nativo em cada tela',
+	'landing.showcase.sub':
+		'A mesma calma em todas as suas telas: gramática HIG na Apple, Material 3 Expressive no Android.',
+	'landing.showcase.guide': 'Ver guia',
+	'landing.showcase.mac': 'Mac',
+	'landing.showcase.mac.body': 'Sidebar, barra de menus, painel do notch e atalhos de teclado.',
+	'landing.showcase.iphone': 'iPhone',
+	'landing.showcase.iphone.body': 'Widgets, Live Activity e Dynamic Island num relance.',
+	'landing.showcase.watch': 'Apple Watch',
+	'landing.showcase.watch.body': 'O temporizador no pulso, com complications.',
+	'landing.showcase.android': 'Android',
+	'landing.showcase.android.body': 'Material You, widgets Glance e notificação contínua.',
+	'landing.showcase.wear': 'Wear OS',
+	'landing.showcase.wear.body': 'Tiles e complications para começar num toque.',
+	'landing.showcase.web': 'Web',
+	'landing.showcase.web.body': 'PWA instalável, 100% offline, feita para touch.',
+	'landing.pricing.sub':
+		'Comece grátis para sempre. O Pepinillo+ é uma única compra sua para sempre; o Everywhere/AI+ adiciona sync e IA em todas as suas telas.',
+	'landing.faq.privacy.q': 'O que acontece com meus dados?',
+	'landing.faq.privacy.a':
+		'Suas sessões e tarefas vivem no seu dispositivo. O sync na nuvem é opcional (Everywhere/AI+) e nunca vendemos nem compartilhamos seus dados.',
+	'landing.faq.sync.q': 'Como funciona o sync entre dispositivos?',
+	'landing.faq.sync.a':
+		'Com o Everywhere/AI+, cada mudança sobe e se combina com a estratégia last-write-wins usando o relógio do servidor: a última que você salvou vence.',
+	'landing.faq.ai.q': 'O que a IA inclui?',
+	'landing.faq.ai.a':
+		'Com o Everywhere/AI+ você ganha resenhas de sessões, sugestões e previsões que aprendem seus padrões. Sem assinatura, todo o resto funciona igualmente bem.',
+	'landing.faq.platforms.q': 'Em quais plataformas está disponível?',
+	'landing.faq.platforms.a':
+		'iPhone, iPad, Mac, Apple Watch, Android, Wear OS e web (PWA). No Google Play você nos encontra como “Pikle”.',
+	'landing.cta.final.title': 'Seu próximo pomodoro começa num toque.',
+	'landing.cta.final.body': 'Grátis para sempre em todas as telas. Sem conta para começar.',
 	'landing.kicker': 'Deep work, nativo',
 	'landing.hero.title': 'Planeje com intenção. Concentre-se sem ruído. Celebre o que você cultiva.',
 	'landing.hero.sub': 'Pepinillo é um companheiro nativo de deep work em todas as suas telas — um timer que respeita seu cérebro, tarefas organizadas por energia e estatísticas que ajudam você a entender seus padrões.',

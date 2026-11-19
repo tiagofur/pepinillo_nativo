@@ -1,7 +1,10 @@
 <script lang="ts">
 	import { t } from '$lib/i18n/i18n.svelte';
 	import type { MessageKey } from '$lib/i18n/messages';
-	import logoUrl from '$lib/assets/logo.svg';
+	import { APP_STORE_URL, PLAY_STORE_URL, WEB_APP_URL, UPGRADE_URL } from '$lib/domain/links';
+	import Header from '$lib/components/landing/Header.svelte';
+	import Hero from '$lib/components/landing/Hero.svelte';
+	import PlatformShowcase from '$lib/components/landing/PlatformShowcase.svelte';
 
 	const FLOW: { key: MessageKey; emoji: string }[] = [
 		{ key: 'landing.flow.plan', emoji: '🗂️' },
@@ -23,19 +26,12 @@
 		{ q: 'landing.faq.price.q', a: 'landing.faq.price.a' },
 		{ q: 'landing.faq.account.q', a: 'landing.faq.account.a' }
 	];
-
-	function storeUrl(): string {
-		if (typeof navigator === 'undefined') return 'https://apps.apple.com/search?term=pepinillo%20creapolis';
-		return /Android/.test(navigator.userAgent)
-			? 'https://play.google.com/store/search?q=pepinillo%20creapolis&c=apps'
-			: 'https://apps.apple.com/search?term=pepinillo%20creapolis';
-	}
 </script>
 
 <svelte:head>
-	<title>Pepinillo — deep work nativo para planificar, enfocar y celebrar</title>
+	<title>{t('landing.title')}</title>
 	<meta name="description" content={t('landing.meta')} />
-	<meta property="og:title" content="Pepinillo — deep work nativo" />
+	<meta property="og:title" content={t('landing.title')} />
 	<meta property="og:description" content={t('landing.meta')} />
 	<meta property="og:type" content="website" />
 	<meta property="og:url" content="https://pepinillo.app/" />
@@ -44,33 +40,10 @@
 	<link rel="canonical" href="https://pepinillo.app/" />
 </svelte:head>
 
-<main class="landing">
-	<header class="top">
-		<a class="brand" href="/">
-			<img src={logoUrl} alt="" width="34" height="34" />
-			<span>Pepinillo</span>
-		</a>
-		<nav class="top-nav">
-			<a href="/guides">{t('landing.nav.guides')}</a>
-			<a href="https://app.pepinillo.app/upgrade">{t('landing.nav.pricing')}</a>
-			<a class="btn btn-soft pressable" href="https://app.pepinillo.app/focus">{t('landing.nav.open')}</a>
-		</nav>
-	</header>
+<Header />
 
-	<!-- Hero: asymmetric, editorial, garden-glow -->
-	<section class="hero">
-		<div class="hero-copy">
-			<p class="kicker">{t('landing.kicker')}</p>
-			<h1>{t('landing.hero.title')}</h1>
-			<p class="lede">{t('landing.hero.sub')}</p>
-			<div class="cta-row">
-				<a class="btn btn-primary pressable" href="https://app.pepinillo.app/focus">{t('landing.cta.web')}</a>
-				<a class="btn btn-outline pressable" href={storeUrl()} rel="noopener">{t('landing.cta.stores')}</a>
-			</div>
-			<p class="hint">{t('landing.hero.hint')}</p>
-		</div>
-		<div class="hero-glow" aria-hidden="true"></div>
-	</section>
+<main class="landing">
+	<Hero />
 
 	<!-- Flow strip: Plan → Focus → Complete → Reflect -->
 	<section class="flow" aria-label={t('landing.flow.label')}>
@@ -84,6 +57,9 @@
 			</div>
 		{/each}
 	</section>
+
+	<!-- Platform showcase -->
+	<PlatformShowcase />
 
 	<!-- Features: varied rhythm, not a card grid -->
 	<section class="features">
@@ -105,16 +81,15 @@
 		<h2>📱 {t('landing.download.title')}</h2>
 		<p class="muted">{t('landing.download.body')}</p>
 		<div class="store-row">
-			<a class="btn btn-outline pressable" href={storeUrl()} rel="noopener">{t('landing.download.ios')}</a>
-			<a class="btn btn-outline pressable" href="https://play.google.com/store/search?q=pepinillo%20creapolis&c=apps" rel="noopener">
-				{t('landing.download.android')}
-			</a>
-			<a class="btn btn-ghost pressable" href="https://app.pepinillo.app/focus">{t('landing.download.web')}</a>
+			<a class="btn btn-outline pressable" href={APP_STORE_URL} rel="noopener">{t('landing.download.ios')}</a>
+			<a class="btn btn-outline pressable" href={PLAY_STORE_URL} rel="noopener">{t('landing.download.android')}</a>
+			<a class="btn btn-ghost pressable" href={WEB_APP_URL}>{t('landing.download.web')}</a>
 		</div>
+		<p class="hint">{t('landing.download.pikle')}</p>
 	</section>
 
 	<!-- Pricing teaser -->
-	<section class="pricing">
+	<section class="pricing" id="pricing">
 		<h2>{t('landing.pricing.title')}</h2>
 		<div class="price-row">
 			<div class="price-item">
@@ -130,11 +105,11 @@
 				<span class="p-value">{t('upgrade.price.everywhere')}</span>
 			</div>
 		</div>
-		<a class="btn btn-soft pressable" href="https://app.pepinillo.app/upgrade">{t('landing.pricing.cta')}</a>
+		<a class="btn btn-soft pressable" href={UPGRADE_URL}>{t('landing.pricing.cta')}</a>
 	</section>
 
 	<!-- FAQ -->
-	<section class="faq">
+	<section class="faq" id="faq">
 		<h2>{t('landing.faq.title')}</h2>
 		{#each FAQ as item (item.q)}
 			<details class="faq-item">
@@ -159,7 +134,7 @@
 		<span class="dot">·</span>
 		<a href="/guides/macos.html" data-sveltekit-reload>{t('landing.nav.macmanual')}</a>
 		<span class="dot">·</span>
-		<a href="https://app.pepinillo.app/upgrade">{t('landing.nav.pricing')}</a>
+		<a href={UPGRADE_URL}>{t('landing.nav.pricing')}</a>
 		<span class="dot">·</span>
 		<a href="https://creapolis.dev/privacy-policy">{t('legal.privacy')}</a>
 		<span class="dot">·</span>
@@ -173,96 +148,11 @@
 	.landing {
 		max-width: 1040px;
 		margin-inline: auto;
-		padding: var(--space-5) var(--space-5) calc(var(--space-12) + var(--safe-b));
+		padding: 0 var(--space-5) calc(var(--space-12) + var(--safe-b));
 		display: flex;
 		flex-direction: column;
 		gap: var(--space-16);
 		overflow-x: clip; /* the decorative glows bleed intentionally */
-	}
-
-	.top {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: var(--space-4);
-	}
-
-	.brand {
-		display: flex;
-		align-items: center;
-		gap: var(--space-2);
-		font-weight: 800;
-		letter-spacing: var(--tracking-tight);
-		color: var(--ink);
-		font-size: var(--text-md);
-	}
-
-	.top-nav {
-		display: flex;
-		align-items: center;
-		gap: var(--space-4);
-	}
-
-	.top-nav a {
-		color: var(--ink-secondary);
-		font-weight: 550;
-	}
-
-	.top-nav a:hover {
-		text-decoration: none;
-		color: var(--brand);
-	}
-
-	/* Hero: left-aligned copy, one calm garden glow */
-	.hero {
-		position: relative;
-		padding: var(--space-12) 0 var(--space-8);
-	}
-
-	.hero-glow {
-		position: absolute;
-		inset: -20% -30% auto;
-		height: 130%;
-		background:
-			radial-gradient(38% 34% at 30% 30%, var(--brand-softer) 0%, transparent 70%),
-			radial-gradient(26% 24% at 78% 62%, var(--streak-soft) 0%, transparent 70%);
-		pointer-events: none;
-		z-index: -1;
-	}
-
-	.kicker {
-		color: var(--brand);
-		font-weight: 700;
-		font-size: var(--text-sm);
-		text-transform: uppercase;
-		letter-spacing: 0.08em;
-	}
-
-	h1 {
-		font-size: var(--text-display);
-		font-weight: 800;
-		letter-spacing: var(--tracking-tighter);
-		max-width: 18ch;
-		margin: var(--space-3) 0 var(--space-4);
-	}
-
-	.lede {
-		font-size: var(--text-md);
-		color: var(--muted);
-		max-width: 52ch;
-		margin-bottom: var(--space-6);
-	}
-
-	.cta-row {
-		display: flex;
-		gap: var(--space-3);
-		flex-wrap: wrap;
-	}
-
-	.hint {
-		margin-top: var(--space-3);
-		color: var(--faint);
-		font-size: var(--text-xs);
 	}
 
 	/* Flow strip */
@@ -271,6 +161,7 @@
 		align-items: center;
 		gap: var(--space-4);
 		flex-wrap: wrap;
+		justify-content: center;
 		padding: var(--space-5) var(--space-6);
 		border-block: 1px solid var(--hairline);
 	}
@@ -355,6 +246,11 @@
 
 	.muted {
 		color: var(--muted);
+	}
+
+	.hint {
+		color: var(--faint);
+		font-size: var(--text-xs);
 	}
 
 	.store-row {
@@ -452,19 +348,6 @@
 
 		.feat.flip p {
 			margin-inline-start: 0;
-		}
-
-		.top-nav a:not(.btn) {
-			display: none;
-		}
-
-		@keyframes rise-in {
-			from {
-				opacity: 0;
-			}
-			to {
-				opacity: 1;
-			}
 		}
 	}
 
