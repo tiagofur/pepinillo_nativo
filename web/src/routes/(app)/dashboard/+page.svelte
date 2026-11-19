@@ -96,9 +96,11 @@
 			</div>
 			<div class="date-side nums">
 				<span class="side-chip">
-					🔥 {dashboard.stats.streak === 1
-						? t('dash.streak.one')
-						: t('dash.streak.many', { n: dashboard.stats.streak })}
+					🔥 {dashboard.stats.streak === 0
+						? '—'
+						: dashboard.stats.streak === 1
+							? t('dash.streak.one')
+							: t('dash.streak.many', { n: dashboard.stats.streak })}
 				</span>
 				<span class="side-sep" aria-hidden="true"></span>
 				<span class="side-chip">{t('dash.focus.side', { time: fmtMin(dashboard.stats.todayFocusSeconds) })}</span>

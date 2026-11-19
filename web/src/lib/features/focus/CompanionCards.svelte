@@ -28,7 +28,7 @@
 			},
 			{ value: minutes, label: t('companion.stat.min') },
 			{
-				value: streak,
+				value: streak > 0 ? streak : '—',
 				label: streak === 1 ? t('companion.stat.daystreak1') : t('companion.stat.daystreak')
 			}
 		];

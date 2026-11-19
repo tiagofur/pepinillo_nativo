@@ -354,10 +354,6 @@
 		color: var(--muted);
 	}
 
-	.col-due.nums {
-		font-variant-numeric: tabular-nums;
-	}
-
 	.col-due.overdue {
 		color: var(--mode-pomodoro);
 		font-weight: 650;
