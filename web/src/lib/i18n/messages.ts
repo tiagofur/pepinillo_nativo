@@ -159,8 +159,15 @@ export type MessageKey =
 	| 'common.wip.body'
 	| 'common.proLocked'
 	| 'focus.phase.work'
+	| 'focus.phase.workNumbered'
+	| 'focus.phase.flow'
+	| 'focus.phase.freeform'
+	| 'focus.phase.block'
+	| 'focus.phase.flowBreak'
 	| 'focus.phase.shortBreak'
 	| 'focus.phase.longBreak'
+	| 'focus.a11y.remaining'
+	| 'focus.a11y.complete'
 	| 'focus.waitingBreak'
 	| 'focus.waitingWork'
 	| 'focus.startBreak'
@@ -655,8 +662,15 @@ const en: Dict = {
 	'common.wip.body': 'This surface is being rebuilt with everything from the native apps.',
 	'common.proLocked': 'Pepinillo+ feature',
 	'focus.phase.work': 'Focus',
-	'focus.phase.shortBreak': 'Short break',
-	'focus.phase.longBreak': 'Long break',
+	'focus.phase.workNumbered': 'Focus {n}/{total}',
+	'focus.phase.flow': 'Flow',
+	'focus.phase.freeform': 'Free Focus',
+	'focus.phase.block': 'Time Block',
+	'focus.phase.flowBreak': 'Break',
+	'focus.phase.shortBreak': 'Short Break',
+	'focus.phase.longBreak': 'Long Break',
+	'focus.a11y.remaining': '{pct}% remaining',
+	'focus.a11y.complete': '{pct}% complete',
 	'focus.waitingBreak': 'Break ready when you are.',
 	'focus.waitingWork': 'Next focus phase is ready when you are.',
 	'focus.startBreak': 'Start break',
@@ -1184,8 +1198,15 @@ const es: Dict = {
 	'common.wip.body': 'Esta superficie se está reconstruyendo con todo de las apps nativas.',
 	'common.proLocked': 'Función de Pepinillo+',
 	'focus.phase.work': 'Enfoque',
-	'focus.phase.shortBreak': 'Descanso corto',
-	'focus.phase.longBreak': 'Descanso largo',
+	'focus.phase.workNumbered': 'Enfoque {n}/{total}',
+	'focus.phase.flow': 'Flujo',
+	'focus.phase.freeform': 'Enfoque Libre',
+	'focus.phase.block': 'Bloque de tiempo',
+	'focus.phase.flowBreak': 'Pausa',
+	'focus.phase.shortBreak': 'Pausa corta',
+	'focus.phase.longBreak': 'Pausa larga',
+	'focus.a11y.remaining': '{pct}% restante',
+	'focus.a11y.complete': '{pct}% completado',
 	'focus.waitingBreak': 'El descanso está listo cuando vos lo estés.',
 	'focus.waitingWork': 'El próximo enfoque está listo cuando vos lo estés.',
 	'focus.startBreak': 'Comenzar descanso',
@@ -1697,8 +1718,15 @@ const pt: Dict = {
 	'common.wip.body': 'Esta superfície está sendo reconstruída com tudo dos apps nativos.',
 	'common.proLocked': 'Recurso do Pepinillo+',
 	'focus.phase.work': 'Foco',
+	'focus.phase.workNumbered': 'Foco {n}/{total}',
+	'focus.phase.flow': 'Fluxo',
+	'focus.phase.freeform': 'Foco Livre',
+	'focus.phase.block': 'Bloco de tempo',
+	'focus.phase.flowBreak': 'Pausa',
 	'focus.phase.shortBreak': 'Pausa curta',
 	'focus.phase.longBreak': 'Pausa longa',
+	'focus.a11y.remaining': '{pct}% restante',
+	'focus.a11y.complete': '{pct}% concluído',
 	'focus.waitingBreak': 'A pausa fica pronta quando você estiver pronto.',
 	'focus.waitingWork': 'O próximo foco fica pronto quando você estiver pronto.',
 	'focus.startBreak': 'Iniciar pausa',

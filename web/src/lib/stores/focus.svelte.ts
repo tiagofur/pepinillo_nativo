@@ -156,6 +156,25 @@ class FocusController {
 		if (s.targetMs != null && s.targetMs > 0) return Math.min(1, Math.max(0, elapsed / s.targetMs));
 		return Math.min(1, elapsed / (25 * 60_000));
 	});
+	/** Display arc for the ring — Mac TimerCircleView.timerRingProgress
+	 * (FocusView.swift:1021): countdown rings start FULL and deplete
+	 * (idle/hold show the full ring of the pending phase); count-up rings
+	 * fill one 60-minute cycle while running (floor 4%) and show no arc
+	 * otherwise — the dashed overlay covers idle/hold/paused. `null` = no
+	 * arc layer. */
+	ringProgress = $derived.by(() => {
+		const s = this.session;
+		if (this.mode === 'flowtime' || this.mode === 'stopwatch') {
+			if (s && s.status === 'running') {
+				const cycleSeconds = 60 * 60;
+				const position = (liveElapsedMs(s, new Date()) / 1000) % cycleSeconds;
+				return Math.max(Math.min(position / cycleSeconds, 1), 0.04);
+			}
+			return null;
+		}
+		if (!s || s.status === 'idle') return 1;
+		return Math.min(Math.max(1 - this.progress, 0), 1);
+	});
 	beforeLongBreak = $derived(pomodoroConfigFrom(app.prefs).beforeLongBreak);
 
 	// ---------- Mode / phase transitions ----------
