@@ -1,6 +1,7 @@
 export const prerender = true;
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { page } from '$app/state';
 	import { auth } from '$lib/stores/auth.svelte';
 	import { t } from '$lib/i18n/i18n.svelte';
 	import type { MessageKey } from '$lib/i18n/messages';
@@ -61,6 +62,12 @@ export const prerender = true;
 	let portalBusy = $state(false);
 
 	onMount(() => {
+		// Returning from Stripe Checkout: refresh the tier without re-login
+		// (S4 #942) and clean the query param.
+		if (page.url.searchParams.get('checkout') === 'success') {
+			void auth.refreshEntitlement();
+			history.replaceState({}, '', page.url.pathname);
+		}
 		void auth.init();
 	});
 

@@ -76,6 +76,12 @@ interface PersistedCycle extends PomodoroCycleState {
 const JOURNAL_MIN_MS = 60_000;
 const GHOST_MAX_AGE_MS = 12 * 3600_000;
 
+/** Mirror of the plan store's hook — fires the auth store's debounced push. */
+function notifyMutation(): void {
+	if (browser && typeof window !== 'undefined')
+		window.dispatchEvent(new Event('pepinillo:local-mutation'));
+}
+
 class FocusController {
 	mode = $state<FocusMode>('pomodoro');
 	session = $state<FocusSession | null>(null);
@@ -439,6 +445,7 @@ class FocusController {
 		const s = this.session;
 		if (!s || !terminal) return;
 		this.session = { ...s, elapsedMs, taskId: this.activeTask?.id ?? null };
+		notifyMutation();
 		void saveSession($state.snapshot(this.session));
 		if (this.session.taskId) void this.bumpLinkedTask(this.session.taskId);
 	}
@@ -507,6 +514,7 @@ class FocusController {
 		const live = sessions.find((s) => s.status === 'running' || s.status === 'paused');
 		if (!live || !live.startedAt) return;
 		if (Date.now() - new Date(live.startedAt).getTime() > GHOST_MAX_AGE_MS) {
+			notifyMutation();
 			void saveSession({ ...live, status: 'skipped', completedAt: new Date().toISOString() });
 			return;
 		}
@@ -543,6 +551,7 @@ class FocusController {
 		if (!g) return;
 		this.ghost = null;
 		const elapsed = liveElapsedMs(g, new Date());
+		notifyMutation();
 		void saveSession({
 			...g,
 			status: 'skipped',
@@ -570,7 +579,10 @@ class FocusController {
 		this.journalPrompt = null;
 		void listSessions().then(async (sessions) => {
 			const rec = sessions.find((s) => s.id === p.sessionId);
-			if (rec) await saveSession({ ...rec, journal: note, satisfactionRating: rating });
+			if (rec) {
+				notifyMutation();
+				await saveSession({ ...rec, journal: note, satisfactionRating: rating });
+			}
 		});
 	}
 
@@ -670,6 +682,7 @@ class FocusController {
 
 	private persistSession(): void {
 		if (!this.session) return;
+		notifyMutation();
 		void saveSession($state.snapshot(this.session));
 	}
 

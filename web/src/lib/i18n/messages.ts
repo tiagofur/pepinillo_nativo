@@ -407,6 +407,7 @@ export type MessageKey =
 	| 'sync.last'
 	| 'sync.live'
 	| 'sync.offline'
+	| 'sync.deviceBound'
 	| 'sync.mergeTitle'
 	| 'sync.mergeBody'
 	| 'sync.mergePull'
@@ -1067,6 +1068,7 @@ const en: Dict = {
 	'sync.last': 'Last sync',
 	'sync.live': 'Live updates connected',
 	'sync.offline': 'Live updates off',
+	'sync.deviceBound': 'This backup belongs to another device. Everywhere+ syncs across devices.',
 	'sync.mergeTitle': 'We found cloud data',
 	'sync.mergeBody': 'This account already has data in the cloud. Keep the cloud version, or overwrite the cloud with what is on this device?',
 	'sync.mergePull': 'Use the cloud data',
@@ -1640,6 +1642,7 @@ const es: Dict = {
 	'sync.last': 'Última sync',
 	'sync.live': 'Actualizaciones en vivo conectadas',
 	'sync.offline': 'Actualizaciones en vivo apagadas',
+	'sync.deviceBound': 'Este respaldo pertenece a otro dispositivo. Everywhere+ sincroniza entre dispositivos.',
 	'sync.mergeTitle': 'Encontramos datos en la nube',
 	'sync.mergeBody': 'Esta cuenta ya tiene datos en la nube. ¿Te quedás con la versión de la nube o pisás la nube con lo que hay en este dispositivo?',
 	'sync.mergePull': 'Usar los datos de la nube',
@@ -2194,6 +2197,7 @@ const pt: Dict = {
 	'sync.last': 'Última sync',
 	'sync.live': 'Atualizações ao vivo conectadas',
 	'sync.offline': 'Atualizações ao vivo desligadas',
+	'sync.deviceBound': 'Este backup pertence a outro dispositivo. Everywhere+ sincroniza entre dispositivos.',
 	'sync.mergeTitle': 'Encontramos dados na nuvem',
 	'sync.mergeBody': 'Esta conta já tem dados na nuvem. Fica com a versão da nuvem ou sobrescreve a nuvem com o que há neste dispositivo?',
 	'sync.mergePull': 'Usar os dados da nuvem',

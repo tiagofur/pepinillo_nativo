@@ -95,6 +95,7 @@ class AuthStore {
 		const user = await api.me();
 		this.applyUser(user);
 		this.connectWs();
+		this.watchConnection();
 		void this.syncNow(true);
 	}
 
@@ -239,6 +240,39 @@ class AuthStore {
 	}
 
 	// ---------- Sync loop ----------
+
+	private pushTimer: ReturnType<typeof setTimeout> | null = null;
+
+	/** Debounced push after local mutations (S3 #942): coalesces bursts of
+	 * task edits into one upload ~3 s later. Server resolves LWW, so a
+	 * redundant push is safe. No-op when signed out. */
+	schedulePush(): void {
+		if (!this.user) return;
+		if (this.pushTimer) clearTimeout(this.pushTimer);
+		this.pushTimer = setTimeout(() => {
+			this.pushTimer = null;
+			void this.syncNow(true);
+		}, 3000);
+	}
+
+	/** Mutations must never be lost to a tab close inside the debounce. */
+	private flushPush(): void {
+		if (this.pushTimer) {
+			clearTimeout(this.pushTimer);
+			this.pushTimer = null;
+			void this.syncNow(true);
+		}
+	}
+
+	watchConnection(): void {
+		window.addEventListener('online', () => this.flushPush());
+		document.addEventListener('visibilitychange', () => {
+			if (document.visibilityState === 'hidden') this.flushPush();
+		});
+		// Stores dispatch this on local writes — avoids importing this store
+		// from plan/focus (circular with pullAndApply's plan.init()).
+		window.addEventListener('pepinillo:local-mutation', () => this.schedulePush());
+	}
 
 	async syncNow(initial = false): Promise<void> {
 		const api = this.api;

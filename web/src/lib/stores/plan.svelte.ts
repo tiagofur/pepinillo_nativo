@@ -36,6 +36,12 @@ function uid(): string {
 	return `t-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
+/** Local writes notify the auth store's debounced push (S3 #942) without a
+ * direct import (auth pulls plan on sync — importing it back is circular). */
+function notifyMutation(): void {
+	if (typeof window !== 'undefined') window.dispatchEvent(new Event('pepinillo:local-mutation'));
+}
+
 class PlanStore {
 	tasks = $state<Task[]>([]);
 	filter = $state<PlanFilter>('today');
@@ -92,6 +98,7 @@ class PlanStore {
 			...defaults
 		};
 		this.tasks = [...this.tasks, task];
+		notifyMutation();
 		await upsertTask(task);
 		return task;
 	}
@@ -105,6 +112,7 @@ class PlanStore {
 			updatedAt: new Date().toISOString()
 		});
 		this.tasks = this.tasks.map((t) => (t.id === id ? updated : t));
+		notifyMutation();
 		await upsertTask(updated);
 	}
 
@@ -143,7 +151,8 @@ class PlanStore {
 			this.offerUndo({
 				label: translate('plan.undo.deleted', { title: snapshot.title }),
 				apply: async () => {
-					await upsertTask($state.snapshot(snapshot));
+					notifyMutation();
+		await upsertTask($state.snapshot(snapshot));
 					await this.reload();
 				}
 			});
@@ -168,6 +177,7 @@ class PlanStore {
 			changed.push($state.snapshot(updated));
 			return updated;
 		});
+		notifyMutation();
 		await saveAllTasks(changed);
 	}
 

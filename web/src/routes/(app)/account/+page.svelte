@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { page } from '$app/state';
 	import { app, PREMIUM_THEMES, type ThemeName } from '$lib/stores/app.svelte';
 	import { auth } from '$lib/stores/auth.svelte';
 	import { t } from '$lib/i18n/i18n.svelte';
@@ -14,6 +15,12 @@
 
 	onMount(() => {
 		void auth.init();
+		// Returning from Stripe Checkout: refresh the tier without re-login
+		// (S4 #942) and clean the query param.
+		if (page.url.searchParams.get('checkout') === 'success') {
+			void auth.refreshEntitlement();
+			history.replaceState({}, '', page.url.pathname);
+		}
 	});
 
 	const LOCALE_LABELS: Record<LocaleCode, string> = {
