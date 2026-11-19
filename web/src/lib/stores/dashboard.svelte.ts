@@ -78,18 +78,14 @@ class DashboardStore {
 		).length;
 	});
 
-	/** Mac nextFocusCard: first scheduled-for-today active task by priority
-	 * then order (MacTodayView:31-40). */
+	/** Mac nextFocusCard: strictly scheduled-for-today active tasks by
+	 * priority then order (MacTodayView:31-40) — a due date alone does not
+	 * schedule a task for today. */
 	nextTask = $derived.by(() => {
-		const todayKey = localDateKey(new Date());
 		const PRIORITY_RANK: Record<string, number> = { high: 3, medium: 2, low: 1, none: 0 };
 		return (
 			this.tasks
-				.filter(
-					(t) =>
-						t.status === 'active' &&
-						(t.scheduledForToday === true || t.dueDate === todayKey)
-				)
+				.filter((t) => t.status === 'active' && t.scheduledForToday === true)
 				.sort((a, b) => {
 					const pa = PRIORITY_RANK[a.priority] ?? 0;
 					const pb = PRIORITY_RANK[b.priority] ?? 0;

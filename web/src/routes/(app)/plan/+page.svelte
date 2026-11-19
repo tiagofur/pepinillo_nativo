@@ -110,8 +110,15 @@
 
 	let ctxItems = $derived<ContextMenuItem[]>(ctx ? buildContextItems(ctx.task) : []);
 
-	/** Context-menu "Rename Task" → the table row enters inline title edit. */
+	/** Context-menu "Rename Task": desktop enters the table's inline title
+	 * edit (consumed by TaskTable); mobile has no table, so it opens the
+	 * inspector where title editing lives. */
 	let renameRequest = $state<string | null>(null);
+
+	function requestRename(task: Task): void {
+		if (window.matchMedia('(max-width: 1023px)').matches) selectTask(task.id);
+		else renameRequest = task.id;
+	}
 
 	function buildContextItems(task: Task): ContextMenuItem[] {
 		// Mac menu order: Priority sorted(by: >) → high, medium, low, none.
@@ -122,7 +129,7 @@
 			{
 				id: 'rename',
 				label: t('plan.context.rename'),
-				onselect: () => (renameRequest = task.id)
+				onselect: () => requestRename(task)
 			},
 			{ id: 'sep0', kind: 'separator' },
 			{

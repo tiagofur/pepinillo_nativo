@@ -193,9 +193,11 @@
 				{/if}
 			</div>
 
-			<!-- Mac secondaryControls: Skip + destructive End Session, only while
-				 a session is RUNNING (MacFocusView:199) -->
-			{#if focus.running}
+			<!-- Mac secondaryControls: Skip + destructive End Session. Mac's
+				 isRunning stays true through pause (FocusFeature:424-432 only
+				 sets isPaused), so the row survives the pause; the hold is
+				 excluded (session idle there). -->
+			{#if focus.running || focus.paused}
 				<div class="secondary">
 					{#if skipVisible}
 						<button class="btn btn-outline pressable" onclick={() => (flowWork ? focus.takeFlowBreak() : focus.skip())}>

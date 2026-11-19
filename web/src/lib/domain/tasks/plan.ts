@@ -55,7 +55,10 @@ export function dueInfo(
 	tomorrow.setDate(tomorrow.getDate() + 1);
 	if (task.dueDate === todayKey) return { kind: 'today', dateKey: task.dueDate };
 	if (task.dueDate === localDateKey(tomorrow)) return { kind: 'tomorrow', dateKey: task.dueDate };
-	if (task.dueDate < todayKey) return { kind: 'overdue', dateKey: task.dueDate };
+	// Mac dueText: Overdue requires !isCompleted — a completed task with a
+	// past date shows the plain abbreviated date.
+	if (task.dueDate < todayKey && task.status !== 'completed')
+		return { kind: 'overdue', dateKey: task.dueDate };
 	return { kind: 'date', dateKey: task.dueDate };
 }
 
