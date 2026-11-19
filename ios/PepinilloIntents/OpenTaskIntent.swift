@@ -36,7 +36,7 @@ struct OpenTaskIntent: AppIntent {
             return .result(dialog: "I couldn't find that task in Pepinillo.")
         }
 
-        TaskIntentService.open(url)
+        await TaskIntentService.open(url)
         return .result(dialog: "Opening \(task.title) in Pepinillo.")
     }
 }
