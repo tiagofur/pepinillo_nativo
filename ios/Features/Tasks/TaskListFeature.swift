@@ -316,7 +316,7 @@ struct TaskListFeature {
                 if let captured = state.pendingCapturedTaskTitle,
                    !captured.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                     state.pendingCapturedTaskTitle = nil
-                    state.newTaskTitle = captured
+                    state.newTaskTitle = Self.truncateCapturedTitle(captured)
                     capturedTaskEffect = .send(.addTaskTapped)
                 }
                 let dtos = tasks.map { task in
@@ -458,7 +458,7 @@ struct TaskListFeature {
                 }
                 guard state.hasLoadedData else { return .none }
                 state.pendingCapturedTaskTitle = nil
-                state.newTaskTitle = captured
+                state.newTaskTitle = Self.truncateCapturedTitle(captured)
                 return .send(.addTaskTapped)
 
             case .taskTapped(let id):
@@ -1023,6 +1023,13 @@ struct TaskListFeature {
     /// Free-tier cap for concurrent active tasks (issue #216). Premium is unlimited.
     /// Active = not completed and not a recurring template anchor.
     static let freeActiveTaskLimit = 3
+
+    /// Share-Extension captures cap at the same length the Mac Quick Capture
+    /// enforces (`MacQuickCaptureController.submit`), so a multi-KB selection
+    /// cannot create an unbounded title (#669).
+    static func truncateCapturedTitle(_ title: String) -> String {
+        String(title.trimmingCharacters(in: .whitespacesAndNewlines).prefix(200))
+    }
 
     /// Default scheduling fields for Plan quick-add based on the active filter (issue #180).
     static func planQuickAddDefaults(

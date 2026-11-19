@@ -30,12 +30,14 @@ enum ShareCaptureConstants {
 @MainActor
 final class ShareViewController: UIViewController {
 
-    private var capturedText: String = ""
+    // Bound into the single SwiftUI install; content resolution updates it
+    // in place so there is no second mount (no flash, no lost keystrokes).
+    private var titleBinding = BindingHolder("")
     private var hostingController: UIHostingController<ShareCaptureView>?
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        installView(with: "")
+        installView()
         resolveSharedContent()
     }
 
@@ -51,7 +53,12 @@ final class ShareViewController: UIViewController {
             $0.hasItemConformingToTypeIdentifier(UTType.text.identifier)
         }) {
             textProvider.loadItem(forTypeIdentifier: UTType.text.identifier) { [weak self] item, _ in
-                let text = (item as? String) ?? (item as? NSURL)?.absoluteString ?? ""
+                // Rich-text providers may hand an NSAttributedString or a
+                // plist dictionary instead of a String — coerce before giving up.
+                let text = (item as? String)
+                    ?? (item as? NSAttributedString)?.string
+                    ?? (item as? NSURL)?.absoluteString
+                    ?? ""
                 Task { @MainActor in self?.adoptCaptured(text) }
             }
             return
@@ -71,18 +78,18 @@ final class ShareViewController: UIViewController {
     }
 
     private func adoptCaptured(_ text: String) {
-        capturedText = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        installView(with: capturedText)
+        guard titleBinding.value.isEmpty else { return }
+        titleBinding.value = text.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     // MARK: UI
 
-    private func installView(with prefill: String) {
-        hostingController?.view.removeFromSuperview()
-        hostingController?.removeFromParent()
-
+    private func installView() {
         let view = ShareCaptureView(
-            initialTitle: prefill,
+            title: Binding(
+                get: { [weak self] in self?.titleBinding.value ?? "" },
+                set: { [weak self] in self?.titleBinding.value = $0 }
+            ),
             onSave: { [weak self] title in self?.save(title) },
             onCancel: { [weak self] in self?.cancel() }
         )
@@ -107,8 +114,10 @@ final class ShareViewController: UIViewController {
         if let defaults = UserDefaults(suiteName: ShareCaptureConstants.appGroupID) {
             defaults.set(trimmed, forKey: ShareCaptureConstants.capturedTaskTitleKey)
         }
-        // Wake the running app so it drains immediately; a cold app drains on
-        // activation regardless (the Darwin signal is best-effort here).
+        // The app drains this key on next activation (bootstrap or
+        // appBecameActive); no iOS process observes the Darwin signal today —
+        // it is posted for parity with the other external-command writers and
+        // in case a Mac-side-style observer lands on iOS later.
         CFNotificationCenterPostNotification(
             CFNotificationCenterGetDarwinNotifyCenter(),
             CFNotificationName(ShareCaptureConstants.darwinSignalName as CFString),
@@ -122,22 +131,24 @@ final class ShareViewController: UIViewController {
     }
 }
 
+// MARK: - Binding holder
+//
+// The view controller owns the title so content resolution can update it in
+// place after the single SwiftUI mount (no re-install flash).
+
+private final class BindingHolder: ObservableObject {
+    @Published var value: String
+    init(_ value: String) { self.value = value }
+}
+
 // MARK: - ShareCaptureView
 
 private struct ShareCaptureView: View {
-    let initialTitle: String
+    @Binding var title: String
     let onSave: (String) -> Void
     let onCancel: () -> Void
 
-    @State private var title: String
     @FocusState private var isFieldFocused: Bool
-
-    init(initialTitle: String, onSave: @escaping (String) -> Void, onCancel: @escaping () -> Void) {
-        self.initialTitle = initialTitle
-        self.onSave = onSave
-        self.onCancel = onCancel
-        _title = State(initialValue: initialTitle)
-    }
 
     var body: some View {
         VStack(spacing: 14) {
@@ -177,7 +188,7 @@ private struct ShareCaptureView: View {
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         .padding(12)
         .onAppear {
-            if initialTitle.isEmpty { isFieldFocused = true }
+            if title.isEmpty { isFieldFocused = true }
         }
     }
 }

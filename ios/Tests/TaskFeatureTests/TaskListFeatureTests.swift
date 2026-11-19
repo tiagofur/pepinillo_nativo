@@ -1836,6 +1836,7 @@ struct TaskListFeatureTests {
         #expect(completed.completedAt == now)
 
         let reopened = completed.updatingCompletion(false, at: nil)
+        #expect(!reopened.isCompleted)
         #expect(reopened.completedAt == nil)
     }
 
@@ -1865,6 +1866,71 @@ struct TaskListFeatureTests {
         #expect(store.state.pendingCapturedTaskTitle == nil)
         #expect(store.state.isNewTaskComposerPresented == false)
         #expect(store.state.tasks.map(\.title) == ["Read the share extension spec"])
+    }
+
+    @Test("capturedTaskReady truncates a multi-KB share to the Mac quick-capture cap")
+    func capturedTaskReadyTruncatesLongTitle() async {
+        let testID = UUID(11)
+        let testDate = Date(timeIntervalSince1970: 1_000_000)
+        var initialState = TaskListFeature.State()
+        initialState.hasLoadedData = true
+        initialState.pendingCapturedTaskTitle = String(repeating: "x", count: 500)
+
+        let store = TestStore(initialState: initialState) {
+            TaskListFeature()
+        } withDependencies: {
+            $0.persistenceClient.saveTask = { _ in }
+            $0.uuid = .constant(testID)
+            $0.date = .constant(testDate)
+        }
+
+        store.exhaustivity = .off
+
+        await store.send(.capturedTaskReady)
+        await store.receive(.addTaskTapped)
+
+        #expect(store.state.tasks.map(\.title) == [String(repeating: "x", count: 200)])
+    }
+
+    @Test("capturedTaskReady at the free cap routes to the paywall keeping the title")
+    func capturedTaskReadyHitsPaywallKeepsTitle() async {
+        var initialState = TaskListFeature.State()
+        initialState.hasLoadedData = true
+        initialState.isProUser = false
+        initialState.pendingCapturedTaskTitle = "One more capture"
+        initialState.tasks = IdentifiedArrayOf(uniqueElements: (0..<3).map { i in
+            TaskListFeature.TaskItemState(
+                id: UUID(i),
+                title: "Task \(i)",
+                isCompleted: false,
+                priority: .none,
+                energyLevel: .deep,
+                estimatedPomodoros: 1,
+                completedPomodoros: 0,
+                subtaskProgress: .init(completed: 0, total: 0),
+                recurrenceRule: nil,
+                isRecurringTemplate: false,
+                scheduledForToday: false,
+                sortOrder: i,
+                createdAt: Date(timeIntervalSince1970: 1_000)
+            )
+        })
+
+        let store = TestStore(initialState: initialState) {
+            TaskListFeature()
+        } withDependencies: {
+            $0.persistenceClient.saveTask = { _ in }
+        }
+
+        store.exhaustivity = .off
+
+        await store.send(.capturedTaskReady)
+        await store.receive(.addTaskTapped)
+        await store.receive(.delegate(.showPaywall))
+
+        // The capture must survive for the retry after the paywall.
+        #expect(store.state.newTaskTitle == "One more capture")
+        #expect(store.state.tasks.count == 3)
     }
 
     @Test("capturedTaskReady keeps the title parked until tasks load (cold start)")
