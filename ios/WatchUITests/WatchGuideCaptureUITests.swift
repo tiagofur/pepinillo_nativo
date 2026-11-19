@@ -41,6 +41,6 @@ final class WatchGuideCaptureUITests: XCTestCase {
 
 		app.swipeUp()
 		settle(2)
-		capture("watchos-03-tercera")
+		capture("watchos-03-scroll")
 	}
 }

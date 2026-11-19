@@ -69,17 +69,17 @@ final class GuideCaptureUITests: XCTestCase {
 		// 5 — Plan con tareas del seed
 		app.tabBars.buttons.element(boundBy: 1).tap()
 		settle(2)
-		capture("iphone-06-plan")
+		capture("iphone-04-plan")
 
 		// 6 — Panel (dashboard)
 		app.tabBars.buttons.element(boundBy: 2).tap()
 		settle(2)
-		capture("iphone-07-panel")
+		capture("iphone-05-panel")
 
 		// 9 — Más / ajustes
 		app.tabBars.buttons.element(boundBy: 3).tap()
 		settle(2)
-		capture("iphone-09-ajustes")
+		capture("iphone-06-ajustes")
 
 		// 8 — Estadísticas (desde Más; cualquier elemento que la anuncie)
 		let statsPredicate = NSPredicate(format: "label CONTAINS 'Estadísticas' OR label CONTAINS 'Estadisticas'")
@@ -87,7 +87,7 @@ final class GuideCaptureUITests: XCTestCase {
 		if statsRow.waitForExistence(timeout: 5) {
 			statsRow.tap()
 			settle(2.5)
-			capture("iphone-08-estadisticas")
+			capture("iphone-07-panel-30d")
 		}
 
 		// 2 — Modo alternativo (desde Foco, al final para no interrumpir el flujo)
