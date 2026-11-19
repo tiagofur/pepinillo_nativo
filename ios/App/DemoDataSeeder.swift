@@ -45,6 +45,14 @@ enum DemoDataSeeder {
         shouldSimulatePro || persisted
     }
 
+    /// Spanish demo mode (`-esDemo`): swap seeded titles/notes for the
+    /// Spanish set so manuals and ES store captures show localized data.
+    private static let isSpanishDemo = CommandLine.arguments.contains("-esDemo")
+
+    private static func t(_ en: String, _ es: String) -> String {
+        isSpanishDemo ? es : en
+    }
+
     static func seedIfNeeded(container: ModelContainer) {
         guard CommandLine.arguments.contains("-seedDemoData") else { return }
 
@@ -81,55 +89,55 @@ enum DemoDataSeeder {
         // MARK: - Tasks
 
         // Active deep work tasks (scheduled for today)
-        let t1 = TaskItem(title: "Finish API integration", priority: .high, energyLevel: .deep, estimatedPomodoros: 6, sortOrder: 0)
+        let t1 = TaskItem(title: t("Finish API integration", "Terminar integración de la API"), priority: .high, energyLevel: .deep, estimatedPomodoros: 6, sortOrder: 0)
         t1.scheduledForToday = true
         t1.completedPomodoros = 4
         t1.preferredMode = "pomodoro"
-        t1.notes = "Auth endpoints + error handling. Use retry logic from NetworkClient."
-        let sub1a = SubTask(title: "Auth endpoint", sortOrder: 0); sub1a.isCompleted = true
-        let sub1b = SubTask(title: "User profile endpoint", sortOrder: 1); sub1b.isCompleted = true
-        let sub1c = SubTask(title: "Error handling", sortOrder: 2); sub1c.isCompleted = true
-        let sub1d = SubTask(title: "Retry logic", sortOrder: 3)
-        let sub1e = SubTask(title: "Write tests", sortOrder: 4)
+        t1.notes = t("Auth endpoints + error handling. Use retry logic from NetworkClient.", "Endpoints de auth y manejo de errores. Usar la lógica de reintentos de NetworkClient.")
+        let sub1a = SubTask(title: t("Auth endpoint", "Endpoint de auth"), sortOrder: 0); sub1a.isCompleted = true
+        let sub1b = SubTask(title: t("User profile endpoint", "Endpoint de perfil"), sortOrder: 1); sub1b.isCompleted = true
+        let sub1c = SubTask(title: t("Error handling", "Manejo de errores"), sortOrder: 2); sub1c.isCompleted = true
+        let sub1d = SubTask(title: t("Retry logic", "Lógica de reintentos"), sortOrder: 3)
+        let sub1e = SubTask(title: t("Write tests", "Escribir tests"), sortOrder: 4)
         t1.subtasks = [sub1a, sub1b, sub1c, sub1d, sub1e]
 
-        let t2 = TaskItem(title: "Design system audit", priority: .medium, energyLevel: .deep, estimatedPomodoros: 4, sortOrder: 1)
+        let t2 = TaskItem(title: t("Design system audit", "Auditoría del design system"), priority: .medium, energyLevel: .deep, estimatedPomodoros: 4, sortOrder: 1)
         t2.scheduledForToday = true
         t2.completedPomodoros = 2
         t2.preferredMode = "flowtime"
 
-        let t3 = TaskItem(title: "Write blog post draft", priority: .medium, energyLevel: .deep, estimatedPomodoros: 3, sortOrder: 2)
+        let t3 = TaskItem(title: t("Write blog post draft", "Escribir borrador del blog"), priority: .medium, energyLevel: .deep, estimatedPomodoros: 3, sortOrder: 2)
         t3.scheduledForToday = true
         t3.completedPomodoros = 0
         t3.preferredMode = "timeBlock"
 
-        let t4 = TaskItem(title: "Review pull requests", priority: .low, energyLevel: .shallow, estimatedPomodoros: 2, sortOrder: 3)
+        let t4 = TaskItem(title: t("Review pull requests", "Revisar pull requests"), priority: .low, energyLevel: .shallow, estimatedPomodoros: 2, sortOrder: 3)
         t4.scheduledForToday = true
         t4.completedPomodoros = 1
 
-        let t5 = TaskItem(title: "Update project roadmap", priority: .high, energyLevel: .admin, estimatedPomodoros: 2, sortOrder: 4)
+        let t5 = TaskItem(title: t("Update project roadmap", "Actualizar el roadmap del proyecto"), priority: .high, energyLevel: .admin, estimatedPomodoros: 2, sortOrder: 4)
         t5.scheduledForToday = true
         t5.dueDate = cal.date(byAdding: .day, value: 1, to: today)
 
-        let t6 = TaskItem(title: "Prepare weekly standup", priority: .low, energyLevel: .admin, estimatedPomodoros: 1, sortOrder: 5)
+        let t6 = TaskItem(title: t("Prepare weekly standup", "Preparar el standup semanal"), priority: .low, energyLevel: .admin, estimatedPomodoros: 1, sortOrder: 5)
         t6.scheduledForToday = true
 
         // Completed tasks
-        let t7 = TaskItem(title: "Set up CI/CD pipeline", priority: .high, energyLevel: .deep, estimatedPomodoros: 4, sortOrder: 6)
+        let t7 = TaskItem(title: t("Set up CI/CD pipeline", "Configurar el pipeline de CI/CD"), priority: .high, energyLevel: .deep, estimatedPomodoros: 4, sortOrder: 6)
         t7.isCompleted = true
         t7.completedAt = cal.date(byAdding: .day, value: -1, to: now)
         t7.completedPomodoros = 4
 
-        let t8 = TaskItem(title: "Database schema migration", priority: .high, energyLevel: .deep, estimatedPomodoros: 3, sortOrder: 7)
+        let t8 = TaskItem(title: t("Database schema migration", "Migración del schema de la base"), priority: .high, energyLevel: .deep, estimatedPomodoros: 3, sortOrder: 7)
         t8.isCompleted = true
         t8.completedAt = cal.date(byAdding: .day, value: -2, to: now)
         t8.completedPomodoros = 3
 
         // Future tasks (not for today)
-        let t9 = TaskItem(title: "Onboarding flow redesign", priority: .medium, energyLevel: .deep, estimatedPomodoros: 5, sortOrder: 8)
+        let t9 = TaskItem(title: t("Onboarding flow redesign", "Rediseño del onboarding"), priority: .medium, energyLevel: .deep, estimatedPomodoros: 5, sortOrder: 8)
         t9.dueDate = cal.date(byAdding: .day, value: 3, to: today)
 
-        let t10 = TaskItem(title: "Performance profiling", priority: .low, energyLevel: .deep, estimatedPomodoros: 3, sortOrder: 9)
+        let t10 = TaskItem(title: t("Performance profiling", "Perfilado de performance"), priority: .low, energyLevel: .deep, estimatedPomodoros: 3, sortOrder: 9)
 
         let tasks = [t1, t2, t3, t4, t5, t6, t7, t8, t9, t10]
         tasks.forEach { context.insert($0) }

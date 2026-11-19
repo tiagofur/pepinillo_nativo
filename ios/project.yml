@@ -590,6 +590,36 @@ targets:
         TEST_HOST: "$(BUILT_PRODUCTS_DIR)/Pepinillo.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Pepinillo"
         BUNDLE_LOADER: "$(TEST_HOST)"
 
+  PepinilloUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    deploymentTarget: "17.0"
+    bundleId: com.pepinillo.uitests
+    sources:
+      - path: UITests
+    dependencies:
+      - target: Pepinillo
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.pepinillo.uitests
+        GENERATE_INFOPLIST_FILE: "YES"
+        TEST_TARGET_NAME: Pepinillo
+
+  PepinilloWatchUITests:
+    type: bundle.ui-testing
+    platform: watchOS
+    deploymentTarget: "10.0"
+    bundleId: com.pepinillo.uitests.watch
+    sources:
+      - path: WatchUITests
+    dependencies:
+      - target: PepinilloWatch
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.pepinillo.uitests.watch
+        GENERATE_INFOPLIST_FILE: "YES"
+        TEST_TARGET_NAME: PepinilloWatch
+
 schemes:
   Pepinillo Dev:
     build:
@@ -609,6 +639,27 @@ schemes:
         - name: PepinilloTests
           parallelizable: true
           randomExecutionOrder: true
+    profile:
+      config: Debug
+    analyze:
+      config: Debug
+    archive:
+      config: Release
+
+  Pepinillo UI Capture:
+    build:
+      targets:
+        Pepinillo: all
+        PepinilloUITests: [test]
+    run:
+      config: Debug
+      commandLineArguments: {}
+      storeKitConfiguration: Pepinillo.storekit
+    test:
+      config: Debug
+      targets:
+        - name: PepinilloUITests
+          parallelizable: false
     profile:
       config: Debug
     analyze:
@@ -675,6 +726,26 @@ schemes:
     run:
       config: Debug
       commandLineArguments: {}
+    profile:
+      config: Debug
+    analyze:
+      config: Debug
+    archive:
+      config: Release
+
+  PepinilloWatch UI Capture:
+    build:
+      targets:
+        PepinilloWatch: all
+        PepinilloWatchUITests: [test]
+    run:
+      config: Debug
+      commandLineArguments: {}
+    test:
+      config: Debug
+      targets:
+        - name: PepinilloWatchUITests
+          parallelizable: false
     profile:
       config: Debug
     analyze:

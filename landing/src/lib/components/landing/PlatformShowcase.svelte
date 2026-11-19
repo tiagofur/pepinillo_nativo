@@ -11,8 +11,8 @@
 
 	const PLATFORMS: Platform[] = [
 		{ key: 'mac', variant: 'mac', src: '/guides/img/macos-dashboard.jpg', guide: '/guides/macos.html' },
-		{ key: 'iphone', variant: 'iphone', src: '/img/showcase/iphone-plan.jpg', guide: '/guides' },
-		{ key: 'watch', variant: 'watch', src: '/img/showcase/watch-tasks.jpg', guide: '/guides' },
+		{ key: 'iphone', variant: 'iphone', src: '/guides/img/iphone-04-plan.jpg', guide: '/guides/iphone.html' },
+		{ key: 'watch', variant: 'watch', src: '/guides/img/watchos-02-tareas.jpg', guide: '/guides/watchos.html' },
 		{ key: 'android', variant: 'android', src: '/img/showcase/android-dashboard.jpg', guide: '/guides' },
 		{ key: 'wear', variant: 'wear', src: '/img/showcase/wear-stats.jpg', guide: '/guides' },
 		{ key: 'web', variant: 'browser', src: '/guides/img/web-05-plan-tabla-es.jpg', guide: '/guides/web.html' }
