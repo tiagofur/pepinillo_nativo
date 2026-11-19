@@ -467,6 +467,8 @@ export type MessageKey =
 	| 'guides.list.macos.body'
 	| 'guides.list.iphone.body'
 	| 'guides.list.watchos.body'
+	| 'guides.list.android.body'
+	| 'guides.list.wearos.body'
 	| 'guides.list.iphone'
 	| 'guides.list.watchos'
 	| 'guides.list.android'
@@ -1008,6 +1010,8 @@ const en: Dict = {
 	'guides.soon': 'Coming soon',
 	'guides.list.macos': 'Mac — manual & touch guide',
 	'guides.list.macos.body': 'Menu bar, Notch panel, Quick Capture, keyboard shortcuts and the new touch gestures.',
+	'guides.list.android.body': 'The four focus modes, the energy-aware plan, Material You widgets and Assistant — on your phone.',
+	'guides.list.wearos.body': 'Focus from your wrist: timer, tasks, tiles and complications.',
 	'guides.list.iphone.body': 'The four focus modes, the energy-aware plan, widgets, Live Activity and Siri — in your pocket.',
 	'guides.list.watchos.body': 'Focus from your wrist: timer, tasks, complications and the Smart Stack.',
 	'guides.list.iphone': 'iPhone & iPad',
@@ -1557,6 +1561,8 @@ const es: Dict = {
 	'guides.soon': 'Pronto disponible',
 	'guides.list.macos': 'Mac — manual y guía touch',
 	'guides.list.macos.body': 'Barra de menú, panel Notch, Quick Capture, atajos de teclado y los nuevos gestos táctiles.',
+	'guides.list.android.body': 'Los cuatro modos de foco, el plan con energía, widgets Material You y el Assistant — en tu teléfono.',
+	'guides.list.wearos.body': 'El foco desde la muñeca: timer, tareas, tiles y complications.',
 	'guides.list.iphone.body': 'Los cuatro modos de foco, el plan con energía, widgets, Live Activity y Siri — en tu bolsillo.',
 	'guides.list.watchos.body': 'El foco desde la muñeca: timer, tareas, complications y el Smart Stack.',
 	'guides.list.iphone': 'iPhone y iPad',
@@ -2090,6 +2096,8 @@ const pt: Dict = {
 	'guides.soon': 'Em breve',
 	'guides.list.macos': 'Mac — manual e guia touch',
 	'guides.list.macos.body': 'Barra de menu, painel Notch, Quick Capture, atalhos de teclado e os novos gestos touch.',
+	'guides.list.android.body': 'Os quatro modos de foco, o plano com energia, widgets Material You e o Assistant — no seu telefone.',
+	'guides.list.wearos.body': 'O foco no pulso: timer, tarefas, tiles e complications.',
 	'guides.list.iphone.body': 'Os quatro modos de foco, o plano com energia, widgets, Live Activity e Siri — no seu bolso.',
 	'guides.list.watchos.body': 'O foco no pulso: timer, tarefas, complications e o Smart Stack.',
 	'guides.list.iphone': 'iPhone e iPad',

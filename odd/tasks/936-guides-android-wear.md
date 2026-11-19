@@ -1,0 +1,34 @@
+# 936 — feat(guides): manuales Android + Wear OS — catálogo completo 6/6
+Objective: Última tanda de guías: Android (10 secciones) y Wear OS (7 secciones) con capturas reales en español. Al cerrar, el índice /guides queda 6/6 plataformas listas y la cross-nav completa macOS → iPhone → watchOS → Android → Wear OS → Web.
+Branch: `feat/guides-android-wear` (apilada sobre `feat/guides-iphone-watch-934` / PR #935 — retarget a main al mergear) | Delivery: `complete` | Test runners: `pnpm check` + `pnpm build` (landing/)
+
+## Specs
+
+- **S1** — `landing/static/guides/android.html` (10 secciones: instalación, flujo, modos, sesión, plan con energía, dashboard, widgets/notificación persistente, Assistant, cuenta/ajustes, tips/FAQ).
+- **S2** — `landing/static/guides/wearos.html` (7 secciones: instalación/emparejamiento, foco, tareas, estadísticas, tiles/complications, sync, tips/FAQ).
+- **S3** — Capturas reales ES: android-01..05 (foco idle limpio, corriendo 24:37 con tarea, Inbox con tareas, dashboard, Más) + wearos-01..03 (timer, tareas, estadísticas — assets ES existentes).
+- **S4** — Índice 6/6 ready:true con mini-capturas y bodies es/en/pt; sitemap con las 2 URLs.
+- **S5** — Showcase: cards Android y Wear OS enlazan a sus guías.
+- **S6** — Cross-nav completa: macOS → iPhone → watchOS → Android → Wear OS → Web (watchos.next=android; web.prev=wearos).
+- **S7** — Regresión cero: markup balanceado (divs/sections) en los 6 manuales, svelte-check 0/0, build verde.
+
+## Allowed edit surfaces
+
+- `landing/static/guides/android.html`, `wearos.html` (nuevos), `watchos.html`/`web.html` (solo cross-nav)
+- `landing/static/guides/img/android-*.jpg`, `img/wearos-*.jpg` (nuevos)
+- `landing/src/routes/guides/+page.svelte`, `landing/src/lib/i18n/messages.ts` (bodies de índice)
+- `landing/src/lib/components/landing/PlatformShowcase.svelte` (links de guías)
+- `landing/static/sitemap.xml`
+- `odd/tasks/936-guides-android-wear.md`
+
+## Execution notes
+
+- Capturas Android vía emulador Pixel 10 Pro + ui automation (locale es del sistema, tarea "Comprar café de avena" vinculada, sesión corriendo 24:37). El banner de hold post-sesión se descarta con el diálogo Detener para capturar el foco idle limpio.
+- Las capturas Wear OS reutilizan los assets ES existentes (454×454, UI redonda) — sin sesión de captura nueva necesaria.
+- Gotcha heredado: cerrar `</section>` de #tips en los HTML nuevos (mismo defecto que en #934, corregido antes de commit).
+- Falso positivo documentado: el chequeo de imágenes "broken" cuenta lazy-load no iniciado como roto; el archivo real existe en build/.
+- El prerender enlaza android.html/wearos.html — requieren que iphone.html/watchos.html existan (por eso la rama apila sobre #935).
+
+## Log
+
+- **L1 (2026-11-19 noche)**: Issue #936 + worktree apilado sobre c79765af. Emulador boot + app ES (locale del sistema ya es). Capturas: foco idle limpio (tras descartar el hold con el diálogo Detener), Plan Inbox con 3 tareas ES, Más ES; reutilizados foco corriendo 24:37 y dashboard del run anterior. 8 imágenes convertidas. Manuales escritos, índice 6/6 con thumbs, sitemap +2 URLs, cross-nav 6 guías verificada por script (prev/next en ambas direcciones), markup balanceado, svelte-check 0/0, build verde.

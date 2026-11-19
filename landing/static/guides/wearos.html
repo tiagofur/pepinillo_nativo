@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pepinillo para Wear OS — Manual de Usuario</title>
+  <meta name="description" content="Manual completo de Pepinillo para Wear OS: el foco desde la muñeca, tareas, tiles, complications y la sincronía con tu Android.">
+  <link rel="canonical" href="https://pepinillo.app/guides/wearos">
+  <link rel="stylesheet" href="/guides/manual.css">
+</head>
+<body>
+  <div class="progress" id="progress" aria-hidden="true"></div>
+  <button class="toc-toggle" id="toc-toggle" aria-label="Índice de secciones" aria-expanded="false">☰</button>
+  <div class="toc-overlay" id="toc-overlay"></div>
+
+  <div class="app-shell">
+    <aside>
+      <div class="brand"><a href="/guides" style="text-decoration:none;color:inherit;margin-right:8px" title="Todas las guías">←</a>
+        <div class="brand-icon">P</div>
+        <div>
+          <div class="brand-title">Pepinillo</div>
+          <div class="brand-sub">Manual para Wear OS</div>
+        </div>
+      </div>
+      <div class="guide-chip">⌚️ Estás en la guía de Wear OS</div>
+
+      <nav>
+        <div class="nav-label">Empezando</div>
+        <a href="#instalacion">1. Instalación y emparejamiento</a>
+        <a href="#foco">2. El foco desde la muñeca</a>
+
+        <div class="nav-label">Uso diario</div>
+        <a href="#tareas">3. Tareas en la muñeca</a>
+        <a href="#estadisticas">4. Estadísticas en la muñeca</a>
+
+        <div class="nav-label">Con tu teléfono</div>
+        <a href="#tiles">5. Tiles y complications</a>
+        <a href="#sync">6. La sincronía con tu Android</a>
+
+        <div class="nav-label">Referencia</div>
+        <a href="#tips">7. Tips y FAQ</a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div style="font-size:11.5px;font-weight:700;color:var(--ink);margin-bottom:3px">Wear OS · Companion del Android</div>
+        <div style="color:var(--muted)">Kotlin · Compose for Wear OS · Tiles</div>
+      </div>
+    </aside>
+
+    <main>
+      <header class="hero">
+        <span class="badge">Manual de Usuario · Pepinillo para Wear OS</span>
+        <h1>El foco, desde la muñeca</h1>
+        <p class="section-lead">Pepinillo para Wear OS es el companion del Android: arrancá, pausá y terminá tus sesiones sin sacar el teléfono del bolsillo — con el anillo de foco adaptado a la pantalla redonda.</p>
+      </header>
+
+      <!-- 1. INSTALACIÓN -->
+      <section id="instalacion">
+        <h2>1. Instalación y emparejamiento</h2>
+        <p class="section-lead">La app de Wear se instala junto a la del teléfono: no buscás nada en la Play Store del reloj.</p>
+
+        <div class="grid-2">
+          <article class="card">
+            <h3>Instalar</h3>
+            <ol class="steps">
+              <li>En tu Android abrí la app <strong>Wear OS</strong>.</li>
+              <li>Buscá <strong>Pepinillo</strong> en la lista de apps del reloj y activá <strong>Instalar</strong> (o descargala de la Play Store del reloj buscando “Pepinillo”).</li>
+              <li>Esperá la transferencia — el reloj debe estar conectado al teléfono.</li>
+            </ol>
+            <p>También se instala automáticamente si tu teléfono ya tenía Pepinillo y el reloj está emparejado.</p>
+          </article>
+          <article class="card">
+            <h3>Primer arranque</h3>
+            <ul>
+              <li>Al abrirla, la app de Wear se presenta sola: <strong>sin login y sin permisos extra</strong>.</li>
+              <li>La racha, la tarea del día y tus ajustes llegan del teléfono por la <strong>capa Data de Wear OS</strong> en segundos.</li>
+              <li>Si no ves datos aún, abrí Pepinillo en el teléfono una vez: es la llave que enciende la sync.</li>
+            </ul>
+          </article>
+        </div>
+
+        <figure class="third">
+          <img class="screenshot" src="/guides/img/wearos-01-timer.jpg" alt="Pepinillo para Wear OS con el temporizador de foco corriendo" loading="lazy">
+          <figcaption>El temporizador de foco en la muñeca: anillo de progreso, fase actual, tarea vinculada y controles grandes para un toque.</figcaption>
+        </figure>
+
+        <div class="callout"><strong>Companion, no reemplazo.</strong> La app de Wear está pensada para operar la sesión — arrancar, pausar, terminar — no para planificar: el Plan completo vive en el teléfono.</div>
+      </section>
+
+      <!-- 2. FOCO -->
+      <section id="foco">
+        <h2>2. El foco desde la muñeca</h2>
+        <p class="section-lead">La pantalla principal de Wear replica el escenario de foco del teléfono, adaptado a la pantalla redonda.</p>
+
+        <div class="grid-2">
+          <article class="card">
+            <h3>Arrancar una sesión</h3>
+            <ol class="steps">
+              <li>Abrí <strong>Pepinillo</strong> desde la lista de apps, un <strong>tile</strong> o la complication (ver sección 5).</li>
+              <li>La pantalla muestra el modo actual y el tiempo configurado.</li>
+              <li>Tocá el botón de inicio: el anillo empieza a crecer con el color del modo.</li>
+            </ol>
+          </article>
+          <article class="card">
+            <h3>Controlar la sesión</h3>
+            <ul>
+              <li><strong>Pausar / Reanudar</strong> con el botón central; el estado queda grabado también en el teléfono.</li>
+              <li><strong>Terminar</strong> pide confirmación para evitar toques accidentales con la manga.</li>
+              <li><strong>Saltar fase</strong> avanza al descanso o al siguiente pomodoro.</li>
+              <li>La <strong>tarea vinculada</strong> aparece bajo el timer con su nombre en color de acento.</li>
+            </ul>
+          </article>
+        </div>
+
+        <div class="callout"><strong>Modos, también en la muñeca.</strong> El selector de modo está disponible en Wear; lo que cambiás en la muñeca se refleja en el teléfono al instante.</div>
+      </section>
+
+      <!-- 3. TAREAS -->
+      <section id="tareas">
+        <h2>3. Tareas en la muñeca</h2>
+        <p class="section-lead">Tu día planificado cabe entero en la pantalla redonda: lista compacta, marcada por energía.</p>
+
+        <figure class="third">
+          <img class="screenshot" src="/guides/img/wearos-02-tareas.jpg" alt="Lista de tareas del día en Pepinillo para Wear OS" loading="lazy">
+          <figcaption>La lista de tareas del día: tocá una para vincularla a la sesión o completarla; los pomodoros registrados van contando.</figcaption>
+        </figure>
+
+        <div class="grid-2">
+          <article class="card">
+            <h3>Qué podés hacer</h3>
+            <ul>
+              <li>Ver las <strong>tareas del día</strong> ordenadas por prioridad y energía.</li>
+              <li><strong>Vincular</strong> una tarea a la sesión actual o a la próxima.</li>
+              <li><strong>Completar</strong> una tarea con un toque (se sincroniza al teléfono).</li>
+              <li>Ver los <strong>pomodoros registrados</strong> de cada tarea.</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>Qué vive en el teléfono</h3>
+            <ul>
+              <li>Crear/editar tareas completas, subtareas y recurrencia (con Pepinillo+).</li>
+              <li>El <strong>Inbox</strong> y las vistas de <em>Hoy/Próximas/Completadas</em>.</li>
+              <li>La captura rápida por voz: en la muñeca usá el <strong>Assistant</strong> (“Creá la tarea… en Pepinillo”).</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <!-- 4. ESTADÍSTICAS -->
+      <section id="estadisticas">
+        <h2>4. Estadísticas en la muñeca</h2>
+        <p class="section-lead">Tu progreso de un vistazo, sin abrir el teléfono.</p>
+
+        <figure class="third">
+          <img class="screenshot" src="/guides/img/wearos-03-estadisticas.jpg" alt="Estadísticas de foco en Pepinillo para Wear OS" loading="lazy">
+          <figcaption>Las estadísticas de la muñeca: el foco del día y tu racha siempre a mano.</figcaption>
+        </figure>
+
+        <div class="grid-2">
+          <article class="card">
+            <h3>Qué muestra</h3>
+            <ul>
+              <li>El <strong>foco de hoy</strong> (tiempo y sesiones).</li>
+              <li>Tu <strong>racha</strong> de días consecutivos.</li>
+              <li>Los datos llegan sincronizados del teléfono al terminar cada sesión.</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>Para el análisis profundo</h3>
+            <ul>
+              <li>Las gráficas por día, reparto por modo y períodos largos viven en el <strong>Dashboard del teléfono</strong>.</li>
+              <li>Las revisiones Semanal/Mensual también — la muñeca te avisa cuando hay una nueva.</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <!-- 5. TILES -->
+      <section id="tiles">
+        <h2>5. Tiles y complications</h2>
+        <p class="section-lead">La regla de Pepinillo: el foco se alcanza en un toque — incluso desde la esfera del reloj.</p>
+
+        <div class="grid-2">
+          <article class="card">
+            <h3>Tiles</h3>
+            <ul>
+              <li>Deslizá la esfera hacia la izquierda para encontrar los <strong>tiles de Pepinillo</strong>: timer, tareas del día y racha.</li>
+              <li>El tile de timer muestra la sesión activa o el botón de inicio.</li>
+              <li>Un toque sobre el tile abre la app en ese punto.</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>Complications</h3>
+            <ul>
+              <li>Complications de <strong>racha</strong> y <strong>sesión</strong> para tu esfera favorita.</li>
+              <li>Mantené pulsada la esfera → <em>Personalizar</em> → elegí la zona y buscá Pepinillo.</li>
+              <li>Se actualizan al terminar cada fase y sesión.</li>
+            </ul>
+          </article>
+        </div>
+
+        <div class="callout"><strong>Presencia antes de abrir.</strong> Del tile a la sesión corriendo: un toque. De la esfera a la racha: un vistazo.</div>
+      </section>
+
+      <!-- 6. SYNC -->
+      <section id="sync">
+        <h2>6. La sincronía con tu Android</h2>
+        <p class="section-lead">Reloj y teléfono son un mismo Pepinillo: lo que pasa en la muñeca pasa en el teléfono, y viceversa.</p>
+
+        <div class="grid-2">
+          <article class="card">
+            <h3>Cómo se sincronizan</h3>
+            <ul>
+              <li><strong>MessageClient + DataClient</strong> de la capa Wear: iniciar/pausar/terminar desde la muñeca actualiza el teléfono al instante.</li>
+              <li>Arrancar una sesión desde el teléfono, un widget o el Assistant también <strong>aparece en la muñeca</strong> sin tocar nada.</li>
+              <li>Tareas completadas y pomodoros registrados suben y bajan en ambos sentidos.</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>Sin teléfono cerca</h3>
+            <ul>
+              <li>La app de Wear funciona <strong>offline</strong>: podés operar la sesión igual; todo se reconcilia al reconectar.</li>
+              <li>El reloj guarda el estado de la sesión aunque pierda el enlace Bluetooth momentáneamente.</li>
+              <li>Con Everywhere/AI+, la reconciliación final también pasa por la nube con la misma estrategia last-write-wins.</li>
+            </ul>
+          </article>
+        </div>
+
+        <div class="callout"><strong>Motor honesto en la muñeca también.</strong> El timer de Wear está anclado al reloj del sistema: no importa si la app se suspende, el tiempo no se detiene.</div>
+      </section>
+
+      <!-- 7. TIPS -->
+      <section id="tips">
+        <h2>7. Tips y FAQ</h2>
+        <p class="section-lead">Lo que hace la diferencia cuando la muñeca entra en rutina.</p>
+
+        <div class="grid-2">
+          <article class="card">
+            <h3>Tips</h3>
+            <ul>
+              <li><strong>Dejanos el tile del timer</strong> cerca de la esfera: el foco arranca antes de que saques el teléfono del bolsillo.</li>
+              <li><strong>Vinculá la tarea desde la muñeca</strong> antes de arrancar: el pomodoro queda contabilizado en la tarea correcta.</li>
+              <li><strong>Terminá el día desde la muñeca:</strong> la lista de tareas es la forma más rápida de cerrar pendientes chicos.</li>
+              <li><strong>Modo teatro:</strong> la notificación de sesión sigue visible aunque la pantalla se apague.</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>FAQ</h3>
+            <ul>
+              <li><strong>¿Necesito el teléfono cerca?</strong> Para sync en tiempo real, sí; para operar la sesión, no — funciona offline y reconcilia después.</li>
+              <li><strong>¿Batería?</strong> El impacto es mínimo: la app es ligera y usa el modo ambient del sistema.</li>
+              <li><strong>¿Se sincroniza con Everywhere/AI+?</strong> Sí: la muñeca participa de la misma sync nube entre todos tus dispositivos.</li>
+              <li><strong>¿Sirve sin Premium?</strong> Sí: Pomodoro y Crono, tareas del día, tiles y complications son gratis en la muñeca, igual que en el teléfono.</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+        <footer style="margin-top:24px;font-size:12.5px;color:var(--muted);border-top:1px solid var(--border);padding-top:18px">
+          Manual de Pepinillo para Wear OS · Capturas reales de la app con datos de demostración
+        </footer>
+        <nav class="guide-nav" aria-label="Navegación entre guías">
+          <a href="/guides/android.html">
+            <span class="nav-dir">Guía anterior</span>
+            <span class="nav-title">← Manual para Android</span>
+          </a>
+          <a class="guide-index" href="/guides">Todas las guías</a>
+          <a class="next" href="/guides/web.html">
+            <span class="nav-dir">Siguiente guía</span>
+            <span class="nav-title">Manual para Web →</span>
+          </a>
+        </nav>
+    </main>
+  </div>
+  <script src="/guides/manual.js" defer></script>
+</body>
+</html>
