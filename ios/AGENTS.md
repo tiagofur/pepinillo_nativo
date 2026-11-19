@@ -34,7 +34,8 @@ macOS: [`docs/macos-design-contract.md`](docs/macos-design-contract.md).
   `PepinilloAppleCloud.sqlite` y legacy de recuperación.
   `PersistenceStoreRouter.reconcile(capabilities:)` conmuta `.local` /
   `.appleCloud` (Pepinillo+) / `.backend` (Everywhere/AI+).
-  **Gap conocido**: `MacAppBootstrap` aún no cablea `syncModeClient.reconcile`.
+  En Mac el store es fijo local y `syncModeClient.reconcile` es un no-op
+  explícito en `PepinilloMacApp` (el router aún no llega a Mac).
 - **Puente procesos**: `AppGroupDefaults` (`userCapabilities`,
   `activeSyncMode`, comandos `external*Requested`) + Darwin notification
   `com.pepinillo.app.externalCommand`. Las vistas observan `SessionReconcilePolicy`.

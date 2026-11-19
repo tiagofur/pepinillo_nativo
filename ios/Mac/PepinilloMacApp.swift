@@ -120,6 +120,13 @@ private final class MacAppBootstrap: ObservableObject {
             AppFeature()
         } withDependencies: {
             $0.persistenceClient = PersistenceClient.live(container: container)
+            // The Mac runs on this fixed local container — there is no store
+            // router here yet, so reconcile is an explicit no-op (it used to
+            // hit the @DependencyClient default and report "Unimplemented" on
+            // every capabilities load). Capabilities themselves still flow
+            // into the app; only the store rerouting is deferred until the
+            // router lands on Mac.
+            $0.syncModeClient.reconcile = { _ in }
             #if MAC_LIVE_ACTIVITIES
             // Live Activities on Mac (macOS 27.3+): menu bar presentation on
             // Macs without Dynamic Island — same ActivityKit stack as iOS
