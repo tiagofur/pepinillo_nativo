@@ -170,9 +170,15 @@ export type MessageKey =
 	| 'focus.a11y.complete'
 	| 'focus.waitingBreak'
 	| 'focus.waitingWork'
-	| 'focus.startBreak'
-	| 'focus.startWork'
-	| 'focus.takeBreak'
+	| 'focus.startNext'
+	| 'focus.chip.soundscape'
+	| 'focus.chip.taskHelp'
+	| 'focus.chip.soundHelp'
+	| 'companion.stat.session'
+	| 'companion.stat.sessions'
+	| 'companion.stat.min'
+	| 'companion.stat.daystreak1'
+	| 'companion.stat.daystreak'
 	| 'focus.ghost.title'
 	| 'focus.ghost.body'
 	| 'focus.ghost.resume'
@@ -216,7 +222,6 @@ export type MessageKey =
 	| 'companion.focusToday'
 	| 'companion.sessionsToday'
 	| 'companion.streak'
-	| 'companion.pomodoroNumber'
 	| 'companion.activeTask'
 	| 'companion.streakEmpty'
 	| 'companion.suggest.title'
@@ -530,17 +535,26 @@ const en: Dict = {
 	'focus.start': 'Start',
 	'focus.pause': 'Pause',
 	'focus.resume': 'Resume',
-	'focus.skip': 'Skip',
-	'focus.complete': 'Complete',
-	'focus.endConfirm': 'End session?',
+	'focus.skip': 'Skip Phase',
+	'focus.complete': 'End Session',
+	'focus.endConfirm': 'End Session?',
 	'focus.reset': 'New session',
 	'focus.journal': 'Session journal',
 	'focus.linkTask': 'Link task',
-	'focus.noTask': 'No task',
+	'focus.noTask': 'Link Task',
 	'focus.mode.pomodoro': 'Pomodoro',
 	'focus.mode.stopwatch': 'Stopwatch',
 	'focus.mode.flowtime': 'Flowtime',
 	'focus.mode.timeblock': 'Time Block',
+	'focus.chip.soundscape': 'Soundscape',
+	'focus.chip.taskHelp': 'Link a task to this session',
+	'focus.chip.soundHelp': 'Choose an ambient soundscape',
+	'focus.startNext': 'Start next phase',
+	'companion.stat.session': 'session',
+	'companion.stat.sessions': 'sessions',
+	'companion.stat.min': 'min',
+	'companion.stat.daystreak1': 'day streak',
+	'companion.stat.daystreak': 'days streak',
 	'focus.mode.locked': 'Everywhere',
 	'focus.upgradeTeaser':
 		'Flowtime and Time Block unlock with Everywhere (subscribe or restore on iOS, Android, or Windows). No purchase on web yet.',
@@ -673,9 +687,6 @@ const en: Dict = {
 	'focus.a11y.complete': '{pct}% complete',
 	'focus.waitingBreak': 'Break ready when you are.',
 	'focus.waitingWork': 'Next focus phase is ready when you are.',
-	'focus.startBreak': 'Start break',
-	'focus.startWork': 'Start focus',
-	'focus.takeBreak': 'Take a break',
 	'focus.ghost.title': 'Unfinished session',
 	'focus.ghost.body': 'You left a {mode} session running ({time} recorded). Resume it or discard it.',
 	'focus.ghost.resume': 'Resume',
@@ -703,8 +714,8 @@ const en: Dict = {
 	'journal.skip': 'Skip',
 	'taskPicker.title': 'Focus on a task',
 	'taskPicker.empty': 'No active tasks yet — create some in Plan.',
-	'taskPicker.unlink': 'No linked task',
-	'soundscape.title': 'Soundscapes',
+	'taskPicker.unlink': 'Unlink Task',
+	'soundscape.title': 'Choose soundscape',
 	'soundscape.none': 'None',
 	'soundscape.rain': 'Rain',
 	'soundscape.forest': 'Forest',
@@ -720,7 +731,6 @@ const en: Dict = {
 	'companion.sessionsToday': 'Sessions today',
 	'companion.streak': 'Streak',
 	'companion.streakEmpty': 'Start your streak',
-	'companion.pomodoroNumber': 'Pomodoro #',
 	'companion.activeTask': 'Active task',
 	'companion.suggest.title': 'Suggested for now',
 	'companion.suggest.apply': 'Tap to apply',
@@ -1050,17 +1060,26 @@ const es: Dict = {
 	'focus.start': 'Iniciar',
 	'focus.pause': 'Pausar',
 	'focus.resume': 'Reanudar',
-	'focus.skip': 'Saltar',
-	'focus.complete': 'Completar',
-	'focus.endConfirm': '¿Terminar la sesión?',
+	'focus.skip': 'Saltar fase',
+	'focus.complete': 'Terminar sesión',
+	'focus.endConfirm': '¿Terminar sesión?',
 	'focus.reset': 'Nueva sesión',
 	'focus.journal': 'Diario de sesión',
 	'focus.linkTask': 'Vincular tarea',
-	'focus.noTask': 'Sin tarea',
+	'focus.noTask': 'Vincular tarea',
 	'focus.mode.pomodoro': 'Pomodoro',
 	'focus.mode.stopwatch': 'Cronómetro',
 	'focus.mode.flowtime': 'Flowtime',
 	'focus.mode.timeblock': 'Time Block',
+	'focus.chip.soundscape': 'Soundscape',
+	'focus.chip.taskHelp': 'Link a task to this session',
+	'focus.chip.soundHelp': 'Choose an ambient soundscape',
+	'focus.startNext': 'Start next phase',
+	'companion.stat.session': 'session',
+	'companion.stat.sessions': 'sessions',
+	'companion.stat.min': 'min',
+	'companion.stat.daystreak1': 'day streak',
+	'companion.stat.daystreak': 'days streak',
 	'focus.mode.locked': 'Everywhere',
 	'focus.upgradeTeaser':
 		'Flowtime y Time Block se desbloquean con Everywhere (suscribite o restaurá en iOS, Android o Windows). Aún no hay compra en web.',
@@ -1209,10 +1228,7 @@ const es: Dict = {
 	'focus.a11y.complete': '{pct}% completado',
 	'focus.waitingBreak': 'El descanso está listo cuando vos lo estés.',
 	'focus.waitingWork': 'El próximo enfoque está listo cuando vos lo estés.',
-	'focus.startBreak': 'Comenzar descanso',
-	'focus.startWork': 'Comenzar enfoque',
-	'focus.takeBreak': 'Tomar un descanso',
-	'focus.ghost.title': 'Sesión inconclusa',
+		'focus.ghost.title': 'Sesión inconclusa',
 	'focus.ghost.body': 'Dejaste una sesión de {mode} corriendo ({time} registrados). Retomalá o descartala.',
 	'focus.ghost.resume': 'Retomar',
 	'focus.ghost.discard': 'Descartar',
@@ -1239,8 +1255,8 @@ const es: Dict = {
 	'journal.skip': 'Omitir',
 	'taskPicker.title': 'Enfocate en una tarea',
 	'taskPicker.empty': 'Todavía no hay tareas activas — crealas en Plan.',
-	'taskPicker.unlink': 'Sin tarea vinculada',
-	'soundscape.title': 'Paisajes sonoros',
+	'taskPicker.unlink': 'Desvincular tarea',
+	'soundscape.title': 'Elegir paisaje sonoro',
 	'soundscape.none': 'Ninguno',
 	'soundscape.rain': 'Lluvia',
 	'soundscape.forest': 'Bosque',
@@ -1256,7 +1272,6 @@ const es: Dict = {
 	'companion.sessionsToday': 'Sesiones hoy',
 	'companion.streak': 'Racha',
 	'companion.streakEmpty': 'Empezá tu racha',
-	'companion.pomodoroNumber': 'Pomodoro n.º',
 	'companion.activeTask': 'Tarea activa',
 	'companion.suggest.title': 'Sugerido para ahora',
 	'companion.suggest.apply': 'Tocá para aplicarlo',
@@ -1576,11 +1591,20 @@ const pt: Dict = {
 	'focus.reset': 'Nova sessão',
 	'focus.journal': 'Diário da sessão',
 	'focus.linkTask': 'Vincular tarefa',
-	'focus.noTask': 'Sem tarefa',
+	'focus.noTask': 'Vincular tarefa',
 	'focus.mode.pomodoro': 'Pomodoro',
 	'focus.mode.stopwatch': 'Cronômetro',
 	'focus.mode.flowtime': 'Flowtime',
 	'focus.mode.timeblock': 'Time Block',
+	'focus.chip.soundscape': 'Soundscape',
+	'focus.chip.taskHelp': 'Link a task to this session',
+	'focus.chip.soundHelp': 'Choose an ambient soundscape',
+	'focus.startNext': 'Start next phase',
+	'companion.stat.session': 'session',
+	'companion.stat.sessions': 'sessions',
+	'companion.stat.min': 'min',
+	'companion.stat.daystreak1': 'day streak',
+	'companion.stat.daystreak': 'days streak',
 	'focus.mode.locked': 'Everywhere',
 	'focus.upgradeTeaser':
 		'Flowtime e Time Block desbloqueiam com Everywhere (assine ou restaure no iOS, Android ou Windows). Ainda sem compra na web.',
@@ -1729,10 +1753,7 @@ const pt: Dict = {
 	'focus.a11y.complete': '{pct}% concluído',
 	'focus.waitingBreak': 'A pausa fica pronta quando você estiver pronto.',
 	'focus.waitingWork': 'O próximo foco fica pronto quando você estiver pronto.',
-	'focus.startBreak': 'Iniciar pausa',
-	'focus.startWork': 'Iniciar foco',
-	'focus.takeBreak': 'Fazer uma pausa',
-	'focus.ghost.title': 'Sessão inacabada',
+		'focus.ghost.title': 'Sessão inacabada',
 	'focus.ghost.body': 'Você deixou uma sessão de {mode} rodando ({time} registrados). Retome ou descarte.',
 	'focus.ghost.resume': 'Retomar',
 	'focus.ghost.discard': 'Descartar',
@@ -1759,8 +1780,8 @@ const pt: Dict = {
 	'journal.skip': 'Pular',
 	'taskPicker.title': 'Focar em uma tarefa',
 	'taskPicker.empty': 'Ainda não há tarefas ativas — crie-as no Plano.',
-	'taskPicker.unlink': 'Sem tarefa vinculada',
-	'soundscape.title': 'Paisagens sonoras',
+	'taskPicker.unlink': 'Desvincular tarefa',
+	'soundscape.title': 'Escolher paisagem sonora',
 	'soundscape.none': 'Nenhuma',
 	'soundscape.rain': 'Chuva',
 	'soundscape.forest': 'Floresta',
@@ -1776,7 +1797,6 @@ const pt: Dict = {
 	'companion.sessionsToday': 'Sessões hoje',
 	'companion.streak': 'Sequência',
 	'companion.streakEmpty': 'Comece sua sequência',
-	'companion.pomodoroNumber': 'Pomodoro n.º',
 	'companion.activeTask': 'Tarefa ativa',
 	'companion.suggest.title': 'Sugerido para agora',
 	'companion.suggest.apply': 'Toque para aplicar',

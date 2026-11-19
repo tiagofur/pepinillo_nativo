@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { focus } from '$lib/stores/focus.svelte';
-		import { t } from '$lib/i18n/i18n.svelte';
+	import { t } from '$lib/i18n/i18n.svelte';
 	import { suggestMode } from '$lib/domain/intelligence/modeSuggest';
 	import { FREE_MODES } from '$lib/domain/entities/types';
 
@@ -14,25 +14,32 @@
 		return `${h}h ${m % 60}m`;
 	}
 
-	// Mac Focus stage parity: ONE slim stat line under the controls — no cards.
+	// Mac Focus stage parity (MacFocusView.todayStats): ONE value-first slim
+	// line — "N sessions · N min · N days streak" — under the controls, no
+	// cards. The pomodoro counter was removed from the stage (#789).
 	let stats = $derived.by(() => {
-		const focusMin = focus.todayStat ? fmtSeconds(focus.todayStat.totalFocusSeconds) : '0m';
-		const sessions = focus.todayStat ? String(focus.todayStat.sessionsCompleted) : '0';
-		const streak = focus.streak > 0 ? String(focus.streak) : '—';
+		const sessions = focus.todayStat?.sessionsCompleted ?? 0;
+		const minutes = Math.round((focus.todayStat?.totalFocusSeconds ?? 0) / 60);
+		const streak = focus.streak;
 		return [
-			{ icon: '⏱', label: t('companion.focusToday'), value: focusMin },
-			{ icon: '🌊', label: t('companion.sessionsToday'), value: sessions },
-			{ icon: '🔥', label: t('companion.streak'), value: streak },
-			{ icon: '🍅', label: t('companion.pomodoroNumber'), value: String(focus.cycle.pomodoroNumber) }
+			{
+				value: sessions,
+				label: sessions === 1 ? t('companion.stat.session') : t('companion.stat.sessions')
+			},
+			{ value: minutes, label: t('companion.stat.min') },
+			{
+				value: streak,
+				label: streak === 1 ? t('companion.stat.daystreak1') : t('companion.stat.daystreak')
+			}
 		];
 	});
 </script>
 
 <div class="statline">
-	{#each stats as s (s.label)}
+	{#each stats as s, i (i)}
 		<span class="stat">
-			<span class="stat-label">{s.icon} {s.label}</span>
 			<span class="stat-value nums">{s.value}</span>
+			<span class="stat-label">{s.label}</span>
 		</span>
 	{/each}
 </div>

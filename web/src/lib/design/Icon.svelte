@@ -91,5 +91,17 @@
 	{:else if name === 'refresh'}
 		<path d="M20.5 12a8.5 8.5 0 1 1-2.5-6" />
 		<path d="M18.5 2.5v4h-4" />
+	{:else if name === 'chevron'}
+		<path d="M6 9l6 6 6-6" />
+	{:else if name === 'waveform'}
+		<path d="M3 12h2" />
+		<path d="M8 8v8" />
+		<path d="M12 5v14" />
+		<path d="M16 8v8" />
+		<path d="M19 12h2" />
+	{:else if name === 'cup'}
+		<path d="M5 8h12v5a5 5 0 01-5 5h-2a5 5 0 01-5-5V8z" />
+		<path d="M17 9h1.5a2.5 2.5 0 010 5H17" />
+		<path d="M7 21h8" />
 	{/if}
 </svg>
