@@ -775,20 +775,34 @@ struct AppFeature {
                 if let completedTaskID = AppGroupDefaults.takeExternalCompleteTask() {
                     completeTaskEffect = .send(.tasks(.setTaskCompleted(completedTaskID, true)))
                 }
+
+                // S7: drain Share-Extension captures (#669) — same no-TTL
+                // contract. The title parks on the tasks feature (created
+                // immediately when the list is loaded, after `tasksLoaded`
+                // otherwise). Plan opens so the capture is visible (the Mac
+                // Quick Capture precedent).
+                var capturedTaskEffect: Effect<Action> = .none
+                if let capturedTitle = AppGroupDefaults.takeExternalCapturedTaskTitle() {
+                    state.tasks.pendingCapturedTaskTitle = capturedTitle
+                    capturedTaskEffect = .merge(
+                        .send(.tabSelected(.plan)),
+                        .send(.tasks(.capturedTaskReady))
+                    )
+                }
                 AppGroupDefaults.clearExternalCommands()
 
                 // Killed mid-session: App Group still says active but FocusEngine is idle.
                 if AppGroupDefaults.SessionReconcilePolicy.clearGhostSessionIfNeeded(
                     engineIsRunning: state.focus.isRunning
                 ) {
-                    return .merge(completeTaskEffect, ghostSessionClearedEffects())
+                    return .merge(completeTaskEffect, capturedTaskEffect, ghostSessionClearedEffects())
                 }
-                
+
                 // Sync idle mode selection from widget to app if no session is running
                 if !state.focus.isRunning, let widgetModeID = AppGroupDefaults.widgetSelectedMode,
                    let widgetMode = FocusMode(rawValue: widgetModeID),
                    widgetMode != state.focus.selectedMode {
-                    return .merge(completeTaskEffect, .send(.focus(.modeSelected(widgetMode))))
+                    return .merge(completeTaskEffect, capturedTaskEffect, .send(.focus(.modeSelected(widgetMode))))
                 }
 
                 // Reconnect WebSocket if authenticated
@@ -802,6 +816,7 @@ struct AppFeature {
                 }()
                 return .merge(
                     completeTaskEffect,
+                    capturedTaskEffect,
                     timerSync,
                     .run { [keychain, webSocketClient, canBackendSync = state.subscriptionState.capabilities.backendSync] _ in
                         guard canBackendSync else { return }
