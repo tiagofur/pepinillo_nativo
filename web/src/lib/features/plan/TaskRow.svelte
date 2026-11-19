@@ -1,9 +1,8 @@
 <script lang="ts">
 	import type { Task } from '$lib/domain/entities/types';
-	import { subtaskProgress } from '$lib/domain/tasks/plan';
-	import { t } from '$lib/i18n/i18n.svelte';
+	import { subtaskProgress, dueInfo, formatDueShort } from '$lib/domain/tasks/plan';
+	import { t, currentLocale } from '$lib/i18n/i18n.svelte';
 	import type { MessageKey } from '$lib/i18n/messages';
-	import { localDateKey } from '$lib/domain/tasks/recurrence';
 
 	let {
 		task,
@@ -106,11 +105,16 @@
 	};
 
 	let dueLabel = $derived.by(() => {
-		if (!task.dueDate) return '';
-		const todayKey = localDateKey(new Date());
-		if (task.dueDate === todayKey) return t('plan.due.today');
-		if (task.dueDate < todayKey) return t('plan.due.overdue');
-		return task.dueDate;
+		const info = dueInfo(task);
+		if (info.kind === 'none') return '';
+		if (info.kind === 'date' && info.dateKey) return formatDueShort(info.dateKey, currentLocale());
+		return t(
+			info.kind === 'today'
+				? 'plan.due.today'
+				: info.kind === 'tomorrow'
+					? 'plan.due.tomorrow'
+					: 'plan.due.overdue'
+		);
 	});
 
 	let subs = $derived(subtaskProgress(task));

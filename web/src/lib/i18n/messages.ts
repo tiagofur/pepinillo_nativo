@@ -53,7 +53,6 @@ export type MessageKey =
 	| 'plan.pomodoros'
 	| 'plan.taskTitle'
 	| 'plan.newTask'
-	| 'plan.search.empty'
 	| 'plan.empty.all'
 	| 'dashboard.refresh'
 	| 'error.notFound'
@@ -84,6 +83,12 @@ export type MessageKey =
 	| 'plan.showOptions'
 	| 'plan.hideOptions'
 	| 'plan.focusTask'
+	| 'plan.focusSession'
+	| 'plan.context.rename'
+	| 'plan.markIncomplete'
+	| 'plan.moveToday'
+	| 'plan.undo.completed'
+	| 'plan.undo.deleted'
 	| 'plan.reorder'
 	| 'dashboard.title'
 	| 'dashboard.subtitle'
@@ -263,6 +268,7 @@ export type MessageKey =
 	| 'plan.energySuggest'
 	| 'plan.energyHint'
 	| 'plan.due.today'
+	| 'plan.due.tomorrow'
 	| 'plan.due.overdue'
 	| 'plan.dueDate'
 	| 'plan.focusToday'
@@ -288,6 +294,14 @@ export type MessageKey =
 	| 'plan.empty.upcoming'
 	| 'plan.empty.completed'
 	| 'plan.empty.body'
+	| 'plan.empty.all.desc'
+	| 'plan.empty.today.desc'
+	| 'plan.empty.inbox.desc'
+	| 'plan.empty.upcoming.desc'
+	| 'plan.empty.completed.desc'
+	| 'plan.empty.search.title'
+	| 'plan.empty.search.desc'
+	| 'plan.empty.action.clear'
 	| 'quickCapture.title'
 	| 'quickCapture.placeholder'
 	| 'quickCapture.hint'
@@ -572,13 +586,18 @@ const en: Dict = {
 	'focus.phase.paused': 'Paused',
 	'focus.phase.completed': 'Done',
 	'plan.title': 'Plan',
-	'plan.add': 'Add task',
+	'plan.add': 'Add',
 	'plan.search': 'Search tasks',
 	'plan.upgradeCta': 'See Everywhere',
 	'plan.pomodoros': 'Pomodoros',
 	'plan.taskTitle': 'Title',
 	'plan.newTask': 'New task',
-	'plan.search.empty': 'No tasks match your search',
+	'plan.focusSession': 'Start Focus Session',
+	'plan.context.rename': 'Rename Task',
+	'plan.markIncomplete': 'Mark Incomplete',
+	'plan.moveToday': 'Move to Today',
+	'plan.undo.completed': 'Task completed',
+	'plan.undo.deleted': '"{title}" deleted',
 	'dashboard.refresh': 'Refresh',
 	'error.notFound': 'This page wandered off the garden',
 	'error.notFoundHint': 'The page you asked for does not exist — back to the timer.',
@@ -608,7 +627,7 @@ const en: Dict = {
 	'plan.listLabel': 'List',
 	'plan.showOptions': 'More',
 	'plan.hideOptions': 'Less',
-	'plan.focusTask': 'Focus',
+	'plan.focusTask': 'Start Focus',
 	'plan.reorder': 'Reorder',
 	'dashboard.title': 'Dashboard',
 	'dashboard.subtitle': 'Reflect on what worked',
@@ -771,8 +790,9 @@ const en: Dict = {
 	'plan.energySuggest': 'Suggest for now',
 	'plan.energyHint': 'Suggested energy right now: {energy}',
 	'plan.due.today': 'Today',
+	'plan.due.tomorrow': 'Tomorrow',
 	'plan.due.overdue': 'Overdue',
-	'plan.dueDate': 'Due date',
+	'plan.dueDate': 'Due',
 	'plan.focusToday': 'Focus today',
 	'plan.recurrence': 'Repeat',
 	'plan.recurrence.daily': 'Daily',
@@ -791,12 +811,20 @@ const en: Dict = {
 	'plan.analytics.focus': '{time} of focus',
 	'plan.deleteConfirm': 'Tap again to delete',
 	'plan.inspector': 'Task details',
-	'plan.empty.today': 'Nothing for today',
-	'plan.empty.inbox': 'Inbox zero',
-	'plan.empty.all': 'Nothing here yet',
-	'plan.empty.upcoming': 'Nothing scheduled ahead',
-	'plan.empty.completed': 'No harvest yet',
+	'plan.empty.today': 'Your Garden Awaits',
+	'plan.empty.inbox': 'The Garden Is Quiet',
+	'plan.empty.all': 'An Empty Garden',
+	'plan.empty.upcoming': 'Nothing Upcoming',
+	'plan.empty.completed': 'No Completed Tasks',
 	'plan.empty.body': 'Add your first task above — your garden starts here.',
+	'plan.empty.all.desc': 'Plant your first task — everything grows from there.',
+	'plan.empty.today.desc': 'Plant your first task — small seeds grow into deep focus.',
+	'plan.empty.inbox.desc': 'Everything captured is planted where it belongs. Enjoy the calm.',
+	'plan.empty.upcoming.desc': 'No deadlines on the horizon. Focus on what matters today.',
+	'plan.empty.completed.desc': 'Complete a task and your wins will show up here.',
+	'plan.empty.search.title': 'No Results',
+	'plan.empty.search.desc': 'No tasks match your search.',
+	'plan.empty.action.clear': 'Clear Search',
 	'quickCapture.title': 'Quick Capture',
 	'quickCapture.placeholder': 'Capture a task…',
 	'quickCapture.hint': '⌘K / Ctrl+K from anywhere',
@@ -1097,13 +1125,18 @@ const es: Dict = {
 	'focus.phase.paused': 'Pausado',
 	'focus.phase.completed': 'Listo',
 	'plan.title': 'Plan',
-	'plan.add': 'Agregar tarea',
+	'plan.add': 'Añadir',
 	'plan.search': 'Buscar tareas',
 	'plan.upgradeCta': 'Ver Everywhere',
 	'plan.pomodoros': 'Pomodoros',
 	'plan.taskTitle': 'Título',
 	'plan.newTask': 'Nueva tarea',
-	'plan.search.empty': 'Ninguna tarea coincide con tu búsqueda',
+	'plan.focusSession': 'Iniciar Sesión de Enfoque',
+	'plan.context.rename': 'Renombrar tarea',
+	'plan.markIncomplete': 'Marcar como incompleta',
+	'plan.moveToday': 'Mover a Hoy',
+	'plan.undo.completed': 'Tarea completada',
+	'plan.undo.deleted': '"{title}" eliminada',
 	'dashboard.refresh': 'Actualizar',
 	'error.notFound': 'Esta página se salió del huerto',
 	'error.notFoundHint': 'La página que pediste no existe — de vuelta al temporizador.',
@@ -1133,7 +1166,7 @@ const es: Dict = {
 	'plan.listLabel': 'Lista',
 	'plan.showOptions': 'Más',
 	'plan.hideOptions': 'Menos',
-	'plan.focusTask': 'Foco',
+	'plan.focusTask': 'Iniciar Enfoque',
 	'plan.reorder': 'Orden',
 	'dashboard.title': 'Panel',
 	'dashboard.today': 'Hoy',
@@ -1312,8 +1345,9 @@ const es: Dict = {
 	'plan.energySuggest': 'Sugerir para ahora',
 	'plan.energyHint': 'Energía sugerida ahora: {energy}',
 	'plan.due.today': 'Hoy',
-	'plan.due.overdue': 'Atrasada',
-	'plan.dueDate': 'Fecha límite',
+	'plan.due.tomorrow': 'Mañana',
+	'plan.due.overdue': 'Vencida',
+	'plan.dueDate': 'Vence',
 	'plan.focusToday': 'Enfoque hoy',
 	'plan.recurrence': 'Repetir',
 	'plan.recurrence.daily': 'Diaria',
@@ -1332,12 +1366,20 @@ const es: Dict = {
 	'plan.analytics.focus': '{time} de foco',
 	'plan.deleteConfirm': 'Tocá de nuevo para eliminar',
 	'plan.inspector': 'Detalle de tarea',
-	'plan.empty.today': 'Nada para hoy',
-	'plan.empty.inbox': 'Bandeja en cero',
-	'plan.empty.all': 'Nada por aquí todavía',
-	'plan.empty.upcoming': 'Nada agendado',
-	'plan.empty.completed': 'Aún sin cosecha',
+	'plan.empty.today': 'Tu huerto te espera',
+	'plan.empty.inbox': 'El huerto está en calma',
+	'plan.empty.all': 'Un huerto vacío',
+	'plan.empty.upcoming': 'Nada próximo',
+	'plan.empty.completed': 'Sin tareas completadas',
 	'plan.empty.body': 'Agregá tu primera tarea arriba — tu huerto empieza acá.',
+	'plan.empty.all.desc': 'Plantá tu primera tarea: de ahí crece todo.',
+	'plan.empty.today.desc': 'Plantá tu primera tarea: las semillas pequeñas crecen hasta el foco profundo.',
+	'plan.empty.inbox.desc': 'Todo lo capturado está donde corresponde. Disfrutá la calma.',
+	'plan.empty.upcoming.desc': 'Sin plazos a la vista. Enfocate en lo que importa hoy.',
+	'plan.empty.completed.desc': 'Completá una tarea y tus logros aparecerán acá.',
+	'plan.empty.search.title': 'Sin resultados',
+	'plan.empty.search.desc': 'Ninguna tarea coincide con tu búsqueda.',
+	'plan.empty.action.clear': 'Limpiar búsqueda',
 	'quickCapture.title': 'Captura rápida',
 	'quickCapture.placeholder': 'Capturar una tarea…',
 	'quickCapture.hint': '⌘K / Ctrl+K desde cualquier lugar',
@@ -1622,13 +1664,18 @@ const pt: Dict = {
 	'focus.phase.paused': 'Pausado',
 	'focus.phase.completed': 'Concluído',
 	'plan.title': 'Plano',
-	'plan.add': 'Adicionar tarefa',
+	'plan.add': 'Adicionar',
 	'plan.search': 'Buscar tarefas',
 	'plan.upgradeCta': 'Ver Everywhere',
 	'plan.pomodoros': 'Pomodoros',
 	'plan.taskTitle': 'Título',
 	'plan.newTask': 'Nova tarefa',
-	'plan.search.empty': 'Nenhuma tarefa corresponde à sua busca',
+	'plan.focusSession': 'Iniciar Sessão de Foco',
+	'plan.context.rename': 'Renomear tarefa',
+	'plan.markIncomplete': 'Marcar como incompleta',
+	'plan.moveToday': 'Mover para Hoje',
+	'plan.undo.completed': 'Tarefa concluída',
+	'plan.undo.deleted': '"{title}" excluída',
 	'dashboard.refresh': 'Atualizar',
 	'error.notFound': 'Esta página saiu da horta',
 	'error.notFoundHint': 'A página pedida não existe — de volta ao temporizador.',
@@ -1658,7 +1705,7 @@ const pt: Dict = {
 	'plan.listLabel': 'Lista',
 	'plan.showOptions': 'Mais',
 	'plan.hideOptions': 'Menos',
-	'plan.focusTask': 'Foco',
+	'plan.focusTask': 'Iniciar Enfoque',
 	'plan.reorder': 'Ordem',
 	'dashboard.title': 'Painel',
 	'dashboard.today': 'Hoje',
@@ -1837,8 +1884,9 @@ const pt: Dict = {
 	'plan.energySuggest': 'Sugerir para agora',
 	'plan.energyHint': 'Energia sugerida agora: {energy}',
 	'plan.due.today': 'Hoje',
-	'plan.due.overdue': 'Atrasada',
-	'plan.dueDate': 'Data limite',
+	'plan.due.tomorrow': 'Amanhã',
+	'plan.due.overdue': 'Vencida',
+	'plan.dueDate': 'Vence',
 	'plan.focusToday': 'Foco hoje',
 	'plan.recurrence': 'Repetir',
 	'plan.recurrence.daily': 'Diária',
@@ -1857,12 +1905,20 @@ const pt: Dict = {
 	'plan.analytics.focus': '{time} de foco',
 	'plan.deleteConfirm': 'Toque de novo para excluir',
 	'plan.inspector': 'Detalhes da tarefa',
-	'plan.empty.today': 'Nada para hoje',
-	'plan.empty.inbox': 'Caixa zerada',
-	'plan.empty.all': 'Nada por aqui ainda',
-	'plan.empty.upcoming': 'Nada agendado',
-	'plan.empty.completed': 'Ainda sem colheita',
+	'plan.empty.today': 'Sua horta te espera',
+	'plan.empty.inbox': 'A horta está calma',
+	'plan.empty.all': 'Uma horta vazia',
+	'plan.empty.upcoming': 'Nada próximo',
+	'plan.empty.completed': 'Sem tarefas concluídas',
 	'plan.empty.body': 'Adicione sua primeira tarefa acima — sua horta começa aqui.',
+	'plan.empty.all.desc': 'Plante sua primeira tarefa: daí tudo cresce.',
+	'plan.empty.today.desc': 'Plante sua primeira tarefa — pequenas sementes viram foco profundo.',
+	'plan.empty.inbox.desc': 'Tudo capturado está onde deve estar. Aproveite a calma.',
+	'plan.empty.upcoming.desc': 'Sem prazos no horizonte. Foque no que importa hoje.',
+	'plan.empty.completed.desc': 'Conclua uma tarefa e suas vitórias aparecerão aqui.',
+	'plan.empty.search.title': 'Sem resultados',
+	'plan.empty.search.desc': 'Nenhuma tarefa corresponde à sua busca.',
+	'plan.empty.action.clear': 'Limpar busca',
 	'quickCapture.title': 'Captura rápida',
 	'quickCapture.placeholder': 'Capturar uma tarefa…',
 	'quickCapture.hint': '⌘K / Ctrl+K de qualquer lugar',

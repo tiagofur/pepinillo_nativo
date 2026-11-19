@@ -122,7 +122,9 @@ class FocusController {
 		this.reevaluateStats(sessions);
 		this.detectGhost(sessions);
 		this.blockMinutes = app.prefs.timeBlockMinutes;
-		this.resetIdle();
+		// A session started from another surface (Plan "Start Focus") must
+		// survive this late init — only reset when nothing is live.
+		if (!this.session || this.session.status === 'idle') this.resetIdle();
 		this.startTicker();
 	}
 
