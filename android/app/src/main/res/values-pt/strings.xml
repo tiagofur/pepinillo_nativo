@@ -915,4 +915,7 @@
     <string name="celebration_sessions_100_subtitle">Você é mestre do trabalho profundo.</string>
     <string name="celebration_best_title">Recorde pessoal: %dm</string>
     <string name="celebration_best_subtitle">%d minutos de foco ininterrupto. Impressionante!</string>
+
+    <!-- AppFunctions agent capability summary, shown to the user (issue #912/#918) -->
+    <string name="appfunctions_display_description">Permite que assistentes de IA como o Gemini criem tarefas no seu plano do Pepinillo por você.</string>
 </resources>

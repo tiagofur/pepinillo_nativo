@@ -906,4 +906,7 @@
     <string name="celebration_sessions_100_subtitle">You\'re a deep work master.</string>
     <string name="celebration_best_title">Personal best: %dm</string>
     <string name="celebration_best_subtitle">%d minutes of uninterrupted focus. Impressive!</string>
+
+    <!-- AppFunctions agent capability summary, shown to the user (issue #912/#918) -->
+    <string name="appfunctions_display_description">Lets AI assistants like Gemini create tasks in your Pepinillo plan on your behalf.</string>
 </resources>
