@@ -95,7 +95,11 @@
 		onclick={() => (showSoundscape = true)}
 		title={t('focus.chip.soundHelp')}
 	>
-		<Icon name="waveform" size={15} class="chip-icon" class:mode={app.prefs.soundscape !== 'none'} />
+		<Icon
+			name="waveform"
+			size={15}
+			class="chip-icon {app.prefs.soundscape !== 'none' ? 'mode' : ''}"
+		/>
 		<span class="chip-label">
 			{app.prefs.soundscape === 'none'
 				? t('focus.chip.soundscape')
