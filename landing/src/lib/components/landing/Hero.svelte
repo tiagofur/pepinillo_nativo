@@ -36,7 +36,7 @@
 
 	<div class="scene" role="img" aria-label={t('landing.hero.scene.label')}>
 		<div class="sc-iphone">
-			<DeviceFrame variant="iphone" src="/img/hero/iphone-focus.jpg" alt={t('landing.hero.scene.iphone')} />
+			<DeviceFrame variant="iphone" src="/guides/img/iphone-03-foco-corriendo.jpg" alt={t('landing.hero.scene.iphone')} />
 		</div>
 		<div class="sc-mac">
 			<DeviceFrame
@@ -47,7 +47,7 @@
 			/>
 		</div>
 		<div class="sc-watch">
-			<DeviceFrame variant="watch" src="/img/hero/watch-timer.jpg" alt={t('landing.hero.scene.watch')} />
+			<DeviceFrame variant="watch" src="/guides/img/watchos-01-timer.jpg" alt={t('landing.hero.scene.watch')} />
 		</div>
 	</div>
 

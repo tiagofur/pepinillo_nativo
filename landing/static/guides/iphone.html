@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pepinillo para iPhone — Manual de Usuario</title>
+  <meta name="description" content="Manual completo de Pepinillo para iPhone: los cuatro modos de foco, el plan con energía, el Panel, widgets, Live Activity, Siri y cada rincón de la app.">
+  <link rel="canonical" href="https://pepinillo.app/guides/iphone">
+  <link rel="stylesheet" href="/guides/manual.css">
+</head>
+<body>
+  <div class="progress" id="progress" aria-hidden="true"></div>
+  <button class="toc-toggle" id="toc-toggle" aria-label="Índice de secciones" aria-expanded="false">☰</button>
+  <div class="toc-overlay" id="toc-overlay"></div>
+
+  <div class="app-shell">
+    <aside>
+      <div class="brand"><a href="/guides" style="text-decoration:none;color:inherit;margin-right:8px" title="Todas las guías">←</a>
+        <div class="brand-icon">P</div>
+        <div>
+          <div class="brand-title">Pepinillo</div>
+          <div class="brand-sub">Manual para iPhone</div>
+        </div>
+      </div>
+      <div class="guide-chip">📱 Estás en la guía de iPhone</div>
+
+      <nav>
+        <div class="nav-label">Empezando</div>
+        <a href="#instalacion">1. Instalación y primeros pasos</a>
+        <a href="#flujo">2. El flujo Plan → Focus → Reflect</a>
+
+        <div class="nav-label">Foco</div>
+        <a href="#modos">3. Los cuatro modos de foco</a>
+        <a href="#sesion">4. Durante la sesión</a>
+
+        <div class="nav-label">Plan</div>
+        <a href="#plan">5. Tareas, energía e Inspector</a>
+
+        <div class="nav-label">Progreso</div>
+        <a href="#panel">6. Hoy, estadísticas y rachas</a>
+
+        <div class="nav-label">Siempre presente</div>
+        <a href="#widgets">7. Widgets y Live Activity</a>
+        <a href="#siri">8. Siri y Atajos</a>
+
+        <div class="nav-label">Ajustes</div>
+        <a href="#cuenta">9. Cuenta, Pepinillo+ y ajustes</a>
+
+        <div class="nav-label">Referencia</div>
+        <a href="#tips">10. Tips avanzados y FAQ</a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div style="font-size:11.5px;font-weight:700;color:var(--ink);margin-bottom:3px">100% iPhone · Offline-first</div>
+        <div style="color:var(--muted)">SwiftUI · SwiftData · Widgets</div>
+      </div>
+    </aside>
+
+    <main>
+      <header class="hero">
+        <span class="badge">Manual de Usuario · Pepinillo para iPhone</span>
+        <h1>Deep work en el bolsillo</h1>
+        <p class="section-lead">Pepinillo para iPhone es el compañero de foco que vive en tu bolsillo: los cuatro modos de foco, el plan con energía y estadísticas honestas — con la gramática nativa de iOS y cero dependencias de red.</p>
+      </header>
+
+      <!-- 1. INSTALACIÓN -->
+      <section id="instalacion">
+        <h2>1. Instalación y primeros pasos</h2>
+        <p class="section-lead">De cero a tu primera sesión de foco en menos de un minuto.</p>
+
+        <div class="grid-2">
+          <article class="card">
+            <h3>Instalar y conceder permisos</h3>
+            <ol class="steps">
+              <li><strong>Descargá Pepinillo</strong> del App Store y abrilo como cualquier otra app.</li>
+              <li>Al primer arranque verás una breve <strong>introducción a los cuatro modos</strong> de foco. Podés saltarla con <em>Omitir</em>.</li>
+              <li>Pepinillo te pedirá permiso para <strong>notificaciones</strong>: aceptalo para recibir los avisos de fin de fase y descansos aunque estés en otra app.</li>
+              <li>Elegí tu <strong>modo por defecto</strong> y pulsá <em>Comenzar</em>.</li>
+            </ol>
+            <p>Sin cuenta, sin configuración: todo funciona al instante y offline.</p>
+          </article>
+          <article class="card">
+            <h3>Cómo está organizada la app</h3>
+            <ul>
+              <li><strong>Foco</strong> — el temporizador y sus controles <span class="badge">1</span>.</li>
+              <li><strong>Plan</strong> — tus tareas con filtros <em>Todas, Hoy, Próximas, Completadas</em> <span class="badge">2</span>.</li>
+              <li><strong>Panel</strong> — el resumen del día con racha y gráficas <span class="badge">3</span>.</li>
+              <li><strong>Más</strong> — estadísticas profundas, IA (con Pepinillo+) y Ajustes <span class="badge">4</span>.</li>
+            </ul>
+            <p>Los cuatro puntos viven en la <strong>tab bar inferior</strong>, siempre a un toque.</p>
+          </article>
+        </div>
+
+        <figure>
+          <img class="screenshot" src="/guides/img/iphone-01-foco-idle.jpg" alt="Pepinillo para iPhone en la pestaña Foco, listo para iniciar" loading="lazy">
+          <figcaption>La app al abrir Pepinillo: anillo de foco, modos arriba y el botón <em>Iniciar</em> siempre en el mismo lugar.</figcaption>
+        </figure>
+
+        <div class="callout"><strong>Todo offline, de verdad.</strong> Tus tareas y sesiones viven en el dispositivo. La nube solo entra si activás la sincronización con Everywhere/AI+ (opcional).</div>
+      </section>
+
+      <!-- 2. FLUJO -->
+      <section id="flujo">
+        <h2>2. El flujo Plan → Focus → Complete → Reflect</h2>
+        <p class="section-lead">Todas las funciones de Pepinillo sirven a un mismo ciclo de trabajo profundo.</p>
+
+        <div class="grid-2">
+          <article class="card">
+            <h3>Las cuatro fases del ciclo</h3>
+            <ul>
+              <li><strong>Plan:</strong> capturá y organizá tareas con energía y prioridad en <em>Plan</em>.</li>
+              <li><strong>Focus:</strong> elegí un modo, vinculá una tarea y empezá la sesión.</li>
+              <li><strong>Complete:</strong> pomodoros contados, tareas cerradas y racha que crece.</li>
+              <li><strong>Reflect:</strong> el diario de sesión te pregunta cómo fue — 10 segundos que alimentan las estadísticas y la IA.</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>El motor es honesto</h3>
+            <ul>
+              <li>El temporizador está anclado al <strong>reloj del sistema</strong> (wall-clock): cerrar la app, el reposo del iPhone o un reinicio no descuaran el tiempo.</li>
+              <li>Las <strong>estadísticas se calculan localmente</strong> en tu iPhone; nada sale de él salvo que actives la sincronización de Everywhere/AI+.</li>
+              <li>La <strong>racha</strong> cuenta días consecutivos con al menos una sesión; se congela (no se rompe) si un día simplemente no abrís la app… pero no suma.</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <!-- 3. MODOS -->
+      <section id="modos">
+        <h2>3. Los cuatro modos de foco</h2>
+        <p class="section-lead">El segmented superior de <em>Foco</em> cambia de color según el modo: rojo pomodoro, azul flowtime, violeta bloques, verde cronómetro.</p>
+
+        <figure>
+          <img class="screenshot" src="/guides/img/iphone-02-modos.jpg" alt="Los cuatro modos de foco en el segmented de la app iPhone" loading="lazy">
+          <figcaption>Los cuatro modos: cada uno tiñe el anillo y el botón principal con su color.</figcaption>
+        </figure>
+
+        <div class="grid-2">
+          <article class="card">
+            <h3><span class="badge badge-pro">🍅 Pomodoro</span></h3>
+            <p>Ciclos de trabajo y descanso. Por defecto 25 + 5; el índice <strong>1/4</strong> bajo el anillo muestra en qué pomodoro del ciclo vas. En <em>Más ▸ Ajustes ▸ Foco</em> cambiás las duraciones y los auto-inicios.</p>
+          </article>
+          <article class="card">
+            <h3><span class="badge badge-pro">🌊 Flowtime</span></h3>
+            <p>Trabajo continuo con descansos sugeridos cuando tu concentración cae. Ideal para estados de flow largos: el cronómetro sube y Pepinillo te avisa cuándo conviene pausar.</p>
+          </article>
+          <article class="card">
+            <h3><span class="badge badge-pro">🧱 Bloques de tiempo</span></h3>
+            <p>Reservás un bloque del día para una tarea: el anillo marca el avance dentro del bloque y al terminar entra el descanso. Pensado para quien vive del calendario.</p>
+          </article>
+          <article class="card">
+            <h3><span class="badge badge-pro">⏱️ Cronómetro</span></h3>
+            <p>Sin estructura: contá hacia arriba y terminá cuando quieras. El modo más honesto para tareas con tiempo impredecible.</p>
+          </article>
+        </div>
+
+        <div class="callout"><strong>¿Cuál elegir?</strong> Si sabés cuándo arrancás y terminás → Bloques. Si querés estructura clásica → Pomodoro. Si el flow manda → Flowtime. Si nada de eso aplica → Cronómetro.</div>
+      </section>
+
+      <!-- 4. SESIÓN -->
+      <section id="sesion">
+        <h2>4. Durante la sesión: tarea, sonido y control</h2>
+        <p class="section-lead">El escenario de foco se tiñe del color del modo y desaparece todo lo que no necesitás.</p>
+
+        <figure>
+          <img class="screenshot" src="/guides/img/iphone-03-foco-corriendo.jpg" alt="Sesión de foco corriendo con tarea vinculada en iPhone" loading="lazy">
+          <figcaption>Sesión corriendo: el segmented se vacía, el icono del modo respira y el arco crece en sentido horario.</figcaption>
+        </figure>
+
+        <div class="grid-2">
+          <article class="card">
+            <h3>Vincular una tarea y sonidos</h3>
+            <ul>
+              <li>El chip <strong>Sin tarea</strong> abre el selector para vincular la sesión a una tarea del Plan: sus pomodoros se contabilizan al terminar.</li>
+              <li>El chip <strong>Ninguno</strong> abre los <strong>ambientes sonoros</strong>: lluvia, bosque, café, ruido blanco, océano, chimenea, binaural y Lo-Fi.</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>Terminar, saltar y recuperar</h3>
+            <ul>
+              <li><strong>Terminar</strong> pide confirmación en dos pasos (se pulsa dos veces, se desarma sola a los 3 segundos).</li>
+              <li><strong>Saltar</strong> avanza a la siguiente fase sin registrar la sesión.</li>
+              <li>Si cerrás la app a mitad de sesión, la tarjeta <em>Sesión inconclusa</em> te espera al volver con el tiempo registrado.</li>
+            </ul>
+          </article>
+        </div>
+
+        </div>
+      </section>
+
+      <!-- 5. PLAN -->
+      <section id="plan">
+        <h2>5. Plan: tareas, energía e Inspector</h2>
+        <p class="section-lead">El Plan replica la tabla de Pepinillo para Mac: filas compactas, filtros en el sidebar y un Inspector para el detalle de cada tarea.</p>
+
+        <figure>
+          <img class="screenshot" src="/guides/img/iphone-04-plan.jpg" alt="Plan con tabla de tareas, filtros y Nueva tarea en iPhone" loading="lazy">
+          <figcaption>La tabla del Plan: círculos de completado, flechas de prioridad (↑ Alta, — Media, ↓ Baja), energía con punto de color, pomodoros estimados y fecha límite en rojo si venció.</figcaption>
+        </figure>
+
+        <div class="grid-2">
+          <article class="card">
+            <h3>Crear y organizar</h3>
+            <ul>
+              <li><strong>+ Nueva tarea</strong> (o el <kbd>＋</kbd> de la barra) abre el compositor: título, notas, prioridad, energía y estimación de pomodoros.</li>
+              <li>Filtros del sidebar: <strong>Todas</strong>, <strong>Hoy</strong> (tu día planificado), <strong>Próximas</strong> (con fecha) y <strong>Completadas</strong>.</li>
+              <li>El <strong>menú contextual</strong> de cada fila (mantener pulsado) ofrece vincular a foco, duplicar, mover a Inbox y borrar.</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>Energía e Inspector</h3>
+            <ul>
+              <li>La <strong>energía</strong> (Superficial, Media, Profunda) te ayuda a elegir tareas según cómo estás: filtrá por energía y atacá lo que el día permite.</li>
+              <li>Un toque en la fila abre el <strong>Inspector</strong>: título editable, prioridad, energía, pomodoros estimados, fecha de repetición y notas.</li>
+              <li>Con <strong>Pepinillo+</strong>: subtareas, recurrencia y tareas ilimitadas (el plan gratuito permite 3 activas).</li>
+            </ul>
+          </article>
+        </div>
+
+        <div class="callout"><strong>Captura rápida.</strong> En <em>Más</em> encontrás la captura rápida para volar una idea al Inbox sin salir de donde estás — también desde Siri y desde los widgets.</div>
+      </section>
+
+      <!-- 6. PANEL -->
+      <section id="panel">
+        <h2>6. Hoy, estadísticas y rachas</h2>
+        <p class="section-lead">Dos vistas para entender tus patrones: el Panel (el día) y Estadísticas (el histórico).</p>
+
+        <figure>
+          <img class="screenshot" src="/guides/img/iphone-05-panel.jpg" alt="Panel del día con racha, minutos y sesiones en iPhone" loading="lazy">
+          <figcaption>El Panel: <strong>Hoy</strong> con minutos de foco, sesiones completadas y la racha de días; debajo, la gráfica de la semana con el mejor día marcado.</figcaption>
+        </figure>
+
+        <div class="grid-2">
+          <article class="card">
+            <h3>Qué se cuenta</h3>
+            <ul>
+              <li><strong>Tiempo de enfoque</strong> del día y del período (7/30/365 días).</li>
+              <li><strong>Sesiones</strong> de hoy y del histórico reciente, con modo y duración.</li>
+              <li><strong>Racha</strong> de días consecutivos con su mejor marca.</li>
+              <li><strong>Logros</strong> desbloqueables: primer foco, semana completa, maestro del pomodoro…</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>Periodos largos con Pepinillo+</h3>
+            <ul>
+              <li>Free incluye <strong>hoy + últimos 7 días</strong>.</li>
+              <li><strong>30D y 1 año</strong> se desbloquean con Pepinillo+ (los segmentos muestran 🔒 hasta entonces).</li>
+              <li>Todo se calcula localmente; el período largo no viaja a ningún servidor.</li>
+            </ul>
+          </article>
+        </div>
+
+      </section>
+
+      <!-- 7. WIDGETS -->
+      <section id="widgets">
+        <h2>7. Widgets y Live Activity</h2>
+        <p class="section-lead">Pepinillo vive fuera de la app: widgets en la pantalla de inicio, Live Activity en la Isla Dinámica y la pantalla de bloqueo.</p>
+
+        <div class="grid-2">
+          <article class="card">
+            <h3>Widgets de inicio y bloqueo</h3>
+            <ul>
+              <li>Mantené pulsado el escritorio → <strong>＋</strong> → buscá <strong>Pepinillo</strong>. Hay widgets de <em>timer</em>, <em>racha</em> y <em>tarea del día</em>.</li>
+              <li>Los widgets de bloqueo (accessory) muestran el timer o la racha junto a la hora.</li>
+              <li>Tocar el widget de timer abre la app directamente en <em>Foco</em>.</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>Live Activity e Isla Dinámica</h3>
+            <ul>
+              <li>Al iniciar una sesión aparece la <strong>Live Activity</strong>: tiempo restante, fase actual y color del modo, siempre visible.</li>
+              <li>En iPhones con Isla Dinámica, la actividad vive ahí; en otros, en la pantalla de bloqueo.</li>
+              <li>Los botones de la actividad permiten <strong>pausar y terminar</strong> sin abrir la app.</li>
+            </ul>
+          </article>
+        </div>
+
+        <div class="callout"><strong>Presencia antes de abrir.</strong> El principio de Pepinillo: el timer debe alcanzarse en un toque desde cualquier pantalla del sistema.</div>
+      </section>
+
+      <!-- 8. SIRI -->
+      <section id="siri">
+        <h2>8. Siri y Atajos</h2>
+        <p class="section-lead">Pepinillo registra App Intents: tu voz puede arrancar el foco, crear tareas y consultar tu progreso.</p>
+
+        <table>
+          <thead>
+            <tr><th>Decile a Siri</th><th>Qué hace</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><em>"Iniciá un pomodoro con Pepinillo"</em></td><td>Arranca una sesión del modo por defecto.</td></tr>
+            <tr><td><em>"Creá la tarea [nombre] en Pepinillo"</em></td><td>Agrega la tarea al Inbox del Plan.</td></tr>
+            <tr><td><em>"¿Cómo va mi racha en Pepinillo?"</em></td><td>Te lee la racha y el foco de hoy.</td></tr>
+            <tr><td><em>"Terminá la sesión de Pepinillo"</em></td><td>Corta la sesión activa (con confirmación).</td></tr>
+          </tbody>
+        </table>
+
+        <div class="grid-2">
+          <article class="card">
+            <h3>Atajos manuales</h3>
+            <ul>
+              <li>En la app de <strong>Atajos</strong> buscá "Pepinillo" para armar tus propias automatizaciones: p. ej. al activar <em>No molestar</em> del trabajo, arrancar un pomodoro de 50 minutos.</li>
+              <li>Los atajos se pueden añadir como botones en la pantalla de inicio o en el <strong>Action Button</strong>.</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>Buenas prácticas</h3>
+            <ul>
+              <li>Las frases de Siri funcionan offline en español, inglés y portugués.</li>
+              <li>Si Siri no entiende el nombre exacto de una tarea, el intent muestra un <strong>picker</strong> con tus tareas activas para confirmar.</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <!-- 9. CUENTA -->
+      <section id="cuenta">
+        <h2>9. Cuenta, Pepinillo+ y ajustes</h2>
+        <p class="section-lead">Todo vive en <em>Más</em>: la cuenta es opcional y los ajustes son cortos a propósito.</p>
+
+        <figure>
+          <img class="screenshot" src="/guides/img/iphone-06-ajustes.jpg" alt="Ajustes de Pepinillo en iPhone con pomodoro, duraciones y cuenta" loading="lazy">
+          <figcaption>Ajustes: pomodoro y descanso, auto-inicios, sonidos, apariencia (sistema, claro, oscuro) y cuenta.</figcaption>
+        </figure>
+
+        <div class="grid-2">
+          <article class="card">
+            <h3>Ajustes que importan</h3>
+            <ul>
+              <li><strong>Foco</strong> — duraciones de trabajo y descanso, auto-inicio de la siguiente fase (por defecto sí; apagalo si preferís decidir vos).</li>
+              <li><strong>Apariencia</strong> — sistema, claro u oscuro, y los temas premium Bosque, Océano y Atardecer con Pepinillo+.</li>
+              <li><strong>Sonidos</strong> — volumen por ambiente y mezcla con la música del sistema.</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>Pepinillo+ y Everywhere/AI+</h3>
+            <ul>
+              <li><strong>Pepinillo+</strong> (compra única): Flowtime y Bloques, tareas ilimitadas, subtareas, recurrencia, temas y estadísticas de 30 días + 1 año.</li>
+              <li><strong>Everywhere/AI+</strong> (suscripción): añade sincronización entre dispositivos con iPhone, iPad, Mac y la web, más insights de IA.</li>
+              <li>La compra se restaura desde <em>Más ▸ Pepinillo+ ▸ Restaurar</em>.</li>
+            </ul>
+          </article>
+        </div>
+
+        <div class="callout"><strong>Cuenta ≠ uso.</strong> Pepinillo funciona completo sin cuenta; crearla solo activa la sincronización Everywhere y la recuperación de datos.</div>
+      </section>
+
+      <!-- 10. TIPS -->
+      <section id="tips">
+        <h2>10. Tips avanzados y FAQ</h2>
+        <p class="section-lead">Detalles que hacen la diferencia después de la primera semana.</p>
+
+        <div class="grid-2">
+          <article class="card">
+            <h3>Tips</h3>
+            <ul>
+              <li><strong>Planificá el día de mañana antes de cerrar</strong>: al abrir, <em>Plan ▸ Hoy</em> ya te espera con el primer golpe de tecla… digo, de toque.</li>
+              <li><strong>Una tarea por sesión.</strong> Vincular la sesión a una tarea alimenta sus pomodoros estimados y tus estadísticas por proyecto.</li>
+              <li><strong>Si el descanso te corta el flow</strong>, pasá a Flowtime o subí la duración del pomodoro en Ajustes.</li>
+              <li><strong>La racha se defiende</strong> con sesiones cortas: un pomodoro de 5 minutos (ajustable) cuenta igual que uno de 50.</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>FAQ</h3>
+            <ul>
+              <li><strong>¿Funciona sin internet?</strong> Sí, al 100%: tareas, sesiones y estadísticas son locales.</li>
+              <li><strong>¿Se sincroniza con mi Mac o la web?</strong> Con Everywhere/AI+, sí — last-write-wins con reloj de servidor, como en las apps nativas.</li>
+              <li><strong>¿Puedo usar la app en iPad?</strong> Sí: la app universal corre en iPad con la misma tabla del Plan y el anillo de foco.</li>
+              <li><strong>¿Dónde están mis datos?</strong> En SwiftData en tu dispositivo, con export JSON desde <em>Más ▸ Ajustes</em> si querés una copia.</li>
+              <li><strong>¿El timer sigue si cambio de app?</strong> Sí: la Live Activity y las notificaciones de fin de fase siguen corriendo aunque estés en otra app.</li>
+            </ul>
+          </article>
+        </div>
+
+        <footer style="margin-top:24px;font-size:12.5px;color:var(--muted);border-top:1px solid var(--border);padding-top:18px">
+          Manual de Pepinillo para iPhone · Capturas reales de la app con datos de demostración
+        </footer>
+        <nav class="guide-nav" aria-label="Navegación entre guías">
+          <a href="/guides/web.html">
+            <span class="nav-dir">Guía anterior</span>
+            <span class="nav-title">← Manual para Web</span>
+          </a>
+          <a class="guide-index" href="/guides">Todas las guías</a>
+          <a class="next" href="/guides/watchos.html">
+            <span class="nav-dir">Siguiente guía</span>
+            <span class="nav-title">Manual para Apple Watch →</span>
+          </a>
+        </nav>
+    </main>
+  </div>
+  <script src="/guides/manual.js" defer></script>
+</body>
+</html>

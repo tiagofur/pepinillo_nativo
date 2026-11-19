@@ -465,6 +465,8 @@ export type MessageKey =
 	| 'guides.soon'
 	| 'guides.list.macos'
 	| 'guides.list.macos.body'
+	| 'guides.list.iphone.body'
+	| 'guides.list.watchos.body'
 	| 'guides.list.iphone'
 	| 'guides.list.watchos'
 	| 'guides.list.android'
@@ -1006,6 +1008,8 @@ const en: Dict = {
 	'guides.soon': 'Coming soon',
 	'guides.list.macos': 'Mac — manual & touch guide',
 	'guides.list.macos.body': 'Menu bar, Notch panel, Quick Capture, keyboard shortcuts and the new touch gestures.',
+	'guides.list.iphone.body': 'The four focus modes, the energy-aware plan, widgets, Live Activity and Siri — in your pocket.',
+	'guides.list.watchos.body': 'Focus from your wrist: timer, tasks, complications and the Smart Stack.',
 	'guides.list.iphone': 'iPhone & iPad',
 	'guides.list.watchos': 'watchOS',
 	'guides.list.android': 'Android',
@@ -1553,6 +1557,8 @@ const es: Dict = {
 	'guides.soon': 'Pronto disponible',
 	'guides.list.macos': 'Mac — manual y guía touch',
 	'guides.list.macos.body': 'Barra de menú, panel Notch, Quick Capture, atajos de teclado y los nuevos gestos táctiles.',
+	'guides.list.iphone.body': 'Los cuatro modos de foco, el plan con energía, widgets, Live Activity y Siri — en tu bolsillo.',
+	'guides.list.watchos.body': 'El foco desde la muñeca: timer, tareas, complications y el Smart Stack.',
 	'guides.list.iphone': 'iPhone y iPad',
 	'guides.list.watchos': 'watchOS',
 	'guides.list.android': 'Android',
@@ -2084,6 +2090,8 @@ const pt: Dict = {
 	'guides.soon': 'Em breve',
 	'guides.list.macos': 'Mac — manual e guia touch',
 	'guides.list.macos.body': 'Barra de menu, painel Notch, Quick Capture, atalhos de teclado e os novos gestos touch.',
+	'guides.list.iphone.body': 'Os quatro modos de foco, o plano com energia, widgets, Live Activity e Siri — no seu bolso.',
+	'guides.list.watchos.body': 'O foco no pulso: timer, tarefas, complications e o Smart Stack.',
 	'guides.list.iphone': 'iPhone e iPad',
 	'guides.list.watchos': 'watchOS',
 	'guides.list.android': 'Android',

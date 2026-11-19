@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pepinillo para Apple Watch — Manual de Usuario</title>
+  <meta name="description" content="Manual completo de Pepinillo para Apple Watch: el foco desde la muñeca, tareas, complications, Smart Stack y la sincronía con tu iPhone.">
+  <link rel="canonical" href="https://pepinillo.app/guides/watchos">
+  <link rel="stylesheet" href="/guides/manual.css">
+</head>
+<body>
+  <div class="progress" id="progress" aria-hidden="true"></div>
+  <button class="toc-toggle" id="toc-toggle" aria-label="Índice de secciones" aria-expanded="false">☰</button>
+  <div class="toc-overlay" id="toc-overlay"></div>
+
+  <div class="app-shell">
+    <aside>
+      <div class="brand"><a href="/guides" style="text-decoration:none;color:inherit;margin-right:8px" title="Todas las guías">←</a>
+        <div class="brand-icon">P</div>
+        <div>
+          <div class="brand-title">Pepinillo</div>
+          <div class="brand-sub">Manual para Apple Watch</div>
+        </div>
+      </div>
+      <div class="guide-chip">⌚️ Estás en la guía de Apple Watch</div>
+
+      <nav>
+        <div class="nav-label">Empezando</div>
+        <a href="#instalacion">1. Instalación y emparejamiento</a>
+        <a href="#foco">2. El foco desde la muñeca</a>
+
+        <div class="nav-label">Uso diario</div>
+        <a href="#tareas">3. Tareas en la muñeca</a>
+        <a href="#complications">4. Complications y Smart Stack</a>
+
+        <div class="nav-label">Con tu iPhone</div>
+        <a href="#sync">5. La sincronía con el iPhone</a>
+        <a href="#notificaciones">6. Notificaciones y haptics</a>
+
+        <div class="nav-label">Referencia</div>
+        <a href="#tips">7. Tips y FAQ</a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div style="font-size:11.5px;font-weight:700;color:var(--ink);margin-bottom:3px">watchOS · Companion del iPhone</div>
+        <div style="color:var(--muted)">SwiftUI · WidgetKit · ClockKit</div>
+      </div>
+    </aside>
+
+    <main>
+      <header class="hero">
+        <span class="badge">Manual de Usuario · Pepinillo para Apple Watch</span>
+        <h1>El foco, desde la muñeca</h1>
+        <p class="section-lead">Pepinillo para Apple Watch es el companion del iPhone: arrancá, pausá y terminá tus sesiones sin sacar el teléfono del bolsillo — con el anillo de foco adaptado a la pantalla redonda.</p>
+      </header>
+
+      <!-- 1. INSTALACIÓN -->
+      <section id="instalacion">
+        <h2>1. Instalación y emparejamiento</h2>
+        <p class="section-lead">La app de Watch se instala junto a la del iPhone: no buscás nada en la App Store del reloj.</p>
+
+        <div class="grid-2">
+          <article class="card">
+            <h3>Instalar</h3>
+            <ol class="steps">
+              <li>En el iPhone abrí la app <strong>Watch</strong> → <em>Mis relojes</em>.</li>
+              <li>Buscá <strong>Pepinillo</strong> en la lista de <em>Apps disponibles</em> y activá <strong>Instalar</strong>.</li>
+              <li>Esperá a que termine la transferencia (el reloj debe estar en el cargador si es la primera vez).</li>
+            </ol>
+            <p>También podés instalarla directo desde la App Store del reloj buscando "Pepinillo".</p>
+          </article>
+          <article class="card">
+            <h3>Primer arranque</h3>
+            <ul>
+              <li>Al abrirla, la app de Watch se presenta sola: <strong>sin login y sin permisos extra</strong>.</li>
+              <li>La racha, la tarea del día y tus ajustes llegan del iPhone por <strong>WatchConnectivity</strong> en segundos.</li>
+              <li>Si no ves datos aún, abrí Pepinillo en el iPhone una vez: es la llave que enciende la sync.</li>
+            </ul>
+          </article>
+        </div>
+
+        <figure>
+          <img class="screenshot" src="/guides/img/watchos-01-timer.jpg" alt="Pepinillo para Apple Watch con el temporizador de foco corriendo" loading="lazy">
+          <figcaption>El temporizador de foco en la muñeca: anillo de progreso, tiempo restante y tarea vinculada, legible de un vistazo.</figcaption>
+        </figure>
+
+        <div class="callout"><strong>Companion, no reemplazo.</strong> La app de Watch está pensada para operar la sesión — arrancar, pausar, terminar — no para planificar: el Plan completo vive en el iPhone.</div>
+      </section>
+
+      <!-- 2. FOCO -->
+      <section id="foco">
+        <h2>2. El foco desde la muñeca</h2>
+        <p class="section-lead">La pantalla principal de Watch replica el escenario de foco del iPhone, adaptado al gesto de muñeca.</p>
+
+        <div class="grid-2">
+          <article class="card">
+            <h3>Arrancar una sesión</h3>
+            <ol class="steps">
+              <li>Abrí <strong>Pepinillo</strong> desde la lista de apps, el <strong>Smart Stack</strong> o la complication (ver sección 4).</li>
+              <li>La pantalla muestra el modo actual y el tiempo configurado; girá la corona digital para ajustar la duración.</li>
+              <li>Tocá <strong>Iniciar</strong>: el anillo empieza a crecer con el color del modo.</li>
+            </ol>
+          </article>
+          <article class="card">
+            <h3>Controlar la sesión</h3>
+            <ul>
+              <li><strong>Pausar / Reanudar</strong> con el botón central; el estado queda grabado también en el iPhone.</li>
+              <li><strong>Terminar</strong> pide confirmación en dos pasos (como en el iPhone) para evitar toques accidentales con la manga.</li>
+              <li><strong>Saltar fase</strong> avanza al descanso o al siguiente pomodoro.</li>
+              <li>La <strong>tarea vinculada</strong> aparece bajo el timer; tocarla muestra su detalle reducido.</li>
+            </ul>
+          </article>
+        </div>
+
+        <div class="callout"><strong>Modos, también en la muñeca.</strong> El selector de modo (Pomodoro, Flowtime, Bloques, Cronómetro) está disponible en Watch; lo que cambiás en la muñeca se refleja en el iPhone al instante.</div>
+      </section>
+
+      <!-- 3. TAREAS -->
+      <section id="tareas">
+        <h2>3. Tareas en la muñeca</h2>
+        <p class="section-lead">Tu día planificado cabe entero en la pantalla redonda: lista compacta, marcada por energía.</p>
+
+        <figure>
+          <img class="screenshot" src="/guides/img/watchos-02-tareas.jpg" alt="Lista de tareas del día en Pepinillo para Apple Watch" loading="lazy">
+          <figcaption>La lista de tareas del día: tocá una para vincularla a la próxima sesión o marcarla completada.</figcaption>
+        </figure>
+
+        <div class="grid-2">
+          <article class="card">
+            <h3>Qué podés hacer</h3>
+            <ul>
+              <li>Ver las <strong>tareas de hoy</strong> ordenadas por prioridad y energía.</li>
+              <li><strong>Vincular</strong> una tarea a la sesión actual o a la próxima.</li>
+              <li><strong>Completar</strong> una tarea con un toque (se sincroniza al iPhone).</li>
+              <li>Ver los <strong>pomodoros registrados</strong> de cada tarea del día.</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>Qué vive en el iPhone</h3>
+            <ul>
+              <li>Crear/editar tareas completas, subtareas y recurrencia (con Pepinillo+).</li>
+              <li>El <strong>Inbox</strong> y las vistas de <em>Todas/Próximas/Completadas</em>.</li>
+              <li>La captura rápida por voz: en la muñeca usá <strong>Siri</strong> ("Creá la tarea… en Pepinillo").</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <!-- 4. COMPLICATIONS -->
+      <section id="complications">
+        <h2>4. Complications y Smart Stack</h2>
+        <p class="section-lead">La regla de Pepinillo: el foco se alcanza en un toque — incluso desde la esfera del reloj.</p>
+
+        <div class="grid-2">
+          <article class="card">
+            <h3>Complications</h3>
+            <ul>
+              <li><strong>Racha</strong> — el número de días con la flama de color.</li>
+              <li><strong>Timer</strong> — el estado de la sesión actual (o "Listo" si no hay).</li>
+              <li><strong>Tarea</strong> — la tarea vinculada del día.</li>
+              <li>Mantené pulsada la esfera → <em>Editar</em> → elegí la zona y buscá Pepinillo.</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>Smart Stack</h3>
+            <ul>
+              <li>Durante una sesión activa, la <strong>card de Pepinillo</strong> sube sola al Smart Stack: girá la corona y ahí está el timer.</li>
+              <li>La card muestra tiempo restante, fase y color del modo; un toque abre la app.</li>
+              <li>Podés fijarla para que siempre esté en el tope del stack durante tus horas de trabajo.</li>
+            </ul>
+          </article>
+        </div>
+
+      </section>
+
+      <!-- 5. SYNC -->
+      <section id="sync">
+        <h2>5. La sincronía con el iPhone</h2>
+        <p class="section-lead">Watch e iPhone son un mismo Pepinillo: lo que pasa en la muñeca pasa en el teléfono, y viceversa.</p>
+
+        <div class="grid-2">
+          <article class="card">
+            <h3>Cómo se sincronizan</h3>
+            <ul>
+              <li><strong>WatchConnectivity</strong> en tiempo real: iniciar/pausar/terminar desde la muñeca actualiza el iPhone (y su Live Activity) al instante.</li>
+              <li>Arrancar una sesión desde el iPhone, los widgets o Siri también <strong>aparece en la muñeca</strong> sin tocar nada.</li>
+              <li>Tareas completadas y pomodoros registrados suben y bajan en ambos sentidos.</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>Sin iPhone cerca</h3>
+            <ul>
+              <li>La app de Watch funciona <strong>offline</strong>: podés operar la sesión igual; todo se reconcilia al reconectar.</li>
+              <li>El reloj guarda el estado de la sesión aunque pierda el enlace Bluetooth momentáneamente.</li>
+              <li>Con Everywhere/AI+, la reconciliación final también pasa por la nube con la misma estrategia last-write-wins.</li>
+            </ul>
+          </article>
+        </div>
+
+        <div class="callout"><strong>Motor honesto en la muñeca también.</strong> El timer de Watch está anclado al reloj del sistema: no importa si la app se suspende, el tiempo no se detiene.</div>
+      </section>
+
+      <!-- 6. NOTIFICACIONES -->
+      <section id="notificaciones">
+        <h2>6. Notificaciones y haptics</h2>
+        <p class="section-lead">Los avisos de fase llegan a la muñeca con haptics — no necesitás mirar nada.</p>
+
+        <div class="grid-2">
+          <article class="card">
+            <h3>Qué te avisa</h3>
+            <ul>
+              <li><strong>Fin de fase de foco</strong> — doble tap suave y notificación con acciones.</li>
+              <li><strong>Fin de descanso</strong> — para volver al foco sin pensar.</li>
+              <li><strong>Racha defendida</strong> — recordatorio discreto si el día va pasando sin sesión.</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>Ajustarlos</h3>
+            <ul>
+              <li>Las notificaciones se controlan desde el iPhone: <strong>Watch ▸ Pepinillo</strong> → elegí entre <em>espejo del iPhone</em> o personalizado.</li>
+              <li>El haptics lo configurás en el propio reloj (Ajustes ▸ Sonidos y vibraciones); los avisos de Pepinillo respetan ese perfil.</li>
+              <li>Si preferís silencio total: desactivá las notificaciones y dejá solo la Live Activity del iPhone.</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <!-- 7. TIPS -->
+      <section id="tips">
+        <h2>7. Tips y FAQ</h2>
+        <p class="section-lead">Lo que hace la diferencia cuando la muñeca entra en rutina.</p>
+
+        <div class="grid-2">
+          <article class="card">
+            <h3>Tips</h3>
+            <ul>
+              <li><strong>Modo teatro / entrenamiento:</strong> la card del Smart Stack sigue mostrando el timer aunque la pantalla esté apagada (always-on).</li>
+              <li><strong>La corona ajusta la duración</strong> antes de iniciar: no hace falta ir a Ajustes para un pomodoro largo de tarde.</li>
+              <li><strong>Vinculá la tarea desde la muñeca</strong> antes de arrancar: el pomodoro queda contabilizado en la tarea correcta sin abrir el iPhone.</li>
+              <li><strong>Terminar el día:</strong> la vista de tareas de la muñeca es la forma más rápida de cerrar pendientes chicos (mail, mensaje, trámite).</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>FAQ</h3>
+            <ul>
+              <li><strong>¿Necesito el iPhone cerca?</strong> Para sync en tiempo real, sí; para operar la sesión, no — funciona offline y reconcilia después.</li>
+              <li><strong>¿Bateria?</strong> El impacto es mínimo: la app es ligera y la sesión activa usa el always-on del sistema.</li>
+              <li><strong>¿Se sincroniza con Everywhere/AI+?</strong> Sí: la muñeca participa de la misma sync nube entre todos tus dispositivos.</li>
+              <li><strong>¿Sirve sin Premium?</strong> Sí: Pomodoro y Cronómetro, tareas del día y complications son gratis en la muñeca, igual que en el iPhone.</li>
+            </ul>
+          </article>
+        </div>
+
+        <footer style="margin-top:24px;font-size:12.5px;color:var(--muted);border-top:1px solid var(--border);padding-top:18px">
+          Manual de Pepinillo para Apple Watch · Capturas reales de la app con datos de demostración
+        </footer>
+        <nav class="guide-nav" aria-label="Navegación entre guías">
+          <a href="/guides/iphone.html">
+            <span class="nav-dir">Guía anterior</span>
+            <span class="nav-title">← Manual para iPhone</span>
+          </a>
+          <a class="guide-index" href="/guides">Todas las guías</a>
+          <a class="next" href="/guides/web.html">
+            <span class="nav-dir">Siguiente guía</span>
+            <span class="nav-title">Manual para Web →</span>
+          </a>
+        </nav>
+    </main>
+  </div>
+  <script src="/guides/manual.js" defer></script>
+</body>
+</html>
