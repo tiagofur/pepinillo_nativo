@@ -46,7 +46,7 @@
 	}
 
 	function pickSoundscape(id: SoundscapeName): void {
-		if (!isSoundscapeFree(id)) return;
+		if (!isSoundscapeFree(id, app.tier)) return;
 		app.setSoundscape(id);
 		focus.soundscapeChanged();
 		showSoundscape = false;
@@ -61,7 +61,7 @@
 			preview = null;
 			return;
 		}
-		if (!isSoundscapeFree(id)) return;
+		if (!isSoundscapeFree(id, app.tier)) return;
 		preview?.stop();
 		preview = startSoundscape(id, app.prefs.soundscapeVolume);
 	}
@@ -145,7 +145,7 @@
 >
 	<div class="sound-grid">
 		{#each SOUNDSCAPES as s (s.id)}
-			{@const free = FREE_SOUNDSCAPES.includes(s.id)}
+			{@const free = isSoundscapeFree(s.id, app.tier)}
 			<button
 				class="chip pressable sound-chip"
 				aria-pressed={app.prefs.soundscape === s.id}

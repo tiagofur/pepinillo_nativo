@@ -13,7 +13,8 @@
 	import AdhdBreak from '$lib/features/focus/AdhdBreak.svelte';
 	import PaneToolbar from '$lib/features/shell/PaneToolbar.svelte';
 	import Segmented from '$lib/design/Segmented.svelte';
-	import { FREE_MODES, type FocusMode } from '$lib/domain/entities/types';
+	import { type FocusMode } from '$lib/domain/entities/types';
+	import { canUseMode } from '$lib/domain/gates/freeLimits';
 	import { isBreakPhase } from '$lib/domain/focus/phases';
 	import type { MessageKey } from '$lib/i18n/messages';
 
@@ -93,7 +94,7 @@
 
 	/** Mac parity: locked modes stay selectable and surface the paywall. */
 	function pickMode(id: FocusMode): void {
-		if (!(FREE_MODES as readonly string[]).includes(id)) {
+		if (!canUseMode(id, app.tier)) {
 			void goto('/upgrade');
 			return;
 		}
@@ -133,7 +134,7 @@
 
 			<header class="modes" role="toolbar" aria-label={t('focus.title')}>
 				{#each MODES as m (m.id)}
-					{@const free = (FREE_MODES as readonly string[]).includes(m.id)}
+					{@const free = canUseMode(m.id, app.tier)}
 					<button
 						class="chip pressable"
 						aria-pressed={focus.mode === m.id}

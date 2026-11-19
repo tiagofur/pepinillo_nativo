@@ -116,7 +116,8 @@ export const FREE_SOUNDSCAPES: readonly SoundscapeName[] = [
 	'whiteNoise'
 ] as const;
 
-export function isSoundscapeFree(name: SoundscapeName): boolean {
+export function isSoundscapeFree(name: SoundscapeName, tier?: 'free' | 'everywhere'): boolean {
+	if (tier && tier !== 'free') return true;
 	return FREE_SOUNDSCAPES.includes(name);
 }
 
