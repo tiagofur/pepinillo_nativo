@@ -50,6 +50,8 @@ class AppStore {
 	theme = $state<ThemeName>('classic');
 	tier = $state<EntitlementTier>('free');
 	deviceId = $state<string | null>(null);
+	/** navigator.storage.persist() outcome — surfaced on /account (S2 #942). */
+	storagePersisted = $state<boolean | null>(null);
 
 	session = $state<FocusSession | null>(null);
 	selectedMode = $state<FocusMode>('pomodoro');
@@ -68,6 +70,15 @@ class AppStore {
 		this.restoreThemeName();
 		this.applyAppearance(stored.theme);
 		setLocale(stored.locale);
+		// Durability: opt out of best-effort eviction (Safari/under-pressure
+		// purges). persist() is idempotent — cheap to call on every init.
+		try {
+			if (navigator.storage?.persist) {
+				this.storagePersisted = await navigator.storage.persist();
+			}
+		} catch {
+			this.storagePersisted = null; // API unavailable — silent fallback
+		}
 		await this.restoreSession();
 		this.ready = true;
 		this.startTicker();

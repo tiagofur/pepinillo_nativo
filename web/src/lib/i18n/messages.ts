@@ -170,6 +170,9 @@ export type MessageKey =
 	| 'account.about'
 	| 'account.nonGoals'
 	| 'account.deviceId'
+	| 'account.storage'
+	| 'account.storage.persisted'
+	| 'account.storage.bestEffort'
 	| 'account.appearance'
 	| 'account.theme.classic'
 	| 'account.theme.forest'
@@ -1083,7 +1086,10 @@ const en: Dict = {
 		'Web is a companion extra for large-screen focus. It does not replace native OS features.',
 	'account.nonGoals':
 		'Not on web: tray, global hotkeys, home/lock widgets, Live Activity, watch companions, Health, CloudKit, team collab, notes editor.',
-	'account.deviceId': 'Device id (local)'
+	'account.deviceId': 'Device id (local)',
+	'account.storage': 'Local storage',
+	'account.storage.persisted': 'Persistent — the browser will not clear your data',
+	'account.storage.bestEffort': 'Best effort — grant persistence for reliability',
 };
 
 const es: Dict = {
@@ -1237,7 +1243,10 @@ const es: Dict = {
 		'La web es un extra compañero para foco en pantalla grande. No reemplaza funciones nativas del SO.',
 	'account.nonGoals':
 		'No en web: bandeja, atajos globales, widgets, Live Activity, reloj, Health, CloudKit, colaboración en equipo, editor de notas.',
-	'account.deviceId': 'Id de dispositivo (local)',
+	'account.deviceId': 'Id de dispositivo (local)',,
+	'account.storage': 'Almacenamiento local',
+	'account.storage.persisted': 'Persistente — el navegador no borrará tus datos',
+	'account.storage.bestEffort': 'De mejor esfuerzo — concedé persistencia para mayor seguridad',
 	'account.subtitle': 'Tu cuenta, ajustes y preferencias',
 	'account.premiumThemes': 'Forest / Ocean / Sunset se desbloquean con Everywhere.',
 	'account.settings': 'Preferencias',
@@ -1788,7 +1797,10 @@ const pt: Dict = {
 		'A web é um extra companheiro para foco em tela grande. Não substitui recursos nativos do SO.',
 	'account.nonGoals':
 		'Não na web: bandeja, atalhos globais, widgets, Live Activity, relógio, Health, CloudKit, colaboração em equipe, editor de notas.',
-	'account.deviceId': 'Id do dispositivo (local)',
+	'account.deviceId': 'Id do dispositivo (local)',,
+	'account.storage': 'Armazenamento local',
+	'account.storage.persisted': 'Persistente — o navegador não apagará seus dados',
+	'account.storage.bestEffort': 'Melhor esforço — conceda persistência para mais segurança',
 	'account.subtitle': 'Sua conta, ajustes e preferências',
 	'account.premiumThemes': 'Forest / Ocean / Sunset desbloqueiam com Everywhere.',
 	'account.settings': 'Preferências',

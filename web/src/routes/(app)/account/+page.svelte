@@ -100,6 +100,14 @@
 	<div class="card section meta">
 		<h2>{t('account.deviceId')}</h2>
 		<code class="mono nums">{app.deviceId ?? '—'}</code>
+		{#if app.storagePersisted !== null}
+			<p class="storage-state" aria-live="polite">
+				{app.storagePersisted ? '✅' : '⚠️'} {t('account.storage')}:
+				{app.storagePersisted
+					? t('account.storage.persisted')
+					: t('account.storage.bestEffort')}
+			</p>
+		{/if}
 	</div>
 
 	<div id="settings" class="settings-anchor"><FocusSettings /></div>
