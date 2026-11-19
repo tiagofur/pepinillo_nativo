@@ -224,8 +224,6 @@ export type MessageKey =
 	| 'soundscape.lofi'
 	| 'soundscape.volume'
 	| 'soundscape.hint'
-	| 'companion.focusToday'
-	| 'companion.sessionsToday'
 	| 'companion.streak'
 	| 'companion.activeTask'
 	| 'companion.streakEmpty'
@@ -318,7 +316,6 @@ export type MessageKey =
 	| 'period.7'
 	| 'period.30'
 	| 'period.365'
-	| 'chart.week'
 	| 'chart.window'
 	| 'chart.modes'
 	| 'chart.day.sun'
@@ -334,7 +331,6 @@ export type MessageKey =
 	| 'dash.peakHour'
 	| 'dash.completion'
 	| 'dash.longest'
-	| 'dash.periodFocus'
 	| 'score.exceptional'
 	| 'score.strong'
 	| 'score.steady'
@@ -630,14 +626,30 @@ const en: Dict = {
 	'plan.focusTask': 'Start Focus',
 	'plan.reorder': 'Reorder',
 	'dashboard.title': 'Dashboard',
-	'dashboard.subtitle': 'Reflect on what worked',
+	'dashboard.subtitle': 'Your focus summary for today',
+	'dash.kpi.focusTime': 'Focus Time',
+	'dash.kpi.sessions': 'Sessions',
+	'dash.kpi.streak': 'Streak',
+	'dash.kpi.tasksCompleted': 'Tasks Completed',
+	'dash.nextFocus.title': 'Next Focus',
+	'dash.nextFocus.start': 'Start Next Focus',
+	'dash.nextFocus.empty.title': 'No task scheduled for today',
+	'dash.nextFocus.empty.body': 'Start a free session or choose a task in Plan.',
+	'dash.nextFocus.openPlan': 'Open Plan',
+	'dash.nextFocus.pomodoros': 'Pomodoros: {n}',
+	'dash.streak.one': '1 day streak',
+	'dash.streak.many': '{n} days streak',
+	'dash.focus.side': '{time} focused',
+	'sessions.last5': 'Last 5',
+	'sessions.stopped': 'Stopped',
+	'sessions.empty.desc': "Complete your first focus session and your garden's story begins here.",
 	'dashboard.today': 'Today',
 	'dashboard.last7': 'Last 7 days',
 	'dashboard.sessions': 'Sessions',
 	'dashboard.minutes': 'Focus minutes',
 	'dashboard.extendedGated':
 		'30-day and 1-year views unlock with Everywhere. Free shows today + last 7 days.',
-	'dashboard.empty': 'Complete a session to see your summary here.',
+	'dashboard.empty': "Complete your first focus session and your garden's story begins here.",
 	'dashboard.heroCta': 'Start focusing',
 	'dashboard.recent': 'Recent sessions',
 	'dashboard.avgSession': 'Avg min / session',
@@ -746,8 +758,6 @@ const en: Dict = {
 	'soundscape.lofi': 'Lo-fi',
 	'soundscape.volume': 'Volume',
 	'soundscape.hint': 'Procedurally generated audio — synthesized live in your browser.',
-	'companion.focusToday': 'Focus today',
-	'companion.sessionsToday': 'Sessions today',
 	'companion.streak': 'Streak',
 	'companion.streakEmpty': 'Start your streak',
 	'companion.activeTask': 'Active task',
@@ -841,7 +851,6 @@ const en: Dict = {
 	'period.7': '7D',
 	'period.30': '30D',
 	'period.365': '1Y',
-	'chart.week': 'This week',
 	'chart.window': 'Last {days} days',
 	'chart.modes': 'Modes',
 	'chart.day.sun': 'Sun',
@@ -857,7 +866,6 @@ const en: Dict = {
 	'dash.peakHour': 'Peak hour',
 	'dash.completion': 'Completion',
 	'dash.longest': 'Longest session',
-	'dash.periodFocus': 'Period focus',
 	'score.exceptional': 'Exceptional week',
 	'score.strong': 'Strong rhythm',
 	'score.steady': 'Steady',
@@ -870,8 +878,8 @@ const en: Dict = {
 	'achievements.deepDiver.title': 'Deep Diver',
 	'achievements.centuryClub.title': 'Century Club',
 	'achievements.earlyBird.title': 'Early Bird',
-	'sessions.recent': 'Recent sessions',
-	'sessions.empty': 'Complete your first session to see it here.',
+	'sessions.recent': 'Recent Sessions',
+	'sessions.empty': 'Nothing Harvested Yet',
 	'review.weekly': 'Weekly review',
 	'review.monthly': 'Monthly review',
 	'review.dataTab': 'Data',
@@ -1175,8 +1183,24 @@ const es: Dict = {
 	'dashboard.minutes': 'Minutos de foco',
 	'dashboard.extendedGated':
 		'Las vistas de 30 días y 1 año se desbloquean con Everywhere. Free muestra hoy + últimos 7 días.',
-	'dashboard.empty': 'Completá una sesión para ver el resumen aquí.',
-	'dashboard.subtitle': 'Reflexioná sobre lo que funcionó',
+	'dashboard.empty': 'Completá tu primera sesión de foco y la historia de tu huerto empieza acá.',
+	'dashboard.subtitle': 'Tu resumen de enfoque de hoy',
+	'dash.kpi.focusTime': 'Tiempo de Enfoque',
+	'dash.kpi.sessions': 'Sesiones',
+	'dash.kpi.streak': 'Racha',
+	'dash.kpi.tasksCompleted': 'Tareas completadas',
+	'dash.nextFocus.title': 'Próximo enfoque',
+	'dash.nextFocus.start': 'Comenzar próximo enfoque',
+	'dash.nextFocus.empty.title': 'Ninguna tarea programada para hoy',
+	'dash.nextFocus.empty.body': 'Iniciá una sesión libre o elegí una tarea en Plan.',
+	'dash.nextFocus.openPlan': 'Abrir Plan',
+	'dash.nextFocus.pomodoros': 'Pomodoros: {n}',
+	'dash.streak.one': '1 día de racha',
+	'dash.streak.many': '{n} días de racha',
+	'dash.focus.side': '{time} de enfoque',
+	'sessions.last5': 'Últimas 5',
+	'sessions.stopped': 'Detenida',
+	'sessions.empty.desc': 'Completá tu primera sesión de foco y la historia de tu huerto empieza acá.',
 	'dashboard.heroCta': 'Empezar a enfocarme',
 	'dashboard.recent': 'Sesiones recientes',
 	'dashboard.avgSession': 'Min prom. / sesión',
@@ -1301,8 +1325,6 @@ const es: Dict = {
 	'soundscape.lofi': 'Lo-fi',
 	'soundscape.volume': 'Volumen',
 	'soundscape.hint': 'Audio generado por síntesis en tu navegador, sin descargas.',
-	'companion.focusToday': 'Enfoque hoy',
-	'companion.sessionsToday': 'Sesiones hoy',
 	'companion.streak': 'Racha',
 	'companion.streakEmpty': 'Empezá tu racha',
 	'companion.activeTask': 'Tarea activa',
@@ -1396,7 +1418,6 @@ const es: Dict = {
 	'period.7': '7D',
 	'period.30': '30D',
 	'period.365': '1A',
-	'chart.week': 'Esta semana',
 	'chart.window': 'Últimos {days} días',
 	'chart.modes': 'Modos',
 	'chart.day.sun': 'Dom',
@@ -1412,7 +1433,6 @@ const es: Dict = {
 	'dash.peakHour': 'Hora pico',
 	'dash.completion': 'Finalización',
 	'dash.longest': 'Sesión más larga',
-	'dash.periodFocus': 'Foco del período',
 	'score.exceptional': 'Semana excepcional',
 	'score.strong': 'Ritmo sólido',
 	'score.steady': 'Constante',
@@ -1714,8 +1734,24 @@ const pt: Dict = {
 	'dashboard.minutes': 'Minutos de foco',
 	'dashboard.extendedGated':
 		'Visões de 30 dias e 1 ano desbloqueiam com Everywhere. Free mostra hoje + últimos 7 dias.',
-	'dashboard.empty': 'Conclua uma sessão para ver o resumo aqui.',
-	'dashboard.subtitle': 'Reflita sobre o que funcionou',
+	'dashboard.empty': 'Conclua sua primeira sessão de foco e a história da sua horta começa aqui.',
+	'dashboard.subtitle': 'Seu resumo de foco de hoje',
+	'dash.kpi.focusTime': 'Tempo de Foco',
+	'dash.kpi.sessions': 'Sessões',
+	'dash.kpi.streak': 'Sequência',
+	'dash.kpi.tasksCompleted': 'Tarefas concluídas',
+	'dash.nextFocus.title': 'Próximo foco',
+	'dash.nextFocus.start': 'Iniciar próximo foco',
+	'dash.nextFocus.empty.title': 'Nenhuma tarefa agendada para hoje',
+	'dash.nextFocus.empty.body': 'Inicie uma sessão livre ou escolha uma tarefa no Plano.',
+	'dash.nextFocus.openPlan': 'Abrir Plano',
+	'dash.nextFocus.pomodoros': 'Pomodoros: {n}',
+	'dash.streak.one': '1 dia de sequência',
+	'dash.streak.many': '{n} dias de sequência',
+	'dash.focus.side': '{time} de foco',
+	'sessions.last5': 'Últimas 5',
+	'sessions.stopped': 'Interrompida',
+	'sessions.empty.desc': 'Conclua sua primeira sessão de foco e a história da sua horta começa aqui.',
 	'dashboard.heroCta': 'Começar a focar',
 	'dashboard.recent': 'Sessões recentes',
 	'dashboard.avgSession': 'Min méd. / sessão',
@@ -1840,8 +1876,6 @@ const pt: Dict = {
 	'soundscape.lofi': 'Lo-fi',
 	'soundscape.volume': 'Volume',
 	'soundscape.hint': 'Áudio gerado por síntese no seu navegador, sem downloads.',
-	'companion.focusToday': 'Foco hoje',
-	'companion.sessionsToday': 'Sessões hoje',
 	'companion.streak': 'Sequência',
 	'companion.streakEmpty': 'Comece sua sequência',
 	'companion.activeTask': 'Tarefa ativa',
@@ -1935,7 +1969,6 @@ const pt: Dict = {
 	'period.7': '7D',
 	'period.30': '30D',
 	'period.365': '1A',
-	'chart.week': 'Esta semana',
 	'chart.window': 'Últimos {days} dias',
 	'chart.modes': 'Modos',
 	'chart.day.sun': 'Dom',
@@ -1951,7 +1984,6 @@ const pt: Dict = {
 	'dash.peakHour': 'Hora de pico',
 	'dash.completion': 'Conclusão',
 	'dash.longest': 'Sessão mais longa',
-	'dash.periodFocus': 'Foco do período',
 	'score.exceptional': 'Semana excepcional',
 	'score.strong': 'Ritmo forte',
 	'score.steady': 'Constante',

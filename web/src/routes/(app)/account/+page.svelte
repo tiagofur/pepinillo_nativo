@@ -102,7 +102,7 @@
 		<code class="mono nums">{app.deviceId ?? '—'}</code>
 	</div>
 
-	<FocusSettings />
+	<div id="settings" class="settings-anchor"><FocusSettings /></div>
 	<a class="guides-link pressable" href="/guides">
 		📖 {t('landing.nav.guides')} →
 	</a>

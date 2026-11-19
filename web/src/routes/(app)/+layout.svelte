@@ -186,7 +186,7 @@
 					{/if}
 				</span>
 			</a>
-			<a class="gear-btn pressable" href="/account" aria-label={t('account.settings')}>
+			<a class="gear-btn pressable" href="/account#settings" aria-label={t('account.settings')}>
 				<Icon name="gear" size={16} />
 			</a>
 		</footer>

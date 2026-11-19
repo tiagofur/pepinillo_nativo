@@ -62,20 +62,22 @@
 	</button>
 {/if}
 
-<!-- Ghost resume dialog -->
+<!-- Ghost resume dialog: fixed overlay — never pushes the stage -->
 {#if focus.ghost}
-	<div class="ghost card">
-		<h3>🕯️ {t('focus.ghost.title')}</h3>
-		<p class="ghost-body">
-			{t('focus.ghost.body', { time: focus.displayTime, mode: t(`focus.mode.${focus.ghost.mode}`) })}
-		</p>
-		<div class="ghost-actions">
-			<button class="btn btn-primary pressable" onclick={() => focus.resumeGhost()}>
-				{t('focus.ghost.resume')}
-			</button>
-			<button class="btn btn-ghost pressable" onclick={() => focus.discardGhost()}>
-				{t('focus.ghost.discard')}
-			</button>
+	<div class="ghost-backdrop">
+		<div class="ghost card" role="dialog" aria-modal="true" aria-label={t('focus.ghost.title')}>
+			<h3>🕯️ {t('focus.ghost.title')}</h3>
+			<p class="ghost-body">
+				{t('focus.ghost.body', { time: focus.displayTime, mode: t(`focus.mode.${focus.ghost.mode}`) })}
+			</p>
+			<div class="ghost-actions">
+				<button class="btn btn-primary pressable" onclick={() => focus.resumeGhost()}>
+					{t('focus.ghost.resume')}
+				</button>
+				<button class="btn btn-ghost pressable" onclick={() => focus.discardGhost()}>
+					{t('focus.ghost.discard')}
+				</button>
+			</div>
 		</div>
 	</div>
 {/if}
@@ -139,9 +141,31 @@
 		animation: rise-in var(--dur-slow) var(--ease-out-quint) both;
 	}
 
+	/* Fade-only entrance: translateY keyframes freeze in background tabs and
+	 * re-anchor the fixed layer (web gotcha from the PWA rebuild). */
+	.ghost-backdrop {
+		position: fixed;
+		inset: 0;
+		z-index: 70;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: rgba(0, 0, 0, 0.35);
+		padding: var(--space-6);
+		animation: ghost-fade var(--dur-base) var(--ease-out-quint) both;
+	}
+
+	@keyframes ghost-fade {
+		from {
+			opacity: 0;
+		}
+		to {
+			opacity: 1;
+		}
+	}
+
 	.ghost {
 		width: min(480px, 100%);
-		margin: 0 auto var(--space-6);
 		padding: var(--space-5);
 		display: flex;
 		flex-direction: column;

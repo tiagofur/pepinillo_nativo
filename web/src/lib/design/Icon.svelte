@@ -103,5 +103,18 @@
 		<path d="M5 8h12v5a5 5 0 01-5 5h-2a5 5 0 01-5-5V8z" />
 		<path d="M17 9h1.5a2.5 2.5 0 010 5H17" />
 		<path d="M7 21h8" />
+	{:else if name === 'clock'}
+		<circle cx="12" cy="12" r="8.5" />
+		<path d="M12 7.5V12l3 2" />
+	{:else if name === 'flame'}
+		<path d="M12 3c1 3-2 4.5-2 7a4 4 0 008 0c0-1.5-.6-2.6-1.4-3.6C15.4 8 14 8.6 14 10" />
+		<path d="M8 13.5A6.5 6.5 0 0012 21a6.5 6.5 0 004-7.5" />
+	{:else if name === 'checklist'}
+		<path d="M4 6.5l1.4 1.4L8 5.3" />
+		<path d="M4 12.5l1.4 1.4L8 11.3" />
+		<path d="M4 18.5l1.4 1.4L8 17.3" />
+		<path d="M11 6.5h9" />
+		<path d="M11 12.5h9" />
+		<path d="M11 18.5h9" />
 	{/if}
 </svg>

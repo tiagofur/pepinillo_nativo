@@ -11,7 +11,22 @@
 	import PaneToolbar from '$lib/features/shell/PaneToolbar.svelte';
 	import Icon from '$lib/design/Icon.svelte';
 	import { currentLocale } from '$lib/i18n/i18n.svelte';
+	import { focus } from '$lib/stores/focus.svelte';
 	import type { AnalyticsPeriod } from '$lib/domain/dashboard/stats';
+	import type { Task } from '$lib/domain/entities/types';
+
+	/** Mac onStartFocus: link the task (or free session) and start now. */
+	async function startNext(task: Task | null): Promise<void> {
+		if (task) focus.setActiveTask(task);
+		if (focus.idle && !focus.waiting) focus.start();
+		const { goto } = await import('$app/navigation');
+		await goto('/focus');
+	}
+
+	async function openPlan(): Promise<void> {
+		const { goto } = await import('$app/navigation');
+		await goto('/plan');
+	}
 
 	onMount(() => {
 		void dashboard.init();
@@ -80,9 +95,13 @@
 				<p class="date-sub">{t('dashboard.subtitle')}</p>
 			</div>
 			<div class="date-side nums">
-				<span class="side-chip">🔥 {dashboard.stats.streak > 0 ? dashboard.stats.streak : '—'} · {t('companion.streak')}</span>
+				<span class="side-chip">
+					🔥 {dashboard.stats.streak === 1
+						? t('dash.streak.one')
+						: t('dash.streak.many', { n: dashboard.stats.streak })}
+				</span>
 				<span class="side-sep" aria-hidden="true"></span>
-				<span class="side-chip">{fmtMin(dashboard.stats.todayFocusSeconds)} · {t('companion.focusToday')}</span>
+				<span class="side-chip">{t('dash.focus.side', { time: fmtMin(dashboard.stats.todayFocusSeconds) })}</span>
 			</div>
 		</header>
 
@@ -93,23 +112,28 @@
 			</a>
 		{/if}
 
-		<!-- Flat KPI row (Mac Today): caption label + rounded semibold value -->
+		<!-- Mac Today KPI grid: tinted icon + caption + rounded value per card
+			 (MacTodayView.kpiGrid: Focus Time / Sessions / Streak / Tasks Completed) -->
 		<div class="kpis">
 			<div class="kpi">
-				<span class="k-head">⏱ {t('companion.focusToday')}</span>
+				<span class="k-icon" style="color: var(--mode-pomodoro)"><Icon name="clock" size={17} /></span>
+				<span class="k-head">{t('dash.kpi.focusTime')}</span>
 				<span class="k-value nums">{fmtMin(dashboard.stats.todayFocusSeconds)}</span>
 			</div>
 			<div class="kpi">
-				<span class="k-head">🌊 {t('companion.sessionsToday')}</span>
+				<span class="k-icon" style="color: var(--mode-flowtime)"><Icon name="check-circle" size={17} /></span>
+				<span class="k-head">{t('dash.kpi.sessions')}</span>
 				<span class="k-value nums">{dashboard.stats.todaySessions}</span>
 			</div>
 			<div class="kpi">
-				<span class="k-head">🔥 {t('companion.streak')}</span>
+				<span class="k-icon" style="color: var(--streak)"><Icon name="flame" size={17} /></span>
+				<span class="k-head">{t('dash.kpi.streak')}</span>
 				<span class="k-value nums">{dashboard.stats.streak > 0 ? dashboard.stats.streak : '—'}</span>
 			</div>
 			<div class="kpi">
-				<span class="k-head">🏅 {t('dash.periodFocus')}</span>
-				<span class="k-value nums">{fmtMin(dashboard.stats.periodFocusSeconds)}</span>
+				<span class="k-icon" style="color: var(--mode-timeblock)"><Icon name="checklist" size={17} /></span>
+				<span class="k-head">{t('dash.kpi.tasksCompleted')}</span>
+				<span class="k-value nums">{dashboard.tasksCompletedToday}</span>
 			</div>
 		</div>
 
@@ -129,7 +153,7 @@
 				compact
 				options={PERIODS.map((p) => ({
 					id: String(p.days),
-					label: dashboard.periodGated(p.days) ? `🔒 ${p.days}D` : p.days === 7 ? t(p.key) : `${p.days}D`,
+					label: p.days === 7 ? t(p.key) : `${p.days}D`,
 					disabled: dashboard.periodGated(p.days),
 					title: dashboard.periodGated(p.days) ? t('common.proLocked') : undefined
 				}))}
@@ -142,7 +166,14 @@
 
 		<AiCard />
 
-		<Panels achievements={dashboard.achievements} sessions={dashboard.sessions} />
+		<Panels
+			achievements={dashboard.achievements}
+			sessions={dashboard.sessions}
+			tasks={dashboard.tasks}
+			nextTask={dashboard.nextTask}
+			onstart={startNext}
+			onopenplan={() => void openPlan()}
+		/>
 
 		<ReviewSheet />
 	{:else}
@@ -252,6 +283,14 @@
 		display: flex;
 		flex-direction: column;
 		gap: var(--space-1);
+		padding: var(--space-4);
+		background: var(--surface-alt);
+		border-radius: var(--radius-lg);
+	}
+
+	.k-icon {
+		display: inline-flex;
+		margin-bottom: var(--space-1);
 	}
 
 	.k-head {
