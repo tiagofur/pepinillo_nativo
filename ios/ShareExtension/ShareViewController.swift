@@ -53,8 +53,9 @@ final class ShareViewController: UIViewController {
             $0.hasItemConformingToTypeIdentifier(UTType.text.identifier)
         }) {
             textProvider.loadItem(forTypeIdentifier: UTType.text.identifier) { [weak self] item, _ in
-                // Rich-text providers hand more than plain String: coerce the
-                // known shapes; anything else (untyped plist dictionaries)
+                // Rich-text providers hand more than plain String: coerce
+                // String, NSAttributedString, NSURL, and plist dictionaries
+                // (typed key first, then any String value); anything else
                 // falls through to manual typing.
                 let text = (item as? String)
                     ?? (item as? NSAttributedString)?.string
