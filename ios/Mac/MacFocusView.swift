@@ -471,9 +471,20 @@ private struct MacTaskPickerView: View {
     let onUnlink: () -> Void
 
     @Environment(\.dismiss) private var dismiss
+    // Issue #929: many-task plans made finding the one to link slow —
+    // Spotlight-style search with Return selecting the first match.
+    @State private var searchQuery = ""
+    @FocusState private var isSearchFocused: Bool
 
     private var activeTasks: [TaskListFeature.TaskItemState] {
         tasks.filter { !$0.isCompleted }
+    }
+
+    /// Case- and diacritic-insensitive title filter; empty query = all.
+    private var filteredTasks: [TaskListFeature.TaskItemState] {
+        let query = searchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !query.isEmpty else { return activeTasks }
+        return activeTasks.filter { $0.title.localizedStandardContains(query) }
     }
 
     var body: some View {
@@ -485,7 +496,27 @@ private struct MacTaskPickerView: View {
                     .font(.headline)
             }
             .padding(.horizontal, 16)
-            .padding(.vertical, 10)
+            .padding(.top, 10)
+            .padding(.bottom, 6)
+
+            TextField(
+                String(localized: "Search Tasks"),
+                text: $searchQuery
+            )
+            .textFieldStyle(.roundedBorder)
+            .font(.body)
+            .focused($isSearchFocused)
+            .padding(.horizontal, 16)
+            .padding(.bottom, 10)
+            .onSubmit {
+                // Spotlight flow: Return links the first match.
+                if let first = filteredTasks.first {
+                    onSelectTask(first.id, first.title, first.energyLevel.icon)
+                    dismiss()
+                }
+            }
+            .onAppear { isSearchFocused = true }
+            .accessibilityLabel(String(localized: "Search Tasks"))
 
             Divider()
 
@@ -500,11 +531,16 @@ private struct MacTaskPickerView: View {
                     .buttonStyle(.plain)
                 }
 
-                if activeTasks.isEmpty {
-                    Text("No active tasks")
-                        .foregroundStyle(.secondary)
+                if filteredTasks.isEmpty {
+                    if searchQuery.isEmpty {
+                        Text(String(localized: "No active tasks"))
+                            .foregroundStyle(.secondary)
+                    } else {
+                        Text(String(localized: "No Matches"))
+                            .foregroundStyle(.secondary)
+                    }
                 } else {
-                    ForEach(activeTasks) { task in
+                    ForEach(filteredTasks) { task in
                         Button {
                             onSelectTask(task.id, task.title, task.energyLevel.icon)
                             dismiss()

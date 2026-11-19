@@ -13,9 +13,20 @@ struct TaskPickerView: View {
     let onSelectTask: (UUID, String, String) -> Void
     let onUnlink: () -> Void
     @Environment(\.dismiss) private var dismiss
+    // Issue #929: parity with the Mac popover — filter the active list by
+    // title. Not auto-focused: popping the keyboard over a sheet uninvited
+    // is an iOS etiquette violation; the field is one tap away.
+    @State private var searchQuery = ""
 
     private var activeTasks: [TaskListFeature.TaskItemState] {
         tasks.filter { !$0.isCompleted }
+    }
+
+    /// Case- and diacritic-insensitive title filter; empty query = all.
+    private var filteredTasks: [TaskListFeature.TaskItemState] {
+        let query = searchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !query.isEmpty else { return activeTasks }
+        return activeTasks.filter { $0.title.localizedStandardContains(query) }
     }
 
     var body: some View {
@@ -39,11 +50,23 @@ struct TaskPickerView: View {
                 }
 
                 Section(String(localized: "Tasks")) {
-                    if activeTasks.isEmpty {
-                        Text(String(localized: "No active tasks"))
-                            .foregroundStyle(.secondary)
+                    TextField(
+                        String(localized: "Search Tasks"),
+                        text: $searchQuery
+                    )
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+
+                    if filteredTasks.isEmpty {
+                        if searchQuery.isEmpty {
+                            Text(String(localized: "No active tasks"))
+                                .foregroundStyle(.secondary)
+                        } else {
+                            Text(String(localized: "No Matches"))
+                                .foregroundStyle(.secondary)
+                        }
                     } else {
-                        ForEach(activeTasks) { task in
+                        ForEach(filteredTasks) { task in
                             Button {
                                 HapticManager.selection()
                                 onSelectTask(task.id, task.title, task.energyLevel.icon)
