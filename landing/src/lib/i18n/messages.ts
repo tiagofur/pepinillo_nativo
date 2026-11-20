@@ -638,7 +638,7 @@ const en: Dict = {
 		'API URL not configured. Set PUBLIC_API_BASE_URL in web/.env to enable account + sync.',
 	'account.everywhereActive': 'Everywhere active — cloud sync available.',
 	'account.everywhereInactive':
-		'Signed in on Free. Subscribe or restore Everywhere on iOS, Android, or Windows, then refresh.',
+		'Signed in on Free. Subscribe on the pricing page or in the iOS/Android apps, then refresh.',
 	'account.signedInAs': 'Signed in as',
 	'account.refreshEntitlement': 'Refresh subscription',
 	'sync.everywhereRequired': 'Everywhere subscription required for cloud sync.',
@@ -1190,7 +1190,7 @@ const es: Dict = {
 		'API no configurada. Definí PUBLIC_API_BASE_URL en web/.env para cuenta + sync.',
 	'account.everywhereActive': 'Everywhere activo — sync en la nube disponible.',
 	'account.everywhereInactive':
-		'Sesión Free. Suscribite o restaurá Everywhere en iOS, Android o Windows y refrescá.',
+		'Sesión Free. Suscribite en la página de precios o en las apps de iOS/Android y refrescá.',
 	'account.signedInAs': 'Sesión como',
 	'account.refreshEntitlement': 'Actualizar suscripción',
 	'sync.everywhereRequired': 'Se requiere Everywhere para sync en la nube.',
@@ -1726,7 +1726,7 @@ const pt: Dict = {
 		'API não configurada. Defina PUBLIC_API_BASE_URL em web/.env para conta + sync.',
 	'account.everywhereActive': 'Everywhere ativo — sync na nuvem disponível.',
 	'account.everywhereInactive':
-		'Sessão Free. Assine ou restaure Everywhere no iOS, Android ou Windows e atualize.',
+		'Sessão Free. Assine na página de preços ou nos apps de iOS/Android e atualize.',
 	'account.signedInAs': 'Conectado como',
 	'account.refreshEntitlement': 'Atualizar assinatura',
 	'sync.everywhereRequired': 'Everywhere é necessário para sync na nuvem.',

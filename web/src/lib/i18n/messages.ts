@@ -731,7 +731,7 @@ const en: Dict = {
 		'Account + sync need the cloud API configured for this build. Everything works offline.',
 	'account.everywhereActive': 'Everywhere active — cloud sync available.',
 	'account.everywhereInactive':
-		'Signed in on Free. Subscribe or restore Everywhere on iOS, Android, or Windows, then refresh.',
+		'Signed in on Free. Subscribe on the pricing page or in the iOS/Android apps, then refresh.',
 	'account.signedInAs': 'Signed in as',
 	'account.refreshEntitlement': 'Refresh subscription',
 	'sync.everywhereRequired': 'Everywhere subscription required for cloud sync.',
@@ -1133,7 +1133,7 @@ const en: Dict = {
 	'account.storageWarning':
 		'Your Free data is stored only in this browser profile. Clearing storage or switching browsers loses it. Multi-device sync is not available on Free.',
 	'account.everywhereTeaser':
-		'Pepinillo Everywhere (sync + premium web features) is restored via your store purchase and account — not sold as Pepinillo+ on web. Sign-in arrives in a later slice.',
+		'Your plan is bought and restored on the web with your account — Pepinillo+ (one-time) and Everywhere/AI+ (subscription) are sold on the pricing page. App-store purchases will link to your account soon.',
 	'account.about':
 		'Web is a companion extra for large-screen focus. It does not replace native OS features.',
 	'account.nonGoals':
@@ -1330,7 +1330,7 @@ const es: Dict = {
 		'La cuenta y la sync necesitan la API cloud configurada en este build. Todo funciona offline.',
 	'account.everywhereActive': 'Everywhere activo — sync en la nube disponible.',
 	'account.everywhereInactive':
-		'Sesión Free. Suscribite o restaurá Everywhere en iOS, Android o Windows y refrescá.',
+		'Sesión Free. Suscribite en la página de precios o en las apps de iOS/Android y refrescá.',
 	'account.signedInAs': 'Sesión como',
 	'account.refreshEntitlement': 'Actualizar suscripción',
 	'sync.everywhereRequired': 'Se requiere Everywhere para sync en la nube.',
@@ -1910,7 +1910,7 @@ const pt: Dict = {
 		'A conta e a sync precisam da API cloud configurada neste build. Tudo funciona offline.',
 	'account.everywhereActive': 'Everywhere ativo — sync na nuvem disponível.',
 	'account.everywhereInactive':
-		'Sessão Free. Assine ou restaure Everywhere no iOS, Android ou Windows e atualize.',
+		'Sessão Free. Assine na página de preços ou nos apps de iOS/Android e atualize.',
 	'account.signedInAs': 'Conectado como',
 	'account.refreshEntitlement': 'Atualizar assinatura',
 	'sync.everywhereRequired': 'Everywhere é necessário para sync na nuvem.',
