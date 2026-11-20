@@ -18,8 +18,12 @@
 	<meta property="og:description" content={t('landing.meta')} />
 	<meta property="og:type" content="website" />
 	<meta property="og:url" content="https://pepinillo.app/" />
-	<meta property="og:image" content="/icons/icon-512.png" />
+	<meta property="og:image" content="https://pepinillo.app/img/og-card.png" />
+	<meta property="og:image:width" content="1200" />
+	<meta property="og:image:height" content="630" />
+	<meta property="og:image:alt" content="Pepinillo — deep work nativo en iOS, watchOS, macOS, Android, Wear OS y web" />
 	<meta name="twitter:card" content="summary_large_image" />
+	<meta name="twitter:image" content="https://pepinillo.app/img/og-card.png" />
 	<link rel="canonical" href="https://pepinillo.app/" />
 </svelte:head>
 
