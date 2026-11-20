@@ -175,6 +175,12 @@
 <div class="card section">
 	<h2>☁️ {t('sync.title')}</h2>
 	<p class="muted">{t('sync.hint')}</p>
+	{#if app.tier === 'pepinillo_plus'}
+		<p class="device-bound">
+			🔒 {t('sync.plusBound')}
+			<a href="/upgrade">{t('plan.upgradeCta')} →</a>
+		</p>
+	{/if}
 	<div class="sync-row">
 		<button class="btn btn-primary pressable" disabled={auth.syncing} onclick={() => auth.syncNow()}>
 			{auth.syncing ? t('account.syncing') : t('account.syncNow')}

@@ -5,7 +5,14 @@ import {
 	FREE_MODES
 } from '$lib/domain/entities/types';
 
-export type EntitlementTier = 'free' | 'everywhere';
+/**
+ * Local gate tiers (#952). `pepinillo_plus` unlocks every LOCAL premium
+ * surface (modes, tasks, structure, themes, analytics) but NOT multi-device
+ * sync — that stays Everywhere-only (#942: Plus gets a single-device backup
+ * lane on the backend). AI cards follow the same Everywhere-only rule (the
+ * backend denies ai_insights for pepinillo_plus).
+ */
+export type EntitlementTier = 'free' | 'pepinillo_plus' | 'everywhere';
 
 export const FREE_LIMITS = {
 	maxActiveTasks: FREE_MAX_ACTIVE_TASKS,
@@ -13,13 +20,18 @@ export const FREE_LIMITS = {
 	modes: FREE_MODES
 } as const;
 
+/** Local premium = any paid tier; sync and cloud AI remain Everywhere-only. */
+export function hasLocalPremium(tier: EntitlementTier): boolean {
+	return tier !== 'free';
+}
+
 export function canUseMode(mode: FocusMode, tier: EntitlementTier): boolean {
-	if (tier === 'everywhere') return true;
+	if (hasLocalPremium(tier)) return true;
 	return (FREE_MODES as readonly FocusMode[]).includes(mode);
 }
 
 export function maxActiveTasks(tier: EntitlementTier): number {
-	return tier === 'everywhere' ? Infinity : FREE_MAX_ACTIVE_TASKS;
+	return hasLocalPremium(tier) ? Infinity : FREE_MAX_ACTIVE_TASKS;
 }
 
 export function canCreateActiveTask(currentActiveCount: number, tier: EntitlementTier): boolean {
@@ -27,15 +39,15 @@ export function canCreateActiveTask(currentActiveCount: number, tier: Entitlemen
 }
 
 export function canUseSubtasks(tier: EntitlementTier): boolean {
-	return tier === 'everywhere';
+	return hasLocalPremium(tier);
 }
 
 export function canUseRecurrence(tier: EntitlementTier): boolean {
-	return tier === 'everywhere';
+	return hasLocalPremium(tier);
 }
 
 export function canExport(tier: EntitlementTier): boolean {
-	return tier === 'everywhere';
+	return hasLocalPremium(tier);
 }
 
 export function canUseSync(tier: EntitlementTier): boolean {
@@ -49,7 +61,7 @@ export function canUseAnalyticsPeriod(days: 7 | 30 | 365, tier: EntitlementTier)
 }
 
 export function canUsePremiumTheme(tier: EntitlementTier): boolean {
-	return tier === 'everywhere';
+	return hasLocalPremium(tier);
 }
 
 /**

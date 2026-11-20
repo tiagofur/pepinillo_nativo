@@ -10,7 +10,7 @@ import { mergePrefs, mergeSessions, mergeTasks } from '$lib/data/sync/merge';
 import { runFullPull, runInitialUpload } from '$lib/data/sync/engine';
 import { getPreferences } from '$lib/data/local/idb';
 import type { AuthResponse, AuthUser, AuthTokens } from '$lib/data/remote/types';
-import type { EntitlementTier } from '$lib/domain/gates/freeLimits';
+import { toGateTier } from '$lib/domain/gates/entitlements';
 import { app } from '$lib/stores/app.svelte';
 import { plan } from '$lib/stores/plan.svelte';
 import { dashboard } from '$lib/stores/dashboard.svelte';
@@ -20,11 +20,6 @@ type MergeChoice = 'pull' | 'upload' | null;
 
 function wsUrl(): string {
 	return (__PUBLIC_WS_URL__ || '').replace(/\/$/, '');
-}
-
-/** Server tier string → local gate tier (any paid tier unlocks local premium). */
-function toGateTier(serverTier: string): EntitlementTier {
-	return serverTier && serverTier !== 'free' ? 'everywhere' : 'free';
 }
 
 class AuthStore {
