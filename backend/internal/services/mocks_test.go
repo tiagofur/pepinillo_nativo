@@ -14,6 +14,11 @@ type MockUserRepository struct {
 	mock.Mock
 }
 
+func (m *MockUserRepository) BindSyncDevice(ctx context.Context, userID, deviceID string) error {
+	args := m.Called(ctx, userID, deviceID)
+	return args.Error(0)
+}
+
 func (m *MockUserRepository) Create(ctx context.Context, user *domain.User) error {
 	args := m.Called(ctx, user)
 	return args.Error(0)

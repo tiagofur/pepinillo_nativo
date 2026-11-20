@@ -6,32 +6,63 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-// NewRequireBackendSync returns a Fiber middleware that rejects requests from
-// users whose effective tier does not include backend VPS sync (i.e. any tier
-// other than the three Everywhere+ variants).
+// NewRequireBackendSync gates the sync endpoints (#942 S5):
 //
-// Prerequisites: the JWT middleware and SubscriptionMiddleware must have run
-// before this middleware, so that "tier" and "subscription_expires_at" are
-// already populated in c.Locals.
+//   - Everywhere+ tiers: full multi-device sync (previous behavior). The
+//     expiry check still applies — a lapsed subscription falls to the
+//     effective tier below.
+//   - Free and Pepinillo+ tiers: single-device server backup. The request
+//     must carry the bound X-Device-ID; an EMPTY binding passes so the
+//     first successful initial-upload can claim it (bind-on-upload in the
+//     handler).
 //
-// On rejection: HTTP 402 with JSON body:
+// Prerequisites: JWT + SubscriptionMiddleware must have run first, so
+// "tier", "subscription_expires_at" and "sync_device_id" are in c.Locals.
 //
-//	{"error":"subscription_required","code":"ERR_TIER_INSUFFICIENT","message":"...","upgrade_url":"..."}
+// On rejection:
+//
+//	402 {"code":"ERR_TIER_INSUFFICIENT"} — expired Everywhere+ (unchanged)
+//	403 {"code":"ERR_DEVICE_BOUND"}      — another device owns the backup
 func NewRequireBackendSync() fiber.Handler {
+	return requireBackendSync(false)
+}
+
+// NewRequireEverywhereSync keeps the pre-#942 strict gate for surfaces that
+// are NOT part of the device-bound lane (PUT /preferences): only an active
+// Everywhere+ subscription passes.
+func NewRequireEverywhereSync() fiber.Handler {
+	return requireBackendSync(true)
+}
+
+func requireBackendSync(strict bool) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		tier, _ := c.Locals("tier").(string)
 		expiresAt, _ := c.Locals("subscription_expires_at").(*time.Time)
 
-		if !CanSync(tier) {
+		// Fail closed (B5 convention): an absent tier means the middleware
+		// chain is misconfigured — never fall through to the bound lane.
+		if tier == "" {
 			return insufficientTierError(c)
 		}
 
-		// CanSync is true — check expiry. Lifetime tiers have no expiry (nil).
-		if expiresAt != nil && !expiresAt.After(time.Now().UTC()) {
+		if CanSync(tier) {
+			// Everywhere lane — check expiry. Lifetime tiers have no expiry (nil).
+			if expiresAt != nil && !expiresAt.After(time.Now().UTC()) {
+				return insufficientTierError(c)
+			}
+			return c.Next()
+		}
+
+		if strict {
 			return insufficientTierError(c)
 		}
 
-		return c.Next()
+		// Device-bound lane (free / pepinillo_plus).
+		bound, _ := c.Locals("sync_device_id").(string)
+		if bound == "" || bound == c.Get("X-Device-ID") {
+			return c.Next()
+		}
+		return deviceBoundError(c)
 	}
 }
 
@@ -40,6 +71,15 @@ func insufficientTierError(c *fiber.Ctx) error {
 		"error":       "subscription_required",
 		"code":        "ERR_TIER_INSUFFICIENT",
 		"message":     "An Everywhere+ subscription is required to use backend sync",
+		"upgrade_url": "https://app.pepinillo.app/upgrade",
+	})
+}
+
+func deviceBoundError(c *fiber.Ctx) error {
+	return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+		"error":       "device_bound",
+		"code":        "ERR_DEVICE_BOUND",
+		"message":     "This account's server backup is bound to another device. Everywhere+ syncs across devices",
 		"upgrade_url": "https://app.pepinillo.app/upgrade",
 	})
 }

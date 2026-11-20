@@ -219,8 +219,8 @@ func buildSyncGatingApp(userRepo ports.UserRepository) *fiber.App {
 		return c.Status(fiber.StatusOK).JSON(fiber.Map{"ok": true})
 	})
 
-	// Gated preferences.
-	protected.Put("/preferences", middleware.NewRequireBackendSync(), func(c *fiber.Ctx) error {
+	// Gated preferences — strict Everywhere+ (outside the #942 bound lane).
+	protected.Put("/preferences", middleware.NewRequireEverywhereSync(), func(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusOK).JSON(fiber.Map{"ok": true})
 	})
 
@@ -244,14 +244,11 @@ func doSyncRequest(t *testing.T, app *fiber.App, method, path, token string) int
 	return resp.StatusCode
 }
 
-// TestSyncRouteGating_FreeTier_Returns402 verifies that a free-tier user
-// receives 402 on all gated sync endpoints when RequireBackendSync is wired
-// into the route group (mirrors the production route wiring in routes.go).
-//
-// This test must FAIL (RED) until T1.10 wires RequireBackendSync into the
-// production RegisterAPIRoutes function. The test uses a helper that builds a
-// minimal app with the same middleware chain that production routes.go applies.
-func TestSyncRouteGating_FreeTier_Returns402(t *testing.T) {
+// TestSyncRouteGating_FreeTier_DeviceBound verifies the #942 model: a
+// free-tier unbound user passes the sync gate (the first initial-upload
+// claims the device binding), while PUT /preferences keeps the strict
+// Everywhere+ gate (402) — it is not part of the device-bound lane.
+func TestSyncRouteGating_FreeTier_DeviceBound(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping integration test")
 	}
@@ -273,15 +270,18 @@ func TestSyncRouteGating_FreeTier_Returns402(t *testing.T) {
 	app := buildSyncGatingApp(userRepo)
 	token := makeAccessTokenWithTier(t, user.ID, user.Email, "free")
 
-	for _, tc := range []struct{ method, path string }{
-		{http.MethodGet, "/sync/full"},
-		{http.MethodPost, "/sync/sessions"},
-		{http.MethodPost, "/sync/initial-upload"},
-		{http.MethodPut, "/preferences"},
+	for _, tc := range []struct {
+		method, path string
+		want         int
+	}{
+		{http.MethodGet, "/sync/full", http.StatusOK},
+		{http.MethodPost, "/sync/sessions", http.StatusOK},
+		{http.MethodPost, "/sync/initial-upload", http.StatusOK},
+		{http.MethodPut, "/preferences", http.StatusPaymentRequired},
 	} {
 		code := doSyncRequest(t, app, tc.method, tc.path, token)
-		if code != http.StatusPaymentRequired {
-			t.Errorf("%s %s: expected 402, got %d", tc.method, tc.path, code)
+		if code != tc.want {
+			t.Errorf("%s %s: expected %d, got %d", tc.method, tc.path, tc.want, code)
 		}
 	}
 }

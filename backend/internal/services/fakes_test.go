@@ -28,6 +28,10 @@ func newFakeUserRepo() *fakeUserRepo {
 	}
 }
 
+func (r *fakeUserRepo) BindSyncDevice(ctx context.Context, userID, deviceID string) error {
+	return nil
+}
+
 func (r *fakeUserRepo) Create(_ context.Context, user *domain.User) error {
 	r.byID[user.ID] = user
 	r.byEmail[user.Email] = user

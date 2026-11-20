@@ -23,6 +23,10 @@ type UserRepository interface {
 	// mutate → Save cycle clobbers concurrently changed columns (ai_credits
 	// balance, pending email, OAuth links) when two writers race (B6).
 	UpdateSubscription(ctx context.Context, userID, tier string, expiresAt *time.Time) error
+	// BindSyncDevice claims the single-device backup binding (#942 S5). The
+	// UPDATE is guarded: it only writes when the binding is still empty, so
+	// two devices racing for first upload resolve to exactly one winner.
+	BindSyncDevice(ctx context.Context, userID, deviceID string) error
 	Delete(ctx context.Context, userID string) error
 	MarkEmailVerified(ctx context.Context, userID string) error
 	UpdateEmailPending(ctx context.Context, userID, newEmail string) error

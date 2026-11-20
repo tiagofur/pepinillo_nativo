@@ -91,6 +91,19 @@ func (r *UserRepository) GetByStripeCustomerID(ctx context.Context, stripeCustom
 	return &user, nil
 }
 
+// BindSyncDevice claims the single-device backup binding (#942 S5). The
+// WHERE clause is the race guard: only the first writer for an unbound
+// user wins; later calls with a different device are no-ops.
+func (r *UserRepository) BindSyncDevice(ctx context.Context, userID, deviceID string) error {
+	if deviceID == "" {
+		return nil // nothing to bind
+	}
+	return r.db.WithContext(ctx).Exec(
+		`UPDATE users SET sync_device_id = ? WHERE id = ? AND (sync_device_id IS NULL OR sync_device_id = '')`,
+		deviceID, userID,
+	).Error
+}
+
 func (r *UserRepository) Delete(ctx context.Context, userID string) error {
 	return r.db.WithContext(ctx).Where("id = ?", userID).Delete(&domain.User{}).Error
 }

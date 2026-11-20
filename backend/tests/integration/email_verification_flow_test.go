@@ -66,6 +66,10 @@ func newIntegrationUserRepo() *integrationUserRepo {
 	}
 }
 
+func (r *integrationUserRepo) BindSyncDevice(ctx context.Context, userID, deviceID string) error {
+	return nil
+}
+
 func (r *integrationUserRepo) Create(_ context.Context, user *domain.User) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()

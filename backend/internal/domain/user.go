@@ -102,6 +102,11 @@ type User struct {
 	// confirmed, never cleared by Everywhere+ activation/cancellation).
 	PepinilloPlusEntitlementAt *time.Time `json:"pepinilloPlusEntitlementAt,omitempty"`
 
+	// SyncDeviceID binds server-side backup to ONE device for Free and
+	// Pepinillo+ tiers (#942 S5): the first successful sync upload claims it.
+	// Empty = unbound. Everywhere+ tiers bypass the check (multi-device).
+	SyncDeviceID string `json:"-" gorm:"column:sync_device_id"`
+
 	// MetricsOptIn is explicit consent to include this user in the aggregated,
 	// PII-free usage metrics served by /internal/stats. Defaults to false.
 	MetricsOptIn bool `json:"metricsOptIn" gorm:"default:false;not null"`

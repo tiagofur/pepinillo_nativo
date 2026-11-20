@@ -391,7 +391,7 @@ func main() {
 		WebSocket:  handlers.NewWebSocketHandler(wsManager, cfg.JWTSecret, cfg.DeprecatedWSQueryAuth),
 		Analytics:   handlers.NewAnalyticsHandler(analyticsService),
 		Preferences: handlers.NewPreferenceHandler(preferenceService),
-		Sync:           handlers.NewSyncHandler(syncService),
+		Sync:           handlers.NewSyncHandler(syncService, userRepo),
 		UserRepository: userRepo,
 		JWTSecret:      cfg.JWTSecret,
 		HealthChecks: handlers.DependencyChecksFrom(
