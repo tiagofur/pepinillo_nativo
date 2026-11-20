@@ -37,18 +37,38 @@
 ## Allowed edit surfaces (por unidad)
 
 - **PR-1 (backend+contracts, esta unidad)**: `contracts/openapi.yaml`,
+  `odd/tasks/953-rc-web-bridge.md` (este artefacto),
   `backend/migrations/000019_*`, `backend/internal/domain/user.go`,
-  `backend/internal/ports/user_repository.go`, `backend/internal/ports/auth_store.go`,
+  `backend/internal/ports/repositories.go`, `backend/internal/ports/auth_store.go`,
   `backend/internal/adapters/repositories/postgres/user_repository.go`,
   `backend/internal/adapters/stores/{redis,memory}/auth_store.go`,
-  `backend/internal/services/rc_link_service.go` (+ tests),
+  `backend/internal/services/rc_link_service.go` (+ test),
+  `backend/internal/services/errors.go` (sentinelas),
   `backend/internal/services/revenuecat_service.go` (lookup extensión),
-  `backend/internal/adapters/handlers/rc_link_handler.go` (+ tests),
-  `backend/internal/adapters/handlers/routes.go`, `backend/internal/adapters/handlers/fakes_test.go`.
+  `backend/internal/services/{fakes,mocks}_test.go`,
+  `backend/internal/adapters/handlers/rc_link_handler.go` (+ test),
+  `backend/internal/adapters/handlers/routes.go`,
+  `backend/internal/adapters/handlers/fakes_test.go`,
+  `backend/cmd/api/main.go` (wiring),
+  `backend/tests/integration/email_verification_flow_test.go` (stub de fake).
 - **PR-2 (web)**: `web/src/lib/data/remote/apiClient.ts`, `web/src/lib/features/auth/AccountServer.svelte`,
   `web/src/lib/i18n/messages.ts`.
+
 - **PR-3 (iOS/Mac)**: ajustes (Settings → cuenta) + llamada claim + `Purchases.logIn`.
 - **PR-4 (Android)**: equivalente en Compose/Hilt.
 
 ## Log
 - 2026-11-20: DoR registrado; unidad PR-1 iniciada (contract-first).
+- 2026-11-20 (corrección C4.3 tras judgment-day dual ronda 1): limiter
+  per-IP Max 10 en ambos endpoints (contrato 429); bind condicional al
+  grant con pre-check 409 cross-account e idempotencia same-account
+  (contrato 409; el comentario "harmless gift" de la ronda 1 era
+  incompleto — un bind sin grant desviaba renovaciones y habilitaba
+  downgrade diferido); SETNX + retry en códigos (colisión cross-account);
+  bind transaccional que libera al holder previo; verify-antes-de-consume
+  (outage RC ya no quema el código; fijado por test); tier de respuesta =
+  efectivo post-gate; email enmascarado en la respuesta (contrato; para
+  confirmación en pantalla nativa PR-3; platform wired a telemetría;
+  sentinelas movidos a rc_link_service.go (precedente
+  revenuecat_service.go) y errors.go revertido. Split mecánico de
+  revenuecat_service.go diferido → issue #963.

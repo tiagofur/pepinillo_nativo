@@ -66,9 +66,10 @@ type UserRepository interface {
 	GetByStripeCustomerID(ctx context.Context, stripeCustomerID string) (*domain.User, error)
 
 	// RevenueCat link (#953): SetRcAppUserID binds the RC app_user_id of a
-	// NATIVE purchase to the account (targeted write, same B6 rationale as
-	// SetStripeCustomer); GetByRcAppUserID resolves webhook events carrying
-	// a non-UUID RC ID back to the buyer.
+	// NATIVE purchase to the account (transactional: releases any prior
+	// holder, unique partial index guards the race → ports.ErrRcAppUserIDTaken);
+	// GetByRcAppUserID resolves webhook events carrying a non-UUID RC ID
+	// back to the buyer.
 	SetRcAppUserID(ctx context.Context, userID, rcAppUserID string) error
 	GetByRcAppUserID(ctx context.Context, rcAppUserID string) (*domain.User, error)
 }

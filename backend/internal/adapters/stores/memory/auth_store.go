@@ -9,6 +9,8 @@ import (
 	"encoding/hex"
 	"sync"
 	"time"
+
+	"pepinillo/backend/internal/ports"
 )
 
 type tokenEntry struct {
@@ -169,6 +171,9 @@ type rcLinkEntry struct {
 func (s *AuthStore) StoreRcLinkCode(_ context.Context, code, userID string, ttlSeconds int64) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	if existing, ok := s.rcLinkByCode[code]; ok && time.Now().UTC().Before(existing.ExpiresAt) {
+		return ports.ErrRcLinkCodeExists
+	}
 	s.rcLinkByCode[code] = rcLinkEntry{UserID: userID, ExpiresAt: time.Now().UTC().Add(time.Duration(ttlSeconds) * time.Second)}
 	return nil
 }

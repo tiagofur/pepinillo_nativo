@@ -3,12 +3,14 @@ package postgres
 import (
 	"context"
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 
 	"pepinillo/backend/internal/domain"
+	"pepinillo/backend/internal/ports"
 )
 
 type UserRepository struct {
@@ -109,15 +111,29 @@ func (r *UserRepository) BindSyncDevice(ctx context.Context, userID, deviceID st
 }
 
 // SetRcAppUserID binds the RevenueCat app_user_id of a native purchase to
-// the account (#953). Targeted write (B6); last claim wins so the user can
-// re-link a newer device by claiming a fresh code.
+// the account (#953. Transactional: releases any other row holding the id,
+// then claims it — the unique partial index is the race guard and a lost
+// race surfaces as ports.ErrRcAppUserIDTaken (the service rolls back the
+// grant and answers 409).
 func (r *UserRepository) SetRcAppUserID(ctx context.Context, userID, rcAppUserID string) error {
-	return r.db.WithContext(ctx).Model(&domain.User{}).Where("id = ?", userID).
-		Update("rc_app_user_id", rcAppUserID).Error
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := tx.WithContext(ctx).Exec(
+			`UPDATE users SET rc_app_user_id = NULL WHERE rc_app_user_id = ? AND id <> ?`,
+			rcAppUserID, userID,
+		).Error; err != nil {
+			return err
+		}
+		err := tx.WithContext(ctx).Model(&domain.User{}).Where("id = ?", userID).
+			Update("rc_app_user_id", rcAppUserID).Error
+		if err != nil && (errors.Is(err, gorm.ErrDuplicatedKey) || strings.Contains(err.Error(), "duplicate key")) {
+			return ports.ErrRcAppUserIDTaken
+		}
+		return err
+	})
 }
 
 // GetByRcAppUserID resolves webhook events carrying a non-UUID RC ID back
-// to the bound buyer (#953). Unbound ID → (nil, nil), like Stripe lookup.
+// to the bound buyer (#953. Unbound ID → (nil, nil), like Stripe lookup.
 func (r *UserRepository) GetByRcAppUserID(ctx context.Context, rcAppUserID string) (*domain.User, error) {
 	var user domain.User
 	err := r.db.WithContext(ctx).Where("rc_app_user_id = ?", rcAppUserID).First(&user).Error

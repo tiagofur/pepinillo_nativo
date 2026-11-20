@@ -10,6 +10,8 @@ import (
 	"time"
 
 	goredis "github.com/redis/go-redis/v9"
+
+	"pepinillo/backend/internal/ports"
 )
 
 // AuthStore persists refresh tokens and email/password reset codes in Redis.
@@ -143,11 +145,20 @@ func (s *AuthStore) RevokeEmailVerificationCode(ctx context.Context, email strin
 }
 
 // StoreRcLinkCode keeps the claiming userID under the code key with a TTL
-// (#953). Codes are single-use: ConsumeRcLinkCode uses GETDEL so a replay
-// race can never bind two claims to one code.
+// (#953. SETNX: an existing live code is never overwritten — the service
+// retries with a fresh code on ports.ErrRcLinkCodeExists. Codes are
+// single-use: ConsumeRcLinkCode uses GETDEL so a replay race can never bind
+// two claims to one code.
 func (s *AuthStore) StoreRcLinkCode(ctx context.Context, code, userID string, ttlSeconds int64) error {
 	key := fmt.Sprintf("rc_link:%s", code)
-	return s.client.Set(ctx, key, userID, time.Duration(ttlSeconds)*time.Second).Err()
+	created, err := s.client.SetNX(ctx, key, userID, time.Duration(ttlSeconds)*time.Second).Result()
+	if err != nil {
+		return err
+	}
+	if !created {
+		return ports.ErrRcLinkCodeExists
+	}
+	return nil
 }
 
 func (s *AuthStore) ConsumeRcLinkCode(ctx context.Context, code string) (string, bool, error) {

@@ -7,7 +7,8 @@ info:
     Fuente de verdad HTTP del backend Go (Fiber v2 + GORM + PostgreSQL 16 + Redis 7) en `backend/internal/adapters/handlers/routes.go`.
 
     ### Autenticación y compuertas de middleware
-    - **Público**: `/health*`, `/auth/{register,login,google,apple,refresh,forgot-password,reset-password,verify-email,resend-verification}`
+    - **Público**: `/health*`, `/auth/{register,login,google,apple,refresh,forgot-password,reset-password,verify-email,resend-verification}`, `/rc/link` (puente de licencia `#953` — el código single-use de 6 dígitos ES la autorización; limiter per-IP Max 10)
+    - **JWT (solo sesión)**: `POST /account/link-code` genera el código de vinculación (limiter per-IP Max 10)
     - **Webhook Token**: `POST /webhooks/revenuecat` valida `Authorization` contra `REVENUECAT_WEBHOOK_AUTH_TOKEN`.
     - **JWT (`BearerAuth`)**: requiere access token (`tokenType == "access"`). Da acceso a `/auth/*` protegidas, `/users/me*` y `/billing/verify-receipt`.
     - **JWT + Email verificado**: todas las rutas de datos (`/tasks`, `/pomodoro`, `/focus`, `/ai`, `/push`, `/analytics`, `/preferences`, `/sync`).
@@ -865,6 +866,8 @@ paths:
                 $ref: "#/components/schemas/RcLinkCodeResponse"
         "401":
           $ref: "#/components/responses/UnauthorizedError"
+        "429":
+          $ref: "#/components/responses/TooManyRequestsError"
         "503":
           $ref: "#/components/responses/ServiceUnavailableError"
 
@@ -897,6 +900,10 @@ paths:
           $ref: "#/components/responses/BadRequestError"
         "404":
           $ref: "#/components/responses/NotFoundError"
+        "409":
+          $ref: "#/components/responses/ConflictError"
+        "429":
+          $ref: "#/components/responses/TooManyRequestsError"
         "502":
           $ref: "#/components/responses/BadGatewayError"
         "503":
@@ -3032,7 +3039,7 @@ components:
           enum: [ios, macos, android]
     RcLinkClaimResponse:
       type: object
-      required: [userId, tier]
+      required: [userId, tier, email]
       properties:
         userId:
           type: string
@@ -3041,6 +3048,10 @@ components:
         tier:
           type: string
           enum: [pepinillo_plus, everywhere_monthly, everywhere_annual]
+          description: Tier EFECTIVO de la cuenta tras el gate B3 (no el crudo leído de RC).
+        email:
+          type: string
+          description: Email enmascarado de la cuenta (p.ej. `t***@gmail.com`) para confirmación en pantalla nativa.
         expiresAt:
           type: string
           format: date-time
