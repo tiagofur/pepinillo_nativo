@@ -71,8 +71,30 @@ struct MacAccountView: View {
             }
             .buttonStyle(.borderedProminent)
             .controlSize(.large)
+
+            // RC license bridge (#953): native buyers inherit their purchase
+            // on the web via the claim code.
+            Button {
+                store.send(.showRcLinkTapped)
+            } label: {
+                Label(
+                    String(localized: "account.rclink.row.title", defaultValue: "Use my purchase on the Web"),
+                    systemImage: "link.icloud"
+                )
+                .frame(maxWidth: 220)
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.large)
         }
         .padding(32)
+        .sheet(item: $store.scope(state: \.rcLink, action: \.rcLink)) { rcLinkStore in
+            NavigationStack {
+                RcLinkView(store: rcLinkStore)
+                    .navigationTitle(String(localized: "account.rclink.row.title", defaultValue: "Use my purchase on the Web"))
+                    .navigationBarTitleDisplayMode(.inline)
+            }
+            .frame(minWidth: 420, minHeight: 520)
+        }
     }
 
     // MARK: - Signed in

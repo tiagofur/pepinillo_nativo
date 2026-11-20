@@ -201,6 +201,20 @@ struct AccountView: View {
                 appleSignInButton
                 emailSignInButton
             }
+
+            // RC license bridge (#953): native buyers inherit their purchase
+            // on the web via the claim code — visible for guests because the
+            // buyer operates offline-first without an account.
+            Button {
+                store.send(.showRcLinkTapped)
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "link.icloud")
+                    Text(String(localized: "account.rclink.row.title", defaultValue: "Use my purchase on the Web"))
+                }
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+            }
         }
         .padding(18)
     }

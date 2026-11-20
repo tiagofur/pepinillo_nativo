@@ -117,6 +117,10 @@ struct SubscriptionClient: Sendable {
     /// Identify user with backend user ID.
     var logIn: @Sendable (_ userID: String) async throws -> SubscriptionState = { _ in .free }
 
+    /// Current RevenueCat app_user_id (anonymous for unclaimed native
+    /// purchases) — sent with the #953 license-bridge claim.
+    var currentAppUserID: @Sendable () async -> String = { "" }
+
     /// Reset to anonymous (logged out).
     var logOut: @Sendable () async -> Void = { }
 
@@ -136,6 +140,7 @@ extension SubscriptionClient: DependencyKey {
         checkEntitlement: { .free },
         listenForTransactionUpdates: { .finished },
         logIn: { _ in .free },
+        currentAppUserID: { "" },
         logOut: { },
         isPurchasesAvailable: { true }
     )
@@ -162,6 +167,7 @@ extension SubscriptionClient {
             checkEntitlement: { try await manager.checkEntitlement() },
             listenForTransactionUpdates: { manager.customerInfoStream() },
             logIn: { userID in try await manager.logIn(userID: userID) },
+            currentAppUserID: { await manager.currentAppUserID() },
             logOut: { await manager.logOut() },
             isPurchasesAvailable: { await manager.isPurchasesAvailable() }
         )
@@ -176,6 +182,7 @@ extension SubscriptionClient {
             checkEntitlement: { .free },
             listenForTransactionUpdates: { .finished },
             logIn: { _ in .free },
+            currentAppUserID: { "" },
             logOut: { },
             isPurchasesAvailable: { false }
         )
@@ -369,6 +376,14 @@ private actor SubscriptionManager {
                 lastVerifiedDate: AppGroupDefaults.lastVerifiedDate
             )
         }
+    }
+
+    /// Expose the SDK app_user_id for the #953 license-bridge claim
+    /// (anonymous "$RCAnonymousID:…" until the first logIn binds it).
+    func currentAppUserID() async -> String {
+        await ensureConfigured()
+        guard !isUnavailable else { return "" }
+        return Purchases.shared.appUserID
     }
 
     func logOut() async {

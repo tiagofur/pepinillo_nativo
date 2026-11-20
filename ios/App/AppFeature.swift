@@ -99,6 +99,8 @@ struct AppFeature {
         @Presents var auth: AuthFeature.State?
         @Presents var profile: ProfileFeature.State?
         @Presents var emailVerification: EmailVerificationFeature.State?
+        /// RC license bridge (#953): native purchase → web account claim sheet.
+        @Presents var rcLink: RcLinkFeature.State?
 
         // Sign in with Apple
         var appleUserID: String? = nil
@@ -251,9 +253,11 @@ struct AppFeature {
         // Auth & Profile
         case showAuth
         case showProfile
+        case showRcLinkTapped
         case auth(PresentationAction<AuthFeature.Action>)
         case profile(PresentationAction<ProfileFeature.Action>)
         case emailVerification(PresentationAction<EmailVerificationFeature.Action>)
+        case rcLink(PresentationAction<RcLinkFeature.Action>)
         case cachedUserLoaded(CachedUserDTO?)
         case tokenRefreshFailed
 
@@ -993,6 +997,21 @@ struct AppFeature {
                 return performSignOutCleanup(&state)
 
             case .emailVerification:
+                return .none
+
+            case .showRcLinkTapped:
+                state.rcLink = RcLinkFeature.State()
+                return .none
+
+            case .rcLink(.presented(.delegate(.claimSucceeded(let userID)))):
+                // Same identity path as every auth flow: Purchases.logIn
+                // fires SUBSCRIBER_ALIAS in RevenueCat (transferring the
+                // purchase to the backend UUID) and soft-sync refreshes
+                // capabilities with the granted tier.
+                state.rcLink = nil
+                return linkSubscriptionIdentity(userID)
+
+            case .rcLink:
                 return .none
 
             case .auth(.presented(.delegate(.guestModeSelected))):
@@ -1735,6 +1754,9 @@ struct AppFeature {
         }
         .ifLet(\.$emailVerification, action: \.emailVerification) {
             EmailVerificationFeature()
+        }
+        .ifLet(\.$rcLink, action: \.rcLink) {
+            RcLinkFeature()
         }
     }
 

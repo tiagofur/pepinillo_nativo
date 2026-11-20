@@ -4362,6 +4362,198 @@
         }
       }
     },
+    "account.rclink.row.title" : {
+      "comment" : "RcLinkView/AccountView/MacAccountView — canonical entry-point label (#953)",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use my purchase on the Web"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Usar mi compra en la Web"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Usar minha compra na Web"
+          }
+        }
+      }
+    },
+    "account.rclink.title" : {
+      "comment" : "RcLinkView — heading",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bring your purchase to the web"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Traé tu compra a la web"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Traga sua compra para a web"
+          }
+        }
+      }
+    },
+    "account.rclink.explanation" : {
+      "comment" : "RcLinkView — body",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bought Pepinillo+ or Everywhere in the iOS, macOS, or Android app? Enter the 6-digit code shown on app.pepinillo.app (Account) to bring your purchase to your web account."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¿Compraste Pepinillo+ o Everywhere en la app de iOS, macOS o Android? Ingresá el código de 6 dígitos que aparece en app.pepinillo.app (Cuenta) para llevar tu compra a tu cuenta web."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Comprou Pepinillo+ ou Everywhere no app de iOS, macOS ou Android? Insira o código de 6 dígitos mostrado em app.pepinillo.app (Conta) para levar sua compra à sua conta web."
+          }
+        }
+      }
+    },
+    "account.rclink.claim.button" : {
+      "comment" : "RcLinkView — primary CTA",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Link purchase"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vincular compra"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vincular compra"
+          }
+        }
+      }
+    },
+    "account.rclink.invalid" : {
+      "comment" : "APIClientError.rcLinkNotClaimable userMessage (404)",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "That code is invalid or expired. Generate a new one on the web."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ese código no es válido o ya venció. Generá uno nuevo en la web."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Este código é inválido ou expirou. Gere um novo na web."
+          }
+        }
+      }
+    },
+    "account.rclink.bound" : {
+      "comment" : "APIClientError.rcLinkAlreadyBound userMessage (409)",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This purchase is already linked to another account."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esta compra ya está vinculada a otra cuenta."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esta compra já está vinculada a outra conta."
+          }
+        }
+      }
+    },
+    "a11y.rclink.code.label" : {
+      "comment" : "A11y — RcLink code field label",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Link code"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Código de vinculación"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Código de vinculação"
+          }
+        }
+      }
+    },
+    "a11y.rclink.code.hint" : {
+      "comment" : "A11y — RcLink code field hint",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enter the 6-digit code from the web account page"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ingresá el código de 6 dígitos de la página de cuenta web"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Insira o código de 6 dígitos da página de conta web"
+          }
+        }
+      }
+    },
     "Apple decides whether to share your name and email during Sign in with Apple. Birth date and profile photo are managed manually in Pepinillo, and you can keep using a private relay email or replace it locally here." : {
       "comment" : "A description of how the user can change their profile information.",
       "extractionState" : "stale",
