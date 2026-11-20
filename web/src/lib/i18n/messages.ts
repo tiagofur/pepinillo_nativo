@@ -398,6 +398,15 @@ export type MessageKey =
 	| 'auth.error.apiMissing'
 	| 'auth.syncHint'
 	| 'auth.verifyPending'
+	| 'auth.verify.codeField'
+	| 'auth.verify.submit'
+	| 'auth.verify.resend'
+	| 'auth.verify.resendIn'
+	| 'auth.verify.resent'
+	| 'auth.verify.invalid'
+	| 'auth.verify.done'
+	| 'auth.verify.already'
+	| 'auth.verify.errorGeneric'
 	| 'auth.apiMissing'
 	| 'auth.dangerTitle'
 	| 'auth.deleteConfirm'
@@ -934,6 +943,15 @@ const en: Dict = {
 	'auth.error.apiMissing': 'The sync API is not configured for this build.',
 	'auth.syncHint': 'Sync requires Everywhere/AI+. Your data always stays on this device first.',
 	'auth.verifyPending': 'Check your inbox to verify your email — sync activates after that.',
+	'auth.verify.codeField': '6-digit code from your email',
+	'auth.verify.submit': 'Verify email',
+	'auth.verify.resend': 'Resend code',
+	'auth.verify.resendIn': 'Resend in {s}s',
+	'auth.verify.resent': 'Code sent — check your inbox (spam too).',
+	'auth.verify.invalid': 'Invalid or expired code.',
+	'auth.verify.done': 'Email verified — sync unlocked ✓',
+	'auth.verify.already': 'This email was already verified.',
+	'auth.verify.errorGeneric': 'Could not verify right now. Try again.',
 	'auth.apiMissing': 'Cloud sync is not configured in this build — everything works offline.',
 	'auth.dangerTitle': 'Session',
 	'auth.deleteConfirm': 'This removes your cloud account. Your email, to confirm:',
@@ -1508,6 +1526,15 @@ const es: Dict = {
 	'auth.error.apiMissing': 'El API de sync no está configurado en este build.',
 	'auth.syncHint': 'La sync requiere Everywhere/AI+. Tus datos siempre viven primero en este dispositivo.',
 	'auth.verifyPending': 'Revisá tu inbox para verificar el email — la sync se activa después.',
+	'auth.verify.codeField': 'Código de 6 dígitos de tu email',
+	'auth.verify.submit': 'Verificar email',
+	'auth.verify.resend': 'Reenviar código',
+	'auth.verify.resendIn': 'Reenviar en {s}s',
+	'auth.verify.resent': 'Código enviado — revisá tu casilla (y el spam).',
+	'auth.verify.invalid': 'Código inválido o expirado.',
+	'auth.verify.done': 'Email verificado — sync desbloqueado ✓',
+	'auth.verify.already': 'Este email ya estaba verificado.',
+	'auth.verify.errorGeneric': 'No se pudo verificar ahora. Probá de nuevo.',
 	'auth.apiMissing': 'La sync cloud no está configurada en este build — todo funciona offline.',
 	'auth.dangerTitle': 'Sesión',
 	'auth.deleteConfirm': 'Esto elimina tu cuenta en la nube. Tu email, para confirmar:',
@@ -2063,6 +2090,15 @@ const pt: Dict = {
 	'auth.error.apiMissing': 'O API de sync não está configurado neste build.',
 	'auth.syncHint': 'A sync requer Everywhere/AI+. Seus dados sempre vivem primeiro neste dispositivo.',
 	'auth.verifyPending': 'Verifique seu email na caixa de entrada — a sync ativa depois disso.',
+	'auth.verify.codeField': 'Código de 6 dígitos do seu email',
+	'auth.verify.submit': 'Verificar email',
+	'auth.verify.resend': 'Reenviar código',
+	'auth.verify.resendIn': 'Reenviar em {s}s',
+	'auth.verify.resent': 'Código enviado — confira sua caixa (e o spam).',
+	'auth.verify.invalid': 'Código inválido ou expirado.',
+	'auth.verify.done': 'Email verificado — sync desbloqueado ✓',
+	'auth.verify.already': 'Este email já estava verificado.',
+	'auth.verify.errorGeneric': 'Não foi possível verificar agora. Tente de novo.',
 	'auth.apiMissing': 'A sync cloud não está configurada neste build — tudo funciona offline.',
 	'auth.dangerTitle': 'Sessão',
 	'auth.deleteConfirm': 'Isso remove sua conta na nuvem. Seu email, para confirmar:',

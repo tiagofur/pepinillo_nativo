@@ -76,6 +76,22 @@ export class ApiClient {
 		});
 	}
 
+	async resendVerification(email: string): Promise<void> {
+		await this.requestUnauthed<void>('/api/v1/auth/resend-verification', {
+			method: 'POST',
+			body: JSON.stringify({ email })
+		});
+	}
+
+	/** POST /auth/verify-email — returns the verified user AND fresh tokens
+	 * (the backend rotates them), so the caller must adopt both (#944). */
+	async verifyEmail(email: string, code: string): Promise<AuthResponse> {
+		return this.requestUnauthed<AuthResponse>('/api/v1/auth/verify-email', {
+			method: 'POST',
+			body: JSON.stringify({ email, code })
+		});
+	}
+
 	async resetPassword(token: string, newPassword: string): Promise<void> {
 		await this.requestUnauthed<void>('/api/v1/auth/reset-password', {
 			method: 'POST',

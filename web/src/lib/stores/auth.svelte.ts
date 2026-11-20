@@ -186,6 +186,53 @@ class AuthStore {
 		this.lastSyncAt = null;
 	}
 
+	/** Cooldown local del botón Reenviar (60 s) — el server además limita. */
+	resendCooldown = $state(0);
+	private resendTimer: ReturnType<typeof setInterval> | null = null;
+
+	/** Reenvía el código de verificación al email en sesión (#944 S1). */
+	async resendVerification(): Promise<boolean> {
+		const api = this.api;
+		if (!api || !this.user) return false;
+		try {
+			await api.resendVerification(this.user.email);
+			this.resendCooldown = 60;
+			if (this.resendTimer) clearInterval(this.resendTimer);
+			this.resendTimer = setInterval(() => {
+				this.resendCooldown -= 1;
+				if (this.resendCooldown <= 0) {
+					if (this.resendTimer) clearInterval(this.resendTimer);
+					this.resendTimer = null;
+				}
+			}, 1000);
+			return true;
+		} catch {
+			return false;
+		}
+	}
+
+	/** Ingresa el código recibido por email (#944 S2). El backend rota los
+	 * tokens en la respuesta — se adoptan junto al user verificado. */
+	async verifyEmail(code: string): Promise<'ok' | 'invalid' | 'verified' | 'error'> {
+		const api = this.api;
+		if (!api || !this.user) return 'error';
+		try {
+			const res: AuthResponse = await api.verifyEmail(this.user.email, code);
+			this.tokensSnapshot = res.tokens;
+			await saveAuthMeta({ refreshToken: res.tokens.refreshToken, userJson: null });
+			this.applyUser(res.user);
+			// The verified gate just opened: clear the stale pre-verification
+			// error and push whatever piled up while locked (#944 S4).
+			this.lastSyncError = null;
+			this.schedulePush();
+			return 'ok';
+		} catch (e) {
+			if (e instanceof ApiError && e.code === 'email_already_verified') return 'verified';
+			if (e instanceof ApiError && e.code === 'verification_code_invalid') return 'invalid';
+			return 'error';
+		}
+	}
+
 	async forgotPassword(email: string): Promise<boolean> {
 		if (!this.api) return false;
 		try {

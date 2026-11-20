@@ -53,14 +53,28 @@ func TestAuthService_VerifyEmail_Success(t *testing.T) {
 	mockUserRepo.On("MarkEmailVerified", mock.Anything, user.ID).Return(nil)
 	mockAuthStore.On("RevokeEmailVerificationCode", mock.Anything, "test@example.com").Return(nil)
 	mockLogger.On("LogEvent", mock.Anything, user.ID, "email_verified", mock.Anything).Return(nil)
+	// #944: the rotated refresh token must be REGISTERED — tokens issued
+	// without registration die on the first refresh (observed end-to-end).
+	mockAuthStore.On("StoreRefreshToken", mock.Anything, user.ID, mock.Anything, int64(2592000)).Return(nil)
 
 	service := createAuthService(mockUserRepo, mockAuthStore, mockNotifier, mockLogger)
 
-	updatedUser, _, err := service.VerifyEmail(context.Background(), "test@example.com", "123456")
+	updatedUser, tokens, err := service.VerifyEmail(context.Background(), "test@example.com", "123456")
 
 	assert.NoError(t, err)
 	assert.NotNil(t, updatedUser)
 	assert.True(t, updatedUser.EmailVerified)
+	assert.NotEmpty(t, tokens.RefreshToken)
+	assert.NotEmpty(t, tokens.AccessToken)
+
+	// Roundtrip: the issued refresh token must validate via Refresh.
+	mockAuthStore.On("ValidateRefreshToken", mock.Anything, user.ID, tokens.RefreshToken).Return(true, nil)
+	mockAuthStore.On("RevokeRefreshToken", mock.Anything, mock.Anything, mock.Anything).Return(nil)
+	mockLogger.On("LogEvent", mock.Anything, user.ID, "token_refreshed", mock.Anything).Return(nil)
+	mockUserRepo.On("GetByID", mock.Anything, user.ID).Return(updatedUser, nil)
+	refreshed, err := service.Refresh(context.Background(), tokens.RefreshToken)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, refreshed.AccessToken)
 
 	mockUserRepo.AssertExpectations(t)
 	mockAuthStore.AssertExpectations(t)
