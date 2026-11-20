@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { replaceState } from '$app/navigation';
+	import { page } from '$app/state';
 	import { app, PREMIUM_THEMES, type ThemeName } from '$lib/stores/app.svelte';
 	import { auth } from '$lib/stores/auth.svelte';
 	import { t } from '$lib/i18n/i18n.svelte';
@@ -12,8 +14,16 @@
 	import AccountServer from '$lib/features/auth/AccountServer.svelte';
 	import type { LocaleCode, ThemePreference } from '$lib/domain/entities/types';
 
-	onMount(() => {
-		void auth.init();
+	onMount(async () => {
+		// Returning from Stripe Checkout: refresh the tier without re-login
+		// (S4 #942) and clean the query param. init() must complete first —
+		// refreshEntitlement() no-ops until api/user exist (cold load from
+		// the Stripe redirect is the real-world path).
+		await auth.init();
+		if (page.url.searchParams.get('checkout') === 'success') {
+			await auth.refreshEntitlement();
+			replaceState(page.url.pathname, {});
+		}
 	});
 
 	const LOCALE_LABELS: Record<LocaleCode, string> = {
@@ -100,6 +110,14 @@
 	<div class="card section meta">
 		<h2>{t('account.deviceId')}</h2>
 		<code class="mono nums">{app.deviceId ?? '—'}</code>
+		{#if app.storagePersisted !== null}
+			<p class="storage-state" aria-live="polite">
+				{app.storagePersisted ? '✅' : '⚠️'} {t('account.storage')}:
+				{app.storagePersisted
+					? t('account.storage.persisted')
+					: t('account.storage.bestEffort')}
+			</p>
+		{/if}
 	</div>
 
 	<div id="settings" class="settings-anchor"><FocusSettings /></div>

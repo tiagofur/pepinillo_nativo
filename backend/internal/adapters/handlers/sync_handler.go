@@ -5,15 +5,34 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 
+	"pepinillo/backend/internal/ports"
 	"pepinillo/backend/internal/services"
 )
 
 type SyncHandler struct {
-	sync *services.SyncService
+	sync  *services.SyncService
+	users ports.UserRepository
 }
 
-func NewSyncHandler(sync *services.SyncService) *SyncHandler {
-	return &SyncHandler{sync: sync}
+func NewSyncHandler(sync *services.SyncService, users ports.UserRepository) *SyncHandler {
+	return &SyncHandler{sync: sync, users: users}
+}
+
+// claimSyncDeviceBinding implements #942 S5 bind-on-upload: the gate only
+// lets the request through when the binding is empty or already ours, so
+// reaching this point with an empty binding means THIS device is claiming
+// the single-device backup. The guarded UPDATE in the repository is the
+// race guard — first writer wins, later devices are silent no-ops.
+func (h *SyncHandler) claimSyncDeviceBinding(c *fiber.Ctx, userID string) error {
+	bound, _ := c.Locals("sync_device_id").(string)
+	if bound != "" {
+		return nil
+	}
+	deviceID := c.Get("X-Device-ID", "")
+	if deviceID == "" {
+		return nil
+	}
+	return h.users.BindSyncDevice(c.Context(), userID, deviceID)
 }
 
 func (h *SyncHandler) SyncSessions(c *fiber.Ctx) error {
@@ -97,6 +116,12 @@ func (h *SyncHandler) InitialUpload(c *fiber.Ctx) error {
 		if errors.Is(err, services.ErrInvalidPreferenceKey) {
 			return fiber.NewError(fiber.StatusBadRequest, err.Error())
 		}
+		return err
+	}
+
+	// #942 S5: claim AFTER the upload succeeded (review P2-3) — a failed
+	// upload must not consume the unbound account's claimable slot.
+	if err := h.claimSyncDeviceBinding(c, userID); err != nil {
 		return err
 	}
 

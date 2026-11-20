@@ -103,6 +103,12 @@
 			· <span class="err">{auth.lastSyncError}</span>
 		{/if}
 	</p>
+	{#if auth.lastSyncError === 'ERR_DEVICE_BOUND'}
+		<p class="device-bound" role="alert">
+			🔒 {t('sync.deviceBound')}
+			<a href="/upgrade">{t('plan.upgradeCta')} →</a>
+		</p>
+	{/if}
 </div>
 
 <div class="card section">
@@ -246,6 +252,22 @@
 
 	.err {
 		color: var(--mode-pomodoro);
+	}
+
+	.device-bound {
+		display: flex;
+		align-items: center;
+		gap: var(--space-2);
+		flex-wrap: wrap;
+		margin: 0;
+		color: var(--mode-pomodoro);
+		font-size: var(--text-sm);
+		font-weight: 600;
+	}
+
+	.device-bound a {
+		color: var(--brand);
+		font-weight: 650;
 	}
 
 	.row {

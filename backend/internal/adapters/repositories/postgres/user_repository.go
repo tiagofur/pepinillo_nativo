@@ -52,7 +52,11 @@ func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*domain.
 }
 
 func (r *UserRepository) Update(ctx context.Context, user *domain.User) error {
-	return r.db.WithContext(ctx).Save(user).Error
+	// Omit sync_device_id: the binding is owned exclusively by the sync lane
+	// (BindSyncDevice's guarded UPDATE). A GetByID → Save cycle from profile
+	// edits must not revert a binding claimed concurrently (#942 review
+	// P2-9, same B6 class as UpdateSubscription).
+	return r.db.WithContext(ctx).Omit("sync_device_id").Save(user).Error
 }
 
 // UpdateSubscription writes ONLY the subscription columns (see port contract).
@@ -89,6 +93,19 @@ func (r *UserRepository) GetByStripeCustomerID(ctx context.Context, stripeCustom
 		return nil, err
 	}
 	return &user, nil
+}
+
+// BindSyncDevice claims the single-device backup binding (#942 S5). The
+// WHERE clause is the race guard: only the first writer for an unbound
+// user wins; later calls with a different device are no-ops.
+func (r *UserRepository) BindSyncDevice(ctx context.Context, userID, deviceID string) error {
+	if deviceID == "" {
+		return nil // nothing to bind
+	}
+	return r.db.WithContext(ctx).Exec(
+		`UPDATE users SET sync_device_id = ? WHERE id = ? AND (sync_device_id IS NULL OR sync_device_id = '')`,
+		deviceID, userID,
+	).Error
 }
 
 func (r *UserRepository) Delete(ctx context.Context, userID string) error {

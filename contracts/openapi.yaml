@@ -12,7 +12,8 @@ info:
     - **JWT (`BearerAuth`)**: requiere access token (`tokenType == "access"`). Da acceso a `/auth/*` protegidas, `/users/me*` y `/billing/verify-receipt`.
     - **JWT + Email verificado**: todas las rutas de datos (`/tasks`, `/pomodoro`, `/focus`, `/ai`, `/push`, `/analytics`, `/preferences`, `/sync`).
     - **Pepinillo+ / Everywhere+**: `/analytics/*` exige `advanced_analytics`.
-    - **Everywhere+ (`everywhere_monthly` | `everywhere_annual`)**: `/sync/*`, `/tasks/sync`, `PUT /preferences` (requieren `RequireBackendSync` → `402 ERR_TIER_INSUFFICIENT`) y `/ai/*` (requieren `predictions` + créditos mensuales).
+    - **Everywhere+ (`everywhere_monthly` | `everywhere_annual`)**: `/sync/*`, `/tasks/sync`, `PUT /preferences` (multi-dispositivo) y `/ai/*` (requieren `predictions` + créditos mensuales).
+    - **Free / Pepinillo+** (`#942`): backup server ligado a UN dispositivo vía `X-Device-ID` — el primer `initial-upload` reclama el binding; otro dispositivo → `403 ERR_DEVICE_BOUND`. `PUT /preferences` mantiene el gate Everywhere+ estricto.
 
     ### WebSocket (`/api/v1/ws`)
     El canal en tiempo real usa `GET /api/v1/ws` (upgrade WebSocket, auth vía `Authorization: Bearer <jwt>` o `Sec-WebSocket-Protocol: bearer, <jwt>`, parámetro opcional `deviceId`) con sobres `WSMessage { type, data, timestamp, channels }` y eventos `task_updated`, `task_deleted`, `focus_config_updated`, `focus_session_created`, `focus_session_updated`, `pomodoro_*`, `settings_updated`, `sessions_synced`, `initial_upload_completed`, `user_updated`, `pong`.
@@ -991,7 +992,7 @@ paths:
     post:
       operationId: syncTasks
       tags: [tasks]
-      summary: Sincronización incremental LWW de tareas (requiere Everywhere+)
+      summary: Sincronización incremental LWW de tareas (Everywhere+ multi-dispositivo; Free/Pepinillo+ ligado a su dispositivo)
       security:
         - BearerAuth: []
       requestBody:
@@ -1014,7 +1015,7 @@ paths:
         "402":
           $ref: "#/components/responses/SubscriptionRequiredError"
         "403":
-          $ref: "#/components/responses/ForbiddenError"
+          $ref: "#/components/responses/SyncForbiddenError"
 
   /tasks/recurrences:
     get:
@@ -2139,7 +2140,7 @@ paths:
     get:
       operationId: getFullSync
       tags: [sync]
-      summary: Pull paginado de tareas, sesiones y preferencias (requiere Everywhere+)
+      summary: Pull paginado de tareas, sesiones y preferencias (Everywhere+ multi-dispositivo; Free/Pepinillo+ ligado a su dispositivo)
       security:
         - BearerAuth: []
       parameters:
@@ -2167,12 +2168,14 @@ paths:
                 $ref: "#/components/schemas/FullSyncResponse"
         "402":
           $ref: "#/components/responses/SubscriptionRequiredError"
+        "403":
+          $ref: "#/components/responses/SyncForbiddenError"
 
   /sync/has-data:
     get:
       operationId: getSyncHasData
       tags: [sync]
-      summary: Consultar si la cuenta ya tiene datos sincronizados en el servidor
+      summary: Consultar si la cuenta ya tiene datos sincronizados en el servidor (device-bound para Free/Pepinillo+)
       security:
         - BearerAuth: []
       responses:
@@ -2188,12 +2191,14 @@ paths:
                     type: boolean
         "402":
           $ref: "#/components/responses/SubscriptionRequiredError"
+        "403":
+          $ref: "#/components/responses/SyncForbiddenError"
 
   /sync/sessions:
     post:
       operationId: syncSessions
       tags: [sync]
-      summary: Sincronización LWW en lote de sesiones de foco (requiere Everywhere+)
+      summary: Sincronización LWW en lote de sesiones de foco (Everywhere+ multi-dispositivo; Free/Pepinillo+ ligado a su dispositivo)
       security:
         - BearerAuth: []
       parameters:
@@ -2213,16 +2218,22 @@ paths:
                 $ref: "#/components/schemas/SessionSyncResponse"
         "402":
           $ref: "#/components/responses/SubscriptionRequiredError"
+        "403":
+          $ref: "#/components/responses/SyncForbiddenError"
 
   /sync/initial-upload:
     post:
       operationId: initialUploadSync
       tags: [sync]
-      summary: Fusión inicial completa de datos locales con el servidor (requiere Everywhere+)
+      summary: Fusión inicial completa de datos locales con el servidor (reclama el binding de dispositivo en Free/Pepinillo+)
       security:
         - BearerAuth: []
       parameters:
         - $ref: "#/components/parameters/DeviceIdHeader"
+      description: |
+        Free/Pepinillo+ exigen `X-Device-ID` (lane device-bound: sin header la
+        respuesta es `403 ERR_DEVICE_BOUND`); Everywhere+ acepta cualquier
+        dispositivo. El header es opcional solo para el lane Everywhere+.
       requestBody:
         required: true
         content:
@@ -2238,6 +2249,8 @@ paths:
                 $ref: "#/components/schemas/InitialUploadResponse"
         "402":
           $ref: "#/components/responses/SubscriptionRequiredError"
+        "403":
+          $ref: "#/components/responses/SyncForbiddenError"
 
 components:
   securitySchemes:
@@ -2288,6 +2301,14 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/BackendSyncRequiredError"
+    SyncForbiddenError:
+      description: Acceso prohibido a sync — email sin verificar (`ErrorEnvelope`) o backup ligado a otro dispositivo (`DeviceBoundError`, `#942`).
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: "#/components/schemas/ErrorEnvelope"
+              - $ref: "#/components/schemas/DeviceBoundError"
     ForbiddenError:
       description: Email no verificado o feature fuera del entitlement activo.
       content:
@@ -2346,6 +2367,23 @@ components:
         code:
           type: string
           example: ERR_TIER_INSUFFICIENT
+        message:
+          type: string
+        upgrade_url:
+          type: string
+          format: uri
+
+    DeviceBoundError:
+      type: object
+      additionalProperties: false
+      required: [error, code, message, upgrade_url]
+      properties:
+        error:
+          type: string
+          example: device_bound
+        code:
+          type: string
+          example: ERR_DEVICE_BOUND
         message:
           type: string
         upgrade_url:

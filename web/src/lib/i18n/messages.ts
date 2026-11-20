@@ -61,6 +61,8 @@ export type MessageKey =
 	| 'error.genericHint'
 	| 'plan.empty'
 	| 'plan.capBlocked'
+	| 'plan.capCounter'
+	| 'plan.capInline'
 	| 'plan.upgradeTeaser'
 	| 'plan.priority'
 	| 'plan.energy'
@@ -168,6 +170,9 @@ export type MessageKey =
 	| 'account.about'
 	| 'account.nonGoals'
 	| 'account.deviceId'
+	| 'account.storage'
+	| 'account.storage.persisted'
+	| 'account.storage.bestEffort'
 	| 'account.appearance'
 	| 'account.theme.classic'
 	| 'account.theme.forest'
@@ -402,6 +407,7 @@ export type MessageKey =
 	| 'sync.last'
 	| 'sync.live'
 	| 'sync.offline'
+	| 'sync.deviceBound'
 	| 'sync.mergeTitle'
 	| 'sync.mergeBody'
 	| 'sync.mergePull'
@@ -614,6 +620,8 @@ const en: Dict = {
 	'error.genericHint': 'Something went wrong — your data is safe. Back to the timer.',
 	'plan.empty': 'No tasks yet. Add up to 3 active tasks on Free.',
 	'plan.capBlocked': 'Free allows up to 3 active tasks.',
+	'plan.capCounter': '{n}/3 tasks',
+	'plan.capInline': 'Cap reached — this task was not saved.',
 	'plan.upgradeTeaser':
 		'Need more than 3 active tasks, subtasks, or recurrence? Everywhere unlocks them — see Plans in your account.',
 	'plan.priority': 'Priority',
@@ -1060,6 +1068,7 @@ const en: Dict = {
 	'sync.last': 'Last sync',
 	'sync.live': 'Live updates connected',
 	'sync.offline': 'Live updates off',
+	'sync.deviceBound': 'This backup belongs to another device. Everywhere+ syncs across devices.',
 	'sync.mergeTitle': 'We found cloud data',
 	'sync.mergeBody': 'This account already has data in the cloud. Keep the cloud version, or overwrite the cloud with what is on this device?',
 	'sync.mergePull': 'Use the cloud data',
@@ -1079,7 +1088,10 @@ const en: Dict = {
 		'Web is a companion extra for large-screen focus. It does not replace native OS features.',
 	'account.nonGoals':
 		'Not on web: tray, global hotkeys, home/lock widgets, Live Activity, watch companions, Health, CloudKit, team collab, notes editor.',
-	'account.deviceId': 'Device id (local)'
+	'account.deviceId': 'Device id (local)',
+	'account.storage': 'Local storage',
+	'account.storage.persisted': 'Persistent — the browser will not clear your data',
+	'account.storage.bestEffort': 'Best effort — grant persistence for reliability',
 };
 
 const es: Dict = {
@@ -1163,6 +1175,8 @@ const es: Dict = {
 	'error.genericHint': 'Algo salió mal — tus datos están a salvo. De vuelta al temporizador.',
 	'plan.empty': 'Sin tareas aún. En Free podés tener hasta 3 activas.',
 	'plan.capBlocked': 'Free permite hasta 3 tareas activas.',
+	'plan.capCounter': '{n}/3 tareas',
+	'plan.capInline': 'Cap alcanzado — esta tarea no se guardó.',
 	'plan.upgradeTeaser':
 		'¿Más de 3 tareas activas, subtareas o recurrencia? Everywhere las desbloquea — mirá los planes en tu cuenta.',
 	'plan.priority': 'Prioridad',
@@ -1232,6 +1246,9 @@ const es: Dict = {
 	'account.nonGoals':
 		'No en web: bandeja, atajos globales, widgets, Live Activity, reloj, Health, CloudKit, colaboración en equipo, editor de notas.',
 	'account.deviceId': 'Id de dispositivo (local)',
+	'account.storage': 'Almacenamiento local',
+	'account.storage.persisted': 'Persistente — el navegador no borrará tus datos',
+	'account.storage.bestEffort': 'De mejor esfuerzo — concedé persistencia para mayor seguridad',
 	'account.subtitle': 'Tu cuenta, ajustes y preferencias',
 	'account.premiumThemes': 'Forest / Ocean / Sunset se desbloquean con Everywhere.',
 	'account.settings': 'Preferencias',
@@ -1625,6 +1642,7 @@ const es: Dict = {
 	'sync.last': 'Última sync',
 	'sync.live': 'Actualizaciones en vivo conectadas',
 	'sync.offline': 'Actualizaciones en vivo apagadas',
+	'sync.deviceBound': 'Este respaldo pertenece a otro dispositivo. Everywhere+ sincroniza entre dispositivos.',
 	'sync.mergeTitle': 'Encontramos datos en la nube',
 	'sync.mergeBody': 'Esta cuenta ya tiene datos en la nube. ¿Te quedás con la versión de la nube o pisás la nube con lo que hay en este dispositivo?',
 	'sync.mergePull': 'Usar los datos de la nube',
@@ -1712,6 +1730,8 @@ const pt: Dict = {
 	'error.genericHint': 'Algo deu errado — seus dados estão seguros. De volta ao temporizador.',
 	'plan.empty': 'Nenhuma tarefa ainda. No Free você pode ter até 3 ativas.',
 	'plan.capBlocked': 'Free permite até 3 tarefas ativas.',
+	'plan.capCounter': '{n}/3 tarefas',
+	'plan.capInline': 'Limite atingido — esta tarefa não foi salva.',
 	'plan.upgradeTeaser':
 		'Precisa de mais de 3 tarefas ativas, subtarefas ou recorrência? Everywhere desbloqueia — veja os planos na sua conta.',
 	'plan.priority': 'Prioridade',
@@ -1781,6 +1801,9 @@ const pt: Dict = {
 	'account.nonGoals':
 		'Não na web: bandeja, atalhos globais, widgets, Live Activity, relógio, Health, CloudKit, colaboração em equipe, editor de notas.',
 	'account.deviceId': 'Id do dispositivo (local)',
+	'account.storage': 'Armazenamento local',
+	'account.storage.persisted': 'Persistente — o navegador não apagará seus dados',
+	'account.storage.bestEffort': 'Melhor esforço — conceda persistência para mais segurança',
 	'account.subtitle': 'Sua conta, ajustes e preferências',
 	'account.premiumThemes': 'Forest / Ocean / Sunset desbloqueiam com Everywhere.',
 	'account.settings': 'Preferências',
@@ -2174,6 +2197,7 @@ const pt: Dict = {
 	'sync.last': 'Última sync',
 	'sync.live': 'Atualizações ao vivo conectadas',
 	'sync.offline': 'Atualizações ao vivo desligadas',
+	'sync.deviceBound': 'Este backup pertence a outro dispositivo. Everywhere+ sincroniza entre dispositivos.',
 	'sync.mergeTitle': 'Encontramos dados na nuvem',
 	'sync.mergeBody': 'Esta conta já tem dados na nuvem. Fica com a versão da nuvem ou sobrescreve a nuvem com o que há neste dispositivo?',
 	'sync.mergePull': 'Usar os dados da nuvem',

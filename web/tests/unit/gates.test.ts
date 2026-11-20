@@ -11,9 +11,30 @@ import {
 	maxActiveTasks,
 	FREE_LIMITS
 } from '$lib/domain/gates/freeLimits';
-import type { FocusMode, FocusSession } from '$lib/domain/entities/types';
+import { isSoundscapeFree } from '$lib/domain/audio/sounds';
+import type { FocusMode, FocusSession, SoundscapeName } from '$lib/domain/entities/types';
 
 describe('Free gates (PRD/04 §3.1)', () => {
+	describe('isSoundscapeFree (tier-aware, #942 S6)', () => {
+		const premium: SoundscapeName[] = ['ocean', 'fireplace', 'binaural', 'lofi'];
+		const free: SoundscapeName[] = ['none', 'rain', 'forest', 'cafe', 'whiteNoise'];
+
+		it('blocks premium soundscapes for Free', () => {
+			for (const name of premium) expect(isSoundscapeFree(name, 'free')).toBe(false);
+			for (const name of free) expect(isSoundscapeFree(name, 'free')).toBe(true);
+		});
+
+		it('unlocks every soundscape for Everywhere', () => {
+			for (const name of [...premium, ...free]) {
+				expect(isSoundscapeFree(name, 'everywhere')).toBe(true);
+			}
+		});
+
+		it('stays backward compatible without a tier', () => {
+			for (const name of premium) expect(isSoundscapeFree(name)).toBe(false);
+		});
+	});
+
 	describe('canUseMode', () => {
 		it('allows Pomodoro and Stopwatch for Free', () => {
 			expect(canUseMode('pomodoro', 'free')).toBe(true);

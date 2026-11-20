@@ -155,6 +155,8 @@ func NewSubscriptionMiddleware(userRepo ports.UserRepository) fiber.Handler {
 		c.Locals("tierLimits", GetTierLimits(tier))
 		c.Locals("isPro", CanSync(tier))
 		c.Locals("subscription_expires_at", user.SubscriptionExpiresAt)
+		// Single-device backup binding (#942 S5) — RequireBackendSync reads it.
+		c.Locals("sync_device_id", user.SyncDeviceID)
 
 		return c.Next()
 	}

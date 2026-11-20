@@ -36,6 +36,12 @@ function uid(): string {
 	return `t-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
+/** Local writes notify the auth store's debounced push (S3 #942) without a
+ * direct import (auth pulls plan on sync — importing it back is circular). */
+function notifyMutation(): void {
+	if (typeof window !== 'undefined') window.dispatchEvent(new Event('pepinillo:local-mutation'));
+}
+
 class PlanStore {
 	tasks = $state<Task[]>([]);
 	filter = $state<PlanFilter>('today');
@@ -92,6 +98,7 @@ class PlanStore {
 			...defaults
 		};
 		this.tasks = [...this.tasks, task];
+		notifyMutation();
 		await upsertTask(task);
 		return task;
 	}
@@ -105,6 +112,7 @@ class PlanStore {
 			updatedAt: new Date().toISOString()
 		});
 		this.tasks = this.tasks.map((t) => (t.id === id ? updated : t));
+		notifyMutation();
 		await upsertTask(updated);
 	}
 
@@ -138,11 +146,15 @@ class PlanStore {
 		const snapshot = this.tasks.find((t) => t.id === id);
 		this.tasks = this.tasks.filter((t) => t.id !== id);
 		if (focus.activeTask?.id === id) focus.setActiveTask(null);
+		// The primary delete write must push too — without it the next pull
+		// resurreces the task from the server (#942 review P1-5).
+		notifyMutation();
 		await removeTask(id);
 		if (snapshot) {
 			this.offerUndo({
 				label: translate('plan.undo.deleted', { title: snapshot.title }),
 				apply: async () => {
+					notifyMutation();
 					await upsertTask($state.snapshot(snapshot));
 					await this.reload();
 				}
@@ -168,6 +180,7 @@ class PlanStore {
 			changed.push($state.snapshot(updated));
 			return updated;
 		});
+		notifyMutation();
 		await saveAllTasks(changed);
 	}
 

@@ -2,11 +2,13 @@ package handlers
 
 import (
 	"context"
+	"strings"
 	"time"
 	"pepinillo/backend/internal/domain"
 )
 
 type fakeUserRepository struct {
+	boundDevices map[string]string // userID -> bound device (nil = unbound)
 	byID    map[string]*domain.User
 	byEmail map[string]*domain.User
 }
@@ -42,6 +44,20 @@ func (r *fakeUserRepository) UpdateSubscription(_ context.Context, userID, tier 
 	if user, ok := r.byID[userID]; ok {
 		user.SubscriptionTier = tier
 		user.SubscriptionExpiresAt = expiresAt
+	}
+	return nil
+}
+
+func (r *fakeUserRepository) BindSyncDevice(ctx context.Context, userID, deviceID string) error {
+	// strings.Clone: c.Get() hands out strings aliasing fasthttp's pooled
+	// per-request buffer — storing one raw makes the stored value mutate when
+	// the next request recycles that buffer (bit us in the #942 tests).
+	deviceID = strings.Clone(deviceID)
+	if r.boundDevices == nil {
+		r.boundDevices = map[string]string{}
+	}
+	if r.boundDevices[userID] == "" {
+		r.boundDevices[userID] = deviceID
 	}
 	return nil
 }

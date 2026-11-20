@@ -2,10 +2,11 @@
 	import { focus } from '$lib/stores/focus.svelte';
 	import { t } from '$lib/i18n/i18n.svelte';
 	import { suggestMode } from '$lib/domain/intelligence/modeSuggest';
-	import { FREE_MODES } from '$lib/domain/entities/types';
+	import { app } from '$lib/stores/app.svelte';
+	import { canUseMode } from '$lib/domain/gates/freeLimits';
 
 	const suggestion = suggestMode();
-	let suggestionUsable = $derived((FREE_MODES as readonly string[]).includes(suggestion.mode));
+	let suggestionUsable = $derived(canUseMode(suggestion.mode, app.tier));
 
 	function fmtSeconds(sec: number): string {
 		const m = Math.floor(sec / 60);

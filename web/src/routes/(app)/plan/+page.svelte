@@ -310,6 +310,18 @@
 		/>
 		<button class="btn btn-primary pressable" type="submit">{t('plan.add')}</button>
 	</form>
+	{#if app.tier === 'free'}
+		{#snippet capFeedback()}
+			<p class="cap-counter nums" aria-live="polite">{t('plan.capCounter', { n: plan.activeCount })}</p>
+			{#if showCapNotice && plan.freeCapReached}
+				<p class="cap-inline" role="alert">
+					🔒 {t('plan.capInline')}
+					<a href="/upgrade">{t('plan.upgradeCta')} →</a>
+				</p>
+			{/if}
+		{/snippet}
+		{@render capFeedback()}
+	{/if}
 
 		<div class="inspector-grid" class:with-inspector={!!selectedTask}>
 		<div class="list-area">
@@ -396,7 +408,7 @@
 	{#if showCapNotice && plan.freeCapReached}
 		<div class="cap card" role="alert">
 			<span class="cap-text">🔒 {t('plan.capBlocked')} {t('plan.upgradeTeaser')}</span>
-			<a class="btn btn-soft pressable cap-cta" href="/account">{t('plan.upgradeCta')}</a>
+			<a class="btn btn-soft pressable cap-cta" href="/upgrade">{t('plan.upgradeCta')}</a>
 		</div>
 	{/if}
 	</div>
@@ -418,6 +430,15 @@
 			bind:value={quickValue}
 			aria-label={t('plan.newTask')}
 		/>
+		{#if app.tier === 'free'}
+			<span class="cap-counter nums">{t('plan.capCounter', { n: plan.activeCount })}</span>
+			{#if showCapNotice && plan.freeCapReached}
+				<span class="cap-inline" role="alert">
+					🔒 {t('plan.capInline')}
+					<a href="/upgrade">{t('plan.upgradeCta')} →</a>
+				</span>
+			{/if}
+		{/if}
 	</form>
 
 
@@ -576,6 +597,53 @@
 	.cap-text {
 		flex: 1;
 		min-width: 200px;
+	}
+
+	.cap-counter {
+		font-size: var(--text-2xs);
+		color: var(--faint);
+		font-variant-numeric: tabular-nums;
+	}
+
+	.cap-inline {
+		display: flex;
+		align-items: center;
+		gap: var(--space-2);
+		flex-wrap: wrap;
+		margin: 0;
+		color: var(--mode-pomodoro);
+		font-size: var(--text-xs);
+		font-weight: 600;
+	}
+
+	.cap-inline a {
+		color: var(--brand);
+		font-weight: 650;
+	}
+
+	/* Desktop: the feedback lives inside the .newtask row (right-aligned) */
+	@media (min-width: 1024px) {
+		.newtask .cap-counter {
+			flex: none;
+			margin-left: var(--space-2);
+		}
+
+		.newtask .cap-inline {
+			flex: none;
+		}
+
+		/* The standalone feedback block after .quickadd is mobile-only */
+		.quickadd ~ .cap-counter,
+		.quickadd ~ .cap-inline {
+			display: none;
+		}
+	}
+
+	@media (max-width: 1023px) {
+		.newtask .cap-counter,
+		.newtask .cap-inline {
+			display: none;
+		}
 	}
 
 	.cap-cta {

@@ -215,10 +215,11 @@ func RegisterAPIRoutes(api fiber.Router, deps RouteHandlers) {
 
 	preferences := verified.Group("/preferences")
 	preferences.Get("/", deps.Preferences.List)
-	// PUT /preferences requires an Everywhere+ subscription (backend sync tier).
+	// PUT /preferences requires an Everywhere+ subscription — it stays OUT of
+	// the #942 device-bound lane (only the /sync/* group and /tasks/sync bind).
 	preferences.Put("/",
 		middleware.NewSubscriptionMiddleware(deps.UserRepository),
-		middleware.NewRequireBackendSync(),
+		middleware.NewRequireEverywhereSync(),
 		deps.Preferences.Upsert,
 	)
 

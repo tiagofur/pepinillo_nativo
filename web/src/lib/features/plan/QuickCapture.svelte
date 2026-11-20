@@ -173,8 +173,12 @@
 				<p class="empty muted">{t('palette.empty')}</p>
 			{/if}
 		</div>
-		{#if plan.capNotice}
-			<p class="qc-cap">🔒 {t('plan.capBlocked')}</p>
+		{#if app.tier === 'free'}
+			<p class="qc-cap" class:is-blocked={plan.capNotice} aria-live="polite">
+				🔒 {t('plan.capCounter', { n: plan.activeCount })}{#if plan.capNotice}
+					— {t('plan.capInline')}
+				{/if}
+			</p>
 		{/if}
 	</div>
 {/if}
@@ -306,5 +310,10 @@
 		background: rgba(0, 0, 0, 0.45);
 		border-radius: var(--radius-pill);
 		padding: var(--space-2) var(--space-4);
+	}
+
+	.qc-cap.is-blocked {
+		color: var(--mode-pomodoro);
+		font-weight: 600;
 	}
 </style>
