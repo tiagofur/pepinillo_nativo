@@ -93,10 +93,12 @@ export class ApiClient {
 		});
 	}
 
-	async loginWithApple(idToken: string): Promise<AuthResponse> {
+	async loginWithApple(idToken: string, nonce: string): Promise<AuthResponse> {
+		// Apple Sign-In requires the replay-closing nonce: the ID token
+		// carries its sha256 hash; the raw value travels here (#946).
 		return this.requestUnauthed<AuthResponse>('/api/v1/auth/apple', {
 			method: 'POST',
-			body: JSON.stringify({ idToken })
+			body: JSON.stringify({ idToken, nonce })
 		});
 	}
 

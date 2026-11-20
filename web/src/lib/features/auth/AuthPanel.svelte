@@ -9,59 +9,107 @@
 	const APPLE_CLIENT_ID = __PUBLIC_APPLE_CLIENT_ID__;
 	const oauthAvailable = GOOGLE_CLIENT_ID !== '' || APPLE_CLIENT_ID !== '';
 	let googleDiv = $state<HTMLDivElement | null>(null);
-	let gisReady = $state(false);
+	let oauthError = $state(false);
 	let oauthBusy = $state<'google' | 'apple' | null>(null);
 
-	async function loadGis(): Promise<void> {
-		if (gisReady || GOOGLE_CLIENT_ID === '') return;
-		await new Promise<void>((resolve, reject) => {
+	// Script-injection guards at MODULE level: AuthPanel remounts on every
+	// sign-out/sign-in cycle and must not stack third-party tags.
+	let gsiInjected = false;
+	let appleInjected = false;
+	let gisReady = false;
+	let appleReady = false;
+
+	/** Raw nonce for the Apple flow — backend receives the raw value and
+	 * matches it against the sha256 hash carried inside the ID token. */
+	let appleRawNonce = '';
+
+	async function sha256Hex(input: string): Promise<string> {
+		const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(input));
+		return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
+	}
+
+	function loadScript(src: string): Promise<void> {
+		return new Promise((resolve, reject) => {
 			const s = document.createElement('script');
-			s.src = 'https://accounts.google.com/gsi/client';
+			s.src = src;
 			s.async = true;
 			s.onload = () => resolve();
-			s.onerror = () => reject(new Error('gis_load_failed'));
+			s.onerror = () => reject(new Error('script_load_failed'));
 			document.head.appendChild(s);
 		});
+	}
+
+	async function initGis(): Promise<void> {
+		if (gisReady || GOOGLE_CLIENT_ID === '') return;
+		if (!gsiInjected) {
+			gsiInjected = true;
+			await loadScript('https://accounts.google.com/gsi/client');
+		}
 		google.accounts.id.initialize({
 			client_id: GOOGLE_CLIENT_ID,
 			callback: async (response: { credential?: string }) => {
-				if (!response.credential) return;
+				if (!response.credential || oauthBusy) return;
 				oauthBusy = 'google';
 				await auth.signInWithProvider('google', response.credential);
 				oauthBusy = null;
 			}
 		});
-		google.accounts.id.renderButton(googleDiv!, {
-			theme: 'filled_black',
-			size: 'large',
-			shape: 'pill',
-			text: 'signin_with'
+		// renderButton needs a live div — guarded against remount races.
+		if (googleDiv) {
+			google.accounts.id.renderButton(googleDiv, {
+				theme: 'filled_black',
+				size: 'large',
+				shape: 'pill',
+				text: 'signin_with'
+			});
+			gisReady = true;
+		}
+	}
+
+	async function initApple(): Promise<void> {
+		if (appleReady || APPLE_CLIENT_ID === '') return;
+		if (!appleInjected) {
+			appleInjected = true;
+			await loadScript(
+				'https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/en_US/appleid.auth.js'
+			);
+		}
+		appleRawNonce = crypto.randomUUID().replace(/-/g, '');
+		// AppleID expects the HASHED nonce; the backend receives the raw one
+		// and matches sha256(raw) against the ID token's nonce claim.
+		await AppleID.auth.init({
+			clientId: APPLE_CLIENT_ID,
+			scope: 'name email',
+			responseMode: 'popup',
+			nonce: await sha256Hex(appleRawNonce),
+			usePopup: true
 		});
-		gisReady = true;
+		appleReady = true;
 	}
 
 	async function signInApple(): Promise<void> {
-		if (APPLE_CLIENT_ID === '') return;
+		if (oauthBusy) return;
 		oauthBusy = 'apple';
+		oauthError = false;
 		try {
-			const AppleID: any = (window as any).AppleID;
-			const authorization = await AppleID.auth.signIn();
-			const idToken: string | undefined = authorization?.id_token;
-			if (idToken) await auth.signInWithProvider('apple', idToken);
+			await initApple();
+			const res = await AppleID.auth.signIn();
+			const idToken = res.authorization?.id_token;
+			if (!idToken) return; // popup dismissed — silent by design
+			await auth.signInWithProvider('apple', idToken, appleRawNonce);
+		} catch (err) {
+			// User-cancelled popups surface as provider errors too — only
+			// real failures get the visible message.
+			if ((err as Error)?.message !== 'popup_closed_by_user') oauthError = true;
 		} finally {
 			oauthBusy = null;
 		}
 	}
 
 	$effect(() => {
-		if (oauthAvailable && GOOGLE_CLIENT_ID !== '') void loadGis();
-		if (oauthAvailable && APPLE_CLIENT_ID !== '') {
-			// Apple ID JS se carga diferido; inicializa al primer uso.
-			const s = document.createElement('script');
-			s.src = 'https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/en_US/appleid.auth.js';
-			s.async = true;
-			document.head.appendChild(s);
-		}
+		if (!oauthAvailable) return;
+		if (GOOGLE_CLIENT_ID !== '') void initGis().catch(() => (oauthError = true));
+		if (APPLE_CLIENT_ID !== '') void initApple().catch(() => (oauthError = true));
 	});
 
 	type Mode = 'signIn' | 'signUp' | 'forgot';
@@ -119,7 +167,7 @@
 			<input class="field" type="password" placeholder={t('auth.passwordField')} bind:value={password} minlength="8" required />
 		{/if}
 
-		{#if auth.status === 'error' && errorText}
+		{#if auth.status === 'error' && errorText && !auth.errorCode?.startsWith('oauth')}
 			<p class="error">{errorText}</p>
 		{/if}
 		{#if notice}
@@ -154,7 +202,7 @@
 						{oauthBusy === 'apple' ? t('auth.working') : t('auth.oauth.apple')}
 					</button>
 				{/if}
-				{#if auth.status === 'error' && auth.errorCode?.startsWith('oauth')}
+				{#if oauthError}
 					<p class="error">{t('auth.oauth.error')}</p>
 				{/if}
 			</div>
