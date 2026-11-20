@@ -361,3 +361,11 @@ func TestAuthService_ResendVerificationRateLimit(t *testing.T) {
 		assert.NoError(t, err, "resend %d should succeed", i+1)
 	}
 }
+
+func (r *integrationUserRepo) SetRcAppUserID(_ context.Context, _, _ string) error {
+	return nil
+}
+
+func (r *integrationUserRepo) GetByRcAppUserID(_ context.Context, _ string) (*domain.User, error) {
+	return nil, nil
+}

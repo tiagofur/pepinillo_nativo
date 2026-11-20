@@ -299,6 +299,9 @@ func main() {
 	}, behaviorLog)
 	billingService.SetRevenueCatService(revenuecatService)
 
+	// License bridge (#953): native RC purchase → web account via claim code.
+	rcLinkService := services.NewRcLinkService(userRepo, authStore, revenuecatService, behaviorLog)
+
 	// Stripe billing (web purchases, epic #809 W6)
 	stripeService := services.NewStripeService(userRepo, services.StripeConfig{
 		SecretKey:              cfg.StripeSecretKey,
@@ -387,6 +390,7 @@ func main() {
 		Billing:    handlers.NewBillingHandler(billingService),
 		RevenueCat: handlers.NewRevenueCatHandler(revenuecatService),
 		Stripe:     handlers.NewStripeHandler(stripeService),
+		RcLink:     handlers.NewRcLinkHandler(rcLinkService),
 		Push:       handlers.NewPushHandler(pushService),
 		WebSocket:  handlers.NewWebSocketHandler(wsManager, cfg.JWTSecret, cfg.DeprecatedWSQueryAuth),
 		Analytics:   handlers.NewAnalyticsHandler(analyticsService),

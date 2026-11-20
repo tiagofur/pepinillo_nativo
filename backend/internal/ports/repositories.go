@@ -64,6 +64,14 @@ type UserRepository interface {
 	SetStripeCustomer(ctx context.Context, userID, stripeCustomerID string) error
 	UpdateStripeState(ctx context.Context, userID string, tier *string, expiresAt *time.Time) error
 	GetByStripeCustomerID(ctx context.Context, stripeCustomerID string) (*domain.User, error)
+
+	// RevenueCat link (#953): SetRcAppUserID binds the RC app_user_id of a
+	// NATIVE purchase to the account (transactional: releases any prior
+	// holder, unique partial index guards the race → ports.ErrRcAppUserIDTaken);
+	// GetByRcAppUserID resolves webhook events carrying a non-UUID RC ID
+	// back to the buyer.
+	SetRcAppUserID(ctx context.Context, userID, rcAppUserID string) error
+	GetByRcAppUserID(ctx context.Context, rcAppUserID string) (*domain.User, error)
 }
 
 // TaskSyncResult is the outcome of a task sync push. AppliedSyncIDs are the

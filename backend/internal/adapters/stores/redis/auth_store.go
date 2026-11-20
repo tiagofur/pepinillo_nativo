@@ -10,6 +10,8 @@ import (
 	"time"
 
 	goredis "github.com/redis/go-redis/v9"
+
+	"pepinillo/backend/internal/ports"
 )
 
 // AuthStore persists refresh tokens and email/password reset codes in Redis.
@@ -140,6 +142,35 @@ func (s *AuthStore) ValidateEmailVerificationCode(ctx context.Context, email, co
 func (s *AuthStore) RevokeEmailVerificationCode(ctx context.Context, email string) error {
 	key := fmt.Sprintf("email_verify:%s", email)
 	return s.client.Del(ctx, key).Err()
+}
+
+// StoreRcLinkCode keeps the claiming userID under the code key with a TTL
+// (#953. SETNX: an existing live code is never overwritten — the service
+// retries with a fresh code on ports.ErrRcLinkCodeExists. Codes are
+// single-use: ConsumeRcLinkCode uses GETDEL so a replay race can never bind
+// two claims to one code.
+func (s *AuthStore) StoreRcLinkCode(ctx context.Context, code, userID string, ttlSeconds int64) error {
+	key := fmt.Sprintf("rc_link:%s", code)
+	created, err := s.client.SetNX(ctx, key, userID, time.Duration(ttlSeconds)*time.Second).Result()
+	if err != nil {
+		return err
+	}
+	if !created {
+		return ports.ErrRcLinkCodeExists
+	}
+	return nil
+}
+
+func (s *AuthStore) ConsumeRcLinkCode(ctx context.Context, code string) (string, bool, error) {
+	key := fmt.Sprintf("rc_link:%s", code)
+	userID, err := s.client.GetDel(ctx, key).Result()
+	if err == goredis.Nil {
+		return "", false, nil
+	}
+	if err != nil {
+		return "", false, err
+	}
+	return userID, true, nil
 }
 
 // hashToken returns HMAC-SHA-256(hashKey, token) hex-encoded.

@@ -189,3 +189,11 @@ func (r *fakeUserRepository) UpdateStripeState(_ context.Context, _ string, _ *s
 func (r *fakeUserRepository) GetByStripeCustomerID(_ context.Context, _ string) (*domain.User, error) {
 	return nil, nil
 }
+
+func (r *fakeUserRepository) SetRcAppUserID(_ context.Context, _, _ string) error {
+	return nil
+}
+
+func (r *fakeUserRepository) GetByRcAppUserID(_ context.Context, _ string) (*domain.User, error) {
+	return nil, nil
+}

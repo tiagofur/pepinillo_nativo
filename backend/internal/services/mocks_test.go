@@ -236,3 +236,25 @@ func (m *MockBehaviorLogger) LogEvent(ctx context.Context, userID, eventType str
 	args := m.Called(ctx, userID, eventType, eventData)
 	return args.Error(0)
 }
+
+func (m *MockUserRepository) SetRcAppUserID(ctx context.Context, userID, rcAppUserID string) error {
+	args := m.Called(ctx, userID, rcAppUserID)
+	return args.Error(0)
+}
+
+func (m *MockUserRepository) GetByRcAppUserID(ctx context.Context, rcAppUserID string) (*domain.User, error) {
+	args := m.Called(ctx, rcAppUserID)
+	user, _ := args.Get(0).(*domain.User)
+	return user, args.Error(1)
+}
+
+func (m *MockAuthStore) StoreRcLinkCode(ctx context.Context, code, userID string, ttlSeconds int64) error {
+	args := m.Called(ctx, code, userID, ttlSeconds)
+	return args.Error(0)
+}
+
+func (m *MockAuthStore) ConsumeRcLinkCode(ctx context.Context, code string) (string, bool, error) {
+	args := m.Called(ctx, code)
+	userID, _ := args.Get(0).(string)
+	return userID, args.Bool(1), args.Error(2)
+}

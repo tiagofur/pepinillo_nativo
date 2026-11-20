@@ -111,6 +111,17 @@ func (s *RevenueCatService) ValidateWebhookAuth(authHeader string) error {
 	return nil
 }
 
+// resolveWebhookUser maps a webhook's app_user_id to a local user (#953):
+// backend UUIDs (logged-in native apps, post-alias events) go straight to
+// GetByID; any other RC ID (anonymous pre-logIn purchases) resolves through
+// the bind written by the claim endpoint.
+func (s *RevenueCatService) resolveWebhookUser(ctx context.Context, appUserID string) (*domain.User, error) {
+	if id, err := uuid.Parse(appUserID); err == nil {
+		return s.users.GetByID(ctx, id.String())
+	}
+	return s.users.GetByRcAppUserID(ctx, appUserID)
+}
+
 // ProcessWebhookEvent handles incoming RevenueCat webhook events
 func (s *RevenueCatService) ProcessWebhookEvent(ctx context.Context, payload *RevenueCatWebhookPayload) error {
 	if payload == nil || payload.Event.AppUserID == "" {
@@ -140,15 +151,12 @@ func (s *RevenueCatService) ProcessWebhookEvent(ctx context.Context, payload *Re
 	appUserID := payload.Event.AppUserID
 	eventType := strings.ToUpper(strings.TrimSpace(payload.Event.Type))
 
-	// Find user by their RevenueCat app_user_id (typically their user ID).
-	// If the user is an anonymous RevenueCat ID (e.g. "$RCAnonymousID:...") or not a valid UUID,
-	// they cannot exist in our local database (users.id is UUID). Return ErrUserNotFound so
-	// the handler ACKs with 200 OK without triggering unprocessable DB errors.
-	if _, err := uuid.Parse(appUserID); err != nil {
-		return ErrUserNotFound
-	}
-
-	user, err := s.users.GetByID(ctx, appUserID)
+	// Find the user behind the event's RevenueCat app_user_id. Logged-in
+	// native apps pass the backend user UUID; a pre-logIn NATIVE purchase
+	// (#953) carries an anonymous/RC ID that resolves through the bind
+	// written by the claim endpoint. Unresolvable IDs return ErrUserNotFound
+	// so the handler ACKs with 200 OK without DB errors.
+	user, err := s.resolveWebhookUser(ctx, appUserID)
 	if err != nil {
 		s.logRevenueCatEvent(ctx, appUserID, "webhook_process_failed", map[string]any{
 			"reason":     err.Error(),

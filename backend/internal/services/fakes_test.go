@@ -2,8 +2,9 @@ package services
 
 import (
 	"context"
-	"time"
 	"pepinillo/backend/internal/domain"
+	"pepinillo/backend/internal/ports"
+	"time"
 )
 
 type fakeUserRepo struct {
@@ -14,6 +15,8 @@ type fakeUserRepo struct {
 	stripeTier map[string]*string
 	stripeExp  map[string]*time.Time
 	byCustomer map[string]string
+	byRc       map[string]string
+	failSetRc  bool // inject ports.ErrRcAppUserIDTaken (judge round 2 race arm)
 }
 
 func newFakeUserRepo() *fakeUserRepo {
@@ -25,6 +28,7 @@ func newFakeUserRepo() *fakeUserRepo {
 		stripeTier: make(map[string]*string),
 		stripeExp:  make(map[string]*time.Time),
 		byCustomer: make(map[string]string),
+		byRc:       make(map[string]string),
 	}
 }
 
@@ -39,7 +43,11 @@ func (r *fakeUserRepo) Create(_ context.Context, user *domain.User) error {
 }
 
 func (r *fakeUserRepo) GetByID(_ context.Context, userID string) (*domain.User, error) {
-	return r.byID[userID], nil
+	if u, ok := r.byID[userID]; ok {
+		cp := *u
+		return &cp, nil
+	}
+	return nil, nil
 }
 
 func (r *fakeUserRepo) GetByEmail(_ context.Context, email string) (*domain.User, error) {
@@ -199,6 +207,25 @@ func (r *fakeUserRepo) UpdateStripeState(_ context.Context, userID string, tier 
 
 func (r *fakeUserRepo) GetByStripeCustomerID(_ context.Context, customerID string) (*domain.User, error) {
 	if userID, ok := r.byCustomer[customerID]; ok {
+		return r.byID[userID], nil
+	}
+	return nil, nil
+}
+
+func (r *fakeUserRepo) SetRcAppUserID(_ context.Context, userID, rcAppUserID string) error {
+	if r.failSetRc {
+		return ports.ErrRcAppUserIDTaken
+	}
+	r.byRc[rcAppUserID] = userID
+	if u := r.byID[userID]; u != nil {
+		id := rcAppUserID
+		u.RcAppUserID = &id
+	}
+	return nil
+}
+
+func (r *fakeUserRepo) GetByRcAppUserID(_ context.Context, rcAppUserID string) (*domain.User, error) {
+	if userID, ok := r.byRc[rcAppUserID]; ok {
 		return r.byID[userID], nil
 	}
 	return nil, nil

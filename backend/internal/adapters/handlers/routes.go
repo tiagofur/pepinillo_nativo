@@ -29,6 +29,7 @@ type RouteHandlers struct {
 	Billing      *BillingHandler
 	RevenueCat   *RevenueCatHandler
 	Stripe       *StripeHandler
+	RcLink       *RcLinkHandler
 	Push         *PushHandler
 	WebSocket    *WebSocketHandler
 	Analytics    *AnalyticsHandler
@@ -54,6 +55,14 @@ func RegisterAPIRoutes(api fiber.Router, deps RouteHandlers) {
 	// Same ordering rule as above.
 	stripeWebhook := api.Group("/billing/stripe")
 	stripeWebhook.Post("/webhook", deps.Stripe.Webhook)
+
+	// RC link claim (#953): public — the native app has no session; the
+	// single-use code IS the authorization. Per-IP limiter mirrors password
+	// recovery (the code space is 10^6 over a 15-minute TTL). Must be
+	// registered before the protected group (same ordering rule as above).
+	rcLinkClaimLimiter := limiter.New(limiter.Config{Max: 10})
+	rcLink := api.Group("/rc", rcLinkClaimLimiter)
+	rcLink.Post("/link", deps.RcLink.Claim)
 
 	// WebSocket endpoint: authenticated by the WebSocketUpgrade middleware
 	// itself (Authorization header or Sec-WebSocket-Protocol sub-protocol for
@@ -197,6 +206,12 @@ func RegisterAPIRoutes(api fiber.Router, deps RouteHandlers) {
 	billing.Post("/verify-receipt", deps.Billing.VerifyReceipt)
 	billing.Post("/stripe/checkout-session", deps.Stripe.CheckoutSession)
 	billing.Post("/stripe/portal-session", deps.Stripe.PortalSession)
+
+	// Account-scoped license bridge (#953): generate the single-use claim
+	// code for the native app to consume. Per-IP limiter keeps a compromised
+	// JWT from flooding redis with live codes (TTL-bounded but still waste).
+	rcLinkCodeLimiter := limiter.New(limiter.Config{Max: 10})
+	protected.Post("/account/link-code", rcLinkCodeLimiter, deps.RcLink.CreateCode)
 
 	push := verified.Group("/push")
 	push.Post("/devices", deps.Push.RegisterDevice)
