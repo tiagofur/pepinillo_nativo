@@ -61,6 +61,9 @@ export const prerender = true;
 	let busyPlan = $state<string | null>(null);
 	let errorText = $state('');
 	let portalBusy = $state(false);
+	// Selected Everywhere billing cycle (#950). Monthly is the honest default —
+	// the checkout must never surprise the user with a bigger charge.
+	let everywhereCycle = $state<'everywhere_monthly' | 'everywhere_annual'>('everywhere_monthly');
 
 	onMount(async () => {
 		// Returning from Stripe Checkout: refresh the tier without re-login
@@ -84,8 +87,10 @@ export const prerender = true;
 			!/Chrome|Firefox|Edg/.test(navigator.userAgent)
 	);
 
-	const APP_STORE_URL = 'https://apps.apple.com/search?term=pepinillo%20creapolis';
-	const PLAY_STORE_URL = 'https://play.google.com/store/search?q=pepinillo%20creapolis&c=apps';
+	// Real store listings (#950) — keep in sync with
+	// landing/src/lib/components/landing/links.ts.
+	const APP_STORE_URL = 'https://apps.apple.com/app/pepinillo-pomodoro-focus/id6760687424';
+	const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=dev.creapolis.pepinillo';
 
 	async function buy(plan: 'pepinillo_plus' | 'everywhere_monthly' | 'everywhere_annual'): Promise<void> {
 		errorText = '';
@@ -167,6 +172,29 @@ export const prerender = true;
 				{/if}
 				<h2>{t(plan.key)}</h2>
 				<p class="price">{t(plan.price)}</p>
+				{#if plan.id === 'everywhere'}
+					<div class="cycle-row">
+						<button
+							type="button"
+							class="chip pressable"
+							aria-pressed={everywhereCycle === 'everywhere_monthly'}
+							class:is-active={everywhereCycle === 'everywhere_monthly'}
+							onclick={() => (everywhereCycle = 'everywhere_monthly')}
+						>
+							{t('upgrade.billing.monthly')}
+						</button>
+						<button
+							type="button"
+							class="chip pressable"
+							aria-pressed={everywhereCycle === 'everywhere_annual'}
+							class:is-active={everywhereCycle === 'everywhere_annual'}
+							onclick={() => (everywhereCycle = 'everywhere_annual')}
+						>
+							{t('upgrade.billing.annual')}
+						</button>
+						<span class="saving">{t('upgrade.annualSaving')}</span>
+					</div>
+				{/if}
 				<p class="note muted">{t(plan.note)}</p>
 				<ul class="features">
 					{#each plan.features as f (f)}
@@ -188,9 +216,9 @@ export const prerender = true;
 						<button
 							class="btn btn-primary pressable"
 							disabled={busyPlan !== null}
-							onclick={() => buy('everywhere_monthly')}
+							onclick={() => buy(everywhereCycle)}
 						>
-							{busyPlan === 'everywhere_monthly' ? t('upgrade.working') : t('upgrade.cta.everywhere')}
+							{busyPlan === everywhereCycle ? t('upgrade.working') : t('upgrade.cta.everywhere')}
 						</button>
 					{/if}
 				</div>
@@ -331,6 +359,19 @@ export const prerender = true;
 	.price {
 		font-size: var(--text-lg);
 		font-weight: 750;
+	}
+
+	.cycle-row {
+		display: flex;
+		align-items: center;
+		gap: var(--space-2);
+		flex-wrap: wrap;
+	}
+
+	.saving {
+		font-size: var(--text-2xs);
+		color: var(--brand);
+		font-weight: 600;
 	}
 
 	.note {
