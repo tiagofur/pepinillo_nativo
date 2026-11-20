@@ -86,6 +86,13 @@ struct AboutView: View {
             // MARK: Legal
             Section(String(localized: "Legal")) {
                 Button {
+                    store.send(.rateAppTapped)
+                } label: {
+                    Label(String(localized: "Rate Pepinillo"), systemImage: "star")
+                        .foregroundStyle(.primary)
+                }
+
+                Button {
                     store.send(.privacyPolicyTapped)
                 } label: {
                     Label(String(localized: "Privacy Policy"), systemImage: "doc.text")
