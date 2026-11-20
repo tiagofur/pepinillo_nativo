@@ -294,6 +294,7 @@ struct AppFeature {
     @Dependency(\.notificationClient) var notificationClient
     @Dependency(\.watchConnectivityClient) var watchClient
     @Dependency(\.signInWithAppleClient) var appleClient
+    @Dependency(\.reviewClient) var reviewClient
     @Dependency(\.apiClient) var apiClient
     @Dependency(\.keychainClient) var keychain
     @Dependency(\.syncClient) var syncClient
@@ -1713,8 +1714,7 @@ struct AppFeature {
                 state.focus.availableTasks = state.tasks.tasks
                 return pushTasksToWatch(state)
 
-            case .focus(.delegate(.sessionPersisted)),
-                 .focus(.delegate(.taskProgressChanged)):
+            case .focus(.delegate(.sessionPersisted)):
                 // Single explicit refresh path for session events. cancelInFlight ensures
                 // that when taskProgressChanged fires just before sessionPersisted (final
                 // pomodoro), only one fetch runs — the second cancels the first.
@@ -1722,14 +1722,14 @@ struct AppFeature {
                 // Also refresh analytics dashboard and push full Watch stats here so both
                 // reads happen after saveSession has committed (FIX 1 + FIX 3).
                 return .merge(
-                    .run { [persistence] send in
-                        let items = try await persistence.fetchTasks()
-                        await send(.tasks(.tasksLoaded(items.map { TaskListFeature.TaskItemState.from($0) })))
-                    }
-                    .cancellable(id: CancelID.sessionTaskRefresh, cancelInFlight: true),
-                    .send(.analytics(.refresh)),
-                    syncWatchStats(isPro: state.subscriptionState.isPro)
+                    sessionEventRefreshEffects(&state),
+                    sessionReviewGate
                 )
+
+            case .focus(.delegate(.taskProgressChanged)):
+                // Same refresh path as sessionPersisted (deduped via cancelInFlight);
+                // no review gate — task edits are not session completions.
+                return sessionEventRefreshEffects(&state)
 
             case .tasks(.delegate(.showPaywall)):
                 state.focus.showPaywall = true
@@ -1979,6 +1979,34 @@ struct AppFeature {
     ///
     /// Propagation of Pro flags always runs. The soft sync only runs when the
     /// capabilities actually changed since the last sync (`lastSyncedCapabilities`).
+    /// Shared refresh effects for session/task mutation events (tasks list,
+    /// analytics dashboard, Watch stats push).
+    private func sessionEventRefreshEffects(_ state: inout State) -> Effect<Action> {
+        .merge(
+            .run { [persistence] send in
+                let items = try await persistence.fetchTasks()
+                await send(.tasks(.tasksLoaded(items.map { TaskListFeature.TaskItemState.from($0) })))
+            }
+            .cancellable(id: CancelID.sessionTaskRefresh, cancelInFlight: true),
+            .send(.analytics(.refresh)),
+            syncWatchStats(isPro: state.subscriptionState.isPro)
+        )
+    }
+
+    /// Milestone review prompt (#979, parity with Android #716): after 3
+    /// completed sessions, once per device. Only natural completions count
+    /// (wasCompleted in the store); >= threshold also catches existing users
+    /// after update. The flag lives in defaults — no SwiftData schema change.
+    private var sessionReviewGate: Effect<Action> {
+        .run { [persistence, reviewClient] _ in
+            guard !AppGroupDefaults.reviewRequestedMilestone else { return }
+            let sessions = try await persistence.fetchSessions(.distantPast, Date.now)
+            guard sessions.filter(\.wasCompleted).count >= ReviewPrompt.completedSessionsThreshold else { return }
+            AppGroupDefaults.reviewRequestedMilestone = true
+            await reviewClient.requestReview()
+        }
+    }
+
     private func applySubscriptionUpdate(_ sub: SubscriptionState, state: inout State) -> Effect<Action> {
         #if DEBUG
         let effectiveSub = DemoDataSeeder.shouldSimulatePro ? .pepinilloPlus : sub

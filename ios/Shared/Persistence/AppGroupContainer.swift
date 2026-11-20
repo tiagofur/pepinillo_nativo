@@ -236,6 +236,13 @@ enum AppGroupDefaults {
         set { defaults?.set(newValue, forKey: "isProUser") }
     }
 
+    /// Whether the milestone review prompt (#979) already fired on this device.
+    /// Device-local flag — lives in defaults (no SwiftData schema change).
+    static var reviewRequestedMilestone: Bool {
+        get { defaults?.bool(forKey: "reviewRequestedMilestone") ?? false }
+        set { defaults?.set(newValue, forKey: "reviewRequestedMilestone") }
+    }
+
     /// Whether the user tier allows backend VPS sync (Everywhere/AI+).
     static var canBackendSync: Bool {
         get { defaults?.bool(forKey: "canBackendSync") ?? false }

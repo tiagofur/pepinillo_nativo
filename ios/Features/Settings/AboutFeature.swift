@@ -20,9 +20,11 @@ struct AboutFeature {
     enum Action: Equatable {
         case privacyPolicyTapped
         case termsOfServiceTapped
+        case rateAppTapped
     }
 
     @Dependency(\.openURL) var openURL
+    @Dependency(\.reviewClient) var reviewClient
 
     private enum URLs {
         static let privacyPolicy = URL(string: "https://creapolis.dev/privacy-policy/")!
@@ -40,6 +42,11 @@ struct AboutFeature {
             case .termsOfServiceTapped:
                 return .run { _ in
                     await openURL(URLs.termsOfService)
+                }
+
+            case .rateAppTapped:
+                return .run { [reviewClient] _ in
+                    await reviewClient.requestReview()
                 }
             }
         }
