@@ -23,7 +23,10 @@
 ## Arquitectura del puente
 
 1. Web (con sesión) → `POST /api/v1/account/link-code` → código efímero.
-2. App nativa → "Usar mi Pepinillo+ en la Web" → ingresa código →
+2. App nativa → "Usar mi compra en la Web" (es) / "Use my purchase on the
+   Web" (en) / "Usar minha compra na Web" (pt) — ETIQUETA CANÓNICA fijada
+   en la revisión dual de PR-2 (judge B: agnóstica de tienda, cubre
+   Pepinillo+ y Everywhere) → ingresa código →
    `POST /api/v1/rc/link {code, app_user_id}`.
 3. Backend: consume código (GETDEL atómico) → `VerifyViaRevenueCat(rcAppUserID)`
    server-side → si tier ≠ free: `UpdateSubscription` (paridad exacta con el
@@ -83,3 +86,10 @@
 - 2026-11-20 (PR-2): tarjeta del código en /account (apiClient
   createRcLinkCode + account.linkCode.* ×3 locales, es voseo); genera,
   muestra con vencimiento y permite regenerar tras cada canje.
+- 2026-11-20 (PR-2 dual APPROVED, jueces A+ B): P2 de judge B
+  resuelto — etiqueta canónica del menú nativo fijada a "Usar mi compra
+  en la Web" / "Use my purchase on the Web" / "Usar minha compra na Web"
+  (PR-3/PR-4 la implementan literal). Follow-ups a issue #953: extracción
+  mecánica de AccountServer (557 > 500), role="status" en la región del
+  código, atenuar código vencido, pt "insira-o lá" más natural, en
+  codeLabel "claim"→"link", clave muerta account.everywhereTeaser.
