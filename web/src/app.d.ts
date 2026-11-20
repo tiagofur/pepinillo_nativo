@@ -13,6 +13,8 @@ declare global {
 	const __PUBLIC_WS_URL__: string;
 	const __PUBLIC_GOOGLE_CLIENT_ID__: string;
 	const __PUBLIC_APPLE_CLIENT_ID__: string;
+	/** Deploy identity (git short SHA) — also emitted as /version.txt (#974). */
+	const __BUILD_VERSION__: string;
 }
 
 export {};
