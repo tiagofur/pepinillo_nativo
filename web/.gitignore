@@ -23,4 +23,4 @@ dist-ssr
 *.sln
 *.sw?
 
-web/.svelte-kit/
+/.svelte-kit/

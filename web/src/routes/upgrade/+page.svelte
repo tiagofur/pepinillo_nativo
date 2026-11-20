@@ -72,7 +72,6 @@ export const prerender = true;
 			await auth.refreshEntitlement();
 			replaceState(page.url.pathname, {});
 		}
-		void auth.init();
 	});
 
 	/**

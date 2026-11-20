@@ -15,7 +15,6 @@
 	import type { LocaleCode, ThemePreference } from '$lib/domain/entities/types';
 
 	onMount(async () => {
-		void auth.init();
 		// Returning from Stripe Checkout: refresh the tier without re-login
 		// (S4 #942) and clean the query param. init() must complete first —
 		// refreshEntitlement() no-ops until api/user exist (cold load from

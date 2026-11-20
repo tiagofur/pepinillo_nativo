@@ -992,7 +992,7 @@ paths:
     post:
       operationId: syncTasks
       tags: [tasks]
-      summary: Sincronización incremental LWW de tareas (requiere Everywhere+)
+      summary: Sincronización incremental LWW de tareas (Everywhere+ multi-dispositivo; Free/Pepinillo+ ligado a su dispositivo)
       security:
         - BearerAuth: []
       requestBody:
@@ -2230,6 +2230,10 @@ paths:
         - BearerAuth: []
       parameters:
         - $ref: "#/components/parameters/DeviceIdHeader"
+      description: |
+        Free/Pepinillo+ exigen `X-Device-ID` (lane device-bound: sin header la
+        respuesta es `403 ERR_DEVICE_BOUND`); Everywhere+ acepta cualquier
+        dispositivo. El header es opcional solo para el lane Everywhere+.
       requestBody:
         required: true
         content:
@@ -2297,12 +2301,6 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/BackendSyncRequiredError"
-    DeviceBoundError:
-      description: El backup server está ligado a otro dispositivo (`#942`). Everywhere+ elimina el binding.
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/DeviceBoundError"
     SyncForbiddenError:
       description: Acceso prohibido a sync — email sin verificar (`ErrorEnvelope`) o backup ligado a otro dispositivo (`DeviceBoundError`, `#942`).
       content:
