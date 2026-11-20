@@ -328,19 +328,35 @@ struct AuthView: View {
 
     private var appleSignInButton: some View {
         #if os(macOS)
-        // macOS: the invisible-overlay hack (custom capsule + near-zero-opacity
-        // native button) never receives clicks here — the native control does not
-        // stretch over the capsule like it does on iOS, leaving a dead hit area
-        // (#962). Render the official button directly, per SIWA HIG.
-        SignInWithAppleButton(.continue) { request in
+        // macOS: two dead-button root causes (#962) — (1) the invisible-overlay
+        // hack never got clicks, and (2) glassEffect(.regular.interactive(true))
+        // swallows button clicks on macOS entirely. Drive
+        // ASAuthorizationController manually via AppleSignInCoordinator and use
+        // pure-SwiftUI material instead of the interactive glass capsule.
+        Button {
             let nonce = AppleAuthHelper.generateNonce()
             currentNonce = nonce
-            request.nonce = AppleAuthHelper.sha256Hex(nonce)
-            request.requestedScopes = [.fullName, .email]
-        } onCompletion: { handleAppleSignInResult($0) }
-        .signInWithAppleButtonStyle(colorScheme == .dark ? .black : .white)
-        .frame(maxWidth: .infinity)
-        .frame(height: 50)
+            AppleSignInCoordinator.shared.start(rawNonce: nonce) { result in
+                handleAppleSignInResult(result)
+            }
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: "apple.logo")
+                    .font(.subheadline.weight(.semibold))
+                Text(String(localized: "Continue with Apple"))
+                    .font(.subheadline.weight(.semibold))
+            }
+            .foregroundStyle(.primary)
+            .frame(maxWidth: .infinity)
+            .frame(height: 50)
+            .background(.ultraThinMaterial, in: Capsule())
+            .overlay {
+                Capsule()
+                    .stroke(.secondary.opacity(colorScheme == .dark ? 0.25 : 0.15), lineWidth: 1)
+            }
+        }
+        .buttonStyle(.plain)
+        .contentShape(Capsule())
         .padding(.horizontal, 24)
         #else
         ZStack {
