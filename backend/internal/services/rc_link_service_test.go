@@ -316,8 +316,9 @@ func TestClaimLinkCodeBindRaceRollsBackGrant(t *testing.T) {
 	svc, _, repo, userID := newRcLinkHarness(t, map[string]string{"$RCAnonymousID:abc": plusSubscriber})
 	ctx := context.Background()
 	repo.failSetRc = true
-	// Snapshot BEFORE claiming: the fake's GetByID returns the same pointer
-	// its UpdateSubscription mutates (production returns a fresh copy).
+	// Snapshot BEFORE claiming: since the round-2 fix the fake GetByID
+	// returns copies (production semantics), so the pre-claim tier must be
+	// captured here rather than read off the mutated pointer afterwards.
 	priorTier := repo.byID[userID].SubscriptionTier
 
 	code, _, err := svc.CreateLinkCode(ctx, userID)
