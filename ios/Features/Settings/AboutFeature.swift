@@ -45,8 +45,9 @@ struct AboutFeature {
                 }
 
             case .rateAppTapped:
-                reviewClient.requestReview()
-                return .none
+                return .run { [reviewClient] _ in
+                    await reviewClient.requestReview()
+                }
             }
         }
     }

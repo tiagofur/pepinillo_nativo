@@ -2003,7 +2003,7 @@ struct AppFeature {
             let sessions = try await persistence.fetchSessions(.distantPast, Date.now)
             guard sessions.filter(\.wasCompleted).count >= ReviewPrompt.completedSessionsThreshold else { return }
             AppGroupDefaults.reviewRequestedMilestone = true
-            reviewClient.requestReview()
+            await reviewClient.requestReview()
         }
     }
 

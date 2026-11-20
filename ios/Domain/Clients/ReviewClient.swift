@@ -6,8 +6,11 @@
 // (3 completed sessions + once-per-device) lives in AppFeature so tests
 // assert eligibility, not OS behavior.
 //
-// watchOS has no rating flow: the client is a no-op there (the gate lives
-// in the iOS/macOS AppFeature, which the watch target does not compile).
+// The seam is @MainActor async: SKStoreReviewController/AppStore touch
+// UIKit/AppKit UI state, and callers (TCA .run effects) are nonisolated.
+// StoreKit 2's AppStore.requestReview takes an NSViewController on macOS
+// (SK1's NSWindow overload does not exist on macOS — verified against the
+// SDK) and a UIWindowScene on iOS. watchOS has no rating flow: no-op.
 
 import ComposableArchitecture
 import Foundation
@@ -26,7 +29,7 @@ enum ReviewPrompt {
 }
 
 struct ReviewClient: Sendable {
-    var requestReview: @Sendable () -> Void = {}
+    var requestReview: @MainActor @Sendable () async -> Void = {}
 }
 
 extension ReviewClient: DependencyKey {
@@ -34,8 +37,9 @@ extension ReviewClient: DependencyKey {
         #if os(macOS)
         return ReviewClient(
             requestReview: {
-                guard let window = NSApp.keyWindow else { return }
-                SKStoreReviewController.requestReview(in: window)
+                guard let window = NSApp.keyWindow,
+                      let controller = window.contentViewController else { return }
+                AppStore.requestReview(in: controller)
             }
         )
         #elseif os(iOS) || os(visionOS)
@@ -46,7 +50,7 @@ extension ReviewClient: DependencyKey {
                     let scene = scenes.first(where: { ($0 as? UIWindowScene)?.activationState == .foregroundActive }) as? UIWindowScene
                         ?? scenes.first as? UIWindowScene
                 else { return }
-                SKStoreReviewController.requestReview(in: scene)
+                AppStore.requestReview(in: scene)
             }
         )
         #else
