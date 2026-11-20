@@ -2014,18 +2014,29 @@ struct AppFeature {
             try await persistence.savePreferences(prefs)
         }
 
+        // #976: push the Pepinillo+ flag to the watch — the App Group mirror
+        // (above) only shares within the phone itself, so the watch needs the
+        // flag over WatchConnectivity. Idempotent: sent on every subscription
+        // update and on the dedupe path too (capabilities unchanged ≠ premium
+        // unchanged).
+        let pushPremiumToWatch = Effect<Action>.run { [watchClient] _ in
+            guard watchClient.isSupported() else { return }
+            await watchClient.sendPremiumState(isPro)
+        }
+
         // Dedupe: skip the expensive soft sync when capabilities are unchanged
         // since the last run. Both subscription actions commonly arrive together
         // at launch with the same capabilities.
         let capabilities = effectiveSub.capabilities
         guard state.lastSyncedCapabilities != capabilities else {
             appLaunchLogger.info("Soft sync skipped — capabilities unchanged (issue #78 dedupe)")
-            return persistProFlag
+            return .merge(persistProFlag, pushPremiumToWatch)
         }
         state.lastSyncedCapabilities = capabilities
 
         return .merge(
             persistProFlag,
+            pushPremiumToWatch,
             .run { send in
                 try? await Task.sleep(for: .seconds(3))
                 let start = Date.now

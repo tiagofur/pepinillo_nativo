@@ -126,6 +126,9 @@ enum WatchMessage: Equatable, Sendable {
     case theme(String)
     /// iOS → Watch: privacy / metrics opt-in state (#725).
     case metricsOptInState(hasBackendAccount: Bool, metricsOptIn: Bool, metricsOptInError: String?)
+    /// iOS → Watch: Pepinillo+ state mirror (#976) — the App Group does not
+    /// cross devices, so the flag rides WatchConnectivity.
+    case premiumState(isProUser: Bool)
     /// Both sides: reachability changes.
     case connectivityStatus(Bool)
     /// Watch → iOS: user tapped a control on the Watch.
@@ -160,6 +163,11 @@ struct WatchConnectivityClient: Sendable {
 
     /// iOS → Watch: push privacy / metrics opt-in state (#725).
     var sendMetricsOptInState: @Sendable (_ hasBackendAccount: Bool, _ metricsOptIn: Bool, _ metricsOptInError: String?) async -> Void = { _, _, _ in }
+
+    /// iOS → Watch: push the Pepinillo+ flag so the watch unlocks premium
+    /// modes (#976). Merged into `applicationContext` (cold-start hydration)
+    /// + `sendMessage` when reachable.
+    var sendPremiumState: @Sendable (_ isProUser: Bool) async -> Void = { _ in }
 
     /// Whether WatchConnectivity is supported on this device.
     var isSupported: @Sendable () -> Bool = { false }
@@ -200,6 +208,7 @@ extension WatchConnectivityClient {
                     metricsOptInError: err
                 )
             },
+            sendPremiumState: { isPro in await manager.sendPremiumState(isProUser: isPro) },
             isSupported:      { WCSession.isSupported() }
         )
 #else
@@ -230,6 +239,7 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate, @unchecked Se
     private var cachedDashboardStatsDict: [String: Any] = [:]
     private var cachedThemeDict: [String: Any] = [:]
     private var cachedMetricsOptInDict: [String: Any] = [:]
+    private var cachedPremiumDict: [String: Any] = [:]
     private let contextCacheLock = NSLock()
 
     private override init() {
@@ -304,6 +314,9 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate, @unchecked Se
     //   "sessionState": { ... }
     //   "stats":        { ... }
     //   "dashboardStats": { ... }
+    //   "theme":        { themeName: String }
+    //   "metricsOptIn": { hasBackendAccount, metricsOptIn, metricsOptInError? }
+    //   "premium":      { isProUser: Bool }   (#976)
     //   "sentAt": TimeInterval   (for stale-update dedupe on the watch side)
     //
     // The phone maintains a cache of the last-sent values per section so it can
@@ -511,6 +524,30 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate, @unchecked Se
         }
     }
 
+    /// Pushes the Pepinillo+ flag to the watch (#976). Rides applicationContext
+    /// (retained by the system → cold-start hydration) plus a live message when
+    /// the counterpart is reachable, mirroring the metricsOptIn transport.
+    func sendPremiumState(isProUser: Bool) async {
+        guard let session else { return }
+
+        let premiumDict: [String: Any] = ["isProUser": isProUser]
+        let fullContext = updateContextCache { self.cachedPremiumDict = premiumDict }
+
+        do {
+            try session.updateApplicationContext(fullContext)
+        } catch {
+            Self.log.error("updateApplicationContext(premium) failed: \(error.localizedDescription)")
+        }
+
+        if session.isReachable {
+            var messageDict = premiumDict
+            messageDict["type"] = "premium"
+            session.sendMessage(messageDict, replyHandler: nil) { error in
+                Self.log.error("sendMessage(premium) failed: \(error.localizedDescription)")
+            }
+        }
+    }
+
     /// Applies a cache mutation under the lock and returns the merged full context.
     /// Synchronous on purpose: NSLock.lock()/unlock() is unavailable in async
     /// contexts under Swift 6, and no suspension may occur while holding the lock.
@@ -539,6 +576,9 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate, @unchecked Se
         }
         if !cachedMetricsOptInDict.isEmpty {
             ctx["metricsOptIn"] = cachedMetricsOptInDict
+        }
+        if !cachedPremiumDict.isEmpty {
+            ctx["premium"] = cachedPremiumDict
         }
         ctx["sentAt"] = Date().timeIntervalSince1970
         return ctx
@@ -602,6 +642,8 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate, @unchecked Se
             let optIn = message["metricsOptIn"] as? Bool ?? false
             let err = message["metricsOptInError"] as? String
             yield(.metricsOptInState(hasBackendAccount: hasAccount, metricsOptIn: optIn, metricsOptInError: err))
+        case "premium":
+            yield(.premiumState(isProUser: message["isProUser"] as? Bool ?? false))
         default:
             break
         }
@@ -681,6 +723,9 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate, @unchecked Se
             let optIn = optInDict["metricsOptIn"] as? Bool ?? false
             let err = optInDict["metricsOptInError"] as? String
             yield(.metricsOptInState(hasBackendAccount: hasAccount, metricsOptIn: optIn, metricsOptInError: err))
+        }
+        if let premiumDict = ctx["premium"] as? [String: Any] {
+            yield(.premiumState(isProUser: premiumDict["isProUser"] as? Bool ?? false))
         }
     }
 
