@@ -17,6 +17,29 @@
 	let deleteEmail = $state('');
 	let noticeText = $state('');
 
+	// Change password (#946 S1).
+	let pwCurrent = $state('');
+	let pwNew = $state('');
+	let pwConfirm = $state('');
+	let pwState = $state<'idle' | 'working' | 'done' | 'wrong' | 'weak' | 'mismatch' | 'error'>('idle');
+
+	async function submitPassword(e: SubmitEvent): Promise<void> {
+		e.preventDefault();
+		if (pwState === 'working') return;
+		if (pwNew !== pwConfirm) {
+			pwState = 'mismatch';
+			return;
+		}
+		pwState = 'working';
+		const r = await auth.changePassword(pwCurrent, pwNew);
+		if (r === 'ok') {
+			pwState = 'done';
+			pwCurrent = pwNew = pwConfirm = '';
+		} else {
+			pwState = r;
+		}
+	}
+
 	// Email verification (#944): 6-digit code from the notification email.
 	let verifyCode = $state('');
 	let verifyState = $state<'idle' | 'working' | 'done' | 'invalid' | 'already' | 'error'>('idle');
@@ -174,6 +197,51 @@
 </div>
 
 <div class="card section">
+	<h2>🔑 {t('auth.password.title')}</h2>
+	<form class="pw-form" onsubmit={submitPassword}>
+		<input
+			class="field"
+			type="password"
+			placeholder={t('auth.password.current')}
+			bind:value={pwCurrent}
+			autocomplete="current-password"
+			required
+		/>
+		<input
+			class="field"
+			type="password"
+			placeholder={t('auth.password.new')}
+			bind:value={pwNew}
+			minlength="8"
+			autocomplete="new-password"
+			required
+		/>
+		<input
+			class="field"
+			type="password"
+			placeholder={t('auth.password.confirm')}
+			bind:value={pwConfirm}
+			autocomplete="new-password"
+			required
+		/>
+		<button class="btn btn-primary pressable" type="submit" disabled={pwState === 'working'}>
+			{pwState === 'working' ? t('auth.password.working') : t('auth.password.submit')}
+		</button>
+	</form>
+	{#if pwState === 'done'}
+		<p class="pw-msg ok" role="status">✅ {t('auth.password.done')}</p>
+	{:else if pwState === 'wrong'}
+		<p class="pw-msg bad" role="alert">{t('auth.password.wrong')}</p>
+	{:else if pwState === 'weak'}
+		<p class="pw-msg bad" role="alert">{t('auth.password.weak')}</p>
+	{:else if pwState === 'mismatch'}
+		<p class="pw-msg bad" role="alert">{t('auth.password.mismatch')}</p>
+	{:else if pwState === 'error'}
+		<p class="pw-msg bad" role="alert">{t('auth.password.errorGeneric')}</p>
+	{/if}
+</div>
+
+<div class="card section">
 	<h2>📦 {t('account.export')}</h2>
 	<p class="muted">{t('account.exportHint')}</p>
 	<div class="row">
@@ -284,6 +352,27 @@
 	.warn {
 		color: var(--streak);
 		font-size: var(--text-sm);
+		font-weight: 550;
+	}
+
+	.pw-form {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-2);
+	}
+
+	.pw-msg {
+		margin: 0;
+		font-size: var(--text-sm);
+	}
+
+	.pw-msg.ok {
+		color: var(--brand);
+		font-weight: 650;
+	}
+
+	.pw-msg.bad {
+		color: var(--mode-pomodoro);
 		font-weight: 550;
 	}
 

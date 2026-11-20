@@ -407,6 +407,19 @@ export type MessageKey =
 	| 'auth.verify.done'
 	| 'auth.verify.already'
 	| 'auth.verify.errorGeneric'
+	| 'auth.oauth.apple'
+	| 'auth.oauth.error'
+	| 'auth.password.title'
+	| 'auth.password.current'
+	| 'auth.password.new'
+	| 'auth.password.confirm'
+	| 'auth.password.submit'
+	| 'auth.password.working'
+	| 'auth.password.done'
+	| 'auth.password.wrong'
+	| 'auth.password.weak'
+	| 'auth.password.mismatch'
+	| 'auth.password.errorGeneric'
 	| 'auth.apiMissing'
 	| 'auth.dangerTitle'
 	| 'auth.deleteConfirm'
@@ -952,6 +965,19 @@ const en: Dict = {
 	'auth.verify.done': 'Email verified — sync unlocked ✓',
 	'auth.verify.already': 'This email was already verified.',
 	'auth.verify.errorGeneric': 'Could not verify right now. Try again.',
+	'auth.oauth.apple': 'Continue with Apple',
+	'auth.oauth.error': 'Could not sign in with the provider. Try again.',
+	'auth.password.title': 'Change password',
+	'auth.password.current': 'Current password',
+	'auth.password.new': 'New password (min 8)',
+	'auth.password.confirm': 'Repeat new password',
+	'auth.password.submit': 'Update password',
+	'auth.password.working': 'Updating…',
+	'auth.password.done': 'Password updated ✓',
+	'auth.password.wrong': 'Current password is incorrect.',
+	'auth.password.weak': 'The new password is too weak (min 8 characters).',
+	'auth.password.mismatch': 'The passwords do not match.',
+	'auth.password.errorGeneric': 'Could not update the password. Try again.',
 	'auth.apiMissing': 'Cloud sync is not configured in this build — everything works offline.',
 	'auth.dangerTitle': 'Session',
 	'auth.deleteConfirm': 'This removes your cloud account. Your email, to confirm:',
@@ -1535,6 +1561,19 @@ const es: Dict = {
 	'auth.verify.done': 'Email verificado — sync desbloqueado ✓',
 	'auth.verify.already': 'Este email ya estaba verificado.',
 	'auth.verify.errorGeneric': 'No se pudo verificar ahora. Probá de nuevo.',
+	'auth.oauth.apple': 'Continuar con Apple',
+	'auth.oauth.error': 'No se pudo iniciar sesión con el proveedor. Probá de nuevo.',
+	'auth.password.title': 'Cambiar contraseña',
+	'auth.password.current': 'Contraseña actual',
+	'auth.password.new': 'Nueva contraseña (mín 8)',
+	'auth.password.confirm': 'Repetí la nueva contraseña',
+	'auth.password.submit': 'Actualizar contraseña',
+	'auth.password.working': 'Actualizando…',
+	'auth.password.done': 'Contraseña actualizada ✓',
+	'auth.password.wrong': 'La contraseña actual es incorrecta.',
+	'auth.password.weak': 'La nueva contraseña es muy débil (mín 8 caracteres).',
+	'auth.password.mismatch': 'Las contraseñas no coinciden.',
+	'auth.password.errorGeneric': 'No se pudo actualizar la contraseña. Probá de nuevo.',
 	'auth.apiMissing': 'La sync cloud no está configurada en este build — todo funciona offline.',
 	'auth.dangerTitle': 'Sesión',
 	'auth.deleteConfirm': 'Esto elimina tu cuenta en la nube. Tu email, para confirmar:',
@@ -2099,6 +2138,19 @@ const pt: Dict = {
 	'auth.verify.done': 'Email verificado — sync desbloqueado ✓',
 	'auth.verify.already': 'Este email já estava verificado.',
 	'auth.verify.errorGeneric': 'Não foi possível verificar agora. Tente de novo.',
+	'auth.oauth.apple': 'Continuar com Apple',
+	'auth.oauth.error': 'Não foi possível entrar com o provedor. Tente de novo.',
+	'auth.password.title': 'Alterar senha',
+	'auth.password.current': 'Senha atual',
+	'auth.password.new': 'Nova senha (mín 8)',
+	'auth.password.confirm': 'Repita a nova senha',
+	'auth.password.submit': 'Atualizar senha',
+	'auth.password.working': 'Atualizando…',
+	'auth.password.done': 'Senha atualizada ✓',
+	'auth.password.wrong': 'A senha atual está incorreta.',
+	'auth.password.weak': 'A nova senha é muito fraca (mín 8 caracteres).',
+	'auth.password.mismatch': 'As senhas não coincidem.',
+	'auth.password.errorGeneric': 'Não foi possível atualizar a senha. Tente de novo.',
 	'auth.apiMissing': 'A sync cloud não está configurada neste build — tudo funciona offline.',
 	'auth.dangerTitle': 'Sessão',
 	'auth.deleteConfirm': 'Isso remove sua conta na nuvem. Seu email, para confirmar:',

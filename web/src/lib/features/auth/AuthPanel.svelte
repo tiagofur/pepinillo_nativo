@@ -3,6 +3,67 @@
 	import { t } from '$lib/i18n/i18n.svelte';
 	import type { MessageKey } from '$lib/i18n/messages';
 
+	/** OAuth por ID token del browser SDK (#946 S2/S3). Dormido sin Client
+	 * IDs: nada de la sección (ni los scripts de google/apple) se carga. */
+	const GOOGLE_CLIENT_ID = __PUBLIC_GOOGLE_CLIENT_ID__;
+	const APPLE_CLIENT_ID = __PUBLIC_APPLE_CLIENT_ID__;
+	const oauthAvailable = GOOGLE_CLIENT_ID !== '' || APPLE_CLIENT_ID !== '';
+	let googleDiv = $state<HTMLDivElement | null>(null);
+	let gisReady = $state(false);
+	let oauthBusy = $state<'google' | 'apple' | null>(null);
+
+	async function loadGis(): Promise<void> {
+		if (gisReady || GOOGLE_CLIENT_ID === '') return;
+		await new Promise<void>((resolve, reject) => {
+			const s = document.createElement('script');
+			s.src = 'https://accounts.google.com/gsi/client';
+			s.async = true;
+			s.onload = () => resolve();
+			s.onerror = () => reject(new Error('gis_load_failed'));
+			document.head.appendChild(s);
+		});
+		google.accounts.id.initialize({
+			client_id: GOOGLE_CLIENT_ID,
+			callback: async (response: { credential?: string }) => {
+				if (!response.credential) return;
+				oauthBusy = 'google';
+				await auth.signInWithProvider('google', response.credential);
+				oauthBusy = null;
+			}
+		});
+		google.accounts.id.renderButton(googleDiv!, {
+			theme: 'filled_black',
+			size: 'large',
+			shape: 'pill',
+			text: 'signin_with'
+		});
+		gisReady = true;
+	}
+
+	async function signInApple(): Promise<void> {
+		if (APPLE_CLIENT_ID === '') return;
+		oauthBusy = 'apple';
+		try {
+			const AppleID: any = (window as any).AppleID;
+			const authorization = await AppleID.auth.signIn();
+			const idToken: string | undefined = authorization?.id_token;
+			if (idToken) await auth.signInWithProvider('apple', idToken);
+		} finally {
+			oauthBusy = null;
+		}
+	}
+
+	$effect(() => {
+		if (oauthAvailable && GOOGLE_CLIENT_ID !== '') void loadGis();
+		if (oauthAvailable && APPLE_CLIENT_ID !== '') {
+			// Apple ID JS se carga diferido; inicializa al primer uso.
+			const s = document.createElement('script');
+			s.src = 'https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/en_US/appleid.auth.js';
+			s.async = true;
+			document.head.appendChild(s);
+		}
+	});
+
 	type Mode = 'signIn' | 'signUp' | 'forgot';
 	let mode = $state<Mode>('signIn');
 	let email = $state('');
@@ -78,6 +139,27 @@
 		</button>
 	</form>
 
+		{#if oauthAvailable}
+			<div class="oauth">
+				{#if GOOGLE_CLIENT_ID !== ''}
+					<div class="google-btn" bind:this={googleDiv}></div>
+				{/if}
+				{#if APPLE_CLIENT_ID !== ''}
+					<button
+						class="apple-btn pressable"
+						type="button"
+						disabled={oauthBusy !== null}
+						onclick={signInApple}
+					>
+						{oauthBusy === 'apple' ? t('auth.working') : t('auth.oauth.apple')}
+					</button>
+				{/if}
+				{#if auth.status === 'error' && auth.errorCode?.startsWith('oauth')}
+					<p class="error">{t('auth.oauth.error')}</p>
+				{/if}
+			</div>
+		{/if}
+
 	<div class="links">
 		{#if mode === 'signIn'}
 			<button class="link" onclick={() => switchMode('signUp')}>{t('auth.needAccount')}</button>
@@ -129,6 +211,29 @@
 		color: var(--brand);
 		font-size: var(--text-sm);
 		font-weight: 550;
+	}
+
+	.oauth {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-2);
+		align-items: stretch;
+	}
+
+	.apple-btn {
+		width: 100%;
+		min-height: 44px;
+		border-radius: var(--radius-pill);
+		border: 1px solid var(--border-strong);
+		background: #000;
+		color: #fff;
+		font-weight: 600;
+		cursor: pointer;
+	}
+
+	.apple-btn:disabled {
+		opacity: 0.6;
+		cursor: default;
 	}
 
 	.links {

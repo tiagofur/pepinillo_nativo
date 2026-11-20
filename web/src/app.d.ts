@@ -12,6 +12,7 @@ declare global {
 	const __PUBLIC_API_BASE_URL__: string;
 	const __PUBLIC_WS_URL__: string;
 	const __PUBLIC_GOOGLE_CLIENT_ID__: string;
+	const __PUBLIC_APPLE_CLIENT_ID__: string;
 }
 
 export {};
