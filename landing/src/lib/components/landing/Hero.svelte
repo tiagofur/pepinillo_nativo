@@ -2,6 +2,17 @@
 	import { t } from '$lib/i18n/i18n.svelte';
 	import { APP_STORE_URL, PLAY_STORE_URL, WEB_APP_URL } from './links';
 	import DeviceFrame from './DeviceFrame.svelte';
+
+	// Adaptive primary CTA (#951): App Store on Apple traffic, Play on
+	// Android, web app everywhere else. The prerender ships the web default
+	// and the client swaps right after hydration — same navigator guard as
+	// web's upgrade page (isAppleTraffic).
+	let uaApple = $derived(
+		typeof navigator !== 'undefined' &&
+			/iPhone|iPad|iPod|Macintosh/.test(navigator.userAgent) &&
+			!/Chrome|Firefox|Edg/.test(navigator.userAgent)
+	);
+	let uaAndroid = $derived(typeof navigator !== 'undefined' && /Android/.test(navigator.userAgent));
 </script>
 
 <section class="hero">
@@ -10,8 +21,18 @@
 		<h1>{t('landing.hero.title')}</h1>
 		<p class="lede">{t('landing.hero.sub')}</p>
 		<div class="cta-row">
-			<a class="btn btn-primary pressable" href={WEB_APP_URL}>{t('landing.cta.web')}</a>
-			<a class="btn btn-outline pressable" href={APP_STORE_URL} rel="noopener">
+			<a
+				class="btn pressable"
+				class:btn-primary={!uaApple && !uaAndroid}
+				class:btn-outline={uaApple || uaAndroid}
+				href={WEB_APP_URL}>{t('landing.cta.web')}</a
+			>
+			<a
+				class="btn pressable"
+				class:btn-primary={uaApple}
+				class:btn-outline={!uaApple}
+				href={APP_STORE_URL}
+				rel="noopener">
 				<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
 					<path
 						fill="currentColor"
@@ -20,7 +41,12 @@
 				</svg>
 				{t('landing.hero.cta.ios')}
 			</a>
-			<a class="btn btn-outline pressable" href={PLAY_STORE_URL} rel="noopener">
+			<a
+				class="btn pressable"
+				class:btn-primary={uaAndroid}
+				class:btn-outline={!uaAndroid}
+				href={PLAY_STORE_URL}
+				rel="noopener">
 				<svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true">
 					<path
 						fill="currentColor"
