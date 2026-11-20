@@ -340,6 +340,8 @@ export type MessageKey =
 	| 'palette.startFocus'
 	| 'palette.toggleTheme'
 	| 'toast.undo'
+	| 'update.available'
+	| 'update.reload'
 	| 'period.7'
 	| 'period.30'
 	| 'period.365'
@@ -902,6 +904,8 @@ const en: Dict = {
 	'palette.startFocus': 'Start focus session',
 	'palette.toggleTheme': 'Toggle light / dark',
 	'toast.undo': 'Undo',
+	'update.available': 'A new version of Pepinillo is available',
+	'update.reload': 'Reload',
 	'period.7': '7D',
 	'period.30': '30D',
 	'period.365': '1Y',
@@ -1521,6 +1525,8 @@ const es: Dict = {
 	'palette.startFocus': 'Iniciar sesión de foco',
 	'palette.toggleTheme': 'Cambiar claro / oscuro',
 	'toast.undo': 'Deshacer',
+	'update.available': 'Hay una nueva versión de Pepinillo',
+	'update.reload': 'Recargar',
 	'period.7': '7D',
 	'period.30': '30D',
 	'period.365': '1A',
@@ -2111,6 +2117,8 @@ const pt: Dict = {
 	'palette.startFocus': 'Iniciar sessão de foco',
 	'palette.toggleTheme': 'Alternar claro / escuro',
 	'toast.undo': 'Desfazer',
+	'update.available': 'Há uma nova versão do Pepinillo',
+	'update.reload': 'Recarregar',
 	'period.7': '7D',
 	'period.30': '30D',
 	'period.365': '1A',
