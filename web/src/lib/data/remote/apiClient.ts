@@ -148,6 +148,14 @@ export class ApiClient {
 		});
 	}
 
+	/** RC license bridge (#953): single-use claim code the native app
+	 * redeems to inherit the purchase on this account (15 min TTL). */
+	async createRcLinkCode(): Promise<{ code: string; expiresAt: string }> {
+		return this.request<{ code: string; expiresAt: string }>('/api/v1/account/link-code', {
+			method: 'POST'
+		});
+	}
+
 	/** Permanently deletes the account (JWT). Local data stays on the device. */
 	async deleteAccount(): Promise<void> {
 		await this.request<void>('/api/v1/auth/account', { method: 'DELETE' });

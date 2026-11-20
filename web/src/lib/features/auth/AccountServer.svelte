@@ -59,6 +59,29 @@
 		resendState = await auth.resendVerification() ? 'sent' : 'error';
 	}
 
+	// RC license bridge (#953): a single-use code the NATIVE app redeems to
+	// inherit the purchase on this account. The backend validates the
+	// entitlement server-side; here we only surface the code.
+	let linkCode = $state<string | null>(null);
+	let linkExpires = $state<string | null>(null);
+	let linkState = $state<'idle' | 'working' | 'error'>('idle');
+
+	async function generateLinkCode(): Promise<void> {
+		if (!auth.api || linkState === 'working') return;
+		linkState = 'working';
+		try {
+			const res = await auth.api.createRcLinkCode();
+			linkCode = res.code;
+			linkExpires = res.expiresAt;
+		} catch {
+			linkCode = null;
+			linkExpires = null;
+			linkState = 'error';
+			return;
+		}
+		linkState = 'idle';
+	}
+
 	function fmtWhen(iso: string | null): string {
 		if (!iso) return '—';
 		return new Date(iso).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' });
@@ -199,6 +222,32 @@
 			🔒 {t('sync.deviceBound')}
 			<a href="/upgrade">{t('plan.upgradeCta')} →</a>
 		</p>
+	{/if}
+</div>
+
+<div class="card section">
+	<h2>🔗 {t('account.linkCode.title')}</h2>
+	<p class="muted">{t('account.linkCode.body')}</p>
+	{#if linkCode}
+		<div class="link-code" role="region" aria-label={t('account.linkCode.codeLabel')}>
+			<span class="code">{linkCode}</span>
+			<span class="muted nums">{t('account.linkCode.expires', { time: fmtWhen(linkExpires) })}</span>
+		</div>
+		<p class="muted">{t('account.linkCode.enter')}</p>
+	{/if}
+	<button
+		class="btn btn-outline pressable"
+		disabled={linkState === 'working'}
+		onclick={generateLinkCode}
+	>
+		{linkState === 'working'
+			? t('auth.working')
+			: linkCode
+				? t('account.linkCode.regenerate')
+				: t('account.linkCode.generate')}
+	</button>
+	{#if linkState === 'error'}
+		<p class="link-bad" role="alert">{t('account.linkCode.error')}</p>
 	{/if}
 </div>
 
@@ -465,6 +514,28 @@
 	.device-bound a {
 		color: var(--brand);
 		font-weight: 650;
+	}
+
+	.link-code {
+		display: flex;
+		align-items: baseline;
+		gap: var(--space-3);
+		flex-wrap: wrap;
+	}
+
+	.link-code .code {
+		font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+		font-size: var(--text-xl);
+		font-weight: 750;
+		letter-spacing: 0.3em;
+		color: var(--ink);
+	}
+
+	.link-bad {
+		margin: 0;
+		color: var(--mode-pomodoro);
+		font-size: var(--text-sm);
+		font-weight: 600;
 	}
 
 	.row {

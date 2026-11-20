@@ -167,6 +167,14 @@ export type MessageKey =
 	| 'account.theme.dark'
 	| 'account.storageWarning'
 	| 'account.everywhereTeaser'
+	| 'account.linkCode.title'
+	| 'account.linkCode.body'
+	| 'account.linkCode.generate'
+	| 'account.linkCode.regenerate'
+	| 'account.linkCode.codeLabel'
+	| 'account.linkCode.enter'
+	| 'account.linkCode.expires'
+	| 'account.linkCode.error'
 	| 'account.about'
 	| 'account.nonGoals'
 	| 'account.deviceId'
@@ -1136,6 +1144,16 @@ const en: Dict = {
 		'Your Free data is stored only in this browser profile. Clearing storage or switching browsers loses it. Multi-device sync is not available on Free.',
 	'account.everywhereTeaser':
 		'Your plan is bought and restored on the web with your account — Pepinillo+ (one-time) and Everywhere/AI+ (subscription) are sold on the pricing page. App-store purchases will link to your account soon.',
+	'account.linkCode.title': 'Use your native purchase here',
+	'account.linkCode.body':
+		'Bought Pepinillo+ or Everywhere in the iOS, macOS, or Android app? Generate a code and enter it there to bring your plan to this account.',
+	'account.linkCode.generate': 'Generate code',
+	'account.linkCode.regenerate': 'Generate another code',
+	'account.linkCode.codeLabel': 'Your claim code',
+	'account.linkCode.enter':
+		'In the app: Settings → Use my purchase on the Web → enter this code.',
+	'account.linkCode.expires': 'Valid until {time}',
+	'account.linkCode.error': 'Could not generate the code. Please try again.',
 	'account.about':
 		'Web is a companion extra for large-screen focus. It does not replace native OS features.',
 	'account.nonGoals':
@@ -1293,6 +1311,15 @@ const es: Dict = {
 		'Tus datos Free se guardan solo en este perfil del navegador. Borrar almacenamiento o cambiar de navegador los pierde. La sync multi-dispositivo no está en Free.',
 	'account.everywhereTeaser':
 		'Tu plan se compra y se restaura en la web con tu cuenta — Pepinillo+ (pago único) y Everywhere/AI+ (suscripción) se venden en la página de precios. Las compras de tienda se vincularán a tu cuenta próximamente.',
+	'account.linkCode.title': 'Usá tu compra nativa acá',
+	'account.linkCode.body':
+		'¿Compraste Pepinillo+ o Everywhere en la app de iOS, macOS o Android? Generá un código e ingresalo ahí para traer tu plan a esta cuenta.',
+	'account.linkCode.generate': 'Generar código',
+	'account.linkCode.regenerate': 'Generar otro código',
+	'account.linkCode.codeLabel': 'Tu código de vinculación',
+	'account.linkCode.enter': 'En la app: Ajustes → Usar mi compra en la Web → ingresá este código.',
+	'account.linkCode.expires': 'Válido hasta {time}',
+	'account.linkCode.error': 'No se pudo generar el código. Probá de nuevo.',
 	'account.about':
 		'La web es un extra compañero para foco en pantalla grande. No reemplaza funciones nativas del SO.',
 	'account.nonGoals':
@@ -1874,6 +1901,15 @@ const pt: Dict = {
 		'Seus dados Free ficam só neste perfil do navegador. Limpar armazenamento ou trocar de navegador os perde. Sync multi-dispositivo não está no Free.',
 	'account.everywhereTeaser':
 		'Seu plano é comprado e restaurado na web com sua conta — Pepinillo+ (pagamento único) e Everywhere/AI+ (assinatura) são vendidos na página de preços. Compras nas lojas de apps serão vinculadas à sua conta em breve.',
+	'account.linkCode.title': 'Use sua compra nativa aqui',
+	'account.linkCode.body':
+		'Comprou Pepinillo+ ou Everywhere no app de iOS, macOS ou Android? Gere um código e insira-o lá para trazer seu plano para esta conta.',
+	'account.linkCode.generate': 'Gerar código',
+	'account.linkCode.regenerate': 'Gerar outro código',
+	'account.linkCode.codeLabel': 'Seu código de vinculação',
+	'account.linkCode.enter': 'No app: Ajustes → Usar minha compra na Web → insira este código.',
+	'account.linkCode.expires': 'Válido até {time}',
+	'account.linkCode.error': 'Não foi possível gerar o código. Tente novamente.',
 	'account.about':
 		'A web é um extra companheiro para foco em tela grande. Não substitui recursos nativos do SO.',
 	'account.nonGoals':
