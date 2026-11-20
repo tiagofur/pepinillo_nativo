@@ -327,6 +327,38 @@ struct AuthView: View {
     }
 
     private var appleSignInButton: some View {
+        #if os(macOS)
+        // macOS: two dead-button root causes (#962) — (1) the invisible-overlay
+        // hack never got clicks, and (2) glassEffect(.regular.interactive(true))
+        // swallows button clicks on macOS entirely. Drive
+        // ASAuthorizationController manually via AppleSignInCoordinator and use
+        // pure-SwiftUI material instead of the interactive glass capsule.
+        Button {
+            let nonce = AppleAuthHelper.generateNonce()
+            currentNonce = nonce
+            AppleSignInCoordinator.shared.start(rawNonce: nonce) { result in
+                handleAppleSignInResult(result)
+            }
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: "apple.logo")
+                    .font(.subheadline.weight(.semibold))
+                Text(String(localized: "Continue with Apple"))
+                    .font(.subheadline.weight(.semibold))
+            }
+            .foregroundStyle(.primary)
+            .frame(maxWidth: .infinity)
+            .frame(height: 50)
+            .background(.ultraThinMaterial, in: Capsule())
+            .overlay {
+                Capsule()
+                    .stroke(.secondary.opacity(colorScheme == .dark ? 0.25 : 0.15), lineWidth: 1)
+            }
+        }
+        .buttonStyle(.plain)
+        .contentShape(Capsule())
+        .padding(.horizontal, 24)
+        #else
         ZStack {
             HStack(spacing: 8) {
                 Image(systemName: "apple.logo")
@@ -349,32 +381,7 @@ struct AuthView: View {
                 currentNonce = nonce
                 request.nonce = AppleAuthHelper.sha256Hex(nonce)
                 request.requestedScopes = [.fullName, .email]
-            } onCompletion: { result in
-                switch result {
-                case .success(let auth):
-                    guard let cred = auth.credential as? ASAuthorizationAppleIDCredential else {
-                        onAppleSignInFailed?(false)
-                        return
-                    }
-                    guard !currentNonce.isEmpty else {
-                        onAppleSignInFailed?(false)
-                        return
-                    }
-                    let identityToken: String? = cred.identityToken.flatMap { String(data: $0, encoding: .utf8) }
-                    let authorizationCode: String? = cred.authorizationCode.flatMap { String(data: $0, encoding: .utf8) }
-                    onAppleSignIn?(AppleUserInfo(
-                        userID: cred.user,
-                        displayName: cred.fullName?.formatted(),
-                        email: cred.email,
-                        identityToken: identityToken,
-                        nonce: currentNonce,
-                        authorizationCode: authorizationCode
-                    ))
-                case .failure(let error):
-                    let cancelled = (error as? ASAuthorizationError)?.code == .canceled
-                    onAppleSignInFailed?(cancelled)
-                }
-            }
+            } onCompletion: { handleAppleSignInResult($0) }
             .signInWithAppleButtonStyle(colorScheme == .dark ? .black : .white)
             .opacity(0.015)
             .frame(maxWidth: .infinity)
@@ -382,6 +389,34 @@ struct AuthView: View {
         }
         .contentShape(Capsule())
         .padding(.horizontal, 24)
+        #endif
+    }
+
+    private func handleAppleSignInResult(_ result: Result<ASAuthorization, Error>) {
+        switch result {
+        case .success(let auth):
+            guard let cred = auth.credential as? ASAuthorizationAppleIDCredential else {
+                onAppleSignInFailed?(false)
+                return
+            }
+            guard !currentNonce.isEmpty else {
+                onAppleSignInFailed?(false)
+                return
+            }
+            let identityToken: String? = cred.identityToken.flatMap { String(data: $0, encoding: .utf8) }
+            let authorizationCode: String? = cred.authorizationCode.flatMap { String(data: $0, encoding: .utf8) }
+            onAppleSignIn?(AppleUserInfo(
+                userID: cred.user,
+                displayName: cred.fullName?.formatted(),
+                email: cred.email,
+                identityToken: identityToken,
+                nonce: currentNonce,
+                authorizationCode: authorizationCode
+            ))
+        case .failure(let error):
+            let cancelled = (error as? ASAuthorizationError)?.code == .canceled
+            onAppleSignInFailed?(cancelled)
+        }
     }
 
     @ViewBuilder
