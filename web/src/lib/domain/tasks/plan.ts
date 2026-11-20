@@ -4,13 +4,21 @@
  * Completed. `inbox` stays a valid filter for the capture flow.
  */
 
-import type { Task, TaskEnergy } from '$lib/domain/entities/types';
+import type { Preferences, Task, TaskEnergy } from '$lib/domain/entities/types';
 import { ENERGY_ORDER } from './energy';
 import { localDateKey } from './recurrence';
 
-export type PlanFilter = 'all' | 'today' | 'inbox' | 'upcoming' | 'completed';
+export type PlanFilter = Preferences['planFilter'];
 
 export const PLAN_FILTERS: readonly PlanFilter[] = ['today', 'inbox', 'upcoming', 'completed'] as const;
+
+const PLAN_FILTER_IDS: readonly PlanFilter[] = ['all', 'today', 'inbox', 'upcoming', 'completed'];
+
+/** Stored prefs may predate the field or carry legacy values — fail closed to
+ * the Mac default instead of feeding filterTasks an unknown filter (#975). */
+export function restorePlanFilter(value: unknown): PlanFilter {
+	return PLAN_FILTER_IDS.includes(value as PlanFilter) ? (value as PlanFilter) : 'today';
+}
 
 export function isToday(task: Task, todayKey: string): boolean {
 	return task.scheduledForToday === true || task.dueDate === todayKey;

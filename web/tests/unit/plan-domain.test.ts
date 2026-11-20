@@ -12,6 +12,7 @@ import {
 	filterTasks,
 	groupByEnergy,
 	quickAddDefaults,
+	restorePlanFilter,
 	reorderSubset,
 	subtaskProgress
 } from '$lib/domain/tasks/plan';
@@ -163,6 +164,21 @@ describe('groupByEnergy', () => {
 		const groups = groupByEnergy(tasks);
 		expect(groups.map((g) => g.energy)).toEqual(['deep', 'admin']);
 		expect(groups[0].tasks).toHaveLength(2);
+	});
+});
+
+describe('restorePlanFilter (#975)', () => {
+	it('accepts every shipped filter', () => {
+		for (const f of ['all', 'today', 'inbox', 'upcoming', 'completed'] as const) {
+			expect(restorePlanFilter(f)).toBe(f);
+		}
+	});
+
+	it('falls back to today on missing or legacy values', () => {
+		expect(restorePlanFilter(undefined)).toBe('today');
+		expect(restorePlanFilter(null)).toBe('today');
+		expect(restorePlanFilter('bogus')).toBe('today');
+		expect(restorePlanFilter(42)).toBe('today');
 	});
 });
 
