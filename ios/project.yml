@@ -200,8 +200,8 @@ targets:
         # Touch-native opt-in (#747): stops synthesizing clicks from touches so
         # standard controls use the native macOS 27 touch path. Declared only
         # after hit targets (#744) and hover adaptations (#745) landed; direct
-        # gestures (dial, scrub, tap, pinch) are already .directTouch and are
-        # unaffected by the flag.
+        # gestures are unaffected by the flag (dial/scrub/tap are
+        # .directTouch; pinch Zen is dual touch+trackpad).
         NSIsTouchNative: true
         API_BASE_URL: "$(API_BASE_URL)"
         WS_BASE_URL: "$(WS_BASE_URL)"

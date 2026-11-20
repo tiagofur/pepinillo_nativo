@@ -34,7 +34,9 @@ de #758 ya vive en main vía #845/#849 — esa issue queda como cierre formal.
 
 - `ios/project.yml` (solo bloque info del target PepinilloMac)
 - `ios/Mac/Info.plist` (regenerado por xcodegen)
-- `ios/docs/touch-on-mac.md` (§3 tabla + §4 decisión)
+- `ios/docs/touch-on-mac.md` (§3 tabla + §4 decisión + R3)
+- `ios/docs/macos-design-contract.md` (§18.5 — añadida en ronda de corrección C4)
+- `odd/tasks/747-touch-native-declaration.md`
 
 ## Exclusiones
 
@@ -53,3 +55,8 @@ de #758 ya vive en main vía #845/#849 — esa issue queda como cierre formal.
   Info.plist, no símbolo compilable). Baseline Mac Dev verde. Flag + docs
   aplicados; build verde con flag en bundle. Pendiente: push, PR, jueces C4,
   QA físico S5 antes de archive 1.2.4.
+- 2026-11-20 (C4.3): veredicto APPROVED con hallazgos; correcciones: §18.5 del
+  contrato de diseño marcado RESOLVED (P2), precisión pinch (dual
+  touch+trackpad, no .directTouch) en docs §4 + comentario project.yml (P2),
+  R3 armonizada con la vía SwiftUI equivalente (P3), macos-design-contract.md
+  añadida a superficies.

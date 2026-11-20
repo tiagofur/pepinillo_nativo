@@ -54,10 +54,12 @@ del contrato de diseño (28×28, §15) no cambia; el área efectiva de toque sí
 - Long-press ⇒ context menu (el sistema lo mapea; mantener `contextMenu` como
   camino universal).
 - Scroll con `ScrollView`/`Table` nativo; no interceptar.
-- Gestos custom **solo** con `NSGestureRecognizer` táctil
-  (`allowedTouchTypes = .direct`, `buttonMask = 0`) y refactor
-  start/continue/end/cancelTracking — nunca loops `NSApp.nextEvent` ni overrides
-  `mouseDown` (tech talk 111468).
+- Gestos custom con recognise táctil: la vía canónica AppKit es
+  `NSGestureRecognizer` (`allowedTouchTypes = .direct`, `buttonMask = 0`) con
+  refactor start/continue/end/cancelTracking — **la vía equivalente SwiftUI es
+  `inputKinds: .directTouch`** (misma semántica solo-táctil; es la usada por el
+  dial/tap del anillo en producción). Nunca loops `NSApp.nextEvent` ni
+  overrides `mouseDown` (tech talk 111468).
 
 ### R4 — Entradas críticas siempre visibles
 Toda acción central (Quick Capture, Start/Pause, inspector) debe ser alcanzable
@@ -93,7 +95,8 @@ bifurcar el motor (invariante de paridad de foco). Detalle en issue #746.
    faltaban cuando se pospuso, hoy cumplidas: targets ≥36pt completos (#744 +
    residuales #818-#820), hover-adaptations cerradas (#745 — el ⓘ revela con
    hover ‖ selección, regla HIG de dos toques), gestos directos en producción
-   desde 1.2.2 (dial/scrub/tap/pinch son `.directTouch` y no dependen del
+   desde 1.2.2 (dial/scrub/tap son `.directTouch`; el pinch Zen es gesto dual
+   touch+trackpad — `MagnifyGesture` sin `inputKinds` — y tampoco depende del
    flag). Trade-off aceptado: al declararlo se apaga la traducción
    touch→click y los controles estándar pasan a la vía táctil nativa de
    macOS 27 — todo lo puntero-dependiente ya tiene gemelo no-gesto (principio
