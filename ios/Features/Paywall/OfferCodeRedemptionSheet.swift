@@ -64,14 +64,11 @@ extension OfferCodeRedemptionSheet {
             else {
                 throw OfferCodeSheetError.noWindow
             }
-            if #available(iOS 27.0, *) {
-                guard let controller = scene.keyWindow?.rootViewController else {
-                    throw OfferCodeSheetError.noWindow
-                }
-                _ = try await AppStore.presentOfferCodeRedeemSheet(from: controller, options: [])
-            } else {
-                try await AppStore.presentOfferCodeRedeemSheet(in: scene)
-            }
+            // `in:` exists on every SDK (iOS 16+) and keeps CI green on runners
+            // still resolving latest-stable to Xcode 26.3, where the 27-only
+            // `from:options:` overload is a hard compile error — availability
+            // guards cannot hide a missing overload from the compiler.
+            try await AppStore.presentOfferCodeRedeemSheet(in: scene)
             #else
             throw OfferCodeSheetError.unsupportedPlatform
             #endif
