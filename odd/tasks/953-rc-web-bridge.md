@@ -80,3 +80,6 @@
   grant + 409. Además: rollback del grant ante CUALQUIER fallo de bind con
   log rc_link_rollback_failed; fake GetByID devuelve copias (semántica de
   producción; el aliasing enmascaraba el rollback en el test de carrera.
+- 2026-11-20 (PR-2): tarjeta del código en /account (apiClient
+  createRcLinkCode + account.linkCode.* ×3 locales, es voseo); genera,
+  muestra con vencimiento y permite regenerar tras cada canje.
