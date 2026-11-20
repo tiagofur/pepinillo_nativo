@@ -22,9 +22,16 @@ function wsUrl(): string {
 	return (__PUBLIC_WS_URL__ || '').replace(/\/$/, '');
 }
 
-/** Server tier string → local gate tier (any paid tier unlocks local premium). */
+/**
+ * Server tier string → local gate tier (#952): pepinillo_plus keeps its own
+ * tier (full local premium, single-device backup lane), everywhere_* maps to
+ * 'everywhere' (local premium + multi-device sync + cloud AI).
+ */
 function toGateTier(serverTier: string): EntitlementTier {
-	return serverTier && serverTier !== 'free' ? 'everywhere' : 'free';
+	const tier = (serverTier || '').toLowerCase();
+	if (tier.startsWith('everywhere')) return 'everywhere';
+	if (tier === 'pepinillo_plus' || tier === 'pepinillo') return 'pepinillo_plus';
+	return 'free';
 }
 
 class AuthStore {

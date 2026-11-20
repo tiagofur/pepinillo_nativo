@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
 	canCreateActiveTask,
 	canExport,
+	canUseAnalyticsPeriod,
 	canUseMode,
 	canUsePremiumTheme,
 	canUseRecurrence,
@@ -124,6 +125,31 @@ describe('Free gates (PRD/04 §3.1)', () => {
 			expect(canExport('everywhere')).toBe(true);
 			expect(canUseSync('everywhere')).toBe(true);
 			expect(canUsePremiumTheme('everywhere')).toBe(true);
+		});
+	});
+
+	describe('Pepinillo+ tier (#952 S1/S3)', () => {
+		it('unlocks local premium: modes, cap, structure, export, themes, analytics', () => {
+			const modes: FocusMode[] = ['pomodoro', 'stopwatch', 'flowtime', 'timeblock'];
+			for (const mode of modes) expect(canUseMode(mode, 'pepinillo_plus')).toBe(true);
+			expect(canCreateActiveTask(100, 'pepinillo_plus')).toBe(true);
+			expect(maxActiveTasks('pepinillo_plus')).toBe(Infinity);
+			expect(canUseSubtasks('pepinillo_plus')).toBe(true);
+			expect(canUseRecurrence('pepinillo_plus')).toBe(true);
+			expect(canExport('pepinillo_plus')).toBe(true);
+			expect(canUsePremiumTheme('pepinillo_plus')).toBe(true);
+			expect(canUseAnalyticsPeriod(30, 'pepinillo_plus')).toBe(true);
+			expect(canUseAnalyticsPeriod(365, 'pepinillo_plus')).toBe(true);
+		});
+
+		it('does NOT unlock multi-device sync — Everywhere-only lane (#942)', () => {
+			expect(canUseSync('pepinillo_plus')).toBe(false);
+			expect(canUseSync('everywhere')).toBe(true);
+		});
+
+		it('unlocks premium soundscapes', () => {
+			const premium: SoundscapeName[] = ['ocean', 'fireplace', 'binaural', 'lofi'];
+			for (const name of premium) expect(isSoundscapeFree(name, 'pepinillo_plus')).toBe(true);
 		});
 	});
 });

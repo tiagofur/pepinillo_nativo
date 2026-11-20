@@ -24,8 +24,10 @@ class AIStore {
 	optimalHours = $state<AiState<{ windows: string[] } | null>>(initialState());
 	weeklyInsights = $state<AiState<{ highlights: string[]; insights: string[] } | null>>(initialState());
 
+	/** Cloud AI runs on the backend, which denies ai_insights for
+	 * pepinillo_plus (#952) — Everywhere/AI+ only. */
 	get isPremium(): boolean {
-		return app.tier !== 'free' && auth.user !== null;
+		return app.tier === 'everywhere' && auth.user !== null;
 	}
 
 	private get api() {
@@ -101,7 +103,7 @@ class AIStore {
 
 	private gateOrError(): AiStatus {
 		if (!auth.configured) return 'offline';
-		if (app.tier === 'free') return 'gated';
+		if (app.tier !== 'everywhere') return 'gated';
 		return 'error';
 	}
 
