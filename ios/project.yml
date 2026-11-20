@@ -197,6 +197,12 @@ targets:
         LSApplicationCategoryType: public.app-category.productivity
         CFBundleIconName: AppIcon
         NSSupportsLiveActivities: true
+        # Touch-native opt-in (#747): stops synthesizing clicks from touches so
+        # standard controls use the native macOS 27 touch path. Declared only
+        # after hit targets (#744) and hover adaptations (#745) landed; direct
+        # gestures (dial, scrub, tap, pinch) are already .directTouch and are
+        # unaffected by the flag.
+        NSIsTouchNative: true
         API_BASE_URL: "$(API_BASE_URL)"
         WS_BASE_URL: "$(WS_BASE_URL)"
         APP_ENVIRONMENT: "$(APP_ENVIRONMENT)"

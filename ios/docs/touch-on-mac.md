@@ -86,13 +86,24 @@ bifurcar el motor (invariante de paridad de foco). Detalle en issue #746.
 
 ---
 
-## 4. Decisiones abiertas (labs 18–19 nov 2026)
+## 4. Decisiones (labs 18–19 nov 2026; cerradas 20-nov para 1.2.4)
 
-1. **`NSIsTouchNative`**: NO declarar por ahora. Con la traducción automática
-   touch→click, declararlo solo tiene sentido cuando las hover-adaptations y los
-   targets ≥36pt estén completos (#744/#745) y conozcamos los costes exactos
-   (¿perdemos la traducción mientras migramos? ¿long-press sintetiza
-   right-click en modo traducción?). Re-evaluar post-labs.
+1. **`NSIsTouchNative`**: ✅ **DECIDIDO — DECLARAR (`true`)** en el target
+   PepinilloMac (`ios/project.yml` → `info.properties`, #747). Condiciones que
+   faltaban cuando se pospuso, hoy cumplidas: targets ≥36pt completos (#744 +
+   residuales #818-#820), hover-adaptations cerradas (#745 — el ⓘ revela con
+   hover ‖ selección, regla HIG de dos toques), gestos directos en producción
+   desde 1.2.2 (dial/scrub/tap/pinch son `.directTouch` y no dependen del
+   flag). Trade-off aceptado: al declararlo se apaga la traducción
+   touch→click y los controles estándar pasan a la vía táctil nativa de
+   macOS 27 — todo lo puntero-dependiente ya tiene gemelo no-gesto (principio
+   del paquete touch). `NSViewGestureRecognizerIsExclusive` NO se define: no
+   usamos `NSGestureRecognizer` directos (los gestos son SwiftUI
+   `inputKinds`), y el default `YES` solo arriesga congelar ventanas con
+   recognizers NS explícitos. **Gate de release (#747 S2): QA físico en
+   pantalla táctil (labs) antes de subir 1.2.4** — los 4 checks de gestos +
+   barrido de controles estándar (botones, tablas, menús, contextMenus) sin
+   puntero.
 2. **Notch panel custom (NSPanel) vs Dynamic Island del sistema**: nuestro panel
    (`MacNotchPanelController`, auxiliaryTopArea) ocupa el mismo espacio físico
    que el Dynamic Island del sistema. Preguntar coexistencia/choque en el lab;
