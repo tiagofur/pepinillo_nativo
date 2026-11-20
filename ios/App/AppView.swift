@@ -215,6 +215,16 @@ struct AppView: View {
             .interactiveDismissDisabled()
             .pepinilloSheetStyle()
         }
+        // RC license bridge sheet (#953): claim code → web account
+        .sheet(item: $store.scope(state: \.rcLink, action: \.rcLink)) { rcLinkStore in
+            NavigationStack {
+                RcLinkView(store: rcLinkStore)
+                    .navigationTitle(String(localized: "account.rclink.row.title", defaultValue: "Use my purchase on the Web"))
+                    .navigationBarTitleDisplayMode(.inline)
+            }
+            .presentationDetents([.large])
+            .pepinilloSheetStyle()
+        }
         // Celebration overlay
         .overlay {
             if let milestone = store.pendingCelebration {
