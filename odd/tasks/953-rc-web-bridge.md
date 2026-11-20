@@ -93,3 +93,12 @@
   mecánica de AccountServer (557 > 500), role="status" en la región del
   código, atenuar código vencido, pt "insira-o lá" más natural, en
   codeLabel "claim"→"link", clave muerta account.everywhereTeaser.
+- 2026-11-20 (PR-3 iOS/Mac): RcLinkFeature + RcLinkView (patrón
+  EmailVerification, TCA sheet) conTextField de 6 dígitos; APIClient.rcLink
+  público; SubscriptionClient.currentAppUserID (actor manager expone
+  Purchases.shared.appUserID); AppFeature.showRcLinkTapped + sheet en
+  AppView; botón en guestHeader (iOS) y signedOut (Mac) con la etiqueta
+  canónica; delegate claimSucceeded → linkSubscriptionIdentity existente
+  (Purchases.logIn → SUBSCRIBER_ALIAS → soft-sync); errores 404/409 como
+  casos APIClientError con userMessage; 8 claves xcstrings es/pt voseo;
+  tests RcLinkFeatureTests (5, TestStore + Swift Testing).
