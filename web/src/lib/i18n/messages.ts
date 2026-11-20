@@ -430,6 +430,7 @@ export type MessageKey =
 	| 'sync.live'
 	| 'sync.offline'
 	| 'sync.deviceBound'
+	| 'sync.plusBound'
 	| 'sync.mergeTitle'
 	| 'sync.mergeBody'
 	| 'sync.mergePull'
@@ -1119,6 +1120,7 @@ const en: Dict = {
 	'sync.live': 'Live updates connected',
 	'sync.offline': 'Live updates off',
 	'sync.deviceBound': 'This backup belongs to another device. Everywhere+ syncs across devices.',
+	'sync.plusBound': 'Pepinillo+ backs up this browser (single device). Real-time multi-device sync and cloud AI need Everywhere/AI+.',
 	'sync.mergeTitle': 'We found cloud data',
 	'sync.mergeBody': 'This account already has data in the cloud. Keep the cloud version, or overwrite the cloud with what is on this device?',
 	'sync.mergePull': 'Use the cloud data',
@@ -1718,6 +1720,7 @@ const es: Dict = {
 	'sync.live': 'Actualizaciones en vivo conectadas',
 	'sync.offline': 'Actualizaciones en vivo apagadas',
 	'sync.deviceBound': 'Este respaldo pertenece a otro dispositivo. Everywhere+ sincroniza entre dispositivos.',
+	'sync.plusBound': 'Tu Pepinillo+ respalda este navegador (un solo dispositivo). La sync multi-dispositivo en tiempo real y la IA en la nube necesitan Everywhere/AI+.',
 	'sync.mergeTitle': 'Encontramos datos en la nube',
 	'sync.mergeBody': 'Esta cuenta ya tiene datos en la nube. ¿Te quedás con la versión de la nube o pisás la nube con lo que hay en este dispositivo?',
 	'sync.mergePull': 'Usar los datos de la nube',
@@ -2298,6 +2301,7 @@ const pt: Dict = {
 	'sync.live': 'Atualizações ao vivo conectadas',
 	'sync.offline': 'Atualizações ao vivo desligadas',
 	'sync.deviceBound': 'Este backup pertence a outro dispositivo. Everywhere+ sincroniza entre dispositivos.',
+	'sync.plusBound': 'Seu Pepinillo+ faz backup deste navegador (um único dispositivo). A sync multi-dispositivo em tempo real e a IA na nuvem precisam do Everywhere/AI+.',
 	'sync.mergeTitle': 'Encontramos dados na nuvem',
 	'sync.mergeBody': 'Esta conta já tem dados na nuvem. Fica com a versão da nuvem ou sobrescreve a nuvem com o que há neste dispositivo?',
 	'sync.mergePull': 'Usar os dados da nuvem',
