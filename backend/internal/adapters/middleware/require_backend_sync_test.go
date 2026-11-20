@@ -186,20 +186,17 @@ func TestRequireBackendSync_EverywhereIgnoresBinding_MultiDevice(t *testing.T) {
 	}
 }
 
-func TestRequireBackendSync_FreeMissingHeader_PassesWhenUnbound(t *testing.T) {
-	// A missing device header cannot match a binding — only unbound accounts
-	// pass without a header (and the upload path never binds an empty id).
-	app := buildBoundSyncTestApp("free", nil, "")
-	resp, _ := doGetWithDevice(app, "/sync/full", "")
-	if resp.StatusCode != http.StatusOK {
-		t.Errorf("expected 200, got %d", resp.StatusCode)
-	}
-}
-
-func TestRequireBackendSync_FreeMissingHeader_BoundDevice_Returns403(t *testing.T) {
-	app := buildBoundSyncTestApp("free", nil, "device-A")
-	resp, _ := doGetWithDevice(app, "/sync/full", "")
+func TestRequireBackendSync_FreeMissingHeader_FailClosed(t *testing.T) {
+	// #942 review P2-2: a client that never sends the header cannot be bound
+	// and must not ride the lane unbound forever — fail closed in both cases.
+	unbound := buildBoundSyncTestApp("free", nil, "")
+	resp, body := doGetWithDevice(unbound, "/sync/full", "")
 	if resp.StatusCode != http.StatusForbidden {
-		t.Errorf("expected 403, got %d", resp.StatusCode)
+		t.Errorf("expected 403 for unbound without header, got %d. body: %s", resp.StatusCode, body)
+	}
+	bound := buildBoundSyncTestApp("free", nil, "device-A")
+	resp, _ = doGetWithDevice(bound, "/sync/full", "")
+	if resp.StatusCode != http.StatusForbidden {
+		t.Errorf("expected 403 for bound without header, got %d", resp.StatusCode)
 	}
 }

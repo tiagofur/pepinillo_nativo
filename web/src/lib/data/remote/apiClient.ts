@@ -208,8 +208,11 @@ export class ApiClient {
 			}
 		}
 		if (!res.ok) {
-			const body = data as { error?: string; message?: string } | null;
-			const code = body?.error || body?.message || `http_${res.status}`;
+			const body = data as { code?: string; error?: string; message?: string } | null;
+			// Contract envelopes carry the stable identifier in `code`
+			// (ERR_TIER_INSUFFICIENT, ERR_DEVICE_BOUND, ...); `error` may be a
+			// human string depending on the handler (P1-2, #942 review).
+			const code = body?.code || body?.error || body?.message || `http_${res.status}`;
 			throw new ApiError(res.status, code, code);
 		}
 		return data as T;

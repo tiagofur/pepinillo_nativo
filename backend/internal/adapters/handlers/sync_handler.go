@@ -111,15 +111,17 @@ func (h *SyncHandler) InitialUpload(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "invalid_request_body")
 	}
 
-	if err := h.claimSyncDeviceBinding(c, userID); err != nil {
-		return err
-	}
-
 	result, err := h.sync.InitialUpload(c.Context(), userID, deviceID, &req)
 	if err != nil {
 		if errors.Is(err, services.ErrInvalidPreferenceKey) {
 			return fiber.NewError(fiber.StatusBadRequest, err.Error())
 		}
+		return err
+	}
+
+	// #942 S5: claim AFTER the upload succeeded (review P2-3) — a failed
+	// upload must not consume the unbound account's claimable slot.
+	if err := h.claimSyncDeviceBinding(c, userID); err != nil {
 		return err
 	}
 

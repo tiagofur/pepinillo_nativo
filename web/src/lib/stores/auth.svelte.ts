@@ -118,6 +118,7 @@ class AuthStore {
 			this.applyUser(res.user);
 			this.status = 'idle';
 			await this.decideMergeAndSync();
+			this.watchConnection();
 			this.connectWs();
 			return true;
 		} catch (e) {
@@ -140,6 +141,7 @@ class AuthStore {
 			this.status = 'idle';
 			// New account: push the local snapshot as the seed.
 			void this.syncNow(true);
+			this.watchConnection();
 			this.connectWs();
 			return true;
 		} catch (e) {
@@ -242,32 +244,55 @@ class AuthStore {
 	// ---------- Sync loop ----------
 
 	private pushTimer: ReturnType<typeof setTimeout> | null = null;
+	private pushPending = false;
+	private watching = false;
 
 	/** Debounced push after local mutations (S3 #942): coalesces bursts of
 	 * task edits into one upload ~3 s later. Server resolves LWW, so a
 	 * redundant push is safe. No-op when signed out. */
 	schedulePush(): void {
 		if (!this.user) return;
-		if (this.pushTimer) clearTimeout(this.pushTimer);
-		this.pushTimer = setTimeout(() => {
-			this.pushTimer = null;
-			void this.syncNow(true);
-		}, 3000);
+		this.pushPending = true;
+		if (this.pushTimer) return;
+		this.pushTimer = setTimeout(() => this.runPush(), 3000);
+	}
+
+	private runPush(): void {
+		this.pushTimer = null;
+		if (this.syncing) {
+			// A sync is in flight (e.g. the initial restore push) — the
+			// timer was consumed without effect, so re-arm shortly (#942
+			// review P2-7) instead of dropping the mutation.
+			this.pushTimer = setTimeout(() => this.runPush(), 1500);
+			return;
+		}
+		this.pushPending = false;
+		void this.syncNow(true).then(() => {
+			// Failed push (offline, device-bound...) stays pending so the
+			// online/visible listeners retry it (#942 review P2-1).
+			if (this.lastSyncError) this.pushPending = true;
+		});
 	}
 
 	/** Mutations must never be lost to a tab close inside the debounce. */
 	private flushPush(): void {
 		if (this.pushTimer) {
 			clearTimeout(this.pushTimer);
-			this.pushTimer = null;
-			void this.syncNow(true);
+			this.runPush();
+		} else if (this.pushPending && !this.syncing) {
+			this.runPush();
 		}
 	}
 
+	/** Registers window/document listeners once per session (restore, sign-in
+	 * and sign-up all call it — P1-4, #942 review). */
 	watchConnection(): void {
+		if (this.watching) return;
+		this.watching = true;
 		window.addEventListener('online', () => this.flushPush());
 		document.addEventListener('visibilitychange', () => {
 			if (document.visibilityState === 'hidden') this.flushPush();
+			else if (this.pushPending) this.flushPush();
 		});
 		// Stores dispatch this on local writes — avoids importing this store
 		// from plan/focus (circular with pullAndApply's plan.init()).

@@ -239,6 +239,9 @@ func doSyncRequest(t *testing.T, app *fiber.App, method, path, token string) int
 	if token != "" {
 		req.Header.Set("Authorization", "Bearer "+token)
 	}
+	// Official clients always send X-Device-ID (web apiClient, native apps);
+	// the #942 gate is fail-closed without it.
+	req.Header.Set("X-Device-ID", "integration-device")
 	resp, err := app.Test(req)
 	require.NoError(t, err)
 	return resp.StatusCode

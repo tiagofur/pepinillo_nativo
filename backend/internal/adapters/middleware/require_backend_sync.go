@@ -57,12 +57,16 @@ func requireBackendSync(strict bool) fiber.Handler {
 			return insufficientTierError(c)
 		}
 
-		// Device-bound lane (free / pepinillo_plus).
+		// Device-bound lane (free / pepinillo_plus). Fail-closed on a
+		// missing header too (#942 review P2-2): a client that never sends
+		// X-Device-ID could otherwise stay unbound forever and sync from
+		// any device, bypassing the gate.
+		deviceID := c.Get("X-Device-ID", "")
 		bound, _ := c.Locals("sync_device_id").(string)
-		if bound == "" || bound == c.Get("X-Device-ID") {
-			return c.Next()
+		if deviceID == "" || (bound != "" && bound != deviceID) {
+			return deviceBoundError(c)
 		}
-		return deviceBoundError(c)
+		return c.Next()
 	}
 }
 

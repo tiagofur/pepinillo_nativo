@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { replaceState } from '$app/navigation';
 	import { page } from '$app/state';
 	import { app, PREMIUM_THEMES, type ThemeName } from '$lib/stores/app.svelte';
 	import { auth } from '$lib/stores/auth.svelte';
@@ -13,13 +14,16 @@
 	import AccountServer from '$lib/features/auth/AccountServer.svelte';
 	import type { LocaleCode, ThemePreference } from '$lib/domain/entities/types';
 
-	onMount(() => {
+	onMount(async () => {
 		void auth.init();
 		// Returning from Stripe Checkout: refresh the tier without re-login
-		// (S4 #942) and clean the query param.
+		// (S4 #942) and clean the query param. init() must complete first —
+		// refreshEntitlement() no-ops until api/user exist (cold load from
+		// the Stripe redirect is the real-world path).
+		await auth.init();
 		if (page.url.searchParams.get('checkout') === 'success') {
-			void auth.refreshEntitlement();
-			history.replaceState({}, '', page.url.pathname);
+			await auth.refreshEntitlement();
+			replaceState(page.url.pathname, {});
 		}
 	});
 

@@ -146,13 +146,16 @@ class PlanStore {
 		const snapshot = this.tasks.find((t) => t.id === id);
 		this.tasks = this.tasks.filter((t) => t.id !== id);
 		if (focus.activeTask?.id === id) focus.setActiveTask(null);
+		// The primary delete write must push too — without it the next pull
+		// resurreces the task from the server (#942 review P1-5).
+		notifyMutation();
 		await removeTask(id);
 		if (snapshot) {
 			this.offerUndo({
 				label: translate('plan.undo.deleted', { title: snapshot.title }),
-				apply: async () => {
+					apply: async () => {
 					notifyMutation();
-		await upsertTask($state.snapshot(snapshot));
+					await upsertTask($state.snapshot(snapshot));
 					await this.reload();
 				}
 			});

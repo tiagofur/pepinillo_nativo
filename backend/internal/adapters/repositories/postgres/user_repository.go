@@ -52,7 +52,11 @@ func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*domain.
 }
 
 func (r *UserRepository) Update(ctx context.Context, user *domain.User) error {
-	return r.db.WithContext(ctx).Save(user).Error
+	// Omit sync_device_id: the binding is owned exclusively by the sync lane
+	// (BindSyncDevice's guarded UPDATE). A GetByID → Save cycle from profile
+	// edits must not revert a binding claimed concurrently (#942 review
+	// P2-9, same B6 class as UpdateSubscription).
+	return r.db.WithContext(ctx).Omit("sync_device_id").Save(user).Error
 }
 
 // UpdateSubscription writes ONLY the subscription columns (see port contract).
