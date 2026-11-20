@@ -107,6 +107,11 @@ type User struct {
 	// Empty = unbound. Everywhere+ tiers bypass the check (multi-device).
 	SyncDeviceID string `json:"-" gorm:"column:sync_device_id"`
 
+	// RcAppUserID binds the RevenueCat app_user_id of a NATIVE purchase to
+	// the account (#953), so webhook events carrying a non-UUID RC ID
+	// resolve to the buyer. Never exposed over the API.
+	RcAppUserID *string `json:"-" gorm:"column:rc_app_user_id"`
+
 	// MetricsOptIn is explicit consent to include this user in the aggregated,
 	// PII-free usage metrics served by /internal/stats. Defaults to false.
 	MetricsOptIn bool `json:"metricsOptIn" gorm:"default:false;not null"`

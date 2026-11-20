@@ -108,6 +108,28 @@ func (r *UserRepository) BindSyncDevice(ctx context.Context, userID, deviceID st
 	).Error
 }
 
+// SetRcAppUserID binds the RevenueCat app_user_id of a native purchase to
+// the account (#953). Targeted write (B6); last claim wins so the user can
+// re-link a newer device by claiming a fresh code.
+func (r *UserRepository) SetRcAppUserID(ctx context.Context, userID, rcAppUserID string) error {
+	return r.db.WithContext(ctx).Model(&domain.User{}).Where("id = ?", userID).
+		Update("rc_app_user_id", rcAppUserID).Error
+}
+
+// GetByRcAppUserID resolves webhook events carrying a non-UUID RC ID back
+// to the bound buyer (#953). Unbound ID → (nil, nil), like Stripe lookup.
+func (r *UserRepository) GetByRcAppUserID(ctx context.Context, rcAppUserID string) (*domain.User, error) {
+	var user domain.User
+	err := r.db.WithContext(ctx).Where("rc_app_user_id = ?", rcAppUserID).First(&user).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &user, nil
+}
+
 func (r *UserRepository) Delete(ctx context.Context, userID string) error {
 	return r.db.WithContext(ctx).Where("id = ?", userID).Delete(&domain.User{}).Error
 }

@@ -34,6 +34,7 @@ type AuthStore struct {
 	refreshByUID       map[string]map[string]tokenEntry
 	resetByEmail       map[string]resetEntry
 	emailVerifyByEmail map[string]resetEntry
+	rcLinkByCode       map[string]rcLinkEntry
 }
 
 // NewAuthStore creates an in-memory auth store with a random per-instance
@@ -54,6 +55,7 @@ func NewAuthStoreWithKey(hashKey []byte) *AuthStore {
 		refreshByUID:       make(map[string]map[string]tokenEntry),
 		resetByEmail:       make(map[string]resetEntry),
 		emailVerifyByEmail: make(map[string]resetEntry),
+		rcLinkByCode:       make(map[string]rcLinkEntry),
 	}
 }
 
@@ -155,6 +157,36 @@ func (s *AuthStore) RevokeEmailVerificationCode(_ context.Context, email string)
 	defer s.mu.Unlock()
 	delete(s.emailVerifyByEmail, email)
 	return nil
+}
+
+// rcLinkEntry carries the claiming userID and expiry for a single-use
+// link code (#953).
+type rcLinkEntry struct {
+	UserID    string
+	ExpiresAt time.Time
+}
+
+func (s *AuthStore) StoreRcLinkCode(_ context.Context, code, userID string, ttlSeconds int64) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.rcLinkByCode[code] = rcLinkEntry{UserID: userID, ExpiresAt: time.Now().UTC().Add(time.Duration(ttlSeconds) * time.Second)}
+	return nil
+}
+
+// ConsumeRcLinkCode is claim-once: the entry is deleted on read, so a
+// replayed code never binds twice.
+func (s *AuthStore) ConsumeRcLinkCode(_ context.Context, code string) (string, bool, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	entry, ok := s.rcLinkByCode[code]
+	if !ok {
+		return "", false, nil
+	}
+	delete(s.rcLinkByCode, code)
+	if time.Now().UTC().After(entry.ExpiresAt) {
+		return "", false, nil
+	}
+	return entry.UserID, true, nil
 }
 
 func (s *AuthStore) hashToken(token string) string {

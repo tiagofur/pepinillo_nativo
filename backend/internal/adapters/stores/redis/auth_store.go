@@ -142,6 +142,26 @@ func (s *AuthStore) RevokeEmailVerificationCode(ctx context.Context, email strin
 	return s.client.Del(ctx, key).Err()
 }
 
+// StoreRcLinkCode keeps the claiming userID under the code key with a TTL
+// (#953). Codes are single-use: ConsumeRcLinkCode uses GETDEL so a replay
+// race can never bind two claims to one code.
+func (s *AuthStore) StoreRcLinkCode(ctx context.Context, code, userID string, ttlSeconds int64) error {
+	key := fmt.Sprintf("rc_link:%s", code)
+	return s.client.Set(ctx, key, userID, time.Duration(ttlSeconds)*time.Second).Err()
+}
+
+func (s *AuthStore) ConsumeRcLinkCode(ctx context.Context, code string) (string, bool, error) {
+	key := fmt.Sprintf("rc_link:%s", code)
+	userID, err := s.client.GetDel(ctx, key).Result()
+	if err == goredis.Nil {
+		return "", false, nil
+	}
+	if err != nil {
+		return "", false, err
+	}
+	return userID, true, nil
+}
+
 // hashToken returns HMAC-SHA-256(hashKey, token) hex-encoded.
 // A server-held key (not a per-row salt) means lookups stay O(1) and a Redis
 // dump alone is useless to an attacker — they need the hashKey too, which

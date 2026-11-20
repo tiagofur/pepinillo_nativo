@@ -29,4 +29,8 @@ var (
 	ErrInsufficientAICredits       = errors.New("insufficient_ai_credits")
 	ErrAIGenerationFailed          = errors.New("ai_generation_failed")
 	ErrInvalidTrackingMode         = errors.New("invalid_tracking_mode")
+	ErrRcLinkInvalidPayload        = errors.New("rc_link_invalid_payload")
+	ErrRcLinkInvalidCode           = errors.New("rc_link_code_invalid_or_expired")
+	ErrRcLinkNoEntitlement         = errors.New("rc_link_no_active_entitlement")
+	ErrRcLinkVerifyFailed          = errors.New("rc_link_verification_failed")
 )

@@ -13,4 +13,10 @@ type AuthStore interface {
 	StoreEmailVerificationCode(ctx context.Context, email, code string, ttlSeconds int64) error
 	ValidateEmailVerificationCode(ctx context.Context, email, code string) (bool, error)
 	RevokeEmailVerificationCode(ctx context.Context, email string) error
+
+	// RC link codes (#953): single-use, short TTL. Keyed BY code; the value
+	// is the userID that generated it. Consume is atomic (claim-once) and
+	// returns the owning userID.
+	StoreRcLinkCode(ctx context.Context, code, userID string, ttlSeconds int64) error
+	ConsumeRcLinkCode(ctx context.Context, code string) (userID string, ok bool, err error)
 }

@@ -29,6 +29,7 @@ type RouteHandlers struct {
 	Billing      *BillingHandler
 	RevenueCat   *RevenueCatHandler
 	Stripe       *StripeHandler
+	RcLink       *RcLinkHandler
 	Push         *PushHandler
 	WebSocket    *WebSocketHandler
 	Analytics    *AnalyticsHandler
@@ -54,6 +55,12 @@ func RegisterAPIRoutes(api fiber.Router, deps RouteHandlers) {
 	// Same ordering rule as above.
 	stripeWebhook := api.Group("/billing/stripe")
 	stripeWebhook.Post("/webhook", deps.Stripe.Webhook)
+
+	// RC link claim (#953): public — the native app has no session; the
+	// single-use code IS the authorization. Must be registered before the
+	// protected group (same ordering rule as above).
+	rcLink := api.Group("/rc")
+	rcLink.Post("/link", deps.RcLink.Claim)
 
 	// WebSocket endpoint: authenticated by the WebSocketUpgrade middleware
 	// itself (Authorization header or Sec-WebSocket-Protocol sub-protocol for
@@ -197,6 +204,10 @@ func RegisterAPIRoutes(api fiber.Router, deps RouteHandlers) {
 	billing.Post("/verify-receipt", deps.Billing.VerifyReceipt)
 	billing.Post("/stripe/checkout-session", deps.Stripe.CheckoutSession)
 	billing.Post("/stripe/portal-session", deps.Stripe.PortalSession)
+
+	// Account-scoped license bridge (#953): generate the single-use claim
+	// code for the native app to consume.
+	protected.Post("/account/link-code", deps.RcLink.CreateCode)
 
 	push := verified.Group("/push")
 	push.Post("/devices", deps.Push.RegisterDevice)
