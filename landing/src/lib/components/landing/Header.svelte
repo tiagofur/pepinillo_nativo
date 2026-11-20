@@ -2,7 +2,7 @@
 	import { t } from '$lib/i18n/i18n.svelte';
 	import logoUrl from '$lib/assets/logo.svg';
 	import LangSelector from './LangSelector.svelte';
-	import { WEB_APP_URL } from './links';
+	import { ACCOUNT_URL, WEB_APP_URL } from './links';
 
 	let scrolled = $state(false);
 </script>
@@ -22,6 +22,7 @@
 	</nav>
 	<div class="top-actions">
 		<LangSelector />
+		<a class="nav-account" href={ACCOUNT_URL}>{t('landing.nav.account')}</a>
 		<a class="btn btn-soft pressable btn-sm" href={WEB_APP_URL}>{t('landing.nav.open')}</a>
 	</div>
 </header>
@@ -97,4 +98,18 @@
 			display: none;
 		}
 	}
+	.nav-account {
+		color: var(--muted);
+		font-weight: 600;
+		font-size: var(--text-sm);
+		text-decoration: none;
+		padding: 8px 10px;
+		border-radius: var(--radius-md);
+	}
+
+	.nav-account:hover {
+		color: var(--ink);
+		background: var(--brand-softer);
+	}
+
 </style>

@@ -427,6 +427,8 @@ export type MessageKey =
 	| 'landing.nav.macmanual'
 	| 'landing.nav.pricing'
 	| 'landing.nav.open'
+	| 'landing.nav.account'
+	| 'landing.cta.signin'
 	| 'landing.nav.home'
 	| 'landing.nav.faq'
 	| 'landing.title'
@@ -930,6 +932,8 @@ const en: Dict = {
 	'landing.nav.macmanual': 'macOS manual',
 	'landing.nav.pricing': 'Pricing',
 	'landing.nav.open': 'Open app',
+	'landing.nav.account': 'Sign in',
+	'landing.cta.signin': 'Already have an account? Sign in →',
 	'landing.nav.home': 'Home',
 	'landing.nav.faq': 'FAQ',
 	'landing.title': 'Pepinillo — native deep work to plan, focus and celebrate',
@@ -1480,6 +1484,8 @@ const es: Dict = {
 	'landing.nav.macmanual': 'Manual de macOS',
 	'landing.nav.pricing': 'Precios',
 	'landing.nav.open': 'Abrir app',
+	'landing.nav.account': 'Iniciar sesión',
+	'landing.cta.signin': '¿Ya tenés cuenta? Iniciá sesión →',
 	'landing.nav.home': 'Inicio',
 	'landing.nav.faq': 'Preguntas',
 	'landing.title': 'Pepinillo — deep work nativo para planificar, enfocar y celebrar',
@@ -2014,6 +2020,8 @@ const pt: Dict = {
 	'landing.nav.macmanual': 'Manual do macOS',
 	'landing.nav.pricing': 'Preços',
 	'landing.nav.open': 'Abrir app',
+	'landing.nav.account': 'Entrar',
+	'landing.cta.signin': 'Já tem conta? Entrar →',
 	'landing.nav.home': 'Início',
 	'landing.nav.faq': 'Perguntas',
 	'landing.title': 'Pepinillo — deep work nativo para planejar, focar e celebrar',
