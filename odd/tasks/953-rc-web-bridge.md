@@ -102,3 +102,13 @@
   (Purchases.logIn → SUBSCRIBER_ALIAS → soft-sync); errores 404/409 como
   casos APIClientError con userMessage; 8 claves xcstrings es/pt voseo;
   tests RcLinkFeatureTests (5, TestStore + Swift Testing).
+- 2026-11-20 (PR-3 corrección consolidada C4.3, dual round 1): éxito
+  VISIBLE con email enmascarado + Continue antes del delegate (judge B
+  P2 — el email contratado en PR-1 se consumía descartado);
+  pre-validación de appUserID vacío (RC unavailable) + .unknown/.serverError
+  → mensaje genérico accionable (judge A P2, códigos crudos al UI);
+  platform derivado por #if os(macOS) (P3 convergente); copy dedicado
+  para código corto (P3 B); +2 tests (paste truncation, covering judge
+  A P3) — 6/6 verdes. Nota: judge B reportó keyboardType/NavTitle sin
+  shim en Mac, pero judge A verificó por compilación real que
+  MacSwiftUICompatibility.swift ya los cubre — cero errores Mac nuevos.

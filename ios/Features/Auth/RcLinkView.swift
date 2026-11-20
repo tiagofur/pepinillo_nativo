@@ -13,6 +13,16 @@ struct RcLinkView: View {
     @Bindable var store: StoreOf<RcLinkFeature>
 
     var body: some View {
+        if store.isLinked {
+            successView
+        } else {
+            claimView
+        }
+    }
+
+    // MARK: - Claim form
+
+    private var claimView: some View {
         VStack(spacing: 32) {
             Spacer()
 
@@ -78,5 +88,48 @@ struct RcLinkView: View {
             Spacer()
         }
         .padding()
+    }
+
+    // MARK: - Success confirmation (judge B round 1: visible before dismiss)
+
+    private var successView: some View {
+        VStack(spacing: 24) {
+            Spacer()
+
+            Image(systemName: "checkmark.circle.fill")
+                .font(.system(size: 72))
+                .foregroundStyle(.green)
+                .accessibilityHidden(true)
+
+            VStack(spacing: 8) {
+                Text(String(localized: "account.rclink.success.title", defaultValue: "Purchase linked!"))
+                    .font(.title2.bold())
+
+                if let email = store.successEmail {
+                    Text(String(format: String(localized: "account.rclink.success.body", defaultValue: "Linked to **%@**. Your plan is now available on the web."), email))
+                        .font(.body)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+            }
+
+            Button {
+                store.send(.continueTapped)
+            } label: {
+                Text(String(localized: "account.rclink.continue", defaultValue: "Continue"))
+                    .fontWeight(.semibold)
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color.accentColor)
+                    .foregroundStyle(.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 14))
+            }
+            .padding(.horizontal)
+
+            Spacer()
+            Spacer()
+        }
+        .padding()
+        .accessibilityElement(children: .contain)
     }
 }

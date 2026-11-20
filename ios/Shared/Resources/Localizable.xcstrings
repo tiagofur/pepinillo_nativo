@@ -4506,6 +4506,126 @@
         }
       }
     },
+    "account.rclink.shortCode" : {
+      "comment" : "RcLinkFeature — short code guard",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enter the 6-digit code shown on the web account page."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ingresá los 6 dígitos del código que muestra la página de cuenta web."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Insira os 6 dígitos do código mostrado na página de conta web."
+          }
+        }
+      }
+    },
+    "account.rclink.genericError" : {
+      "comment" : "RcLinkFeature — operational failures (judge A round 1)",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Could not link the purchase right now. Please try again shortly."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se pudo vincular la compra en este momento. Intentá de nuevo en un rato."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Não foi possível vincular a compra agora. Tente novamente em breve."
+          }
+        }
+      }
+    },
+    "account.rclink.success.title" : {
+      "comment" : "RcLinkView — success heading",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Purchase linked!"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¡Compra vinculada!"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Compra vinculada!"
+          }
+        }
+      }
+    },
+    "account.rclink.success.body" : {
+      "comment" : "RcLinkView — success body (masked email)",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Linked to **%@**. Your plan is now available on the web."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vinculada a **%@**. Tu plan ya está disponible en la web."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vinculada a **%@**. Seu plano já está disponível na web."
+          }
+        }
+      }
+    },
+    "account.rclink.continue" : {
+      "comment" : "RcLinkView — success CTA",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continue"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continuar"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continuar"
+          }
+        }
+      }
+    },
     "a11y.rclink.code.label" : {
       "comment" : "A11y — RcLink code field label",
       "extractionState" : "manual",

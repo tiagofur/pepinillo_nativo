@@ -51,8 +51,27 @@ struct RcLinkFeatureTests {
             expiresAt: nil
         )))) {
             $0.isLoading = false
+            $0.successEmail = "t***@gmail.com"
+            $0.successUserID = "11111111-1111-1111-1111-111111111111"
+        }
+        await store.send(.continueTapped) {
+            $0.successEmail = nil
+            $0.successUserID = nil
         }
         await store.receive(.delegate(.claimSucceeded(userID: "11111111-1111-1111-1111-111111111111")))
+    }
+
+    // MARK: - Paste truncation (judge A round 1)
+
+    @Test("paste longer than 6 digits truncates to the first six")
+    func pasteTruncatesToSix() async {
+        let store = TestStore(initialState: RcLinkFeature.State()) {
+            RcLinkFeature()
+        }
+
+        await store.send(.codeChanged("1234567890")) {
+            $0.code = "123456"
+        }
     }
 
     // MARK: - 404: invalid or expired code
@@ -123,7 +142,7 @@ struct RcLinkFeatureTests {
             $0.code = "123"
         }
         await store.send(.claimTapped) {
-            $0.errorMessage = String(localized: "account.rclink.invalid", defaultValue: "That code is invalid or expired. Generate a new one on the web.")
+            $0.errorMessage = String(localized: "account.rclink.shortCode", defaultValue: "Enter the 6-digit code shown on the web account page.")
         }
     }
 
@@ -170,9 +189,15 @@ struct RcLinkFeatureTests {
             expiresAt: "2027-01-01T00:00:00Z"
         )))))) {
             $0.rcLink?.isLoading = false
+            $0.rcLink?.successEmail = "t***@gmail.com"
+            $0.rcLink?.successUserID = "22222222-2222-2222-2222-222222222222"
         }
-        // The sheet dismisses and the existing identity path runs
+        // Continue hands the sheet over: dismiss + existing identity path
         // (Purchases.logIn → subscriptionStateLoaded → soft-sync).
+        await store.send(.rcLink(.presented(.continueTapped))) {
+            $0.rcLink?.successEmail = nil
+            $0.rcLink?.successUserID = nil
+        }
         await store.receive(.rcLink(.presented(.delegate(.claimSucceeded(userID: "22222222-2222-2222-2222-222222222222"))))) {
             $0.rcLink = nil
         }

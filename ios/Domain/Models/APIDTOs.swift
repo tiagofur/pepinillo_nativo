@@ -524,6 +524,9 @@ public enum APIClientError: Error, Equatable, Sendable {
     case resetCodeExpired
     case rcLinkNotClaimable
     case rcLinkAlreadyBound
+    /// Client-side only: RevenueCat unconfigured/unavailable — the claim can
+    /// never succeed without an app_user_id, so the feature fails up front.
+    case rcLinkUnavailable
 
     public var userMessage: String {
         switch self {
@@ -555,6 +558,8 @@ public enum APIClientError: Error, Equatable, Sendable {
             return String(localized: "account.rclink.invalid", defaultValue: "That code is invalid or expired. Generate a new one on the web.")
         case .rcLinkAlreadyBound:
             return String(localized: "account.rclink.bound", defaultValue: "This purchase is already linked to another account.")
+        case .rcLinkUnavailable:
+            return String(localized: "account.rclink.genericError", defaultValue: "Could not link the purchase right now. Please try again shortly.")
         }
     }
 
