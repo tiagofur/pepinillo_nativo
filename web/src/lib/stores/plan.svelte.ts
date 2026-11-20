@@ -19,7 +19,7 @@ import {
 	presetByKey,
 	type RecurrencePresetKey
 } from '$lib/domain/tasks/recurrence';
-import { filterTasks, reorderSubset, type PlanFilter } from '$lib/domain/tasks/plan';
+import { filterTasks, reorderSubset, restorePlanFilter, type PlanFilter } from '$lib/domain/tasks/plan';
 import { app } from '$lib/stores/app.svelte';
 import { focus } from '$lib/stores/focus.svelte';
 import { toast } from '$lib/stores/toast.svelte';
@@ -53,6 +53,9 @@ class PlanStore {
 	async init(): Promise<void> {
 		if (!browser) return;
 		await app.init();
+		// Reloads/PWA relaunches keep the sidebar filter (#975) — otherwise
+		// "Todas" silently falls back to an empty "Hoy".
+		this.filter = restorePlanFilter(app.prefs.planFilter);
 		await this.reload();
 		this.loaded = true;
 	}
@@ -254,6 +257,8 @@ class PlanStore {
 
 	setFilter(filter: PlanFilter): void {
 		this.filter = filter;
+		// Sidebar clicks must survive reloads and PWA relaunches (#975).
+		app.updatePrefs({ planFilter: filter });
 	}
 
 	/** Refresh active list for pickers (IDB is source of truth across tabs). */

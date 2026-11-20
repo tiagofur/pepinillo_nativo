@@ -16,6 +16,9 @@ export default defineConfig({
 	},
 	webServer: {
 		command: 'pnpm build && pnpm preview --host 127.0.0.1 --port ' + port,
+		// e2e exercises UI flows offline — the build guard for PUBLIC_API_BASE_URL
+		// (#973) only applies to real production deploys.
+		env: { ...process.env, PEP_ALLOW_UNCONFIGURED_BUILD: '1' } as NodeJS.ProcessEnv,
 		port,
 		reuseExistingServer: !process.env.CI,
 		timeout: 120_000

@@ -2,9 +2,11 @@
  * Pepinillo Web — offline shell service worker.
  * Strategy: precache the shell, then cache-first for same-origin static
  * assets and network-first for navigations with a cached fallback.
- * Bump CACHE to invalidate (deploy pipelines may hash filenames later).
+ * Navigations revalidate (cache: 'no-cache') so a deploy always reaches
+ * the browser on the next visit — the fallback path below stays offline-only.
+ * v2: also drops the accumulated v1 cache (old immutable chunks).
  */
-const CACHE = 'pepinillo-shell-v1';
+const CACHE = 'pepinillo-shell-v2';
 const SHELL = ['/', '/focus', '/manifest.webmanifest', '/favicon.svg'];
 
 self.addEventListener('install', (event) => {
@@ -32,10 +34,12 @@ self.addEventListener('fetch', (event) => {
 	const url = new URL(request.url);
 	if (url.origin !== self.location.origin) return;
 
-	// Navigations: network first (fresh shell), cached fallback when offline.
+	// Navigations: network first with forced revalidation (fresh shell),
+	// cached fallback when offline. 'no-cache' revalidates against the
+	// server every time — HTTP-cached HTML would pin old chunk hashes (#974).
 	if (request.mode === 'navigate') {
 		event.respondWith(
-			fetch(request)
+			fetch(request, { cache: 'no-cache' })
 				.then((response) => {
 					const copy = response.clone();
 					caches.open(CACHE).then((cache) => cache.put(request, copy));

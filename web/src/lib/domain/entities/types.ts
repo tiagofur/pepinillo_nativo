@@ -88,6 +88,8 @@ export type SoundscapeName =
 export interface Preferences {
 	locale: LocaleCode;
 	theme: ThemePreference;
+	/** Plan sidebar filter — persisted so reloads/PWA relaunches keep "Todas" (#975). */
+	planFilter: 'all' | 'today' | 'inbox' | 'upcoming' | 'completed';
 	onboardingCompleted: boolean;
 	/** Auto-start next work/break segment (Pomodoro) */
 	autoStartNext: boolean;
@@ -133,6 +135,7 @@ export const PREMIUM_MODES: readonly FocusMode[] = ['flowtime', 'timeblock'] as 
 export const DEFAULT_PREFERENCES: Preferences = {
 	locale: 'en',
 	theme: 'system',
+	planFilter: 'today',
 	onboardingCompleted: false,
 	autoStartNext: false,
 	pomodoroWorkMinutes: 25,
