@@ -450,6 +450,9 @@ export type MessageKey =
 	| 'upgrade.note.plus'
 	| 'upgrade.note.everywhere'
 	| 'upgrade.flag.best'
+	| 'upgrade.billing.monthly'
+	| 'upgrade.billing.annual'
+	| 'upgrade.annualSaving'
 	| 'upgrade.free.pomodoro'
 	| 'upgrade.free.stopwatch'
 	| 'upgrade.free.tasks'
@@ -994,6 +997,9 @@ const en: Dict = {
 	'upgrade.price.free': '$0',
 	'upgrade.price.plus': '$19.99 once',
 	'upgrade.price.everywhere': '$4.99/mo · $34.99/yr',
+	'upgrade.billing.monthly': 'Monthly',
+	'upgrade.billing.annual': 'Annual',
+	'upgrade.annualSaving': '≈5 months free per year',
 	'upgrade.note.free': 'Everything to start a habit',
 	'upgrade.note.plus': 'One purchase. Yours forever. Not a subscription.',
 	'upgrade.note.everywhere': 'Everything in Pepinillo+, across every screen you own.',
@@ -1590,6 +1596,9 @@ const es: Dict = {
 	'upgrade.price.free': '$0',
 	'upgrade.price.plus': '$19.99 una vez',
 	'upgrade.price.everywhere': '$4.99/mes · $34.99/año',
+	'upgrade.billing.monthly': 'Mensual',
+	'upgrade.billing.annual': 'Anual',
+	'upgrade.annualSaving': '≈5 meses gratis por año',
 	'upgrade.note.free': 'Todo para empezar el hábito',
 	'upgrade.note.plus': 'Una compra. Tuya para siempre. No es una suscripción.',
 	'upgrade.note.everywhere': 'Todo lo de Pepinillo+, en todas tus pantallas.',
@@ -2167,6 +2176,9 @@ const pt: Dict = {
 	'upgrade.price.free': '$0',
 	'upgrade.price.plus': '$19.99 uma vez',
 	'upgrade.price.everywhere': '$4.99/mês · $34.99/ano',
+	'upgrade.billing.monthly': 'Mensal',
+	'upgrade.billing.annual': 'Anual',
+	'upgrade.annualSaving': '≈5 meses grátis por ano',
 	'upgrade.note.free': 'Tudo para começar o hábito',
 	'upgrade.note.plus': 'Uma compra. Sua para sempre. Não é assinatura.',
 	'upgrade.note.everywhere': 'Tudo do Pepinillo+, em todas as suas telas.',
