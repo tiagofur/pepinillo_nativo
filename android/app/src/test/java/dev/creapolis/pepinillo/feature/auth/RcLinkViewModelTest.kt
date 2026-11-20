@@ -13,6 +13,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
@@ -145,6 +146,39 @@ class RcLinkViewModelTest {
 
         assertEquals(R.string.rc_link_error_short_code, vm.uiState.value.errorMessageRes)
         coVerify(exactly = 0) { apiClient.rcLink(any()) }
+    }
+
+    @Test
+    fun `logIn failure after successful claim still navigates back`() = runTest(dispatcher) {
+        // Judge A PR-4 round 1: the non-fatal design ("logIn failure keeps
+        // the backend bind") must not strand the user on the success screen.
+        coEvery { apiClient.rcLink(any()) } returns NetworkResult.Success(response())
+        coEvery { subscriptionManager.logIn(any()) } throws RuntimeException("rc down")
+
+        val vm = viewModel()
+        vm.onCodeChange("123456")
+        vm.claim()
+        dispatcher.scheduler.advanceUntilIdle()
+        assertTrue(vm.uiState.value.isLinked)
+
+        vm.onContinue()
+        dispatcher.scheduler.advanceUntilIdle()
+
+        assertTrue(vm.events.first() is RcLinkEvent.NavigateBack)
+    }
+
+    @Test
+    fun `continue emits NavigateBack on the happy path too`() = runTest(dispatcher) {
+        coEvery { apiClient.rcLink(any()) } returns NetworkResult.Success(response())
+
+        val vm = viewModel()
+        vm.onCodeChange("123456")
+        vm.claim()
+        dispatcher.scheduler.advanceUntilIdle()
+
+        vm.onContinue()
+        dispatcher.scheduler.advanceUntilIdle()
+        assertTrue(vm.events.first() is RcLinkEvent.NavigateBack)
     }
 
     @Test

@@ -93,3 +93,11 @@
   mecánica de AccountServer (557 > 500), role="status" en la región del
   código, atenuar código vencido, pt "insira-o lá" más natural, en
   codeLabel "claim"→"link", clave muerta account.everywhereTeaser.
+- 2026-11-20 (PR-4 micro-pase C4.3, dual APPROVED round 1): test de
+  regresión logIn-throws → NavigateBack igual (judge A P2) + happy-path
+  NavigateBack assertion; guard isLoading separado del short-code
+  (mensaje ya no engaña); onDone siempre llama claim (sin silencio).
+  Follow-ups a #953: extracción mecánica MainActivity/ProfileScreen
+  (>500, judge P2), hint web platform-aware (Más → Perfil en Android),
+  affordance cancelar (patrón email verification), dependencia directa
+  lifecycle-runtime-compose, tier nombrado en el success body.

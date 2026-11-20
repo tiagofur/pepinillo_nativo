@@ -129,7 +129,7 @@ private fun RcLinkClaimContent(
         keyboardOptions = KeyboardOptions(
             keyboardType = KeyboardType.Number,
         ),
-        keyboardActions = KeyboardActions(onDone = { if (uiState.code.length == 6) onClaim() }),
+        keyboardActions = KeyboardActions(onDone = { onClaim() }),
         modifier = Modifier.fillMaxWidth(),
         shape = PepinilloShapeTokens.textField,
     )
