@@ -17,6 +17,25 @@
 	let deleteEmail = $state('');
 	let noticeText = $state('');
 
+	// Email verification (#944): 6-digit code from the notification email.
+	let verifyCode = $state('');
+	let verifyState = $state<'idle' | 'working' | 'done' | 'invalid' | 'already' | 'error'>('idle');
+	let resendState = $state<'idle' | 'working' | 'sent' | 'error'>('idle');
+
+	async function submitVerify(e: SubmitEvent): Promise<void> {
+		e.preventDefault();
+		if (!verifyCode.trim() || verifyState === 'working') return;
+		verifyState = 'working';
+		const r = await auth.verifyEmail(verifyCode.trim());
+		verifyState =
+			r === 'ok' ? 'done' : r === 'invalid' ? 'invalid' : r === 'verified' ? 'already' : 'error';
+		if (r === 'ok') verifyCode = '';
+	}
+	async function resend(): Promise<void> {
+		resendState = 'working';
+		resendState = await auth.resendVerification() ? 'sent' : 'error';
+	}
+
 	function fmtWhen(iso: string | null): string {
 		if (!iso) return '—';
 		return new Date(iso).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' });
@@ -83,7 +102,50 @@
 		<span class="badge">{TIER_LABELS[auth.user?.subscriptionTier ?? 'free'] ?? auth.user?.subscriptionTier}</span>
 	</div>
 	{#if auth.user && !auth.user.emailVerified}
-		<p class="warn">✉️ {t('auth.verifyPending')}</p>
+		<div class="verify" role="region" aria-label={t('auth.verifyPending')}>
+			<p class="warn">✉️ {t('auth.verifyPending')}</p>
+			{#if verifyState === 'done'}
+				<p class="verify-ok" role="status">✅ {t('auth.verify.done')}</p>
+			{:else}
+				<form class="verify-form" onsubmit={submitVerify}>
+					<input
+						class="field"
+						inputmode="numeric"
+						pattern="[0-9]*"
+						placeholder={t('auth.verify.codeField')}
+						bind:value={verifyCode}
+						autocomplete="one-time-code"
+					/>
+					<button class="btn btn-primary pressable" type="submit" disabled={verifyState === 'working'}>
+						{verifyState === 'working' ? t('auth.working') : t('auth.verify.submit')}
+					</button>
+					<button
+						class="btn btn-ghost pressable"
+						type="button"
+						disabled={auth.resendCooldown > 0 || resendState === 'working'}
+						onclick={resend}
+					>
+						{auth.resendCooldown > 0
+							? t('auth.verify.resendIn', { s: auth.resendCooldown })
+							: resendState === 'working'
+								? t('auth.working')
+								: t('auth.verify.resend')}
+					</button>
+				</form>
+				{#if resendState === 'sent'}
+					<p class="verify-note" role="status">{t('auth.verify.resent')}</p>
+				{:else if resendState === 'error'}
+					<p class="verify-bad" role="alert">{t('auth.verify.errorGeneric')}</p>
+				{/if}
+				{#if verifyState === 'invalid'}
+					<p class="verify-bad" role="alert">{t('auth.verify.invalid')}</p>
+				{:else if verifyState === 'already'}
+					<p class="verify-note" role="status">{t('auth.verify.already')}</p>
+				{:else if verifyState === 'error'}
+					<p class="verify-bad" role="alert">{t('auth.verify.errorGeneric')}</p>
+				{/if}
+			{/if}
+		</div>
 	{/if}
 </div>
 
@@ -221,6 +283,46 @@
 
 	.warn {
 		color: var(--streak);
+		font-size: var(--text-sm);
+		font-weight: 550;
+	}
+
+	.verify {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-2);
+	}
+
+	.verify-form {
+		display: flex;
+		gap: var(--space-2);
+		flex-wrap: wrap;
+		align-items: center;
+	}
+
+	.verify-form .field {
+		flex: 1;
+		min-width: 180px;
+		font-variant-numeric: tabular-nums;
+		letter-spacing: 0.12em;
+	}
+
+	.verify-ok {
+		margin: 0;
+		color: var(--brand);
+		font-weight: 650;
+		font-size: var(--text-sm);
+	}
+
+	.verify-note {
+		margin: 0;
+		color: var(--muted);
+		font-size: var(--text-sm);
+	}
+
+	.verify-bad {
+		margin: 0;
+		color: var(--mode-pomodoro);
 		font-size: var(--text-sm);
 		font-weight: 550;
 	}

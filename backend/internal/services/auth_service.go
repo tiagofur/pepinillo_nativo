@@ -446,6 +446,12 @@ func (s *AuthService) VerifyEmail(ctx context.Context, email, code string) (*dom
 	if err != nil {
 		return nil, nil, err
 	}
+	// Register the rotated refresh token — without this the tokens issued
+	// here die on the first refresh (#944: the web adopted them and its next
+	// restore got 401 invalid_refresh_token).
+	if err := s.authStore.StoreRefreshToken(ctx, user.ID, tokens.RefreshToken, s.refreshTTLSeconds); err != nil {
+		return nil, nil, err
+	}
 	return user, tokens, nil
 }
 
