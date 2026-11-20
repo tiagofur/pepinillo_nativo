@@ -74,7 +74,7 @@
 		google.accounts.id.initialize({
 			client_id: GOOGLE_CLIENT_ID,
 			callback: async (response: { credential?: string }) => {
-				if (!response.credential || oauthBusy) return;
+				if (!response.credential || oauthBusy || auth.status === 'loading') return;
 				oauthBusy = 'google';
 				const ok = await auth.signInWithProvider('google', response.credential);
 				oauthBusy = null;
@@ -106,7 +106,9 @@
 			await AppleID.auth.init({
 				clientId: APPLE_CLIENT_ID,
 				scope: 'name email',
-				responseMode: 'popup',
+				// The id_token only comes back when requested — the default is
+				// 'code' and this flow consumes the token client-side.
+				responseType: 'code id_token',
 				nonce: await sha256Hex(rawNonce),
 				usePopup: true
 			});
@@ -118,7 +120,8 @@
 		} catch (err) {
 			// User-cancelled popups surface as provider errors too — only
 			// real failures get the visible message.
-			if ((err as Error)?.message !== 'popup_closed_by_user') oauthError = true;
+			const msg = (err as Error)?.message ?? '';
+			if (msg !== 'popup_closed_by_user' && msg !== 'user_cancelled_authorize') oauthError = true;
 		} finally {
 			oauthBusy = null;
 		}
@@ -213,14 +216,14 @@
 					<button
 						class="apple-btn pressable"
 						type="button"
-						disabled={oauthBusy !== null}
+						disabled={oauthBusy !== null || auth.status === 'loading'}
 						onclick={signInApple}
 					>
 						{oauthBusy === 'apple' ? t('auth.working') : t('auth.oauth.apple')}
 					</button>
 				{/if}
 				{#if oauthError}
-					<p class="error">{t('auth.oauth.error')}</p>
+					<p class="error" role="alert">{t('auth.oauth.error')}</p>
 				{/if}
 			</div>
 		{/if}

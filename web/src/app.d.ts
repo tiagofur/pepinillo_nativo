@@ -36,7 +36,7 @@ interface AppleIDAuth {
 	init(config: {
 		clientId: string;
 		scope?: string;
-		responseMode?: string;
+		responseType?: string;
 		nonce?: string;
 		usePopup?: boolean;
 	}): Promise<void>;
