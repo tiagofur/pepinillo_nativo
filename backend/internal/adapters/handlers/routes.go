@@ -209,7 +209,7 @@ func RegisterAPIRoutes(api fiber.Router, deps RouteHandlers) {
 
 	// Account-scoped license bridge (#953): generate the single-use claim
 	// code for the native app to consume. Per-IP limiter keeps a compromised
-	// JWT from flooding redis with live codes (TTL-bounded but still waste.
+	// JWT from flooding redis with live codes (TTL-bounded but still waste).
 	rcLinkCodeLimiter := limiter.New(limiter.Config{Max: 10})
 	protected.Post("/account/link-code", rcLinkCodeLimiter, deps.RcLink.CreateCode)
 

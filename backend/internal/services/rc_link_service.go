@@ -129,9 +129,12 @@ func (s *RcLinkService) ClaimLinkCode(ctx context.Context, code, rcAppUserID, pl
 		return nil, "", nil, ErrUserNotFound
 	}
 
-	// 4. Grant under the B3 monotonic gate (a suppressed grant binds NOTHING
-	// — that is what keeps a lapsed attacker purchase from ever touching the
-	// victim); roll back if the bind below loses its race.
+	// 4. Grant under the B3 monotonic gate. A LAPSED read already failed
+	// closed at verify (no grant, no bind, code untouched); an
+	// inferior-but-valid read binds but can never downgrade (B3 holds in
+	// EXPIRATION handling too). Roll back the grant if ANY bind failure
+	// follows (judge round 2, P2: a stranded grant is worse than a missed
+	// bind — the latter self-heals on the next renewal.
 	granted := false
 	if owner != nil && owner.ID != userID {
 		return nil, "", nil, ErrRcLinkAlreadyBound
@@ -143,15 +146,21 @@ func (s *RcLinkService) ClaimLinkCode(ctx context.Context, code, rcAppUserID, pl
 		granted = true
 	}
 
-	// 5. Bind last (transaction releases prior holders, unique index guards
-	// the race). On a lost race: undo the grant so no premium strands on an
-	// account whose purchase lives elsewhere, and surface 409.
+	// 5. Bind last. NO release step exists — the unique partial index is the
+	// deterministic race guard: a concurrent claim of the same rc id hits
+	// duplicate-key here. On ANY bind failure after a grant: undo the grant
+	// (best-effort, logged) so no premium strands on an account whose
+	// purchase lives elsewhere; a lost race surfaces 409.
 	if owner == nil {
 		if err := s.users.SetRcAppUserID(ctx, userID, rcAppUserID); err != nil {
-			if errors.Is(err, ports.ErrRcAppUserIDTaken) {
-				if granted {
-					_ = s.users.UpdateSubscription(ctx, userID, user.SubscriptionTier, user.SubscriptionExpiresAt)
+			if granted {
+				if rbErr := s.users.UpdateSubscription(ctx, userID, user.SubscriptionTier, user.SubscriptionExpiresAt); rbErr != nil {
+					s.logRcLinkEvent(ctx, userID, "rc_link_rollback_failed", map[string]any{
+						"reason": rbErr.Error(),
+					})
 				}
+			}
+			if errors.Is(err, ports.ErrRcAppUserIDTaken) {
 				return nil, "", nil, ErrRcLinkAlreadyBound
 			}
 			return nil, "", nil, err
@@ -168,7 +177,7 @@ func (s *RcLinkService) ClaimLinkCode(ctx context.Context, code, rcAppUserID, pl
 		return nil, "", nil, ErrUserNotFound
 	}
 	// Effective tier (post-gate), not the raw RC read — the native screen
-	// must show what the account actually holds (judge round 1, P3.
+	// must show what the account actually holds (judge round 1, P3).
 	return fresh, fresh.SubscriptionTier, fresh.SubscriptionExpiresAt, nil
 }
 

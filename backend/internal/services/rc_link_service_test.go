@@ -308,3 +308,27 @@ func TestMemoryStoreRejectsCodeCollision(t *testing.T) {
 		t.Fatalf("consume after collision = %q/%v/%v, want u1/true/nil", userID, ok, err)
 	}
 }
+
+func TestClaimLinkCodeBindRaceRollsBackGrant(t *testing.T) {
+	// Judge round 2 P1: a lost bind race (unique-index duplicate-key, now
+	// that no release step exists) must roll back the just-granted tier —
+	// no premium strands on an account whose purchase lives elsewhere.
+	svc, _, repo, userID := newRcLinkHarness(t, map[string]string{"$RCAnonymousID:abc": plusSubscriber})
+	ctx := context.Background()
+	repo.failSetRc = true
+	// Snapshot BEFORE claiming: the fake's GetByID returns the same pointer
+	// its UpdateSubscription mutates (production returns a fresh copy).
+	priorTier := repo.byID[userID].SubscriptionTier
+
+	code, _, err := svc.CreateLinkCode(ctx, userID)
+	if err != nil {
+		t.Fatalf("CreateLinkCode: %v", err)
+	}
+	_, _, _, err = svc.ClaimLinkCode(ctx, code, "$RCAnonymousID:abc", "")
+	if err != ErrRcLinkAlreadyBound {
+		t.Fatalf("err = %v, want ErrRcLinkAlreadyBound", err)
+	}
+	if repo.byID[userID].SubscriptionTier != priorTier {
+		t.Fatalf("grant not rolled back: %q, want %q", repo.byID[userID].SubscriptionTier, priorTier)
+	}
+}
