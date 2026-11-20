@@ -844,6 +844,64 @@ paths:
         "503":
           $ref: "#/components/responses/ServiceUnavailableError"
 
+  /account/link-code:
+    post:
+      operationId: createRcLinkCode
+      tags: [billing]
+      summary: Generar código efímero para vincular una compra nativa (RevenueCat) a la cuenta
+      description: |
+        Requiere JWT. Devuelve un código de 6 dígitos, single-use y con TTL de
+        15 minutos, para ingresarlo en la app nativa ("Usar mi Pepinillo+ en la
+        Web"). El backend valida el entitlement contra la API de RevenueCat
+        server-side en el claim; nunca confía en el cliente.
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Código generado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RcLinkCodeResponse"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailableError"
+
+  /rc/link:
+    post:
+      operationId: claimRcLinkCode
+      tags: [billing]
+      summary: Canjear un código de vinculación desde la app nativa (sin JWT)
+      description: |
+        Llamado por la app nativa con el código mostrado en la web y el
+        `app_user_id` de RevenueCat del comprador. Valida el entitlement
+        server-side (REST de RC), otorga el tier con la misma semántica del
+        webhook (B3/B6) y vincula el `app_user_id` a la cuenta. Responde el
+        `userId` del backend para que la app llame `Purchases.logIn(user_id)`
+        y RC dispare el alias que transfiere la compra.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RcLinkClaimRequest"
+      responses:
+        "200":
+          description: Entitlement verificado y vinculado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RcLinkClaimResponse"
+        "400":
+          $ref: "#/components/responses/BadRequestError"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
+        "502":
+          $ref: "#/components/responses/BadGatewayError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailableError"
+
   /billing/stripe/webhook:
     post:
       operationId: stripeWebhook
@@ -2947,6 +3005,46 @@ components:
         portalUrl:
           type: string
           format: uri
+    RcLinkCodeResponse:
+      type: object
+      required: [code, expiresAt]
+      properties:
+        code:
+          type: string
+          minLength: 6
+          maxLength: 6
+        expiresAt:
+          type: string
+          format: date-time
+    RcLinkClaimRequest:
+      type: object
+      required: [code, appUserId]
+      properties:
+        code:
+          type: string
+          minLength: 6
+          maxLength: 6
+        appUserId:
+          type: string
+          description: app_user_id de RevenueCat del comprador (anónimo o identificado).
+        platform:
+          type: string
+          enum: [ios, macos, android]
+    RcLinkClaimResponse:
+      type: object
+      required: [userId, tier]
+      properties:
+        userId:
+          type: string
+          format: uuid
+          description: ID del backend para Purchases.logIn (dispara SUBSCRIBER_ALIAS en RC).
+        tier:
+          type: string
+          enum: [pepinillo_plus, everywhere_monthly, everywhere_annual]
+        expiresAt:
+          type: string
+          format: date-time
+          nullable: true
     VerifyReceiptInput:
       type: object
       required: [platform, productId]
