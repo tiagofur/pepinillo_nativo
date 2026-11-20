@@ -186,6 +186,56 @@ class AuthStore {
 		this.lastSyncAt = null;
 	}
 
+	/** Cambia la contraseña con sesión iniciada (#946 S1). El backend
+	 * mantiene la sesión (204). */
+	async changePassword(currentPassword: string, newPassword: string): Promise<'ok' | 'wrong' | 'weak' | 'error'> {
+		const api = this.api;
+		if (!api || !this.user) return 'error';
+		try {
+			await api.changePassword(currentPassword, newPassword);
+			return 'ok';
+		} catch (e) {
+			if (e instanceof ApiError && e.status === 401) return 'wrong';
+			if (e instanceof ApiError && e.code === 'weak_password') return 'weak';
+			return 'error';
+		}
+	}
+
+	/** OAuth por ID token del browser SDK (GIS / Apple ID JS) — mismo
+	 * pipeline post-login que signIn (#946 S3). */
+	async signInWithProvider(
+		provider: 'google' | 'apple',
+		idToken: string,
+		nonce?: string
+	): Promise<boolean> {
+		const api = this.api;
+		if (!api) return false;
+		// Re-entry guard (#946 review P2-3): overlapping provider sign-ins
+		// would interleave tokensSnapshot writes.
+		if (this.status === 'loading') return false;
+		this.status = 'loading';
+		this.errorCode = null;
+		try {
+			const res: AuthResponse =
+				provider === 'google'
+					? await api.loginWithGoogle(idToken)
+					: await api.loginWithApple(idToken, nonce ?? '');
+			this.tokensSnapshot = res.tokens;
+			await saveAuthMeta({ refreshToken: res.tokens.refreshToken, userJson: null });
+			this.applyUser(res.user);
+			this.status = 'idle';
+			await this.decideMergeAndSync();
+			this.watchConnection();
+			this.connectWs();
+			return true;
+		} catch (e) {
+			this.status = 'error';
+			// Provider endpoints surface their own message (auth.oauth.error).
+			this.errorCode = 'oauth_provider_error';
+			return false;
+		}
+	}
+
 	/** Cooldown local del botón Reenviar (60 s) — el server además limita. */
 	resendCooldown = $state(0);
 	private resendTimer: ReturnType<typeof setInterval> | null = null;

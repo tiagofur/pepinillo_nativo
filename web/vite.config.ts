@@ -13,7 +13,8 @@ const shellEnv = (globalThis as NodeLikeEnv).process?.env ?? {};
 const PUBLIC_DEFINE = {
 	__PUBLIC_API_BASE_URL__: JSON.stringify(shellEnv.PUBLIC_API_BASE_URL ?? ''),
 	__PUBLIC_WS_URL__: JSON.stringify(shellEnv.PUBLIC_WS_URL ?? ''),
-	__PUBLIC_GOOGLE_CLIENT_ID__: JSON.stringify(shellEnv.PUBLIC_GOOGLE_CLIENT_ID ?? '')
+	__PUBLIC_GOOGLE_CLIENT_ID__: JSON.stringify(shellEnv.PUBLIC_GOOGLE_CLIENT_ID ?? ''),
+	__PUBLIC_APPLE_CLIENT_ID__: JSON.stringify(shellEnv.PUBLIC_APPLE_CLIENT_ID ?? '')
 };
 
 export default defineConfig({

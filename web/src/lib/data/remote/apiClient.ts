@@ -76,6 +76,32 @@ export class ApiClient {
 		});
 	}
 
+	async changePassword(currentPassword: string, newPassword: string): Promise<void> {
+		await this.request<void>('/api/v1/auth/change-password', {
+			method: 'POST',
+			body: JSON.stringify({ currentPassword, newPassword })
+		});
+	}
+
+	/** POST /auth/google|apple — native-style ID token from the browser SDK
+	 * (Google Identity Services / Apple ID JS); backend validates and issues
+	 * session tokens. */
+	async loginWithGoogle(idToken: string): Promise<AuthResponse> {
+		return this.requestUnauthed<AuthResponse>('/api/v1/auth/google', {
+			method: 'POST',
+			body: JSON.stringify({ idToken })
+		});
+	}
+
+	async loginWithApple(idToken: string, nonce: string): Promise<AuthResponse> {
+		// Apple Sign-In requires the replay-closing nonce: the ID token
+		// carries its sha256 hash; the raw value travels here (#946).
+		return this.requestUnauthed<AuthResponse>('/api/v1/auth/apple', {
+			method: 'POST',
+			body: JSON.stringify({ idToken, nonce })
+		});
+	}
+
 	async resendVerification(email: string): Promise<void> {
 		await this.requestUnauthed<void>('/api/v1/auth/resend-verification', {
 			method: 'POST',
