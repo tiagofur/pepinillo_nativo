@@ -612,7 +612,7 @@ const en: Dict = {
 	'companion.stat.daystreak': 'days streak',
 	'focus.mode.locked': 'Everywhere',
 	'focus.upgradeTeaser':
-		'Flowtime and Time Block unlock with Everywhere (subscribe or restore on iOS, Android, or Windows). No purchase on web yet.',
+		'Flowtime and Time Block unlock with Pepinillo+ or Everywhere — on iOS, Android, or right here on the web.',
 	'focus.autoStart': 'Auto-start next segment',
 	'focus.suggest.title': 'Suggested for now',
 	'focus.suggest.apply': 'Apply',
@@ -731,7 +731,7 @@ const en: Dict = {
 		'Account + sync need the cloud API configured for this build. Everything works offline.',
 	'account.everywhereActive': 'Everywhere active — cloud sync available.',
 	'account.everywhereInactive':
-		'Signed in on Free. Subscribe or restore Everywhere on iOS, Android, or Windows, then refresh.',
+		'Signed in on Free. Subscribe on the pricing page or in the iOS/Android apps, then refresh.',
 	'account.signedInAs': 'Signed in as',
 	'account.refreshEntitlement': 'Refresh subscription',
 	'sync.everywhereRequired': 'Everywhere subscription required for cloud sync.',
@@ -1133,7 +1133,7 @@ const en: Dict = {
 	'account.storageWarning':
 		'Your Free data is stored only in this browser profile. Clearing storage or switching browsers loses it. Multi-device sync is not available on Free.',
 	'account.everywhereTeaser':
-		'Pepinillo Everywhere (sync + premium web features) is restored via your store purchase and account — not sold as Pepinillo+ on web. Sign-in arrives in a later slice.',
+		'Your plan is bought and restored on the web with your account — Pepinillo+ (one-time) and Everywhere/AI+ (subscription) are sold on the pricing page. App-store purchases will link to your account soon.',
 	'account.about':
 		'Web is a companion extra for large-screen focus. It does not replace native OS features.',
 	'account.nonGoals':
@@ -1146,7 +1146,7 @@ const en: Dict = {
 
 const es: Dict = {
 	...en,
-	'app.tagline': 'Planifica, enfócate y celebra tu deep work — nativo, en todas tus pantallas.',
+	'app.tagline': 'Planificá, enfocate y celebrá tu deep work — nativo, en todas tus pantallas.',
 	'nav.focus': 'Foco',
 	'nav.plan': 'Plan',
 	'nav.dashboard': 'Panel',
@@ -1192,7 +1192,7 @@ const es: Dict = {
 	'companion.stat.daystreak': 'días de racha',
 	'focus.mode.locked': 'Everywhere',
 	'focus.upgradeTeaser':
-		'Flowtime y Time Block se desbloquean con Everywhere (suscribite o restaurá en iOS, Android o Windows). Aún no hay compra en web.',
+		'Flowtime y Time Block se desbloquean con Pepinillo+ o Everywhere — en iOS, Android o aquí mismo en la web.',
 	'focus.autoStart': 'Auto-iniciar siguiente segmento',
 	'focus.suggest.title': 'Sugerido ahora',
 	'focus.suggest.apply': 'Aplicar',
@@ -1290,7 +1290,7 @@ const es: Dict = {
 	'account.storageWarning':
 		'Tus datos Free se guardan solo en este perfil del navegador. Borrar almacenamiento o cambiar de navegador los pierde. La sync multi-dispositivo no está en Free.',
 	'account.everywhereTeaser':
-		'Pepinillo Everywhere (sync + premium web) se restaura con la compra de tienda y la cuenta — no se vende Pepinillo+ en web. El inicio de sesión llega en una etapa posterior.',
+		'Tu plan se compra y se restaura en la web con tu cuenta — Pepinillo+ (pago único) y Everywhere/AI+ (suscripción) se venden en la página de precios. Las compras de tienda se vincularán a tu cuenta próximamente.',
 	'account.about':
 		'La web es un extra compañero para foco en pantalla grande. No reemplaza funciones nativas del SO.',
 	'account.nonGoals':
@@ -1330,7 +1330,7 @@ const es: Dict = {
 		'La cuenta y la sync necesitan la API cloud configurada en este build. Todo funciona offline.',
 	'account.everywhereActive': 'Everywhere activo — sync en la nube disponible.',
 	'account.everywhereInactive':
-		'Sesión Free. Suscribite o restaurá Everywhere en iOS, Android o Windows y refrescá.',
+		'Sesión Free. Suscribite en la página de precios o en las apps de iOS/Android y refrescá.',
 	'account.signedInAs': 'Sesión como',
 	'account.refreshEntitlement': 'Actualizar suscripción',
 	'sync.everywhereRequired': 'Se requiere Everywhere para sync en la nube.',
@@ -1772,7 +1772,7 @@ const pt: Dict = {
 	'companion.stat.daystreak': 'dias de sequência',
 	'focus.mode.locked': 'Everywhere',
 	'focus.upgradeTeaser':
-		'Flowtime e Time Block desbloqueiam com Everywhere (assine ou restaure no iOS, Android ou Windows). Ainda sem compra na web.',
+		'Flowtime e Time Block desbloqueiam com Pepinillo+ ou Everywhere — no iOS, Android ou aqui mesmo na web.',
 	'focus.autoStart': 'Autoiniciar próximo segmento',
 	'focus.suggest.title': 'Sugerido agora',
 	'focus.suggest.apply': 'Aplicar',
@@ -1870,7 +1870,7 @@ const pt: Dict = {
 	'account.storageWarning':
 		'Seus dados Free ficam só neste perfil do navegador. Limpar armazenamento ou trocar de navegador os perde. Sync multi-dispositivo não está no Free.',
 	'account.everywhereTeaser':
-		'Pepinillo Everywhere (sync + premium web) é restaurado via compra da loja e conta — Pepinillo+ não é vendido na web. Login chega em um slice posterior.',
+		'Seu plano é comprado e restaurado na web com sua conta — Pepinillo+ (pagamento único) e Everywhere/AI+ (assinatura) são vendidos na página de preços. Compras nas lojas de apps serão vinculadas à sua conta em breve.',
 	'account.about':
 		'A web é um extra companheiro para foco em tela grande. Não substitui recursos nativos do SO.',
 	'account.nonGoals':
@@ -1910,7 +1910,7 @@ const pt: Dict = {
 		'A conta e a sync precisam da API cloud configurada neste build. Tudo funciona offline.',
 	'account.everywhereActive': 'Everywhere ativo — sync na nuvem disponível.',
 	'account.everywhereInactive':
-		'Sessão Free. Assine ou restaure Everywhere no iOS, Android ou Windows e atualize.',
+		'Sessão Free. Assine na página de preços ou nos apps de iOS/Android e atualize.',
 	'account.signedInAs': 'Conectado como',
 	'account.refreshEntitlement': 'Atualizar assinatura',
 	'sync.everywhereRequired': 'Everywhere é necessário para sync na nuvem.',
