@@ -5,6 +5,7 @@
 
 import Testing
 import Foundation
+import StoreKit
 import ComposableArchitecture
 @testable import Pepinillo
 
@@ -423,6 +424,119 @@ struct PaywallFeatureTests {
             $0.isLoading = false
             $0.purchaseResult = PaywallFeature.State.PurchaseResultAlert(
                 message: "Restore network failed",
+                isSuccess: false
+            )
+        }
+
+        #expect(store.state.subscriptionState == .everywherePlus)
+    }
+
+    // MARK: - Offer Code Redemption (#957)
+
+    @Test("Successful offer code redemption syncs, unlocks, and shows welcome alert")
+    func testRedeemCodeSuccess() async {
+        var state = PaywallFeature.State()
+        state.products = mockProducts
+
+        let store = TestStore(initialState: state) {
+            PaywallFeature()
+        } withDependencies: {
+            $0.offerCodeRedemptionSheet.present = {}
+            $0.subscriptionClient.syncPurchases = { .pepinilloPlus }
+        }
+
+        store.exhaustivity = .off
+
+        await store.send(.redeemCodeTapped) {
+            $0.isLoading = true
+        }
+
+        await store.receive(.subscriptionStateLoaded(.pepinilloPlus)) {
+            $0.isLoading = false
+            $0.subscriptionState = .pepinilloPlus
+        }
+
+        await store.receive(.purchaseFinished(.success(productID: ""))) {
+            $0.purchaseResult = PaywallFeature.State.PurchaseResultAlert(
+                message: String(localized: "Welcome to Pepinillo+! 🎉"),
+                isSuccess: true
+            )
+        }
+
+        await store.receive(.delegate(.proUnlocked(.pepinilloPlus)))
+    }
+
+    @Test("Cancelling the redemption sheet is silent — no alert")
+    func testRedeemCodeCancelledSilent() async {
+        let store = TestStore(initialState: PaywallFeature.State()) {
+            PaywallFeature()
+        } withDependencies: {
+            $0.offerCodeRedemptionSheet.present = { throw StoreKitError.userCancelled }
+        }
+
+        await store.send(.redeemCodeTapped) {
+            $0.isLoading = true
+        }
+
+        await store.receive(.purchaseFinished(.cancelled)) {
+            $0.isLoading = false
+        }
+
+        #expect(store.state.purchaseResult == nil)
+    }
+
+    @Test("Sheet error surfaces failure alert")
+    func testRedeemCodeSheetErrorSurfacesAlert() async {
+        struct RedeemBoom: Error, LocalizedError {
+            var errorDescription: String? { "Redeem failed" }
+        }
+
+        let store = TestStore(initialState: PaywallFeature.State()) {
+            PaywallFeature()
+        } withDependencies: {
+            $0.offerCodeRedemptionSheet.present = { throw RedeemBoom() }
+        }
+
+        store.exhaustivity = .off
+
+        await store.send(.redeemCodeTapped) {
+            $0.isLoading = true
+        }
+
+        await store.receive(.purchaseFinished(.failed(message: "Redeem failed"))) {
+            $0.isLoading = false
+            $0.purchaseResult = PaywallFeature.State.PurchaseResultAlert(
+                message: "Redeem failed",
+                isSuccess: false
+            )
+        }
+    }
+
+    @Test("Sync failure after a completed redemption surfaces error without demotion")
+    func testRedeemCodeSyncThrowSurfacesError() async {
+        struct SyncBoom: Error, LocalizedError {
+            var errorDescription: String? { "Sync network failed" }
+        }
+        var state = PaywallFeature.State()
+        state.subscriptionState = .everywherePlus
+
+        let store = TestStore(initialState: state) {
+            PaywallFeature()
+        } withDependencies: {
+            $0.offerCodeRedemptionSheet.present = {}
+            $0.subscriptionClient.syncPurchases = { throw SyncBoom() }
+        }
+
+        store.exhaustivity = .off
+
+        await store.send(.redeemCodeTapped) {
+            $0.isLoading = true
+        }
+
+        await store.receive(.purchaseFinished(.failed(message: "Sync network failed"))) {
+            $0.isLoading = false
+            $0.purchaseResult = PaywallFeature.State.PurchaseResultAlert(
+                message: "Sync network failed",
                 isSuccess: false
             )
         }

@@ -108,6 +108,10 @@ struct SubscriptionClient: Sendable {
     /// Restore previous purchases via RevenueCat.
     var restorePurchases: @Sendable () async throws -> SubscriptionState = { .free }
 
+    /// Post externally-observed StoreKit transactions to RevenueCat (e.g. an
+    /// offer code redeemed through the system sheet) and return the entitlement.
+    var syncPurchases: @Sendable () async throws -> SubscriptionState = { .free }
+
     /// Check current entitlement (call on launch + after purchase).
     var checkEntitlement: @Sendable () async throws -> SubscriptionState = { .free }
 
@@ -133,6 +137,7 @@ extension SubscriptionClient: DependencyKey {
         fetchProducts: { PepinilloProduct.currentProducts.map(\.mockProductInfo) },
         purchase: { _ in .success(productID: PepinilloProduct.annual.rawValue) },
         restorePurchases: { .pepinilloPlus },
+        syncPurchases: { .free },
         checkEntitlement: { .free },
         listenForTransactionUpdates: { .finished },
         logIn: { _ in .free },
@@ -159,6 +164,7 @@ extension SubscriptionClient {
             fetchProducts: { await manager.fetchProducts() },
             purchase: { id in await manager.purchase(productID: id) },
             restorePurchases: { try await manager.restorePurchases() },
+            syncPurchases: { try await manager.syncPurchases() },
             checkEntitlement: { try await manager.checkEntitlement() },
             listenForTransactionUpdates: { manager.customerInfoStream() },
             logIn: { userID in try await manager.logIn(userID: userID) },
@@ -173,6 +179,7 @@ extension SubscriptionClient {
             fetchProducts: { PepinilloProduct.currentProducts.map(\.mockProductInfo) },
             purchase: { _ in .failed(message: "Purchases unavailable on this platform") },
             restorePurchases: { .free },
+            syncPurchases: { .free },
             checkEntitlement: { .free },
             listenForTransactionUpdates: { .finished },
             logIn: { _ in .free },
@@ -302,6 +309,23 @@ private actor SubscriptionManager {
         guard !isUnavailable else { return .free }
         do {
             let customerInfo = try await Purchases.shared.restorePurchases()
+            let state = subscriptionStateFromCustomerInfo(customerInfo)
+            AppGroupDefaults.lastVerifiedDate = Date()
+            return state
+        } catch {
+            return try SubscriptionOfflineGraceChecker.check(
+                error: error,
+                cachedCapabilities: AppGroupDefaults.userCapabilities,
+                lastVerifiedDate: AppGroupDefaults.lastVerifiedDate
+            )
+        }
+    }
+
+    func syncPurchases() async throws -> SubscriptionState {
+        await ensureConfigured()
+        guard !isUnavailable else { return .free }
+        do {
+            let customerInfo = try await Purchases.shared.syncPurchases()
             let state = subscriptionStateFromCustomerInfo(customerInfo)
             AppGroupDefaults.lastVerifiedDate = Date()
             return state
