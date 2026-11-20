@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { t } from '$lib/i18n/i18n.svelte';
-	import { APP_STORE_URL, PLAY_STORE_URL, WEB_APP_URL } from './links';
+	import { ACCOUNT_URL, APP_STORE_URL, PLAY_STORE_URL, WEB_APP_URL } from './links';
 </script>
 
 <section class="final">
@@ -11,6 +11,7 @@
 		<a class="btn btn-outline pressable" href={APP_STORE_URL} rel="noopener">{t('landing.hero.cta.ios')}</a>
 		<a class="btn btn-outline pressable" href={PLAY_STORE_URL} rel="noopener">{t('landing.hero.cta.android')}</a>
 	</div>
+	<a class="signin-link pressable" href={ACCOUNT_URL}>{t('landing.cta.signin')}</a>
 	<p class="hint">{t('landing.download.pikle')}</p>
 </section>
 
@@ -50,4 +51,15 @@
 		color: var(--faint);
 		font-size: var(--text-xs);
 	}
+	.signin-link {
+		color: var(--brand);
+		font-weight: 600;
+		font-size: var(--text-sm);
+		text-decoration: none;
+	}
+
+	.signin-link:hover {
+		text-decoration: underline;
+	}
+
 </style>
