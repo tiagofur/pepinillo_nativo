@@ -19,6 +19,9 @@
 		"src/routes/(app)/+layout.ts",
 		"src/routes/+layout.ts"
 	],
+	"/guides": [
+		"src/routes/+layout.ts"
+	],
 	"/(app)/plan": [
 		"src/routes/(app)/+layout.ts",
 		"src/routes/+layout.ts"

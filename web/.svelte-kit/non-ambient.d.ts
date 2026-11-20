@@ -29,7 +29,7 @@ declare module "$app/types" {
 	type MatcherParam<M> = M extends (param : string) => param is (infer U extends string) ? U : string;
 
 	export interface AppTypes {
-		RouteId(): "/(app)" | "/" | "/(app)/account" | "/(app)/dashboard" | "/(app)/focus" | "/(app)/plan" | "/upgrade";
+		RouteId(): "/(app)" | "/" | "/(app)/account" | "/(app)/dashboard" | "/(app)/focus" | "/guides" | "/(app)/plan" | "/upgrade";
 		RouteParams(): {
 			
 		};
@@ -39,10 +39,11 @@ declare module "$app/types" {
 			"/(app)/account": Record<string, never>;
 			"/(app)/dashboard": Record<string, never>;
 			"/(app)/focus": Record<string, never>;
+			"/guides": Record<string, never>;
 			"/(app)/plan": Record<string, never>;
 			"/upgrade": Record<string, never>
 		};
-		Pathname(): "/" | "/account" | "/dashboard" | "/focus" | "/plan" | "/upgrade";
+		Pathname(): "/" | "/account" | "/dashboard" | "/focus" | "/guides" | "/plan" | "/upgrade";
 		ResolvedPathname(): `${"" | `/${string}`}${ReturnType<AppTypes['Pathname']>}`;
 		Asset(): "/favicon.svg" | "/icons/apple-touch-icon.png" | "/icons/icon-192.png" | "/icons/icon-512.png" | "/icons/maskable-512.png" | "/manifest.webmanifest" | "/robots.txt" | "/sitemap.xml" | "/sw.js" | string & {};
 	}
