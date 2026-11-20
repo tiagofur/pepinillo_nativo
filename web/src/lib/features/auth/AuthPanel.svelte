@@ -23,8 +23,10 @@
 
 	async function loadScript(src: string, injected: () => boolean, mark: () => void): Promise<void> {
 		if (injected()) return;
-		mark();
 		await loadScriptInner(src);
+		// Mark AFTER success: a failed CDN load must not lock retries out of
+		// the session (#947 judge leftover).
+		mark();
 	}
 	function loadScriptInner(src: string): Promise<void> {
 		return new Promise((resolve, reject) => {
