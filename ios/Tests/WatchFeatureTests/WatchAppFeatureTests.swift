@@ -14,7 +14,7 @@ import ComposableArchitecture
 // MARK: - WatchAppFeature Tests
 
 @MainActor
-@Suite("WatchAppFeature Reducer")
+@Suite("WatchAppFeature Reducer", .serialized, .appGroupDefaultsSerialized)
 struct WatchAppFeatureTests {
 
     // MARK: - Helpers
@@ -1036,5 +1036,31 @@ struct WatchAppFeatureTests {
             $0.metricsOptIn = false
             $0.metricsOptInError = "No se pudo actualizar. Verifica la conexión con tu iPhone."
         }
+    }
+
+    // MARK: - premiumStateReceived: Routing to Timer (#976)
+
+    @Test("premiumStateReceived routes to timer child")
+    func premiumStateReceivedRoutesToTimer() async {
+        // The child reducer persists the flag to the real shared suite — pin
+        // it deterministic for the duration (and serialize with the other
+        // app-group suites via the suite trait above).
+        let proSuite = UserDefaults(suiteName: "group.com.pepinillo.app")
+        let savedPro = proSuite?.object(forKey: "isProUser")
+        defer {
+            if let savedPro { proSuite?.set(savedPro, forKey: "isProUser") }
+            else { proSuite?.removeObject(forKey: "isProUser") }
+        }
+        let store = TestStore(initialState: WatchAppFeature.State()) {
+            WatchAppFeature()
+        }
+
+        store.exhaustivity = .off
+
+        await store.send(.premiumStateReceived(isProUser: true))
+        await store.receive(.timer(.premiumStateReceived(true)))
+
+        await store.send(.premiumStateReceived(isProUser: false))
+        await store.receive(.timer(.premiumStateReceived(false)))
     }
 }

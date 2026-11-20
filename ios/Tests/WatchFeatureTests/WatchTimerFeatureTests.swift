@@ -830,6 +830,32 @@ struct WatchTimerFeatureTests {
         }
         #expect(sawPause)
     }
+
+    // MARK: - premiumStateReceived (#976)
+
+    @Test("premiumStateReceived sets isProUser and persists to the shared defaults")
+    func premiumStateReceivedPersistsFlag() async {
+        // Pin the shared suite so the assertion is deterministic.
+        let proSuite = UserDefaults(suiteName: "group.com.pepinillo.app")
+        let savedPro = proSuite?.object(forKey: "isProUser")
+        defer {
+            if let savedPro { proSuite?.set(savedPro, forKey: "isProUser") }
+            else { proSuite?.removeObject(forKey: "isProUser") }
+        }
+        let store = TestStore(initialState: WatchTimerFeature.State()) {
+            WatchTimerFeature()
+        }
+
+        await store.send(.premiumStateReceived(true)) {
+            $0.isProUser = true
+        }
+        #expect(proSuite?.bool(forKey: "isProUser") == true)
+
+        await store.send(.premiumStateReceived(false)) {
+            $0.isProUser = false
+        }
+        #expect(proSuite?.bool(forKey: "isProUser") == false)
+    }
 }
 
 // MARK: - Optimistic Start (#watch-latency)

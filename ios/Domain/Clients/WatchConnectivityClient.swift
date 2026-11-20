@@ -314,6 +314,9 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate, @unchecked Se
     //   "sessionState": { ... }
     //   "stats":        { ... }
     //   "dashboardStats": { ... }
+    //   "theme":        { themeName: String }
+    //   "metricsOptIn": { hasBackendAccount, metricsOptIn, metricsOptInError? }
+    //   "premium":      { isProUser: Bool }   (#976)
     //   "sentAt": TimeInterval   (for stale-update dedupe on the watch side)
     //
     // The phone maintains a cache of the last-sent values per section so it can

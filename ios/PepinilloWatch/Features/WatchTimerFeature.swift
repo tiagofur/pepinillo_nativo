@@ -397,8 +397,8 @@ struct WatchTimerFeature {
 
             case .premiumStateReceived(let isPro):
                 state.isProUser = isPro
-                // Persist so launches and complications read the flag even
-                // before the next phone push arrives.
+                // Persist so launches and future reads (onAppear /
+                // connectivityChanged) see the flag before the next push.
                 Self.appGroupDefaults?.set(isPro, forKey: "isProUser")
                 return .none
 
