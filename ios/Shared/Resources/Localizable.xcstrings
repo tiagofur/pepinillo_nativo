@@ -4362,6 +4362,318 @@
         }
       }
     },
+    "account.rclink.row.title" : {
+      "comment" : "RcLinkView/AccountView/MacAccountView — canonical entry-point label (#953)",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use my purchase on the Web"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Usar mi compra en la Web"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Usar minha compra na Web"
+          }
+        }
+      }
+    },
+    "account.rclink.title" : {
+      "comment" : "RcLinkView — heading",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bring your purchase to the web"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Traé tu compra a la web"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Traga sua compra para a web"
+          }
+        }
+      }
+    },
+    "account.rclink.explanation" : {
+      "comment" : "RcLinkView — body",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bought Pepinillo+ or Everywhere in the iOS, macOS, or Android app? Enter the 6-digit code shown on app.pepinillo.app (Account) to bring your purchase to your web account."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¿Compraste Pepinillo+ o Everywhere en la app de iOS, macOS o Android? Ingresá el código de 6 dígitos que aparece en app.pepinillo.app (Cuenta) para llevar tu compra a tu cuenta web."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Comprou Pepinillo+ ou Everywhere no app de iOS, macOS ou Android? Insira o código de 6 dígitos mostrado em app.pepinillo.app (Conta) para levar sua compra à sua conta web."
+          }
+        }
+      }
+    },
+    "account.rclink.claim.button" : {
+      "comment" : "RcLinkView — primary CTA",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Link purchase"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vincular compra"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vincular compra"
+          }
+        }
+      }
+    },
+    "account.rclink.invalid" : {
+      "comment" : "APIClientError.rcLinkNotClaimable userMessage (404)",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "That code is invalid or expired. Generate a new one on the web."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ese código no es válido o ya venció. Generá uno nuevo en la web."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Este código é inválido ou expirou. Gere um novo na web."
+          }
+        }
+      }
+    },
+    "account.rclink.bound" : {
+      "comment" : "APIClientError.rcLinkAlreadyBound userMessage (409)",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This purchase is already linked to another account."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esta compra ya está vinculada a otra cuenta."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esta compra já está vinculada a outra conta."
+          }
+        }
+      }
+    },
+    "account.rclink.shortCode" : {
+      "comment" : "RcLinkFeature — short code guard",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enter the 6-digit code shown on the web account page."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ingresá los 6 dígitos del código que muestra la página de cuenta web."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Insira os 6 dígitos do código mostrado na página de conta web."
+          }
+        }
+      }
+    },
+    "account.rclink.genericError" : {
+      "comment" : "RcLinkFeature — operational failures (judge A round 1)",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Could not link the purchase right now. Please try again shortly."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se pudo vincular la compra en este momento. Intentá de nuevo en un rato."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Não foi possível vincular a compra agora. Tente novamente em breve."
+          }
+        }
+      }
+    },
+    "account.rclink.success.title" : {
+      "comment" : "RcLinkView — success heading",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Purchase linked!"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¡Compra vinculada!"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Compra vinculada!"
+          }
+        }
+      }
+    },
+    "account.rclink.success.body" : {
+      "comment" : "RcLinkView — success body (masked email)",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Linked to **%@**. Your plan is now available on the web."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vinculada a **%@**. Tu plan ya está disponible en la web."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vinculada a **%@**. Seu plano já está disponível na web."
+          }
+        }
+      }
+    },
+    "account.rclink.continue" : {
+      "comment" : "RcLinkView — success CTA",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continue"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continuar"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continuar"
+          }
+        }
+      }
+    },
+    "a11y.rclink.code.label" : {
+      "comment" : "A11y — RcLink code field label",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Link code"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Código de vinculación"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Código de vinculação"
+          }
+        }
+      }
+    },
+    "a11y.rclink.code.hint" : {
+      "comment" : "A11y — RcLink code field hint",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enter the 6-digit code from the web account page"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ingresá el código de 6 dígitos de la página de cuenta web"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Insira o código de 6 dígitos da página de conta web"
+          }
+        }
+      }
+    },
     "Apple decides whether to share your name and email during Sign in with Apple. Birth date and profile photo are managed manually in Pepinillo, and you can keep using a private relay email or replace it locally here." : {
       "comment" : "A description of how the user can change their profile information.",
       "extractionState" : "stale",
@@ -6664,6 +6976,50 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Não foi possível inicializar os dados locais"
+          }
+        }
+      }
+    },
+    "Could not open the code redemption screen. Please try again." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Could not open the code redemption screen. Please try again."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se pudo abrir la pantalla para canjear códigos. Inténtalo de nuevo."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Não foi possível abrir a tela de resgate de códigos. Tente novamente."
+          }
+        }
+      }
+    },
+    "Could not redeem the code. Please try again." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Could not redeem the code. Please try again."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se pudo canjear el código. Inténtalo de nuevo."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Não foi possível resgatar o código. Tente novamente."
           }
         }
       }
@@ -14590,6 +14946,28 @@
         }
       }
     },
+    "Offer code redemption is not available on this device." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Offer code redemption is not available on this device."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El canje de códigos no está disponible en este dispositivo."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O resgate de códigos não está disponível neste dispositivo."
+          }
+        }
+      }
+    },
     "Offline. Changes will sync when you reconnect." : {
       "comment" : "A message that informs the user that they are offline and that their changes will sync when they reconnect.",
       "isCommentAutoGenerated" : true
@@ -16845,6 +17223,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Recorrência"
+          }
+        }
+      }
+    },
+    "Redeem Promo Code" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Redeem Promo Code"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Canjear código promocional"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Resgatar código promocional"
           }
         }
       }
@@ -20208,6 +20608,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Termos de uso"
+          }
+        }
+      }
+    },
+    "That code was accepted, but it didn't unlock a plan. If you already own Pepinillo+, try Restore Purchases." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "That code was accepted, but it didn't unlock a plan. If you already own Pepinillo+, try Restore Purchases."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El código se aceptó, pero no desbloqueó ningún plan. Si ya tienes Pepinillo+, prueba con Restaurar compras."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O código foi aceito, mas não desbloqueou nenhum plano. Se você já tem o Pepinillo+, tente Restaurar compras."
           }
         }
       }

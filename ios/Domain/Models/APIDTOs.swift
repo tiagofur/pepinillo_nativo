@@ -80,6 +80,29 @@ public struct VerifyEmailResponse: Codable, Sendable, Equatable {
     public let tokens: APITokens
 }
 
+// MARK: - RC License Bridge (#953)
+
+/// Claim the single-use code shown on the web account page, binding this
+/// device's RevenueCat purchase to the web account that generated it.
+public struct RcLinkRequest: Codable, Sendable, Equatable {
+    public let code: String
+    public let appUserId: String
+    public let platform: String
+
+    public init(code: String, appUserId: String, platform: String = "ios") {
+        self.code = code
+        self.appUserId = appUserId
+        self.platform = platform
+    }
+}
+
+public struct RcLinkResponse: Codable, Sendable, Equatable {
+    public let userId: String
+    public let tier: String
+    public let email: String
+    public let expiresAt: String?
+}
+
 public struct ResetPasswordRequest: Codable, Sendable, Equatable {
     public let email: String
     public let code: String
@@ -499,6 +522,11 @@ public enum APIClientError: Error, Equatable, Sendable {
     case unknown(String)
     case invalidResetCode
     case resetCodeExpired
+    case rcLinkNotClaimable
+    case rcLinkAlreadyBound
+    /// Client-side only: RevenueCat unconfigured/unavailable — the claim can
+    /// never succeed without an app_user_id, so the feature fails up front.
+    case rcLinkUnavailable
 
     public var userMessage: String {
         switch self {
@@ -526,6 +554,12 @@ public enum APIClientError: Error, Equatable, Sendable {
             return String(localized: "Invalid reset code. Please check and try again.")
         case .resetCodeExpired:
             return String(localized: "Reset code has expired. Please request a new one.")
+        case .rcLinkNotClaimable:
+            return String(localized: "account.rclink.invalid", defaultValue: "That code is invalid or expired. Generate a new one on the web.")
+        case .rcLinkAlreadyBound:
+            return String(localized: "account.rclink.bound", defaultValue: "This purchase is already linked to another account.")
+        case .rcLinkUnavailable:
+            return String(localized: "account.rclink.genericError", defaultValue: "Could not link the purchase right now. Please try again shortly.")
         }
     }
 
@@ -539,6 +573,8 @@ public enum APIClientError: Error, Equatable, Sendable {
         case "invalid_refresh_token": return .invalidRefreshToken
         case "invalid_reset_code": return .invalidResetCode
         case "reset_code_expired": return .resetCodeExpired
+        case "rc_link_not_claimable": return .rcLinkNotClaimable
+        case "rc_link_already_bound": return .rcLinkAlreadyBound
         default: return .unknown(errorCode)
         }
     }

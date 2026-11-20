@@ -108,6 +108,10 @@ struct SubscriptionClient: Sendable {
     /// Restore previous purchases via RevenueCat.
     var restorePurchases: @Sendable () async throws -> SubscriptionState = { .free }
 
+    /// Post externally-observed StoreKit transactions to RevenueCat (e.g. an
+    /// offer code redeemed through the system sheet) and return the entitlement.
+    var syncPurchases: @Sendable () async throws -> SubscriptionState = { .free }
+
     /// Check current entitlement (call on launch + after purchase).
     var checkEntitlement: @Sendable () async throws -> SubscriptionState = { .free }
 
@@ -116,6 +120,10 @@ struct SubscriptionClient: Sendable {
 
     /// Identify user with backend user ID.
     var logIn: @Sendable (_ userID: String) async throws -> SubscriptionState = { _ in .free }
+
+    /// Current RevenueCat app_user_id (anonymous for unclaimed native
+    /// purchases) — sent with the #953 license-bridge claim.
+    var currentAppUserID: @Sendable () async -> String = { "" }
 
     /// Reset to anonymous (logged out).
     var logOut: @Sendable () async -> Void = { }
@@ -133,9 +141,11 @@ extension SubscriptionClient: DependencyKey {
         fetchProducts: { PepinilloProduct.currentProducts.map(\.mockProductInfo) },
         purchase: { _ in .success(productID: PepinilloProduct.annual.rawValue) },
         restorePurchases: { .pepinilloPlus },
+        syncPurchases: { .free },
         checkEntitlement: { .free },
         listenForTransactionUpdates: { .finished },
         logIn: { _ in .free },
+        currentAppUserID: { "" },
         logOut: { },
         isPurchasesAvailable: { true }
     )
@@ -159,9 +169,11 @@ extension SubscriptionClient {
             fetchProducts: { await manager.fetchProducts() },
             purchase: { id in await manager.purchase(productID: id) },
             restorePurchases: { try await manager.restorePurchases() },
+            syncPurchases: { try await manager.syncPurchases() },
             checkEntitlement: { try await manager.checkEntitlement() },
             listenForTransactionUpdates: { manager.customerInfoStream() },
             logIn: { userID in try await manager.logIn(userID: userID) },
+            currentAppUserID: { await manager.currentAppUserID() },
             logOut: { await manager.logOut() },
             isPurchasesAvailable: { await manager.isPurchasesAvailable() }
         )
@@ -173,9 +185,11 @@ extension SubscriptionClient {
             fetchProducts: { PepinilloProduct.currentProducts.map(\.mockProductInfo) },
             purchase: { _ in .failed(message: "Purchases unavailable on this platform") },
             restorePurchases: { .free },
+            syncPurchases: { .free },
             checkEntitlement: { .free },
             listenForTransactionUpdates: { .finished },
             logIn: { _ in .free },
+            currentAppUserID: { "" },
             logOut: { },
             isPurchasesAvailable: { false }
         )
@@ -314,6 +328,23 @@ private actor SubscriptionManager {
         }
     }
 
+    func syncPurchases() async throws -> SubscriptionState {
+        await ensureConfigured()
+        guard !isUnavailable else { return .free }
+        do {
+            let customerInfo = try await Purchases.shared.syncPurchases()
+            let state = subscriptionStateFromCustomerInfo(customerInfo)
+            AppGroupDefaults.lastVerifiedDate = Date()
+            return state
+        } catch {
+            return try SubscriptionOfflineGraceChecker.check(
+                error: error,
+                cachedCapabilities: AppGroupDefaults.userCapabilities,
+                lastVerifiedDate: AppGroupDefaults.lastVerifiedDate
+            )
+        }
+    }
+
     func checkEntitlement() async throws -> SubscriptionState {
         await ensureConfigured()
         guard !isUnavailable else { return .free }
@@ -369,6 +400,14 @@ private actor SubscriptionManager {
                 lastVerifiedDate: AppGroupDefaults.lastVerifiedDate
             )
         }
+    }
+
+    /// Expose the SDK app_user_id for the #953 license-bridge claim
+    /// (anonymous "$RCAnonymousID:…" until the first logIn binds it).
+    func currentAppUserID() async -> String {
+        await ensureConfigured()
+        guard !isUnavailable else { return "" }
+        return Purchases.shared.appUserID
     }
 
     func logOut() async {

@@ -23,6 +23,8 @@ public struct APIClient: Sendable {
     public var resetPassword: @Sendable (ResetPasswordRequest) async throws -> Void
     public var verifyEmail: @Sendable (VerifyEmailRequest) async throws -> VerifyEmailResponse
     public var resendVerificationEmail: @Sendable (ResendVerificationRequest) async throws -> Void
+    /// RC license bridge (#953): public claim endpoint — no JWT by design.
+    public var rcLink: @Sendable (RcLinkRequest) async throws -> RcLinkResponse
     public var getMe: @Sendable () async throws -> APIUser
     public var updateMe: @Sendable (UpdateProfileRequest) async throws -> APIUser
     public var uploadProfileImage: @Sendable (_ imageData: Data, _ mimeType: String) async throws -> ImageUploadResponse
@@ -53,6 +55,7 @@ extension APIClient: DependencyKey {
             resetPassword: { try await helper.postVoid("auth/reset-password", body: $0) },
             verifyEmail: { try await helper.post("auth/verify-email", body: $0) },
             resendVerificationEmail: { try await helper.postVoid("auth/resend-verification", body: $0) },
+            rcLink: { try await helper.post("rc/link", body: $0) },
             getMe: { try await helper.authenticatedGet("users/me") },
             updateMe: { try await helper.authenticatedPut("users/me", body: $0) },
             uploadProfileImage: { imageData, mimeType in
