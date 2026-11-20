@@ -1245,7 +1245,7 @@ const es: Dict = {
 		'La web es un extra compañero para foco en pantalla grande. No reemplaza funciones nativas del SO.',
 	'account.nonGoals':
 		'No en web: bandeja, atajos globales, widgets, Live Activity, reloj, Health, CloudKit, colaboración en equipo, editor de notas.',
-	'account.deviceId': 'Id de dispositivo (local)',,
+	'account.deviceId': 'Id de dispositivo (local)',
 	'account.storage': 'Almacenamiento local',
 	'account.storage.persisted': 'Persistente — el navegador no borrará tus datos',
 	'account.storage.bestEffort': 'De mejor esfuerzo — concedé persistencia para mayor seguridad',
@@ -1800,7 +1800,7 @@ const pt: Dict = {
 		'A web é um extra companheiro para foco em tela grande. Não substitui recursos nativos do SO.',
 	'account.nonGoals':
 		'Não na web: bandeja, atalhos globais, widgets, Live Activity, relógio, Health, CloudKit, colaboração em equipe, editor de notas.',
-	'account.deviceId': 'Id do dispositivo (local)',,
+	'account.deviceId': 'Id do dispositivo (local)',
 	'account.storage': 'Armazenamento local',
 	'account.storage.persisted': 'Persistente — o navegador não apagará seus dados',
 	'account.storage.bestEffort': 'Melhor esforço — conceda persistência para mais segurança',
