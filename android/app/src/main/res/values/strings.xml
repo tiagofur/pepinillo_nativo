@@ -909,4 +909,17 @@
 
     <!-- AppFunctions agent capability summary, shown to the user (issue #912/#918) -->
     <string name="appfunctions_display_description">Lets AI assistants like Gemini create tasks in your Pepinillo plan on your behalf.</string>
+    <!-- RC License Bridge (#953) -->
+    <string name="rc_link_title">Bring your purchase to the web</string>
+    <string name="rc_link_desc">Bought Pepinillo+ or Everywhere in the iOS, macOS, or Android app? Enter the 6-digit code shown on app.pepinillo.app (Account) to bring your purchase to your web account.</string>
+    <string name="rc_link_label_code">Link code</string>
+    <string name="rc_link_btn_claim">Link purchase</string>
+    <string name="rc_link_row_title">Use my purchase on the Web</string>
+    <string name="rc_link_error_invalid">That code is invalid or expired. Generate a new one on the web.</string>
+    <string name="rc_link_error_bound">This purchase is already linked to another account.</string>
+    <string name="rc_link_error_generic">Could not link the purchase right now. Please try again shortly.</string>
+    <string name="rc_link_error_short_code">Enter the 6-digit code shown on the web account page.</string>
+    <string name="rc_link_success_title">Purchase linked!</string>
+    <string name="rc_link_success_body">Linked to %1$s. Your plan is now available on the web.</string>
+    <string name="rc_link_btn_continue">Continue</string>
 </resources>

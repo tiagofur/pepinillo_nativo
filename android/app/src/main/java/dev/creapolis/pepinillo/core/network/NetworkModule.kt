@@ -81,7 +81,8 @@ object NetworkModule {
                         !urlString.contains("/auth/forgot-password") &&
                         !urlString.contains("/auth/reset-password") &&
                         !urlString.contains("/auth/verify-email") &&
-                        !urlString.contains("/auth/resend-verification")
+                        !urlString.contains("/auth/resend-verification") &&
+                        !urlString.contains("/rc/link")
                 }
                 loadTokens {
                     authStore.getBearerTokens()

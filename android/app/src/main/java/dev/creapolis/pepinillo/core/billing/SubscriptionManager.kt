@@ -241,6 +241,13 @@ class SubscriptionManager @Inject constructor(
         }
     }
 
+    /** Expose the SDK app_user_id for the #953 license-bridge claim
+     * (anonymous "$RCAnonymousID:…" until the first logIn binds it). */
+    suspend fun currentAppUserId(): String {
+        if (!isInitialized) connect()
+        return runCatching { Purchases.sharedInstance.appUserID }.getOrDefault("")
+    }
+
     suspend fun logOut() {
         if (!isInitialized) return
 

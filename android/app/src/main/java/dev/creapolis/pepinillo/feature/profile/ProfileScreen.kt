@@ -35,6 +35,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -64,6 +65,7 @@ fun ProfileScreen(
     viewModel: ProfileViewModel = hiltViewModel(),
     onBackClick: () -> Unit = {},
     onSignInClick: () -> Unit = {},
+    onRcLinkClick: () -> Unit = {},
     onSignOutClick: () -> Unit = {},
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -195,7 +197,7 @@ fun ProfileScreen(
                 }
             }
         } else {
-            GuestSignInCard(onSignInClick = onSignInClick)
+            GuestSignInCard(onSignInClick = onSignInClick, onRcLinkClick = onRcLinkClick)
         }
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -549,7 +551,7 @@ private fun ActionRow(
 }
 
 @Composable
-private fun GuestSignInCard(onSignInClick: () -> Unit) {
+private fun GuestSignInCard(onSignInClick: () -> Unit, onRcLinkClick: () -> Unit) {
     ProfileCard {
         Column(
             modifier = Modifier
@@ -591,6 +593,17 @@ private fun GuestSignInCard(onSignInClick: () -> Unit) {
                 contentPadding = ButtonDefaults.ButtonWithIconContentPadding,
             ) {
                 Text(stringResource(R.string.profile_guest_btn_signin), style = MaterialTheme.typography.labelLarge)
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            // RC license bridge (#953): native buyers inherit their purchase
+            // on the web via the claim code — the buyer operates offline-first
+            // without an account, so this lives in the guest card.
+            OutlinedButton(
+                onClick = onRcLinkClick,
+                shape = PepinilloShapeTokens.button,
+                contentPadding = ButtonDefaults.ButtonWithIconContentPadding,
+            ) {
+                Text(stringResource(R.string.rc_link_row_title), style = MaterialTheme.typography.labelLarge)
             }
         }
     }

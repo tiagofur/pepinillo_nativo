@@ -918,4 +918,17 @@
 
     <!-- AppFunctions agent capability summary, shown to the user (issue #912/#918) -->
     <string name="appfunctions_display_description">Permite que assistentes de IA como o Gemini criem tarefas no seu plano do Pepinillo por você.</string>
+    <!-- RC License Bridge (#953) -->
+    <string name="rc_link_title">Traga sua compra para a web</string>
+    <string name="rc_link_desc">Comprou Pepinillo+ ou Everywhere no app de iOS, macOS ou Android? Insira o código de 6 dígitos mostrado em app.pepinillo.app (Conta) para levar sua compra à sua conta web.</string>
+    <string name="rc_link_label_code">Código de vinculação</string>
+    <string name="rc_link_btn_claim">Vincular compra</string>
+    <string name="rc_link_row_title">Usar minha compra na Web</string>
+    <string name="rc_link_error_invalid">Este código é inválido ou expirou. Gere um novo na web.</string>
+    <string name="rc_link_error_bound">Esta compra já está vinculada a outra conta.</string>
+    <string name="rc_link_error_generic">Não foi possível vincular a compra agora. Tente novamente em breve.</string>
+    <string name="rc_link_error_short_code">Insira os 6 dígitos do código mostrado na página de conta web.</string>
+    <string name="rc_link_success_title">Compra vinculada!</string>
+    <string name="rc_link_success_body">Vinculada a %1$s. Seu plano já está disponível na web.</string>
+    <string name="rc_link_btn_continue">Continuar</string>
 </resources>
