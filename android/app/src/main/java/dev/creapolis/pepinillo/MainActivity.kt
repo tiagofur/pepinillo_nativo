@@ -81,6 +81,7 @@ import dev.creapolis.pepinillo.data.local.preferences.UserPreferencesRepository
 import dev.creapolis.pepinillo.feature.auth.EmailVerificationScreen
 import dev.creapolis.pepinillo.feature.auth.ForgotPasswordScreen
 import dev.creapolis.pepinillo.feature.auth.LoginScreen
+import dev.creapolis.pepinillo.feature.auth.RcLinkScreen
 import dev.creapolis.pepinillo.feature.auth.RegisterScreen
 import dev.creapolis.pepinillo.feature.onboarding.OnboardingScreen
 import dev.creapolis.pepinillo.ui.components.LocalSnackbarController
@@ -622,6 +623,7 @@ fun PepinilloApp(
                 ProfileScreen(
                     onBackClick = { navController.popBackStack() },
                     onSignInClick = { navController.navigate("login") },
+                    onRcLinkClick = { navController.navigate("rc-link") },
                 ) {
                     // Navigate to login after sessionManager.signOut() completes
                     // (ProfileViewModel.logout awaits it before calling this) (#351).
@@ -725,6 +727,11 @@ fun PepinilloApp(
                             popUpTo("forgot-password") { inclusive = true }
                         }
                     },
+                )
+            }
+            composable("rc-link") {
+                RcLinkScreen(
+                    onNavigateBack = { navController.popBackStack() },
                 )
             }
             composable("email-verification/{email}") { backStackEntry ->

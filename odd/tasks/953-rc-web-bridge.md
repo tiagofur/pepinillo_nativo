@@ -112,3 +112,12 @@
   A P3) — 6/6 verdes. Nota: judge B reportó keyboardType/NavTitle sin
   shim en Mac, pero judge A verificó por compilación real que
   MacSwiftUICompatibility.swift ya los cubre — cero errores Mac nuevos.
+- 2026-11-20 (PR-4 micro-pase C4.3, dual APPROVED round 1): test de
+  regresión logIn-throws → NavigateBack igual (judge A P2) + happy-path
+  NavigateBack assertion; guard isLoading separado del short-code
+  (mensaje ya no engaña); onDone siempre llama claim (sin silencio).
+  Follow-ups a #953: extracción mecánica MainActivity/ProfileScreen
+  (>500, judge P2), hint web platform-aware (Más → Perfil en Android),
+  affordance cancelar (patrón email verification), dependencia directa
+  lifecycle-runtime-compose, tier nombrado en el success body.
+>>>>>>> origin/main

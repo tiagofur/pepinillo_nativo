@@ -212,6 +212,11 @@ class PepinilloApiClient @Inject constructor(
     suspend fun verifyReceipt(request: VerifyReceiptRequest): NetworkResult<VerifyReceiptResponse> =
         safeCall { httpClient.post("billing/verify-receipt") { jsonBody(request) }.body() }
 
+    /** RC License Bridge (#953): public claim endpoint — no JWT by design;
+     * the single-use code IS the authorization. */
+    suspend fun rcLink(request: RcLinkRequest): NetworkResult<RcLinkResponse> =
+        safeCall { httpClient.post("rc/link") { jsonBody(request) }.body() }
+
     // ── Helpers ──
 
     private suspend fun safeAuthCall(

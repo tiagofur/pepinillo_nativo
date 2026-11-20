@@ -253,6 +253,25 @@ data class VerifyReceiptResponse(
     val subscriptionExpiresAt: Long? = null,
 )
 
+// ── RC License Bridge (#953) ──
+
+/** Claim the single-use code shown on the web account page, binding this
+ * device's RevenueCat purchase to the web account that generated it. */
+@Serializable
+data class RcLinkRequest(
+    val code: String,
+    val appUserId: String,
+    val platform: String = "android",
+)
+
+@Serializable
+data class RcLinkResponse(
+    @SerialName("userId") val userId: String,
+    @SerialName("tier") val tier: String,
+    @SerialName("email") val email: String,
+    @SerialName("expiresAt") val expiresAt: String? = null,
+)
+
 // ── Profile ──
 
 @OptIn(kotlinx.serialization.ExperimentalSerializationApi::class)
