@@ -90,6 +90,9 @@ struct WatchTimerFeature {
         case sessionStateReceived(WatchSessionState)
         case statsReceived(todayMinutes: Int, sessions: Int, streak: Int)
         case connectivityChanged(Bool)
+        /// Phone pushed the Pepinillo+ flag over WatchConnectivity (#976) —
+        /// the App Group mirror only shares within the phone itself.
+        case premiumStateReceived(Bool)
 
         // Commands sent to iOS
         case commandSent(WatchCommand)
@@ -390,6 +393,13 @@ struct WatchTimerFeature {
                 if connected {
                     state.isProUser = Self.readIsProUser()
                 }
+                return .none
+
+            case .premiumStateReceived(let isPro):
+                state.isProUser = isPro
+                // Persist so launches and complications read the flag even
+                // before the next phone push arrives.
+                Self.appGroupDefaults?.set(isPro, forKey: "isProUser")
                 return .none
 
             case .phaseAnchorExpired(let end):

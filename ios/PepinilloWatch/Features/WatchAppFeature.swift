@@ -62,6 +62,7 @@ struct WatchAppFeature {
         case dashboardStatsReceived(WatchDashboardStats)
         case themeReceived(String)
         case metricsOptInStateReceived(hasBackendAccount: Bool, metricsOptIn: Bool, metricsOptInError: String?)
+        case premiumStateReceived(isProUser: Bool)
         case setMetricsOptIn(Bool)
         case metricsOptInCommandFailed(previousValue: Bool)
         case connectivityChanged(Bool)
@@ -107,6 +108,8 @@ struct WatchAppFeature {
                                 metricsOptIn: optIn,
                                 metricsOptInError: err
                             ))
+                        case .premiumState(isProUser: let isPro):
+                            await send(.premiumStateReceived(isProUser: isPro))
                         case .connectivityStatus(let connected):
                             await send(.connectivityChanged(connected))
                         case .command:
@@ -163,6 +166,9 @@ struct WatchAppFeature {
                 state.metricsOptIn = hasAccount ? optIn : false
                 state.metricsOptInError = err
                 return .none
+
+            case .premiumStateReceived(let isPro):
+                return .send(.timer(.premiumStateReceived(isPro)))
 
             case .setMetricsOptIn(let enabled):
                 guard state.hasBackendAccount else { return .none }
