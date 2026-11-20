@@ -8,6 +8,7 @@
  */
 
 import type { CompletionSoundName, SoundscapeName } from '$lib/domain/entities/types';
+import type { EntitlementTier } from '$lib/domain/gates/freeLimits';
 
 let ctx: AudioContext | null = null;
 
@@ -116,7 +117,7 @@ export const FREE_SOUNDSCAPES: readonly SoundscapeName[] = [
 	'whiteNoise'
 ] as const;
 
-export function isSoundscapeFree(name: SoundscapeName, tier?: 'free' | 'everywhere'): boolean {
+export function isSoundscapeFree(name: SoundscapeName, tier?: EntitlementTier): boolean {
 	if (tier && tier !== 'free') return true;
 	return FREE_SOUNDSCAPES.includes(name);
 }

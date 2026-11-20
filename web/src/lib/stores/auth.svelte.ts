@@ -10,7 +10,7 @@ import { mergePrefs, mergeSessions, mergeTasks } from '$lib/data/sync/merge';
 import { runFullPull, runInitialUpload } from '$lib/data/sync/engine';
 import { getPreferences } from '$lib/data/local/idb';
 import type { AuthResponse, AuthUser, AuthTokens } from '$lib/data/remote/types';
-import type { EntitlementTier } from '$lib/domain/gates/freeLimits';
+import { toGateTier } from '$lib/domain/gates/entitlements';
 import { app } from '$lib/stores/app.svelte';
 import { plan } from '$lib/stores/plan.svelte';
 import { dashboard } from '$lib/stores/dashboard.svelte';
@@ -20,18 +20,6 @@ type MergeChoice = 'pull' | 'upload' | null;
 
 function wsUrl(): string {
 	return (__PUBLIC_WS_URL__ || '').replace(/\/$/, '');
-}
-
-/**
- * Server tier string → local gate tier (#952): pepinillo_plus keeps its own
- * tier (full local premium, single-device backup lane), everywhere_* maps to
- * 'everywhere' (local premium + multi-device sync + cloud AI).
- */
-function toGateTier(serverTier: string): EntitlementTier {
-	const tier = (serverTier || '').toLowerCase();
-	if (tier.startsWith('everywhere')) return 'everywhere';
-	if (tier === 'pepinillo_plus' || tier === 'pepinillo') return 'pepinillo_plus';
-	return 'free';
 }
 
 class AuthStore {
