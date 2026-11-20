@@ -543,6 +543,12 @@ struct PaywallLegalFooter: View {
 
     var body: some View {
         VStack(spacing: 16) {
+            Button(String(localized: "Redeem Promo Code")) {
+                store.send(.redeemCodeTapped)
+            }
+            .font(.subheadline.bold())
+            .foregroundStyle(Color.accentColor)
+
             Button(String(localized: "Restore Purchases")) {
                 store.send(.restoreTapped)
             }

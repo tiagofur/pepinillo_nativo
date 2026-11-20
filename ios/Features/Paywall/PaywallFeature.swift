@@ -121,6 +121,7 @@ struct PaywallFeature {
         case productSelected(String)
         case purchaseTapped
         case restoreTapped
+        case redeemCodeTapped
         case purchaseFinished(PurchaseResult)
         case subscriptionStateLoaded(SubscriptionState)
         case alertDismissed
@@ -150,6 +151,7 @@ struct PaywallFeature {
     @Dependency(\.subscriptionClient) var subscriptionClient
     @Dependency(\.keychainClient) var keychain
     @Dependency(\.openURL) var openURL
+    @Dependency(\.offerCodeRedemptionSheet) var offerCodeRedemptionSheet
 
     // MARK: - Reducer
 
@@ -240,6 +242,32 @@ struct PaywallFeature {
                         // Surface error; do not demote existing entitlement to free (#214).
                         let message = error.localizedDescription.isEmpty
                             ? String(localized: "Could not restore purchases. Please try again.")
+                            : error.localizedDescription
+                        await send(.purchaseFinished(.failed(message: message)))
+                    }
+                }
+
+            case .redeemCodeTapped:
+                state.isLoading = true
+                return .run { send in
+                    do {
+                        // The system sheet runs the redemption itself; it only
+                        // returns after a code was processed. Sync so RevenueCat
+                        // posts the externally-redeemed transaction (#957).
+                        try await offerCodeRedemptionSheet.present()
+                        let sub = try await subscriptionClient.syncPurchases()
+                        await send(.subscriptionStateLoaded(sub))
+                        if sub.isPro {
+                            await send(.purchaseFinished(.success(productID: sub.activeProductID ?? "")))
+                        } else {
+                            await send(.purchaseFinished(.failed(message: String(localized: "That code was accepted, but it didn't unlock a plan. If you already own Pepinillo+, try Restore Purchases."))))
+                        }
+                    } catch where error.isOfferCodeCancellation {
+                        // User dismissed the sheet — silent, like a cancelled purchase (S3).
+                        await send(.purchaseFinished(.cancelled))
+                    } catch {
+                        let message = error.localizedDescription.isEmpty
+                            ? String(localized: "Could not redeem the code. Please try again.")
                             : error.localizedDescription
                         await send(.purchaseFinished(.failed(message: message)))
                     }
