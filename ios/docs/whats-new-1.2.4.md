@@ -86,7 +86,7 @@ What's new in 1.2.4
 • Bring your purchase to the web: link your account with the 6-digit code from app.pepinillo.app (Account)
 • Siri: create tasks by voice, mark them done, or ask what you have today
 • Soundscapes: ambient audio for your focus sessions
-• ⌃⌥T quick capture from any app; ⌘→ skips a phase and ⌘N starts a task
+• ⌃⌥T quick capture from any app; ⌘→ skips a phase and ⌘N creates a task
 ```
 
 PT:

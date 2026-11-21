@@ -39,8 +39,10 @@ de Pepinillo a la pantalla Sidecar y operarla SOLO con el dedo sobre el iPad.
 
 **Los 4 checks de gestos (stage de Foco, idle):**
 
-- [ ] G1 Tap en el centro del anillo → inicia; tap de nuevo → pausa/reanuda
-      (`FocusToggleCommand.toggle`)
+- [ ] G1 Tap en el centro del anillo **con sesión corriendo** → pausa/reanuda
+      (`FocusToggleCommand.toggle`; el tap solo se adjunta si `store.isRunning`
+      — `MacFocusRingTouch.swift:92-95`). El inicio NO es tap: es el botón hero
+      (⌘↩). En idle el centro no es tap-target.
 - [ ] G2 Dial: arrastre circular en la banda externa del anillo → duración ±5
       min por detent, numerales del timer en vivo (TimeBlock 5–480, Pomodoro
       5–120; solo idle)
@@ -51,7 +53,8 @@ de Pepinillo a la pantalla Sidecar y operarla SOLO con el dedo sobre el iPad.
 
 **Barrido post-flag de controles estándar SIN puntero:**
 
-- [ ] C1 Sidebar: navegación Focus/Plan/Today/Stats + gear Settings
+- [ ] C1 Sidebar: navegación Focus/Plan/Dashboard (Today vive dentro) + gear
+      Settings; ventana Statistics (propia)
 - [ ] C2 Foco: chips de modo, steppers ±5, botón primario, Soundscapes
       (popover con slider + filas)
 - [ ] C3 Plan: Table (selección, long-press ⇒ contextMenu), inspector ⓘ con
@@ -61,8 +64,8 @@ de Pepinillo a la pantalla Sidecar y operarla SOLO con el dedo sobre el iPad.
 - [ ] C6 Notch panel: pill → expandir, acciones, collapse
 - [ ] C7 Quick Capture (⌃⌥T): campo de texto (teclado táctil Sidecar), submit
       y cancel
-- [ ] C8 Settings + búsqueda + menús de barra (App/File/View/…): abrir y
-      accionar con tap
+- [ ] C8 Settings + búsqueda de tareas (⌘F, en Plan) + menús de barra
+      (App/File/View/…): abrir y accionar con tap
 
 **S3 puntero intacto (en la Mac, sin Sidecar):** trackpad/mouse/teclado como
 siempre — navegación, dial NO activable con mouse (solo `.directTouch`),
@@ -110,3 +113,11 @@ con rollback documentado: 1.2.5 retirando la key — review Mac = horas).
   ejecutarse **por Sidecar (iPad + iPadOS 27)** antes del archive 1.2.4 —
   decisión del leader con fallback de rollback documentado. Checklist G1–G4 +
   C1–C8 arriba.
+- 2026-11-20 (juez C4 del PR #981, contexto limpio): **VERDICT: APPROVED**
+  (V1–V5 PASS, 0×P0, 0×P2). Corregido **P1**: G1 describía un tap-to-start
+  inexistente — el tap del anillo solo se adjunta con sesión corriendo
+  (`MacFocusRingTouch.swift:92-95`), el inicio es el botón hero; sin la
+  corrección el gate S5 daba un falso negativo. P3 aplicados: C1 nombra
+  Dashboard (no Today/Stats), C8 refiere la búsqueda ⌘F de Plan, EN "⌘N
+  creates a task". Verificación V2 del juez: todo bullet de las notas ASC
+  existe en el código del archive Release; Live Activities Mac no se promete.
