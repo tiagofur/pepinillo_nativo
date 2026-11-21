@@ -25,17 +25,25 @@ de #758 ya vive en main vía #845/#849 — esa issue queda como cierre formal.
   ruta de entrada de puntero (solo apaga la síntesis touch→click); suite iOS
   intacta (sin cambios de código Swift en esta unidad)
 - [x] S4: builds + guardrails verdes (Mac Dev 27.3 ✓; CI al push)
-- [ ] S5 (gate de release 1.2.4): QA físico táctil — los 4 checks de gestos
-  (tap pausa / dial ±5 / pinch Zen / no scroll accidental) + barrido post-flag
-  de controles estándar (botones, List/Table, menús, contextMenus, sidebar) SIN
-  puntero. **Vía: Sidecar con iPad + iPadOS 27** (touch-on-mac.md §5, decisión
-  del leader 20-nov — sin hardware PROLED); checklist ejecutable abajo.
+- [x] S5 (gate de release 1.2.4): QA físico táctil — **RESUELTO POR DECISIÓN
+  del leader (20-nov): enviar sin dedo físico con rollback documentado.** La vía
+  Sidecar quedó descartada: Tiago NO tiene iPad físico (sólo simulador, que
+  corre la app iOS y no ejercita `NSIsTouchNative` — comportamiento del runtime
+  de macOS). Mitigaciones: (a) barrido estático de TODOS los controles por el
+  juez C4 del PR #981 (V2/V5 PASS — SwiftUI estándar maneja touch nativo por
+  contrato de plataforma; gestos custom ya en producción desde 1.2.2(8));
+  (b) base de usuarios con Mac táctil ≈ 0 (hardware desde 6-nov-2026);
+  (c) **rollback**: 1.2.5 retirando la key — review Mac = horas;
+  (d) checklist G1–G4 + C1–C8 abajo queda como script de verificación para el
+  primer contacto con hardware táctil (labs WWDR / usuario reporta / TestFlight
+  físico). Fallback elegido por Tiago en AskUserQuestion del 20-nov.
 
-### S5 — Checklist Sidecar (iPad + iPadOS 27)
+### S5 — Checklist táctil (Sidecar/hardware — para primer contacto real)
 
-Setup: Mac e iPad con el mismo Apple ID, Sidecar conectado (inquilino AirPlay o
-USB). Instalado un build con la key (Dev o Staging local). Arrastrar la ventana
-de Pepinillo a la pantalla Sidecar y operarla SOLO con el dedo sobre el iPad.
+Setup (cuando exista hardware): Mac + iPad físico con el mismo Apple ID (o
+MacBook táctil), Sidecar conectado, build con la key, ventana en la pantalla
+táctil, operar SOLO con el dedo. **No ejecutado en 1.2.4** — sin iPad físico ni
+MacBook táctil disponibles (ver S5 arriba).
 
 **Los 4 checks de gestos (stage de Foco, idle):**
 
@@ -121,3 +129,9 @@ con rollback documentado: 1.2.5 retirando la key — review Mac = horas).
   Dashboard (no Today/Stats), C8 refiere la búsqueda ⌘F de Plan, EN "⌘N
   creates a task". Verificación V2 del juez: todo bullet de las notas ASC
   existe en el código del archive Release; Live Activities Mac no se promete.
+- 2026-11-20 (noche): Tiago confirma que NO tiene iPad físico (sólo simulador
+  en la MacBook — no ejercita touch de macOS) → vía Sidecar descartada. Se
+  aplica el fallback aprobado: **archive 1.2.4 sin QA táctil físico**, S5
+  resuelto por decisión del leader con rollback documentado (1.2.5 sin key,
+  review Mac = horas). G1–G4 + C1–C8 + S3-puntero quedan como script para el
+  primer contacto con hardware táctil real.

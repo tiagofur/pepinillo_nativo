@@ -103,10 +103,14 @@ bifurcar el motor (invariante de paridad de foco). Detalle en issue #746.
    del paquete touch). `NSViewGestureRecognizerIsExclusive` NO se define: no
    usamos `NSGestureRecognizer` directos (los gestos son SwiftUI
    `inputKinds`), y el default `YES` solo arriesga congelar ventanas con
-   recognizers NS explícitos. **Gate de release (#747 S2): QA físico en
-   pantalla táctil (labs) antes de subir 1.2.4** — los 4 checks de gestos +
-   barrido de controles estándar (botones, tablas, menús, contextMenus) sin
-   puntero.
+   recognizers NS explícitos. **Gate de release (#747 S2/S5): RESUELTO 20-nov
+   por decisión del leader — 1.2.4 sale sin QA táctil físico** (sin iPad
+   físico — el simulador iOS no ejercita `NSIsTouchNative` — ni MacBook
+   táctil; mitigación: barrido estático del juez C4 + rollback documentado
+   1.2.5 sin la key, review Mac = horas). Los 4 checks de gestos + barrido de
+   controles estándar quedan como script
+   (`odd/tasks/747-touch-native-declaration.md`) para el primer contacto con
+   hardware táctil real.
 2. **Notch panel custom (NSPanel) vs Dynamic Island del sistema**: nuestro panel
    (`MacNotchPanelController`, auxiliaryTopArea) ocupa el mismo espacio físico
    que el Dynamic Island del sistema. Preguntar coexistencia/choque en el lab;
@@ -127,3 +131,7 @@ y [19 nov 20:00–21:00 CDMX](https://developer.apple.com/events/view/6M6NX7TQFS
   apps iOS/iPadOS para probar sus gestos directamente.
 - Checklist por superficie: sidebar, Focus stage, Plan Table + inspector,
   Today/Stats, notch panel, Quick Capture, menús/context menus, drag & drop.
+- **Estado 1.2.4 (20-nov)**: sin iPad físico en el equipo — ni Sidecar ni
+  hardware táctil; la checklist quedó sin ejecutar y el release salió por
+  decisión del leader con rollback documentado (ver §4.1 y
+  `odd/tasks/747-touch-native-declaration.md`).
