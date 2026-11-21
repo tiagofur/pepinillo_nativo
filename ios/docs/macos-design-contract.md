@@ -263,5 +263,5 @@ Menus: App, File, Edit (undo/redo), View, Focus, Plan, Window, Help. No bare `Sp
 2. Pro entitlement on macOS: existing gate with a clear state vs free modes only in v1.
 3. Mac test target: add `PepinilloMacTests` or run shared tests with a macOS destination.
 4. RESOLVED (T22): app-usage insights shipped as opt-in `NSWorkspace` foreground sampling — see §4 (Top activity) and §10 (General).
-5. Touch (macOS 27): declare `NSIsTouchNative` in Info.plist or keep automatic touch→click translation — **open until Apple labs 18–19 nov 2026**; defaults to NOT declaring ([`touch-on-mac.md`](touch-on-mac.md) §4, issue #747).
+5. Touch (macOS 27): RESOLVED (#747, 20-nov-2026): `NSIsTouchNative` declared in the `PepinilloMac` Info.plist — physical on-screen QA gates the 1.2.4 archive ([`touch-on-mac.md`](touch-on-mac.md) §4, issue #747).
 6. Touch (macOS 27): custom notch `NSPanel` (`MacNotchPanelController`) coexistence with the system Dynamic Island — **open until labs 18–19 nov 2026**; conditions Live Activities scope (issue #746).
