@@ -25,7 +25,7 @@ enum TasksWidgetQuery {
             predicate: #Predicate<TaskItem> { task in
                 task.isCompleted == false
                     && task.isRecurringTemplate == false
-                    && task.isDeleted == false
+                    && task.isLocallyDeleted == false
             },
             sortBy: [
                 SortDescriptor(\.sortOrder),

@@ -213,6 +213,7 @@ jobs:
             -only-testing:PepinilloTests/IntegrationTests/AppFeatureIntegrationTests/subscriptionUpdatedFreeWritesFreeCapabilities \
             -only-testing:PepinilloTests/WidgetTests/AppGroupContainerTests \
             -only-testing:PepinilloTests/WidgetTests/WidgetProGatingTests \
+            -only-testing:PepinilloTests/TasksWidgetQueryTests \
             -only-testing:PepinilloTests/WidgetTests/FocusActivityAttributesTests \
             -only-testing:PepinilloTests/SiriIntentsTests/SiriPauseResumeIntentTests
 
@@ -240,6 +241,7 @@ jobs:
             -only-testing:PepinilloTests/IntegrationTests/AppFeatureIntegrationTests/subscriptionUpdatedFreeWritesFreeCapabilities \
             -only-testing:PepinilloTests/WidgetTests/AppGroupContainerTests \
             -only-testing:PepinilloTests/WidgetTests/WidgetProGatingTests \
+            -only-testing:PepinilloTests/TasksWidgetQueryTests \
             -only-testing:PepinilloTests/WidgetTests/FocusActivityAttributesTests \
             -only-testing:PepinilloTests/FocusFeatureTests/FocusEngineTests \
             -only-testing:PepinilloTests/FocusFeatureTests/FocusFeatureReducerTests \
