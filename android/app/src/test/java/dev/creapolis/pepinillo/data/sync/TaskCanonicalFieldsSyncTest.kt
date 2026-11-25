@@ -1,6 +1,9 @@
 package dev.creapolis.pepinillo.data.sync
 
 import dev.creapolis.pepinillo.core.auth.AuthStore
+import dev.creapolis.pepinillo.core.network.FullSyncResponse
+import dev.creapolis.pepinillo.core.network.PaginatedSessionPage
+import dev.creapolis.pepinillo.core.network.PaginatedTaskPage
 import dev.creapolis.pepinillo.core.billing.SubscriptionManager
 import dev.creapolis.pepinillo.core.billing.SubscriptionState
 import dev.creapolis.pepinillo.core.billing.SubscriptionTier
@@ -9,6 +12,7 @@ import dev.creapolis.pepinillo.core.network.PepinilloApiClient
 import dev.creapolis.pepinillo.core.network.TaskDto
 import dev.creapolis.pepinillo.core.network.TaskSyncRequest
 import dev.creapolis.pepinillo.core.network.TaskSyncResponse
+import dev.creapolis.pepinillo.data.local.PepinilloDatabase
 import dev.creapolis.pepinillo.data.local.dao.DailyStatsDao
 import dev.creapolis.pepinillo.data.local.dao.FocusSessionDao
 import dev.creapolis.pepinillo.data.local.dao.PreferenceSyncDao
@@ -22,7 +26,6 @@ import io.mockk.coVerify
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.every
-import io.mockk.verify
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -232,4 +235,62 @@ class TaskCanonicalFieldsSyncTest {
         assertEquals(false, mergedSlot.captured.scheduledForToday)
         assertEquals(3, mergedSlot.captured.sortOrder)
     }
+
+// S5 (judge A round 1): InitialSyncManager mirrors the same canonical mapping
+// for the initial restore — reverting it must fail too, not just SyncEngine.
+@Test
+fun `initial restore maps canonical energy completedAt and fields`() = runTest {
+    val restoreApi = mockk<PepinilloApiClient>(relaxed = true)
+    val restoreDb = mockk<PepinilloDatabase>(relaxed = true)
+    val restoreTaskDao = mockk<TaskDao>(relaxed = true)
+    val restoreSessionDao = mockk<FocusSessionDao>(relaxed = true)
+    val restoreSettings = mockk<SettingsSyncEngine>(relaxed = true)
+    val restoreMetadata = mockk<SyncMetadataStore>(relaxed = true)
+    val restore = InitialSyncManager(
+        apiClient = restoreApi,
+        database = restoreDb,
+        taskDao = restoreTaskDao,
+        sessionDao = restoreSessionDao,
+        settingsSyncEngine = restoreSettings,
+        syncMetadataStore = restoreMetadata,
+    )
+    val completed = Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply {
+        clear(); set(2026, 10, 24, 18, 0, 0)
+    }.timeInMillis
+    coEvery {
+        restoreApi.getFullSync(taskCursor = null, sessionCursor = null, limit = 100)
+    } returns NetworkResult.Success(
+        FullSyncResponse(
+            tasks = PaginatedTaskPage(
+                items = listOf(
+                    TaskDto(
+                        id = 1, syncId = "t-restore", title = "Canonical", updatedAt = rfc3339Utc(2026, 11, 25, 8),
+                        dueDate = rfc3339Utc(2026, 11, 20, 9),
+                        completedAt = rfc3339Utc(2026, 11, 24, 18),
+                        scheduledForToday = true, sortOrder = 5, energyLevel = "admin",
+                        // legacy decoy: must NOT be read as the completion instant
+                        finishDate = rfc3339Utc(2026, 11, 20, 9),
+                    ),
+                ),
+                nextCursor = null, hasMore = false,
+            ),
+            sessions = PaginatedSessionPage(items = emptyList(), nextCursor = null, hasMore = false),
+            settings = emptyList(),
+            serverTimestamp = rfc3339Utc(2026, 11, 25, 8),
+        ),
+    )
+
+    val result = restore.performInitialSync()
+    assertEquals(InitialSyncManager.InitialSyncResult.Success, result)
+
+    val tasksSlot = slot<List<TaskEntity>>()
+    coVerify { restoreDb.replaceSyncSnapshot(tasks = capture(tasksSlot), subtasks = any(), sessions = any()) }
+    val mapped = tasksSlot.captured.single()
+    assertEquals("admin maps onto the Android Regular label", "Regular", mapped.energyLevel)
+    assertEquals("completedAt must come from the canonical field, not the decoy", completed, mapped.completedAt)
+    assertEquals("restore applies the server today-pin", true, mapped.scheduledForToday)
+    assertEquals("restore applies the server drag order", 5, mapped.sortOrder)
+    assertNotNull("restore keeps the server due date", mapped.dueDate)
+}
+
 }

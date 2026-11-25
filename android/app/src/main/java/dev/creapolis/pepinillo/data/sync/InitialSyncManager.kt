@@ -273,11 +273,18 @@ class InitialSyncManager @Inject constructor(
             energyLevel = when (energyLevel?.lowercase()) {
                 "deep" -> "Deep"; "shallow", "light" -> "Light"; "admin", "regular" -> "Regular"; else -> "Regular"
             },
+            // Issue #989 PR-B round 1: the initial restore previously dropped
+            // the canonical task-model fields entirely — mirror SyncEngine's
+            // pull mapping.
+            dueDate = dueDate?.let { parseRfc3339(it, fallback = 0L).takeIf { d -> d > 0L } },
+            scheduledForToday = scheduledForToday,
+            sortOrder = sortOrder,
             estimatedPomodoros = estimatedPomodoros,
             completedPomodoros = completedPomodoros,
             createdAt = created,
             updatedAt = updated,
-            // Issue #989 PR-B: completion comes from the canonical field.
+            // Completion comes from the canonical field; finishDate (the old
+            // Android stuffing of completedAt) is no longer read.
             completedAt = completedAt?.let { parseRfc3339(it, fallback = System.currentTimeMillis()) },
             serverId = id,
             isDirty = false,
