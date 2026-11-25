@@ -62,8 +62,12 @@ func (s *TaskService) ListRecurrences(ctx context.Context, userID string, from, 
 			continue
 		}
 
-		if from != nil && item.FinishDate != nil && item.FinishDate.Before(from.UTC()) {
-			continue
+		if from != nil {
+			// Issue #989: resolve the scheduled day through the canonical due
+			// date with the legacy finishDate fallback.
+			if due := taskDueDate(item); due != nil && due.Before(from.UTC()) {
+				continue
+			}
 		}
 		if to != nil && item.CreatedDate != nil && item.CreatedDate.After(to.UTC()) {
 			continue
@@ -456,6 +460,7 @@ func buildRecurringInstance(template domain.Task, day time.Time, now time.Time) 
 		IsFinished:          false,
 		Priority:            template.Priority,
 		Category:            category,
+		SortOrder:           template.SortOrder,
 		EstimatedPomodoros:  template.EstimatedPomodoros,
 		CompletedPomodoros:  0,
 		FocusedSeconds:      0,
@@ -467,10 +472,23 @@ func buildRecurringInstance(template domain.Task, day time.Time, now time.Time) 
 	if template.CreatedDate != nil && template.FinishDate != nil {
 		offset := template.FinishDate.Sub(*template.CreatedDate)
 		finish := day.Add(offset)
+		// Issue #989: mirror the canonical due date alongside the legacy
+		// finishDate carrier so old and new clients read the same day.
 		instance.FinishDate = &finish
+		instance.DueDate = &finish
 	}
 
 	return instance
+}
+
+// taskDueDate returns the canonical due date of a task, falling back to the
+// legacy finishDate carrier (issue #989 backfill makes them equal for old
+// rows, so this is only a bridge while clients migrate).
+func taskDueDate(t domain.Task) *time.Time {
+	if t.DueDate != nil {
+		return t.DueDate
+	}
+	return t.FinishDate
 }
 
 func ptrTimeTask(v time.Time) *time.Time {

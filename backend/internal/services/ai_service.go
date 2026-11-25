@@ -175,7 +175,9 @@ func (s *AIService) buildDataSummary(ctx context.Context, userID string, days in
 			summary.CompletedTasks++
 		} else {
 			summary.PendingTasks++
-			if t.FinishDate != nil && t.FinishDate.Before(now) {
+			// Issue #989: overdue resolves through the canonical due date
+			// with the legacy finishDate fallback.
+			if due := taskDueDate(t); due != nil && due.Before(now) {
 				summary.OverdueTasks++
 			}
 		}

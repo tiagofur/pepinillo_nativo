@@ -205,3 +205,45 @@ func TestTaskServiceGenerateRecurrencesForAllUsers(t *testing.T) {
 		t.Fatalf("expected created=2, got %d", created)
 	}
 }
+
+// Issue #989 (S2/S8): backend-generated recurring instances must carry the
+// canonical due date (mirroring the legacy template offset) and inherit the
+// template's manual order, so the fields the contract now declares survive
+// generation. Old clients keep reading the mirrored finishDate.
+func TestBuildRecurringInstanceMirrorsDueDateAndOrder(t *testing.T) {
+	created := time.Date(2026, 11, 1, 9, 0, 0, 0, time.UTC)
+	finish := created.AddDate(0, 0, 1) // template offset: created → finish is +1 day
+	template := domain.Task{
+		SyncID:      "tpl-989",
+		UserID:      "user-989",
+		CreatedDate: &created,
+		FinishDate:  &finish,
+		SortOrder:   7,
+	}
+	day := time.Date(2026, 11, 20, 9, 0, 0, 0, time.UTC)
+	now := time.Date(2026, 11, 19, 8, 0, 0, 0, time.UTC)
+
+	instance := buildRecurringInstance(template, day, now)
+
+	wantDue := day.Add(finish.Sub(created))
+	if instance.DueDate == nil || !instance.DueDate.Equal(wantDue) {
+		t.Fatalf("instance due date must mirror the template offset (%v), got %v", wantDue, instance.DueDate)
+	}
+	if instance.FinishDate == nil || !instance.FinishDate.Equal(wantDue) {
+		t.Fatalf("legacy finish date must stay mirrored for old clients (%v), got %v", wantDue, instance.FinishDate)
+	}
+	if instance.SortOrder != template.SortOrder {
+		t.Fatalf("instance must inherit template sort order %d, got %d", template.SortOrder, instance.SortOrder)
+	}
+	if instance.CompletedAt != nil || instance.ScheduledForToday {
+		t.Fatalf("fresh instance must not be completed or pinned to today")
+	}
+
+	plain := buildRecurringInstance(domain.Task{SyncID: "tpl-989b", UserID: "user-989"}, day, now)
+	if plain.DueDate != nil {
+		t.Fatalf("template without dates must not produce a due date, got %v", plain.DueDate)
+	}
+	if plain.SortOrder != 0 {
+		t.Fatalf("template without order must produce sort order 0, got %d", plain.SortOrder)
+	}
+}
