@@ -146,4 +146,12 @@ Allowed edit surfaces adicionales:
   · Commit: `524ea8f8`
 - **T7** (S4): iOS canónico. Result: OK (RED por init sin campos; 21/21
   PersistenceServiceTests + SyncClientTests verde) · Commit: `a0fae892`
-- **T8** (verificación V1/V2 + handoff + judgment-day): en curso
+- **T8** (verificación V1/V2 + handoff + judgment-day): ronda 1 dual —
+  Juez A CHANGES_REQUESTED (2 P1: payload de sync sin fallback de due para
+  el cohort residual del backfill; InitialSyncManager sin tests — que
+  además destapó que el restore descartaba due/hoy/orden) · Juez B APPROVED.
+  Fixes: `applyDueDateFallback` en los 4 sitios de lectura + aserción en el
+  test BD real (RED en scratch) · restore de InitialSyncManager mapea los
+  campos + test de restore con decoy (no-tautología demostrada por stash).
+  Re-revisión acotada (ronda 2): en curso
+  · Commits: `4b01be09`, `34abd1c7`
