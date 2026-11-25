@@ -684,4 +684,118 @@ struct PersistenceServiceTests {
         try migrateAchievementsIfNeeded(achieved, into: context)
         #expect(try context.fetch(FetchDescriptor<AchievementRecord>()).count == 1)
     }
+
+// MARK: - Issue #989 PR-B (S4): canonical task-model fields on the wire
+
+@Test("upsertTaskFromServer applies canonical due/today/order/completed fields")
+func upsertAppliesCanonicalTaskFields() throws {
+    let dir = FileManager.default.temporaryDirectory
+        .appendingPathComponent("pepinillo-test-persistence-\(UUID().uuidString)", isDirectory: true)
+    try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: dir) }
+
+    let schema = Schema(versionedSchema: SchemaV5.self)
+    let config = ModelConfiguration(schema: schema, url: dir.appendingPathComponent("test.sqlite"), cloudKitDatabase: .none)
+    let container = try ModelContainer(for: schema, configurations: [config])
+    let context = container.mainContext
+    let service = SwiftDataPersistenceService(context: context)
+
+    let task = TaskItem(title: "Local")
+    task.syncId = "sync-canonical"
+    task.isDirty = true
+    task.updatedAt = Date(timeIntervalSince1970: 1_700_000_000)
+    context.insert(task)
+    try context.save()
+
+    let due = ISO8601DateFormatter().date(from: "2026-11-20T09:00:00Z")
+    let completed = ISO8601DateFormatter().date(from: "2026-11-24T18:00:00Z")
+    let dto = TaskSyncDTO(
+        syncId: "sync-canonical",
+        title: "Server",
+        energyLevel: "admin",
+        dueDate: "2026-11-20T09:00:00Z",
+        completedAt: "2026-11-24T18:00:00Z",
+        scheduledForToday: true,
+        sortOrder: 7,
+        isFinished: true,
+        updatedAt: "2024-01-01T00:00:00Z"
+    )
+
+    try service.upsertTaskFromServer(dto, saveImmediately: true)
+
+    let after = try #require(try context.fetch(FetchDescriptor<TaskItem>()).first)
+    #expect(after.dueDate == due)
+    #expect(after.scheduledForToday == true)
+    #expect(after.sortOrder == 7)
+    #expect(after.completedAt == completed)
+    #expect(after.energyLevel == .admin)
+}
+
+@Test("upsertTaskFromServer keeps local today-pin and order on a server tie")
+func upsertKeepsLocalPinAndOrderOnTie() throws {
+    let dir = FileManager.default.temporaryDirectory
+        .appendingPathComponent("pepinillo-test-persistence-\(UUID().uuidString)", isDirectory: true)
+    try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: dir) }
+
+    let schema = Schema(versionedSchema: SchemaV5.self)
+    let config = ModelConfiguration(schema: schema, url: dir.appendingPathComponent("test.sqlite"), cloudKitDatabase: .none)
+    let container = try ModelContainer(for: schema, configurations: [config])
+    let context = container.mainContext
+    let service = SwiftDataPersistenceService(context: context)
+
+    // Tasks uploaded by pre-PR-B iOS never carried scheduledForToday/sortOrder,
+    // so the server holds false/0 for them. On a timestamp tie (our own upload
+    // echo), the local pin and drag order must survive — they were never the
+    // server's truth to clear.
+    let task = TaskItem(title: "Pinned")
+    task.syncId = "sync-tie"
+    task.isDirty = false
+    task.scheduledForToday = true
+    task.sortOrder = 3
+    task.updatedAt = try #require(ISO8601DateFormatter().date(from: "2024-01-01T00:00:00Z"))
+    context.insert(task)
+    try context.save()
+
+    let dto = TaskSyncDTO(
+        syncId: "sync-tie",
+        title: "Server",
+        scheduledForToday: false,
+        sortOrder: 0,
+        updatedAt: "2024-01-01T00:00:00Z"
+    )
+
+    try service.upsertTaskFromServer(dto, saveImmediately: true)
+
+    let after = try #require(try context.fetch(FetchDescriptor<TaskItem>()).first)
+    #expect(after.scheduledForToday == true)
+    #expect(after.sortOrder == 3)
+}
+
+@Test("upsertTaskFromServer fails unknown energy safe to shallow")
+func upsertFailsUnknownEnergySafe() throws {
+    let dir = FileManager.default.temporaryDirectory
+        .appendingPathComponent("pepinillo-test-persistence-\(UUID().uuidString)", isDirectory: true)
+    try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: dir) }
+
+    let schema = Schema(versionedSchema: SchemaV5.self)
+    let config = ModelConfiguration(schema: schema, url: dir.appendingPathComponent("test.sqlite"), cloudKitDatabase: .none)
+    let container = try ModelContainer(for: schema, configurations: [config])
+    let context = container.mainContext
+    let service = SwiftDataPersistenceService(context: context)
+
+    let dto = TaskSyncDTO(
+        syncId: "sync-energy",
+        title: "Unknown vocab",
+        energyLevel: "urgent",
+        updatedAt: "2024-01-01T00:00:00Z"
+    )
+
+    try service.upsertTaskFromServer(dto, saveImmediately: true)
+
+    let after = try #require(try context.fetch(FetchDescriptor<TaskItem>()).first)
+    // An unrecognized value must not upgrade a task to Deep Work.
+    #expect(after.energyLevel == .shallow)
+}
 }

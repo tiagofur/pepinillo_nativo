@@ -225,6 +225,12 @@ public struct TaskSyncDTO: Codable, Sendable, Equatable {
     public let recurringTemplateId: String?
     public let createdDate: String?
     public let finishDate: String?
+    // Canonical task-model fields (issue #989 PR-B). finishDate is the
+    // deprecated legacy carrier; new code sends/reads these four.
+    public let dueDate: String?
+    public let completedAt: String?
+    public let scheduledForToday: Bool?
+    public let sortOrder: Int?
     public let isFinished: Bool
     public let priority: Int
     public let category: String?
@@ -246,6 +252,8 @@ public struct TaskSyncDTO: Codable, Sendable, Equatable {
         title: String? = nil, description: String? = nil, energyLevel: String? = nil,
         recurrenceRule: String? = nil, recurringTemplateId: String? = nil,
         createdDate: String? = nil, finishDate: String? = nil,
+        dueDate: String? = nil, completedAt: String? = nil,
+        scheduledForToday: Bool? = nil, sortOrder: Int? = nil,
         isFinished: Bool = false, priority: Int = 0, category: String? = nil,
         trackingMode: String? = nil, estimatedPomodoros: Int = 0, completedPomodoros: Int = 0,
         focusedSeconds: Int = 0,
@@ -264,6 +272,10 @@ public struct TaskSyncDTO: Codable, Sendable, Equatable {
         self.recurringTemplateId = recurringTemplateId
         self.createdDate = createdDate
         self.finishDate = finishDate
+        self.dueDate = dueDate
+        self.completedAt = completedAt
+        self.scheduledForToday = scheduledForToday
+        self.sortOrder = sortOrder
         self.isFinished = isFinished
         self.priority = priority
         self.category = category
