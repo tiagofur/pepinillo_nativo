@@ -143,6 +143,21 @@ func TestTaskSyncPersistsAndNormalizesNewFields(t *testing.T) {
 		t.Fatalf("legacy finish_date row (due_date NULL) missing from ListByFinishDate(%v)", day)
 	}
 
+	// Issue #989 PR-B round 1 (P1): sync payloads must emit the resolved due
+	// date for the backfill residual cohort (due NULL, finish set — Apple
+	// tasks completed within the migration window), or canonical-only clients
+	// (which no longer read finishDate) wipe it on pull and lose it forever
+	// on the next push.
+	all, err := repo.ListByUser(context.Background(), userID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, task := range all {
+		if task.SyncID == "td989-legacy" && task.DueDate == nil {
+			t.Fatalf("sync payload must resolve dueDate through the legacy finish fallback for backfill-residual rows")
+		}
+	}
+
 	// Issue #989 round 1 (P1): completed30d resolves through
 	// COALESCE(completed_at, finish_date), so both a new-shape completion
 	// (Android origin: completed_at set, finish stale) and a legacy-shape
