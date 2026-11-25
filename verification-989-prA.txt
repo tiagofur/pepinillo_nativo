@@ -1,0 +1,69 @@
+# Verification Evidence — issue #989 PR-A (feat/989-task-sync-contract)
+
+Fecha: 2026-11-25 · Worktree: /Users/tiagofur/dev/pepinillo-wt-989 · Base: a491ee33 (origin/main)
+
+## V2 — Contratos (C2)
+
+1. `make contracts-lint` (tras editar contracts/openapi.yaml):
+   → 90 problems (0 errors, 90 warnings) — warnings preexistentes de operation-description; 0 errores.
+2. `make contracts-diff` (oasdiff contra origin/main):
+   → "No breaking changes to report, but the specs are different." (aditivo)
+
+## V1 — RED→GREEN (C3)
+
+3. RED observado antes de implementar:
+   `go test ./internal/domain/ ./internal/services/` (en backend/)
+   → build failed: `template.SortOrder undefined`, `instance.CompletedAt undefined`,
+   `instance.ScheduledForToday undefined`, `plain.DueDate undefined`,
+   `NormalizeEnergyLevel` inexistente. Fallo determinista por la razón esperada
+   (campos/helper aún no declarados).
+4. GREEN tras implementar:
+   `go build ./... && go test ./internal/domain/ ./internal/services/ ./internal/adapters/repositories/postgres/`
+   → ok en los 3 paquetes.
+
+## V2 — Suite y BD real (C3)
+
+5. Suite completa backend: `go test ./...` → 14 paquetes ok, 0 FAIL.
+6. `make test` (guardrails de factoría + suite backend) → OK.
+7. Test de repositorio contra BD real (nuevo, guardado por env):
+   - BD scratch `pepinillo_989_scratch`: migraciones 000001..000020 aplicadas
+     en orden con psql (ON_ERROR_STOP=1) — todas OK; columnas due_date,
+     completed_at, scheduled_for_today, sort_order y constraint
+     chk_tasks_energy_level verificadas en information_schema/pg_constraint.
+   - `TASK_TEST_DATABASE_URL=postgres://localhost/pepinillo_989_scratch?sslmode=disable go test -run TestTaskSyncPersistsAndNormalizesNewFields -v`
+     → PASS (round-trip de dueDate/completedAt/scheduledForToday/sortOrder;
+     energía Regular→admin, Light→shallow, urgent→shallow; ListByFinishDate
+     encuentra fila canónica y fila legacy via COALESCE).
+   - Sin env: `--- SKIP` (seguro para CI).
+8. Ensayo del backfill (BD scratch #2, migraciones hasta 000019, filas sintéticas):
+   - iOS terminada (finish lejano a updated_at): due_date := finish_date; completed_at NULL ✓
+   - Android terminada (finish ≈ updated_at): completed_at := finish_date; due_date NULL ✓ (sin vencimiento inventado)
+   - iOS no terminada con finish: due_date := finish_date ✓
+   - Android no terminada (finish NULL): columnas NULL ✓
+   - Energías legadas: low→admin, Hobby→shallow, Regular→admin ✓
+   - `000020_task_sync_dates.down.sql`: deja 0 columnas nuevas (estado 000019) ✓
+9. BDs scratch eliminadas tras la evidencia (dropdb pepinillo_989_scratch, pepinillo_989_backfill_scratch).
+
+Risk: item 1 (migración con backfill sobre datos existentes) — mitigado con
+ensayo up/down en BD scratch y down migration simétrica; item 3 (contrato que
+otros consumen) — cambio estrictamente aditivo verificado con oasdiff.
+
+## Ronda 2 — fixes del judgment-day (2026-11-25)
+
+10. Ronda 1 consolidada: Juez A CHANGES_REQUESTED (P0 ventana sin cota
+    superior + P1 tests de regresión de lecturas); Juez B APPROVED (misma
+    ventana como P2 + presupuesto de líneas + S1 del artefacto).
+11. Fixes: ventana simétrica ±1 h (P0), costura pura `countTaskStates` +
+    `TestCountTaskStates`, `domain.TaskDueDate` + `TestTaskDueDate`,
+    energía vacía → shallow, plantilla solo-dueDate test, `completed30d`
+    COALESCE asertado en el test de BD real, extracción mecánica verbatim
+    (task_service 549→361, commit propio), offset due-aware, wording
+    finishDate/completedAt, artefacto (S1 slice + superficies + Log).
+12. Re-ensayo backfill (scratch #3, 5 formas): fx-early (iOS completada
+    ANTES del vencimiento, finish futuro) → due preservado, completed NULL
+    (P0 cerrado); fx-late → due; fx-android → completed; fx-edited →
+    vencimiento fantasma documentado; fx-open → due. PASS.
+13. Test BD real ampliado (round-trip + normalización + ListByFinishDate +
+    completed30d delta = 2) contra scratch: PASS. Sin env: SKIP.
+14. Gates: make contracts-lint 0 errores; make contracts-diff sin breaking;
+    go test ./... (backend) verde, 0 FAIL; make test PASS.

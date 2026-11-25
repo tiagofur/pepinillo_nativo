@@ -132,8 +132,10 @@ func pickTaskDay(task domain.Task) time.Time {
 	if task.CreatedDate != nil {
 		return dayStartUTC(*task.CreatedDate)
 	}
-	if task.FinishDate != nil {
-		return dayStartUTC(*task.FinishDate)
+	// Issue #989: resolve the scheduled day through the canonical due date
+	// with the legacy finishDate fallback.
+	if due := domain.TaskDueDate(task); due != nil {
+		return dayStartUTC(*due)
 	}
 	if !task.UpdatedAt.IsZero() {
 		return dayStartUTC(task.UpdatedAt)
@@ -175,26 +177,24 @@ func buildRecurringInstance(template domain.Task, day time.Time, now time.Time) 
 		UpdatedAt:           now,
 	}
 
-	if template.CreatedDate != nil && template.FinishDate != nil {
-		offset := template.FinishDate.Sub(*template.CreatedDate)
+	// The instance offset comes from whichever due carrier the template
+	// carries: the canonical dueDate, or the legacy finishDate while clients
+	// migrate (issue #989 round 1: a dueDate-only template must still
+	// generate scheduled instances).
+	base := template.DueDate
+	if base == nil {
+		base = template.FinishDate
+	}
+	if template.CreatedDate != nil && base != nil {
+		offset := base.Sub(*template.CreatedDate)
 		finish := day.Add(offset)
-		// Issue #989: mirror the canonical due date alongside the legacy
-		// finishDate carrier so old and new clients read the same day.
+		// Mirror the scheduled day into BOTH carriers so old and new clients
+		// read the same day.
 		instance.FinishDate = &finish
 		instance.DueDate = &finish
 	}
 
 	return instance
-}
-
-// taskDueDate returns the canonical due date of a task, falling back to the
-// legacy finishDate carrier (issue #989 backfill makes them equal for old
-// rows, so this is only a bridge while clients migrate).
-func taskDueDate(t domain.Task) *time.Time {
-	if t.DueDate != nil {
-		return t.DueDate
-	}
-	return t.FinishDate
 }
 
 func ptrTimeTask(v time.Time) *time.Time {

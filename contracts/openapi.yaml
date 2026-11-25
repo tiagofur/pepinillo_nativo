@@ -3131,8 +3131,9 @@ components:
           description: >-
             Legacy overloaded carrier: Apple clients historically sent the due
             date here and Android clients the completion instant. New clients
-            must send dueDate and completedAt instead. The server keeps
-            mirroring writes into this column for old clients.
+            must send dueDate and completedAt instead. The server stores
+            client-sent values unchanged, and server-side recurring
+            generation mirrors the scheduled day into both fields.
         dueDate:
           type: ["string", "null"]
           format: date-time
@@ -3140,7 +3141,9 @@ components:
         completedAt:
           type: ["string", "null"]
           format: date-time
-          description: When the task was completed; null while unfinished (issue #989).
+          description: >-
+            When the task was completed; null while unfinished, and for
+            legacy rows completed before this field existed (issue #989).
         scheduledForToday:
           type: boolean
           description: User pinned the task to Today ("Añadir a Hoy"); expires client-side per platform rules (issue #989).

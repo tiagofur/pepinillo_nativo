@@ -142,6 +142,39 @@ func TestTaskSyncPersistsAndNormalizesNewFields(t *testing.T) {
 	if !seen["td989-legacy"] {
 		t.Fatalf("legacy finish_date row (due_date NULL) missing from ListByFinishDate(%v)", day)
 	}
+
+	// Issue #989 round 1 (P1): completed30d resolves through
+	// COALESCE(completed_at, finish_date), so both a new-shape completion
+	// (Android origin: completed_at set, finish stale) and a legacy-shape
+	// completion (completed_at NULL, finish recent) count within the window.
+	ctx := context.Background()
+	if err := db.Exec(`UPDATE users SET metrics_opt_in = true WHERE id = ?`, userID).Error; err != nil {
+		t.Fatal(err)
+	}
+	statsRepo := NewInternalStatsRepository(db)
+	before, err := statsRepo.Compute(ctx, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Exec(
+		`INSERT INTO tasks (sync_id, user_id, title, finish_date, completed_at, is_finished, tracking_mode, updated_at)
+		 VALUES
+		 ('td989-done-new',    ?, 'New-shape done', now() - interval '5 days', ?, true, 'pomodoro', ?),
+		 ('td989-done-legacy', ?, 'Legacy done',    ?,                        NULL,              true, 'pomodoro', now())`,
+		userID, now.Add(-time.Hour), now, userID, now.Add(-2*time.Hour),
+	).Error; err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { db.Exec("DELETE FROM tasks WHERE sync_id LIKE 'td989-done-%'") })
+
+	after, err := statsRepo.Compute(ctx, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	delta := after.Tasks.Completed30d - before.Tasks.Completed30d
+	if delta != 2 {
+		t.Fatalf("completed30d must count both completion shapes via COALESCE: delta = %d, want 2", delta)
+	}
 }
 
 func ptrString989(v string) *string { return &v }

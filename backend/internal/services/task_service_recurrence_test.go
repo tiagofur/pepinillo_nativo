@@ -247,3 +247,28 @@ func TestBuildRecurringInstanceMirrorsDueDateAndOrder(t *testing.T) {
 		t.Fatalf("template without order must produce sort order 0, got %d", plain.SortOrder)
 	}
 }
+
+// Issue #989 round 1: a template carrying ONLY the canonical dueDate (the
+// PR-B shape) must still generate scheduled instances — the offset derives
+// from dueDate when finishDate is absent.
+func TestBuildRecurringInstanceOffsetsFromDueOnlyTemplate(t *testing.T) {
+	created := time.Date(2026, 11, 1, 9, 0, 0, 0, time.UTC)
+	due := created.AddDate(0, 0, 2)
+	template := domain.Task{
+		SyncID:      "tpl-989-due-only",
+		UserID:      "user-989",
+		CreatedDate: &created,
+		DueDate:     &due,
+	}
+	day := time.Date(2026, 11, 20, 9, 0, 0, 0, time.UTC)
+
+	instance := buildRecurringInstance(template, day, day.Add(-time.Hour))
+
+	wantDue := day.Add(due.Sub(created))
+	if instance.DueDate == nil || !instance.DueDate.Equal(wantDue) {
+		t.Fatalf("due-only template must offset from dueDate (%v), got %v", wantDue, instance.DueDate)
+	}
+	if instance.FinishDate == nil || !instance.FinishDate.Equal(wantDue) {
+		t.Fatalf("legacy mirror must carry the same day (%v), got %v", wantDue, instance.FinishDate)
+	}
+}

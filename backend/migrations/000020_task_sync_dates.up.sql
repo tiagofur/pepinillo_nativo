@@ -13,19 +13,30 @@ ALTER TABLE tasks ADD COLUMN IF NOT EXISTS sort_order INTEGER NOT NULL DEFAULT 0
 -- Backfill due_date. For unfinished rows finish_date is always a due date
 -- (Android only stamps it when completing). For finished rows the value is
 -- ambiguous: Android-origin rows have finish_date ≈ updated_at (the
--- completion instant is stamped right before upload); anything further away
--- is an Apple-origin due date. The 1 hour window tolerates clock skew and
--- slow uploads.
+-- completion instant is stamped right before upload); anything outside a
+-- symmetric 1-hour window around updated_at is an Apple-origin due date —
+-- including tasks completed BEFORE their due date (finish_date in the
+-- future), which is common (issue #989 judgment round 1). Known residual:
+-- an Android-origin task finished and edited more than an hour later gets a
+-- phantom due_date from its completion instant; harmless (every read
+-- COALESCEs) and overwritten by the first post-PR-B full-row push.
 UPDATE tasks SET due_date = finish_date
 WHERE finish_date IS NOT NULL
-  AND (NOT is_finished OR finish_date < updated_at - INTERVAL '1 hour');
+  AND (
+    NOT is_finished
+    OR finish_date < updated_at - INTERVAL '1 hour'
+    OR finish_date > updated_at + INTERVAL '1 hour'
+  );
 
 -- Recover Android-origin completion instants: finished rows whose
--- finish_date sits within an hour of updated_at are completion stamps.
+-- finish_date sits within a symmetric 1-hour window of updated_at are
+-- completion stamps (bounded on BOTH sides — an unbounded future side
+-- misclassified Apple tasks completed before their due date).
 UPDATE tasks SET completed_at = finish_date
 WHERE is_finished
   AND finish_date IS NOT NULL
-  AND finish_date >= updated_at - INTERVAL '1 hour';
+  AND finish_date >= updated_at - INTERVAL '1 hour'
+  AND finish_date <= updated_at + INTERVAL '1 hour';
 
 -- Normalize the legacy energy vocabulary (Android: Deep/Regular/Light; web
 -- legacy: low/medium/high) onto the canonical enum before adding the CHECK.

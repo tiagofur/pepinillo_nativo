@@ -27,7 +27,7 @@ func TestNormalizeEnergyLevel(t *testing.T) {
 		{"web legacy low", s("low"), s("admin")},
 		{"web legacy medium", s("medium"), s("shallow")},
 		{"web legacy high", s("high"), s("deep")},
-		{"empty becomes nil", s(""), nil},
+		{"empty fails shallow", s(""), s("shallow")},
 		{"unknown fails shallow", s("urgent"), s("shallow")},
 	}
 

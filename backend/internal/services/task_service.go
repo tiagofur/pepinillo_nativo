@@ -64,7 +64,7 @@ func (s *TaskService) ListRecurrences(ctx context.Context, userID string, from, 
 		if from != nil {
 			// Issue #989: resolve the scheduled day through the canonical due
 			// date with the legacy finishDate fallback.
-			if due := taskDueDate(item); due != nil && due.Before(from.UTC()) {
+			if due := domain.TaskDueDate(item); due != nil && due.Before(from.UTC()) {
 				continue
 			}
 		}

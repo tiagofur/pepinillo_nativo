@@ -13,9 +13,12 @@ compartido) van en los PR-B y PR-C posteriores.
 
 - **S1 · Contrato (aditivo)**: schema `Task` de `contracts/openapi.yaml`
   declara `dueDate`, `completedAt`, `scheduledForToday`, `sortOrder`;
-  `energyLevel` con valores canónicos documentados; `finishDate` marcado
-  `deprecated` con su semántica escrita. `make contracts-lint` OK y
-  `make contracts-diff` sin breaking.
+  `finishDate` marcado `deprecated` con su semántica escrita.
+  **Slice de esta entrega (triage):** el criterio original pide
+  `energyLevel` como enum cerrado; aquí se documentan los valores canónicos
+  con nota de normalización y el enum estricto entra en PR-C, cuando los
+  tres clientes normalicen (un enum hoy rompería los payloads vivos de
+  Android). `make contracts-lint` OK y `make contracts-diff` sin breaking.
 - **S2 · Backend persiste**: una tarea subida a `/api/v1/tasks/sync` o
   `/sync/initial-upload` con `dueDate`, `completedAt`, `scheduledForToday`,
   `sortOrder` y `energyLevel` vuelve con los mismos valores en
@@ -35,7 +38,12 @@ compartido) van en los PR-B y PR-C posteriores.
 - `backend/internal/services/ai_service.go`
 - `backend/internal/adapters/repositories/postgres/task_repository.go` + `backend/internal/adapters/repositories/postgres/task_sync_dates_db_test.go` (nuevo)
 - `backend/internal/adapters/repositories/postgres/internal_stats_repository.go` (+ `_test.go`)
-- `backend/migrations/000020_task_sync_dates.up.sql` / `.down.sql` (nuevos)
+- `backend/migrations/000020_task_sync_dates.up.sql` (nuevo)
+- `backend/migrations/000020_task_sync_dates.down.sql` (nuevo)
+- `backend/internal/services/task_recurrence.go` (nuevo — extracción mecánica, ronda 1)
+- `backend/internal/services/task_summary.go` (nuevo — costura pura de conteo, ronda 1)
+- `backend/internal/services/task_summary_test.go` (nuevo)
+- `backend/internal/domain/task_due_date_test.go` (nuevo)
 - `odd/tasks/989-task-sync-contract.md`
 
 ## Tasks (T1..Tn)
@@ -67,12 +75,16 @@ compartido) van en los PR-B y PR-C posteriores.
 1. **Corte confirmado**: PR-A = contrato + backend + migración (esta entrega,
    retrocompatible; Android ya envía los campos y empieza a persistir sin
    cambios de cliente). PR-B = iOS + Android. PR-C = web + S7.
-2. **Backfill por heurística**: `due_date := finish_date` en filas no
-   terminadas, y en terminadas solo cuando `finish_date` NO está a menos de
-   1 hora de `updated_at` (Android sella `completedAt` justo antes de subir;
-   iOS conserva el vencimiento aunque esté cerca). `completed_at :=
-   finish_date` en terminadas con `finish_date` a menos de 1 hora de
-   `updated_at` (recupera el histórico de Android). Razonamiento en el PR.
+2. **Backfill por heurística (ventana simétrica, corregida en ronda 1)**:
+   `due_date := finish_date` en filas no terminadas; en terminadas, solo
+   cuando `finish_date` cae FUERA de una ventana de ±1 hora alrededor de
+   `updated_at` (ambos lados acotados: iOS completada antes del vencimiento
+   tiene `finish_date` futuro y conserva su `due_date`).
+   `completed_at := finish_date` en terminadas con `finish_date` dentro de
+   la ventana (recupera el histórico de Android). Residual documentado en
+   la migración: Android terminada y editada >1 h después recibe un
+   vencimiento fantasma — inofensivo (todas las lecturas COALESCEan) y
+   auto-reparable con el primer push de PR-B.
 3. **`energyLevel` en el contrato**: descripción con valores canónicos y
    nota de normalización; enum estricto se añade en PR-C cuando los tres
    clientes normalicen (evita breaking en `contracts-diff`).
@@ -85,3 +97,19 @@ compartido) van en los PR-B y PR-C posteriores.
 
 - 2026-11-25: issue #989 triageada (status:new → in-progress). Artefacto
   creado. PR-A iniciado en worktree.
+- 2026-11-25 (ronda 1 judgment-day): Juez A CHANGES_REQUESTED — P0: la
+  ventana de backfill de `completed_at` no acotaba el lado futuro (iOS
+  completada antes del vencimiento recibía `completed_at` inventado y
+  perdía `due_date`); P1: faltaban tests de regresión de las lecturas
+  convertidas (completed30d, overdue). Juez B APPROVED con los mismos
+  hallazgos como P2 (misma ventana, presupuesto de líneas, S1 del
+  artefacto). Lote único de fixes: ventana simétrica con residual
+  documentado (vencimiento fantasma Android editada >1 h), costura pura
+  `countTaskStates` testeable, `domain.TaskDueDate` exportada, energía
+  vacía → shallow (alineada con web y migración), offset due-aware en
+  instancias, `pickTaskDay` vía `TaskDueDate`, wording del contrato,
+  extracción mecánica verbatim a `task_recurrence.go` (task_service
+  549→361), S1 del artefacto marca el slice del enum, superficies con
+  rutas completas. Re-ensayo de backfill con las 5 formas (incl. la del
+  P0): PASS. Deuda señalada (no bloqueante): `ai_service.go` (743 líneas)
+  sobre presupuesto — seguimiento.

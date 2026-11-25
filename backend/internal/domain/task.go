@@ -62,8 +62,8 @@ func ValidTrackingMode(mode string) bool {
 // enum (deep | shallow | admin), mirroring the web mapper
 // (web/src/lib/data/sync/mappers.ts normalizeEnergy): Android shipped
 // Deep/Regular/Light and web legacy used low/medium/high. Canonical values
-// pass through; empty becomes unset; anything unknown fails safe to shallow
-// (never deep — an unrecognized value must not upgrade a task to Deep Work).
+// pass through; empty and anything unknown fail safe to shallow (never
+// deep — an unrecognized value must not upgrade a task to Deep Work).
 // nil passes through so unset stays unset.
 func NormalizeEnergyLevel(raw *string) *string {
 	if raw == nil {
@@ -72,15 +72,23 @@ func NormalizeEnergyLevel(raw *string) *string {
 	switch strings.ToLower(strings.TrimSpace(*raw)) {
 	case "deep", "high":
 		return ptrString("deep")
-	case "shallow", "light", "medium":
+	case "shallow", "light", "medium", "":
 		return ptrString("shallow")
 	case "admin", "regular", "low":
 		return ptrString("admin")
-	case "":
-		return nil
 	default:
 		return ptrString("shallow")
 	}
+}
+
+// TaskDueDate returns the canonical due date of a task, falling back to the
+// legacy finishDate carrier (issue #989 backfill makes them equal for old
+// rows, so this is only a bridge while clients migrate).
+func TaskDueDate(t Task) *time.Time {
+	if t.DueDate != nil {
+		return t.DueDate
+	}
+	return t.FinishDate
 }
 
 func ptrString(v string) *string { return &v }
