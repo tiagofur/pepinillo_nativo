@@ -97,6 +97,10 @@ data class TaskDto(
     val sortOrder: Int = 0,
     val createdDate: String? = null,
     val finishDate: String? = null,
+    // Canonical completion instant (issue #989 PR-B). Android historically
+    // stuffed this into finishDate; the server keeps finishDate as a legacy
+    // carrier only.
+    val completedAt: String? = null,
     val isFinished: Boolean = false,
     val priority: Int = 0,
     val category: String? = null,

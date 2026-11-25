@@ -271,13 +271,14 @@ class InitialSyncManager @Inject constructor(
                 3 -> "High"; 2 -> "Medium"; 1 -> "Low"; else -> "None"
             },
             energyLevel = when (energyLevel?.lowercase()) {
-                "deep" -> "Deep"; "light" -> "Light"; else -> "Regular"
+                "deep" -> "Deep"; "shallow", "light" -> "Light"; "admin", "regular" -> "Regular"; else -> "Regular"
             },
             estimatedPomodoros = estimatedPomodoros,
             completedPomodoros = completedPomodoros,
             createdAt = created,
             updatedAt = updated,
-            completedAt = if (finishDate != null) parseRfc3339(finishDate, fallback = System.currentTimeMillis()) else null,
+            // Issue #989 PR-B: completion comes from the canonical field.
+            completedAt = completedAt?.let { parseRfc3339(it, fallback = System.currentTimeMillis()) },
             serverId = id,
             isDirty = false,
             isDeleted = isDeleted,
