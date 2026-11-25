@@ -112,4 +112,17 @@ compartido) van en los PR-B y PR-C posteriores.
   549→361), S1 del artefacto marca el slice del enum, superficies con
   rutas completas. Re-ensayo de backfill con las 5 formas (incl. la del
   P0): PASS. Deuda señalada (no bloqueante): `ai_service.go` (743 líneas)
-  sobre presupuesto — seguimiento.
+  sobre presupuesto — seguimiento #995.
+- 2026-11-25 (ronda 2 judgment-day): Juez A CHANGES_REQUESTED — P1: el
+  assert de `completed30d` no discriminaba (la fila new-shape con
+  `finish_date` a -5d seguía contando tras un revert del COALESCE);
+  Juez B CHANGES_REQUESTED — P0 de proceso: tres archivos de trabajo
+  (handoff, pr-body, verification) quedaron commiteados en la raíz por un
+  `git add -A`, fuera de superficie. Ambos con remedio mecánico
+  prescrito. Aplicados SIN reclamar tercera ronda (C4.3: bucle automático
+  gastado): `git rm` de los tres (copias en /tmp/pep989/ y worktree sin
+  trackear), fila del test a `finish_date = -40d` (discriminación
+  verificada mecánicamente en scratch: COALESCE cuenta 1, bare 0),
+  residual de frontera ±1 h anotado en la migración, cuerpo del PR
+  refrescado, deuda ai_service → #995. Estado: **needs-human** — la
+  re-revisión final acotada requiere autorización del leader.

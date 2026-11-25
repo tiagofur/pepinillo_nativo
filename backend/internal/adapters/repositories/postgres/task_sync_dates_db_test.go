@@ -159,7 +159,7 @@ func TestTaskSyncPersistsAndNormalizesNewFields(t *testing.T) {
 	if err := db.Exec(
 		`INSERT INTO tasks (sync_id, user_id, title, finish_date, completed_at, is_finished, tracking_mode, updated_at)
 		 VALUES
-		 ('td989-done-new',    ?, 'New-shape done', now() - interval '5 days', ?, true, 'pomodoro', ?),
+		 ('td989-done-new',    ?, 'New-shape done', now() - interval '40 days', ?, true, 'pomodoro', ?),
 		 ('td989-done-legacy', ?, 'Legacy done',    ?,                        NULL,              true, 'pomodoro', now())`,
 		userID, now.Add(-time.Hour), now, userID, now.Add(-2*time.Hour),
 	).Error; err != nil {

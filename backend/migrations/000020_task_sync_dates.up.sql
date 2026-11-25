@@ -31,7 +31,10 @@ WHERE finish_date IS NOT NULL
 -- Recover Android-origin completion instants: finished rows whose
 -- finish_date sits within a symmetric 1-hour window of updated_at are
 -- completion stamps (bounded on BOTH sides — an unbounded future side
--- misclassified Apple tasks completed before their due date).
+-- misclassified Apple tasks completed before their due date). Boundary
+-- residual: an Apple row completed within an hour OF its due instant lands
+-- in this window (due dropped, completed_at inferred); benign — every read
+-- COALESCEs back to the same instant, and PR-B overwrites explicitly.
 UPDATE tasks SET completed_at = finish_date
 WHERE is_finished
   AND finish_date IS NOT NULL
