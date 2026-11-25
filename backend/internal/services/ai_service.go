@@ -166,25 +166,10 @@ func (s *AIService) buildDataSummary(ctx context.Context, userID string, days in
 		StatsWindow:  days,
 	}
 
-	for _, t := range tasks {
-		if t.IsDeleted {
-			continue
-		}
-		summary.TotalTasks++
-		if t.IsFinished {
-			summary.CompletedTasks++
-		} else {
-			summary.PendingTasks++
-			if t.FinishDate != nil && t.FinishDate.Before(now) {
-				summary.OverdueTasks++
-			}
-		}
-		cat := "sin categoría"
-		if t.Category != nil && *t.Category != "" {
-			cat = *t.Category
-		}
-		summary.Categories[cat]++
-	}
+	// Task counting extracted to a pure seam (issue #989 round 1): overdue
+	// resolves through the canonical due date with the legacy finishDate
+	// fallback, testable without a database.
+	summary.TotalTasks, summary.CompletedTasks, summary.PendingTasks, summary.OverdueTasks = countTaskStates(tasks, now, summary.Categories)
 
 	for _, st := range stats {
 		summary.TotalPomodoros += st.Pomodoros

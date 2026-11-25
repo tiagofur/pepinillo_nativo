@@ -79,7 +79,7 @@ GROUP BY 1, 2`, d30).Scan(&rows).Error; err != nil {
 	var t struct{ Created30d, Completed30d int64 }
 	if err := db.Raw(`
 SELECT COUNT(*) FILTER (WHERE t.created_date >= ?) AS created30d,
-  COUNT(*) FILTER (WHERE t.is_finished AND NOT t.is_deleted AND t.finish_date >= ?) AS completed30d
+  COUNT(*) FILTER (WHERE t.is_finished AND NOT t.is_deleted AND COALESCE(t.completed_at, t.finish_date) >= ?) AS completed30d
 FROM tasks t JOIN users u ON u.id = t.user_id WHERE u.metrics_opt_in`, d30, d30).Scan(&t).Error; err != nil {
 		return nil, err
 	}

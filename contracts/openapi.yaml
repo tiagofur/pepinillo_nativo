@@ -3113,6 +3113,10 @@ components:
           type: ["string", "null"]
         energyLevel:
           type: ["string", "null"]
+          description: >-
+            Canonical values: deep | shallow | admin. Legacy client values
+            (regular, light, low, medium, high) are normalized to the
+            canonical set on write; reads only return canonical values or null.
         recurrenceRule:
           type: ["string", "null"]
         recurringTemplateId:
@@ -3123,6 +3127,29 @@ components:
         finishDate:
           type: ["string", "null"]
           format: date-time
+          deprecated: true
+          description: >-
+            Legacy overloaded carrier: Apple clients historically sent the due
+            date here and Android clients the completion instant. New clients
+            must send dueDate and completedAt instead. The server stores
+            client-sent values unchanged, and server-side recurring
+            generation mirrors the scheduled day into both fields.
+        dueDate:
+          type: ["string", "null"]
+          format: date-time
+          description: When the task is due. Canonical replacement for the overloaded finishDate (issue #989).
+        completedAt:
+          type: ["string", "null"]
+          format: date-time
+          description: >-
+            When the task was completed; null while unfinished, and for
+            legacy rows completed before this field existed (issue #989).
+        scheduledForToday:
+          type: boolean
+          description: User pinned the task to Today ("Añadir a Hoy"); expires client-side per platform rules (issue #989).
+        sortOrder:
+          type: integer
+          description: Manual plan order (drag order), stable per task (issue #989).
         isFinished:
           type: boolean
         priority:

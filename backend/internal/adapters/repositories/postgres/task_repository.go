@@ -111,9 +111,11 @@ func (r *TaskRepository) ReleaseRecurrenceLock(ctx context.Context, lockKey, own
 
 func (r *TaskRepository) ListByFinishDate(ctx context.Context, userID string, date time.Time) ([]domain.Task, error) {
 	var tasks []domain.Task
+	// Issue #989: due_date is the canonical carrier; finish_date remains the
+	// legacy fallback for rows written before migration 000020 normalized it.
 	err := r.db.WithContext(ctx).
 		Preload("SubTasks").
-		Where("user_id = ? AND finish_date::date = ?", userID, date.Format("2006-01-02")).
+		Where("user_id = ? AND COALESCE(due_date, finish_date)::date = ?", userID, date.Format("2006-01-02")).
 		Order("updated_at DESC").
 		Find(&tasks).Error
 	if err != nil {
@@ -123,6 +125,9 @@ func (r *TaskRepository) ListByFinishDate(ctx context.Context, userID string, da
 }
 
 func (r *TaskRepository) Upsert(ctx context.Context, task *domain.Task) error {
+	// Issue #989: same energy normalization as the sync path so every write
+	// entry point produces canonical values.
+	task.EnergyLevel = domain.NormalizeEnergyLevel(task.EnergyLevel)
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		// IDOR guard: when the client supplies an ID, verify the existing row
 		// belongs to the same user before allowing an UPDATE-by-PK via Save.
@@ -192,6 +197,10 @@ const taskSyncChunkSize = 200
 // transactions. incoming is passed by value: caller slices are never mutated.
 func (r *TaskRepository) upsertSyncItem(tx *gorm.DB, userID string, incoming domain.Task, now time.Time, applied, rejected *[]string) error {
 	incoming.UserID = userID
+	// Issue #989: clients shipped different energy vocabularies (Android
+	// Deep/Regular/Light, web legacy low/medium/high). Normalize on write so
+	// chk_tasks_energy_level only ever sees canonical values.
+	incoming.EnergyLevel = domain.NormalizeEnergyLevel(incoming.EnergyLevel)
 	// Sync clients may omit tracking_mode (e.g. the web mapper pre-W9): an
 	// invalid value would violate chk_tasks_tracking_mode on UPDATE (GORM
 	// writes the raw string on full-row Save — the column default only helps
