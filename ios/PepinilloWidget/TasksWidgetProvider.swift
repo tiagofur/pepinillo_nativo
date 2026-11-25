@@ -5,7 +5,6 @@
 // Reads active tasks from the shared SwiftData store (App Group).
 
 import WidgetKit
-import SwiftData
 import Foundation
 
 struct TasksWidgetProvider: AppIntentTimelineProvider {
@@ -43,39 +42,12 @@ struct TasksWidgetProvider: AppIntentTimelineProvider {
                 // type-level safety net for the loadIfAuthorized contract.
                 return .empty
             }
-            let context = ModelContext(container)
-
             // Fetch active tasks, then apply the same "Today" semantics used by
-            // the Plan screen: explicitly scheduled for today, due today, or overdue.
-            // Do not fetch-limit before filtering, otherwise earlier inbox/upcoming
-            // tasks can crowd out today's tasks and make the widget look empty.
-            var descriptor = FetchDescriptor<TaskItem>(
-                predicate: #Predicate<TaskItem> { task in
-                    task.isCompleted == false
-                        && task.isRecurringTemplate == false
-                        && task.isDeleted == false
-                },
-                sortBy: [
-                    SortDescriptor(\.sortOrder),
-                    SortDescriptor(\.createdAt, order: .reverse),
-                ]
-            )
-            // Bound the fetch: the widget renders at most 8 tasks. We fetch 50 so
-            // the in-memory today/due/overdue filter has enough candidates without
-            // scanning the full table.
-            descriptor.fetchLimit = 50
-            // Avoid loading relationships in widget process
-            descriptor.relationshipKeyPathsForPrefetching = []
-
-            let calendar = Calendar.current
-            let now = Date.now
-            let todayStart = calendar.startOfDay(for: now)
-            let todayTasks = try context.fetch(descriptor)
-                .filter { task in
-                    let isDueToday = task.dueDate.map { calendar.isDateInToday($0) } ?? false
-                    let isOverdue = task.dueDate.map { $0 < todayStart } ?? false
-                    return task.scheduledForToday || isDueToday || isOverdue
-                }
+            // the Plan screen: explicitly scheduled for today, due today, or
+            // overdue. The query lives in TasksWidgetQuery (compiled into the
+            // app and both widget extensions) so a test can execute the real
+            // fetch (#983).
+            let todayTasks = try TasksWidgetQuery.todayTasks(in: container)
             let tasks = todayTasks.prefix(8)
 
             let isSessionActive = AppGroupDefaults.isSessionActive
