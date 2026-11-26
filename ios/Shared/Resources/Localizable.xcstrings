@@ -23182,6 +23182,29 @@
           }
         }
       }
+    },
+    "menu.focus.linktask" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Link Task"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enlazar tarea"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vincular tarefa"
+          }
+        }
+      }
     }
   },
   "version" : "1.1"

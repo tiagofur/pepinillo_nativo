@@ -103,6 +103,11 @@ struct MacFocusView: View {
                 }
             }
         }
+        .onReceive(NotificationCenter.default.publisher(for: .macFocusLinkTaskRequested)) { _ in
+            // Issue #993 (S1-S2): ⌘K abre el picker con el buscador enfocado;
+            // Return enlaza la primera coincidencia (comportamiento #929).
+            store.send(.taskPickerTapped)
+        }
         .popover(isPresented: taskPickerPresented, arrowEdge: .bottom) {
             MacTaskPickerView(
                 linkedTaskID: store.linkedTaskID,
@@ -112,6 +117,14 @@ struct MacFocusView: View {
                 },
                 onUnlink: {
                     store.send(.unlinkTaskTapped)
+                },
+                // Issue #993 (S3): ⌘↩ enlaza y, si no hay sesión corriendo,
+                // arranca con la tarea enlazada. La colisión con el ítem de
+                // menú Start/Pause (⌘↩) queda resuelta: el monitor local del
+                // picker consume el evento antes de que el menú lo reciba.
+                onLinkAndStart: {
+                    guard !store.isRunning else { return }
+                    store.send(.startTapped())
                 }
             )
         }
@@ -469,12 +482,16 @@ private struct MacTaskPickerView: View {
     let tasks: IdentifiedArrayOf<TaskListFeature.TaskItemState>
     let onSelectTask: (UUID, String, String) -> Void
     let onUnlink: () -> Void
+    /// Issue #993 (S3): ⌘↩ links the first match and, if idle, starts the
+    /// session with it. Nil = legacy plain-Return behavior only.
+    var onLinkAndStart: (() -> Void)? = nil
 
     @Environment(\.dismiss) private var dismiss
     // Issue #929: many-task plans made finding the one to link slow —
     // Spotlight-style search with Return selecting the first match.
     @State private var searchQuery = ""
     @FocusState private var isSearchFocused: Bool
+    @State private var monitor: Any?
 
     private var activeTasks: [TaskListFeature.TaskItemState] {
         tasks.filter { !$0.isCompleted }
@@ -515,7 +532,24 @@ private struct MacTaskPickerView: View {
                     dismiss()
                 }
             }
-            .onAppear { isSearchFocused = true }
+            .onAppear {
+                isSearchFocused = true
+                // Issue #993 (S3): ⌘↩ links the first match and starts if
+                // idle. Local monitor: intercepts BEFORE the Start/Pause
+                // menu equivalent (⌘↩) can fire while the popover is up.
+                monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+                    guard event.keyCode == 36, event.modifierFlags.contains(.command),
+                          let first = filteredTasks.first else { return event }
+                    onSelectTask(first.id, first.title, first.energyLevel.icon)
+                    dismiss()
+                    onLinkAndStart?()
+                    return nil
+                }
+            }
+            .onDisappear {
+                if let monitor { NSEvent.removeMonitor(monitor) }
+                monitor = nil
+            }
             .accessibilityLabel(String(localized: "Search Tasks"))
 
             Divider()
