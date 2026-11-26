@@ -27,10 +27,11 @@ interface Case {
 	expected: Expected;
 }
 
-/** Local day key at noon of (today + offsetDays) — noon never crosses a day
- * boundary under day arithmetic, so cases stay TZ-stable. */
-function dayKey(offsetDays: number): string {
-	const d = new Date();
+/** Local day key at noon of (base + offsetDays) — noon never crosses a day
+ * boundary under day arithmetic; every call derives from the same base so a
+ * midnight straddle mid-run cannot split the table (judgment A, r1). */
+function dayKey(offsetDays: number, base: Date): string {
+	const d = new Date(base);
 	d.setDate(d.getDate() + offsetDays);
 	d.setHours(12, 0, 0, 0);
 	return localDateKey(d);
@@ -50,8 +51,8 @@ describe('unified planning rule against the shared case table (S3)', () => {
 	it('every case matches the web resolver', () => {
 		const now = new Date();
 		for (const c of cases) {
-			const planned = c.planned === null ? null : dayKey(c.planned);
-			const due = c.due === null ? null : dayKey(c.due);
+			const planned = c.planned === null ? null : dayKey(c.planned, now);
+			const due = c.due === null ? null : dayKey(c.due, now);
 			const bucket = planningBucket(planned, due, c.legacyScheduledForToday ?? false, c.status, now);
 			const label = c.name;
 			if (bucket.kind === 'today') {
@@ -77,11 +78,12 @@ describe('unified planning rule against the shared case table (S3)', () => {
 	});
 
 	it('a past plan stays today and turns postponed after midnight (S6)', () => {
-		const yesterday = dayKey(-1);
+		const base = new Date();
+		const yesterday = dayKey(-1, base);
 		const todayBucket = planningBucket(yesterday, null, false, 'active');
 		expect(todayBucket).toEqual({ kind: 'today', postponed: true });
 
-		const tomorrow = new Date();
+		const tomorrow = new Date(base);
 		tomorrow.setDate(tomorrow.getDate() + 1);
 		const afterMidnight = planningBucket(yesterday, null, false, 'active', tomorrow);
 		expect(afterMidnight).toEqual({ kind: 'today', postponed: true });
