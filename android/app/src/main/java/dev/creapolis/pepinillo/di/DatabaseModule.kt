@@ -43,6 +43,7 @@ object DatabaseModule {
                 PepinilloDatabase.MIGRATION_11_12,
                 PepinilloDatabase.MIGRATION_12_13,
                 PepinilloDatabase.MIGRATION_13_14,
+                PepinilloDatabase.MIGRATION_14_15,
             )
 
             .build()

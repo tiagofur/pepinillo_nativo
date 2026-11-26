@@ -33,6 +33,12 @@ data class TaskEntity(
     val dueDate: Long? = null,
     @ColumnInfo(name = "scheduled_for_today", defaultValue = "0")
     val scheduledForToday: Boolean = false,
+    // Local calendar day (start of day epoch millis) the user plans to work on
+    // this task — replaces scheduledForToday (issue #991 S1). Legacy rows
+    // backfill from the boolean in MIGRATION_14_15; the unified «Hoy» rule
+    // lives in domain/tasks/TaskPlanning.kt.
+    @ColumnInfo(name = "planned_date")
+    val plannedDate: Long? = null,
     @ColumnInfo(name = "recurrence_rule")
     val recurrenceRule: String? = null,
     @ColumnInfo(name = "next_occurrence")

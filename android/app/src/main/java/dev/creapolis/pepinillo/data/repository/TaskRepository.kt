@@ -17,6 +17,7 @@ import dev.creapolis.pepinillo.core.billing.FeatureGate
 import dev.creapolis.pepinillo.data.sync.WidgetRefreshWorker
 import dev.creapolis.pepinillo.domain.streak.StreakProtectionService
 import dev.creapolis.pepinillo.domain.tasks.RecurrenceCalculator
+import dev.creapolis.pepinillo.domain.tasks.TaskPlanning
 
 import dev.creapolis.pepinillo.feature.tasks.model.EnergyLevel
 import dev.creapolis.pepinillo.feature.tasks.model.Subtask
@@ -285,6 +286,8 @@ class TaskRepository @Inject constructor(
                 nextOccurrence = nextDue,
                 isRecurringTemplate = true,
                 scheduledForToday = scheduledForToday,
+                // S8 (#991): the occurrence is born planned on its own day.
+                plannedDate = TaskPlanning.plannedDay(nextDue),
                 updatedAt = now,
                 isDirty = true,
             ),

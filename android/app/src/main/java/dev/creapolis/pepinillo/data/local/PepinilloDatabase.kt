@@ -30,7 +30,7 @@ import dev.creapolis.pepinillo.data.local.entity.UserEntity
         UserEntity::class,
         PreferenceSyncEntity::class,
     ],
-    version = 14,
+    version = 15,
     exportSchema = true,
 )
 
@@ -124,6 +124,32 @@ abstract class PepinilloDatabase : RoomDatabase() {
         // Room still detects the schema-hash change, so this empty migration is the contract
         // that acknowledges it. Without it, upgrading from v8 crashes with
         // "A migration from 8 to 9 was required but not found".
+        /**
+         * v14 → v15: add `planned_date` to `tasks` (issue #991 S1) and backfill
+         * the upgrade cohort: rows that were "in today's list" under the legacy
+         * boolean start with plannedDate = today (local start of day). The
+         * boolean is left in place for sync compat; the unified «Hoy» rule
+         * lives in domain/tasks/TaskPlanning.kt.
+         */
+        val MIGRATION_14_15 = object : Migration(14, 15) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "ALTER TABLE tasks ADD COLUMN planned_date INTEGER DEFAULT NULL",
+                )
+                val todayStart = java.util.Calendar.getInstance().let { cal ->
+                    cal.set(java.util.Calendar.HOUR_OF_DAY, 0)
+                    cal.set(java.util.Calendar.MINUTE, 0)
+                    cal.set(java.util.Calendar.SECOND, 0)
+                    cal.set(java.util.Calendar.MILLISECOND, 0)
+                    cal.timeInMillis
+                }
+                db.execSQL(
+                    "UPDATE tasks SET planned_date = ? WHERE scheduled_for_today = 1 AND planned_date IS NULL",
+                    arrayOf<Any>(todayStart),
+                )
+            }
+        }
+
         val MIGRATION_8_9 = object : Migration(8, 9) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 // Intentionally empty — no SQL needed.
