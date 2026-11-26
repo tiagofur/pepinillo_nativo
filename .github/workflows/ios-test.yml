@@ -205,12 +205,12 @@ jobs:
             -maximum-concurrent-test-simulator-destinations 1 \
             -test-timeouts-enabled YES \
             -default-test-execution-time-allowance 120 \
+            # AppFeatureIntegrationTests excluido: 2 tests fallan por efectos
+            # escapados de suscripción (contaminación cruzada preexistente que
+            # el hueco de #986 escondía) — follow-up #1003.
             -only-testing:PepinilloTests/TaskListFeatureTests \
             -only-testing:PepinilloTests/PaywallFeatureTests \
             -only-testing:PepinilloTests/FocusFeatureReducerTests \
-            # AppFeatureIntegrationTests excluido: 2 tests fallan por efectos
-            # escapados de suscripción (contaminación cruzada preexistente que
-            # el hueco de #986 escondía) — follow-up de aislamiento pendiente.
             -only-testing:PepinilloTests/AppGroupContainerTests \
             -only-testing:PepinilloTests/WidgetProGatingTests \
             -only-testing:PepinilloTests/TasksWidgetQueryTests \
@@ -240,7 +240,30 @@ jobs:
             -only-testing:PepinilloTests/WidgetProGatingTests \
             -only-testing:PepinilloTests/TasksWidgetQueryTests \
             -only-testing:PepinilloTests/FocusActivityAttributesTests \
-            -only-testing:PepinilloTests/FocusEngineTests \
+            -only-testing:PepinilloTests/FocusEngineInitialStateTests \
+            -only-testing:PepinilloTests/FocusEngineStartTests \
+            -only-testing:PepinilloTests/FocusEnginePauseResumeTests \
+            -only-testing:PepinilloTests/FocusEngineStopTests \
+            -only-testing:PepinilloTests/FocusEngineInterruptionTests \
+            -only-testing:PepinilloTests/FocusEngineSessionReplacementTests \
+            -only-testing:PepinilloTests/FocusEngineCustomDurationTests \
+            -only-testing:PepinilloTests/FocusEngineLinkedTaskTests \
+            -only-testing:PepinilloTests/FocusEngineTimerTests \
+            -only-testing:PepinilloTests/FocusEngineSkipPhaseTests \
+            -only-testing:PepinilloTests/FocusEngineConfigTests \
+            -only-testing:PepinilloTests/FocusEngineFlowtimeBreakTests \
+            -only-testing:PepinilloTests/FocusEngineDailyPomodoroSeedTests \
+            -only-testing:PepinilloTests/FocusEngineExternalTimerTests \
+            -only-testing:PepinilloTests/FocusEngineMidpointTests \
+            -only-testing:PepinilloTests/FocusEngineConfigUpdateTests \
+            -only-testing:PepinilloTests/FocusEngineSessionTotalTests \
+            -only-testing:PepinilloTests/FocusEngineAnchoredPauseTests \
+            -only-testing:PepinilloTests/FocusEngineSkippedWorkTests \
+            -only-testing:PepinilloTests/FocusEngineHoldStopTests \
+            -only-testing:PepinilloTests/FocusEngineExtendWorkTests \
+            -only-testing:PepinilloTests/FocusEngineAbandonTests \
+            -only-testing:PepinilloTests/FocusEngineGhostAdoptionTests \
+            -only-testing:PepinilloTests/FocusEngineGhostResumeTests \
             -only-testing:PepinilloTests/FocusFeatureReducerTests \
             -only-testing:PepinilloTests/SiriPauseResumeIntentTests \
             -only-testing:PepinilloTests/TaskListFeatureTests
