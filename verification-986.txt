@@ -3,12 +3,14 @@
 1. Conversión completa: fast gate (9 líneas) y full gate (11 líneas) en
    formato plano Target/Suite — cero líneas con segmento de carpeta
    (verificado con rg).
-2. Ejecución local de los 9 suites aplanados del fast gate:
-   145 test cases corridos (vs 0 efectivos antes) — TEST SUCCEEDED salvo
-   2 fallos PREEXISTENTES expuestos (contaminación cruzada de efectos
-   escapados de suscripción → KeychainClient.hasTokens unimplemented;
-   ambos PASAN en aislado). Excluidos del gate con comentario y
-   follow-up #1003.
+2. Ejecución local del fast gate final (8 filtros planos, cadena bash
+   verificada con bash -x como UN comando continuo): 143 test cases
+   corridos (vs 0 efectivos antes) — TEST SUCCEEDED. La suite
+   AppFeatureIntegrationTests queda EXCLUIDA de ambas puertas: 2 tests
+   con contaminación cruzada preexistente (efectos escapados de
+   suscripción → KeychainClient.hasTokens unimplemented; pasan en
+   aislado) — follow-up #1003. El resto del suite (40/42) verificado
+   verde localmente.
 3. Suites verificados con test-case real: FocusFeatureReducerTests,
    WidgetProGatingTests (12), AppGroupContainerTests, FocusActivityAttributes,
    SiriPauseResumeIntent, AppFeatureIntegrationTests (40/42), +

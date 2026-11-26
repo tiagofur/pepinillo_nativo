@@ -186,6 +186,9 @@ jobs:
           echo "mode=$suite" >> "$GITHUB_OUTPUT"
           echo "Running $suite test suite"
 
+      # AppFeatureIntegrationTests excluido de ambas puertas: 2 tests fallan
+      # por efectos escapados de suscripción (contaminación cruzada
+      # preexistente que el hueco de #986 escondía) — follow-up #1003.
       - name: Run targeted tests (fast — PR gate)
         if: steps.suite.outputs.mode == 'fast'
         timeout-minutes: 12
@@ -205,9 +208,6 @@ jobs:
             -maximum-concurrent-test-simulator-destinations 1 \
             -test-timeouts-enabled YES \
             -default-test-execution-time-allowance 120 \
-            # AppFeatureIntegrationTests excluido: 2 tests fallan por efectos
-            # escapados de suscripción (contaminación cruzada preexistente que
-            # el hueco de #986 escondía) — follow-up #1003.
             -only-testing:PepinilloTests/TaskListFeatureTests \
             -only-testing:PepinilloTests/PaywallFeatureTests \
             -only-testing:PepinilloTests/FocusFeatureReducerTests \
