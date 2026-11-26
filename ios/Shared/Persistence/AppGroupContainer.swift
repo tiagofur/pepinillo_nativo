@@ -1330,7 +1330,7 @@ private func makeModelContainer(
     cloudKitDatabase: ModelConfiguration.CloudKitDatabase,
     migrationPlan: (any SchemaMigrationPlan.Type)?
 ) throws -> ModelContainer {
-    let schema = Schema(versionedSchema: SchemaV6.self)
+    let schema = Schema(versionedSchema: SchemaV7.self)
 
     let config = ModelConfiguration(
         schema: schema,
@@ -1360,7 +1360,7 @@ func makeFreshFallbackModelContainer() throws -> ModelContainer {
 }
 
 func makeInMemoryModelContainer() throws -> ModelContainer {
-    let schema = Schema(versionedSchema: SchemaV6.self)
+    let schema = Schema(versionedSchema: SchemaV7.self)
     let config = ModelConfiguration(
         schema: schema,
         isStoredInMemoryOnly: true,

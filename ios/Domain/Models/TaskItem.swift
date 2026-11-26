@@ -27,6 +27,11 @@ public final class TaskItem {
     public var energyLevel: EnergyLevel
     public var dueDate: Date?
     public var scheduledForToday: Bool = false
+    /// Local calendar day (start of day, no time) the user plans to work on
+    /// this task — replaces `scheduledForToday` (issue #991 S1). Legacy rows
+    /// backfill from the boolean at migration; the unified «Hoy» rule lives
+    /// in `TaskPlanning`.
+    public var plannedDate: Date?
 
     // MARK: - Focus Integration
     public var estimatedPomodoros: Int
