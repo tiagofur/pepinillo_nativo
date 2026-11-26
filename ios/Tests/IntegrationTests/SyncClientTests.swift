@@ -607,3 +607,65 @@ struct SyncClientTests {
         #expect(await probe.count() == 0, "Capability (backendSync=false) must win — no API calls")
     }
 }
+
+// MARK: - Issue #987: logical deletes must reach the backend as tombstones
+
+@Test("deleted dirty tasks report deletedSyncIds and skip the regular push")
+func deletedDirtyTasksBecomeTombstones() async throws {
+    // Self-contained: no shared helper (this test lives at file scope).
+    let saved = AppGroupDefaults.userCapabilities
+    defer { AppGroupDefaults.userCapabilities = saved }
+    AppGroupDefaults.userCapabilities = .everywherePlus
+    let savedCanSync = AppGroupDefaults.canBackendSync
+    defer { AppGroupDefaults.canBackendSync = savedCanSync }
+    AppGroupDefaults.canBackendSync = true
+
+    actor RequestCapture {
+        var requests: [TaskSyncRequest] = []
+        func record(_ request: TaskSyncRequest) { requests.append(request) }
+        func all() -> [TaskSyncRequest] { requests }
+    }
+
+    // TaskItemDTO.isDeleted is mapped from the schema-backed isLocallyDeleted
+    // flag at construction (PersistenceClient.swift:116).
+    let deletedTask = TaskItemDTO(
+        title: "Deleted on this device",
+        syncId: "sync-tombstone-987", isDirty: true, isDeleted: true
+    )
+    let aliveTask = TaskItemDTO(
+        title: "Still alive",
+        syncId: "sync-alive-987", isDirty: true
+    )
+
+    let capture = RequestCapture()
+    let client = withDependencies {
+        $0.keychainClient.hasTokens = { true }
+        $0.apiClient.syncTasks = { request in
+            await capture.record(request)
+            return TaskSyncResponse(tasks: [], deletedSyncIds: [], syncTimestamp: "")
+        }
+        $0.apiClient.syncSessions = { _ in
+            SessionSyncResponse(sessions: [], serverTimestamp: "")
+        }
+        $0.apiClient.upsertPreferences = { _ in
+            PreferenceSyncResponse(preferences: [], serverTimestamp: "")
+        }
+        $0.persistenceClient.fetchDirtyTasks = { [deletedTask, aliveTask] }
+        $0.persistenceClient.fetchDirtySessions = { [] }
+        $0.persistenceClient.getAllPreferencesAsKeyValue = { [] }
+        $0.persistenceClient.getLastSyncTimestamp = { nil }
+    } operation: {
+        SyncClient.liveValue
+    }
+
+    try await client.syncAll()
+
+    let requests = await capture.all()
+    #expect(requests.count == 1)
+    let request = try #require(requests.first)
+    #expect(request.deletedSyncIds == ["sync-tombstone-987"],
+            "logical deletes must ride deletedSyncIds (issue #987)")
+    #expect(request.tasks.map(\.syncId) == ["sync-alive-987"],
+            "tombstones must not ride the regular task push")
+    #expect(request.tasks.allSatisfy { !$0.isDeleted })
+}
