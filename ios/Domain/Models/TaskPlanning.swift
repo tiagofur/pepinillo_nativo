@@ -45,8 +45,8 @@ public enum TaskPlanning {
         // Legacy shim: an older cohort's "in today's list" flag keeps the
         // task in «Hoy» until a written planned date (past plans keep the
         // S6 badge) or the physical backfill replaces it.
-        if scheduledForToday,
-           plannedDate == nil || isFutureDay(plannedDate!, now: now, calendar: calendar) {
+        let plannedIsMissingOrFuture = plannedDate.map { isFutureDay($0, now: now, calendar: calendar) } ?? true
+        if scheduledForToday, plannedIsMissingOrFuture {
             return .today(postponed: false)
         }
 

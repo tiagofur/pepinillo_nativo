@@ -189,6 +189,45 @@ struct TaskPlanningTests {
     }
 
     @MainActor
+    @Test("V5 store migrates to V7: the frozen V5 snapshot opens the real V5 shape and backfills")
+    func v5StoreMigratesToV7WithBackfill() throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("pepinillo-planning-991-v5-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let storeURL = dir.appendingPathComponent("test.sqlite")
+
+        // 1. Seed a genuine V5 store (frozen snapshot: no AchievementRecord, no plannedDate).
+        do {
+            let schema = Schema(versionedSchema: SchemaV5.self)
+            let config = ModelConfiguration(schema: schema, url: storeURL, cloudKitDatabase: .none)
+            let container = try ModelContainer(for: schema, configurations: [config])
+            let ctx = container.mainContext
+
+            let pinned = SchemaV5.TaskItem(title: "V5 pinned")
+            pinned.scheduledForToday = true
+            ctx.insert(pinned)
+            try ctx.save()
+        }
+
+        // 2. Re-open through the full plan — this path previously aborted with
+        //    "unknown model version" while SchemaV5 declared live classes.
+        let currentSchema = Schema(versionedSchema: SchemaV7.self)
+        let currentConfig = ModelConfiguration(schema: currentSchema, url: storeURL, cloudKitDatabase: .none)
+        let migrated = try ModelContainer(
+            for: currentSchema,
+            migrationPlan: PepinilloMigrationPlan.self,
+            configurations: [currentConfig]
+        )
+        let ctx = migrated.mainContext
+
+        let tasks = try ctx.fetch(FetchDescriptor<TaskItem>())
+        let pinned = try #require(tasks.first { $0.title == "V5 pinned" })
+        #expect(pinned.plannedDate != nil, "V5 flag backfilled to today")
+        #expect(Calendar.current.isDateInToday(pinned.plannedDate!))
+    }
+
+    @MainActor
     @Test("backfill is idempotent and never overwrites an existing planned date")
     func backfillIsIdempotent() throws {
         let dir = FileManager.default.temporaryDirectory
