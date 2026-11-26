@@ -74,6 +74,26 @@ struct TasksWidgetQueryTests {
         #expect(today.map(\.title) == ["Alpha", "Beta"])
     }
 
+    // MARK: - Issue #984: >50 non-today tasks must not crowd out today's task
+
+    @Test("a today task survives 55 earlier non-today tasks (fetch bound after filtering)")
+    func todayTaskSurvivesLargeNonTodayBacklog() throws {
+        let (container, dir) = try makeContainer(label: "crowding-984")
+        defer { cleanup(dir) }
+        let old = Calendar.current.date(byAdding: .day, value: -30, to: .now)!
+
+        // 55 inbox tasks that sort BEFORE the today task (lower sortOrder).
+        for i in 0..<55 {
+            try insert("Inbox \(i)", in: container, sortOrder: i, createdAt: old)
+        }
+        try insert("Today's task", in: container, sortOrder: 100, scheduledForToday: true)
+
+        let today = try TasksWidgetQuery.todayTasks(in: container)
+
+        #expect(today.map(\.title) == ["Today's task"],
+                "the fetch limit must apply AFTER the today filter (issue #984)")
+    }
+
     // MARK: - S2: soft-delete exclusion matches the rest of the app
 
     @Test("tombstoned, completed and recurring-template tasks are excluded")
