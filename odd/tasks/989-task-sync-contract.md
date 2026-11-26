@@ -176,3 +176,22 @@ Allowed edit surfaces adicionales:
   sin actualizar) → decisión documentada en el contrato: enum diferido
   detrás de contract-break o split request/response. Result: OK (lint 0
   errores, diff sin breaking) · Commit: `cf0a0493`
+
+## PR-C judgment-day (ronda 1 + ronda 2)
+
+- **Ronda 1**: Juez A APPROVED (P2: asimetría de borrado de última
+  subtarea desde web + tests TZ-frágiles; P3: comentario ±12h + guard
+  muerto) · Juez B CHANGES_REQUESTED — **P1 real**: subtareas sin ids por
+  el único push path de web (`/sync/initial-upload` → `upsertSyncItem`) →
+  el association save de GORM re-inserta hijos de PK-cero → duplicados
+  propagados a todos los clientes (verificó source de GORM v1.31;
+  pre-existente vía iOS, rutinario para web).
+- **Lote único de fixes**: `9e11299b` (mapper manda `srv-<id>` como id;
+  RED por stash: `[undefined, undefined]` vs `[7, 8]`; merge-tie vía
+  mapper real; aserciones TZ-stables; comentario ±12h honesto) +
+  `9e77b877` (guardia BD: pushes repetidos de una subtarea con id
+  conocido no duplican; guard muerto fuera).
+- **Ronda 2 (scoped)**: **APPROVED dual, 0 P0/P1** — ambos jueces
+  re-ejecutaron gates (web 143, backend ok, contracts limpios).
+  Deudas documentadas → issue follow-up (hardening `upsertSyncItem`,
+  ventana LWW de contadores web, `focusedSeconds` no se acumula en web).
