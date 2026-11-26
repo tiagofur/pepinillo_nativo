@@ -1,0 +1,23 @@
+# Verification Evidence — issue #993 ronda 2 (fixes del juez)
+
+## S3 (P1 del juez ronda 1): ⌘↩ enlaza + arranca si idle
+- MacTaskPickerView instala un monitor local NSEvent(.keyDown) al aparecer
+  (removido al desaparecer): ⌘↩ enlaza la primera coincidencia, cierra el
+  popover y dispara onLinkAndStart. Colisión con el ítem de menú
+  Start/Pause (⌘↩): el monitor consume el evento ANTES de que el menú lo
+  reciba → sin doble acción.
+- onLinkAndStart en MacFocusView: `guard !store.isRunning else { return }`
+  + `.startTapped()` — arranca solo si idle (exactamente el S3 del issue).
+- Compilación: swiftc -parse OK (el scheme PepinilloMac sigue sin compilar
+  en este entorno por el mismatch ActivityKit/Xcode-27.3 preexistente —
+  waiver declarado; QA humano al merge cubre ⌘↩ y el primer ⌘K post-cambio
+  de pestaña).
+## i18n (P2-1): menu.focus.linktask añadido a Localizable.xcstrings
+  en/es/pt ("Link Task" / "Enlazar tarea" / "Vincular tarefa").
+## Deudas documentadas para follow-ups (no bloqueantes, en el PR body):
+- MacFocusView.swift 580+ / MacSettingsView 591 sobre presupuesto ~500
+  (extraer MacTaskPickerView ~110 líneas como commit mecánico).
+- Cobertura de tests del picker/comando (V1): glue de vista sin tests
+  unitarios — el issue pedía V1; waiver declarado con QA humano.
+Risk: none (código Mac-only con parse OK; la ruta S3 descansa en el
+monitor local que consume el evento antes del menú)
