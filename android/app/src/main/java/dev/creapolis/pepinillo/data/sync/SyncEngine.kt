@@ -496,7 +496,11 @@ class SyncEngine @Inject constructor(
                 val merged = serverEntity.copy(
                     id = local.id,
                     dueDate = serverEntity.dueDate,
-                    scheduledForToday = if (serverTask.dueDate != null || serverTask.scheduledForToday) serverEntity.scheduledForToday else local.scheduledForToday,
+                    // Issue #989 PR-B: the backend persists the canonical fields,
+                    // so the merge is plain full-row (server truth wins; the
+                    // pre-PR-A guard existed only because the server could not
+                    // carry the flag).
+                    scheduledForToday = serverEntity.scheduledForToday,
                     sortOrder = serverEntity.sortOrder,
                     recurrenceRule = serverEntity.recurrenceRule,
                     recurringTemplateID = serverEntity.recurringTemplateID,
@@ -982,7 +986,14 @@ class SyncEngine @Inject constructor(
             syncId = id,
             title = title,
             description = notes,
-            energyLevel = energyLevel.lowercase(),
+            // Issue #989 PR-B: canonical energy on the wire (same table as the
+            // backend's NormalizeEnergyLevel); the UI keeps its own labels.
+            energyLevel = when (energyLevel) {
+                "Deep" -> "deep"
+                "Light" -> "shallow"
+                "Regular" -> "admin"
+                else -> "shallow"
+            },
             recurrenceRule = recurrenceRule,
             recurringTemplateId = recurringTemplateID,
             dueDate = dueDate?.toRfc3339(),
@@ -996,7 +1007,8 @@ class SyncEngine @Inject constructor(
             completedPomodoros = completedPomodoros,
             updatedAt = updatedAt.toRfc3339(),
             createdDate = createdAt.toRfc3339(),
-            finishDate = completedAt?.toRfc3339(),
+            // finishDate is retired: the completion instant rides completedAt.
+            completedAt = completedAt?.toRfc3339(),
             trackingMode = latestCompletedSessionMode ?: "pomodoro",
             completedFlowtimeSessions = completedFlowtimeSessions,
             completedTimeblockSessions = completedTimeblockSessions,
@@ -1030,7 +1042,7 @@ class SyncEngine @Inject constructor(
                 3 -> "High"; 2 -> "Medium"; 1 -> "Low"; else -> "None"
             },
             energyLevel = when (energyLevel?.lowercase()) {
-                "deep" -> "Deep"; "light" -> "Light"; else -> "Regular"
+                "deep" -> "Deep"; "shallow", "light" -> "Light"; "admin", "regular" -> "Regular"; else -> "Regular"
             },
             recurrenceRule = recurrenceRule,
             recurringTemplateID = recurringTemplateId,
@@ -1041,7 +1053,10 @@ class SyncEngine @Inject constructor(
             completedPomodoros = completedPomodoros,
             createdAt = created,
             updatedAt = updated,
-            completedAt = if (finishDate != null) parseRfc3339(finishDate, fallback = System.currentTimeMillis()) else null,
+            // Issue #989 PR-B: completion comes from the canonical field;
+            // finishDate is no longer read (it was Android's own legacy
+            // stuffing of completedAt).
+            completedAt = completedAt?.let { parseRfc3339(it, fallback = System.currentTimeMillis()) },
             serverId = id,
             isDirty = false,
             isDeleted = isDeleted,

@@ -126,3 +126,32 @@ compartido) van en los PR-B y PR-C posteriores.
   residual de frontera ±1 h anotado en la migración, cuerpo del PR
   refrescado, deuda ai_service → #995. Estado: **needs-human** — la
   re-revisión final acotada requiere autorización del leader.
+
+## PR-B (T6..T8) — feat/989-clients-canonical-fields, base main 3f33b39d
+
+Allowed edit surfaces adicionales:
+- `android/app/src/main/java/dev/creapolis/pepinillo/core/network/ApiModels.kt`
+- `android/app/src/main/java/dev/creapolis/pepinillo/data/sync/SyncEngine.kt`
+- `android/app/src/main/java/dev/creapolis/pepinillo/data/sync/InitialSyncManager.kt`
+- `android/app/src/test/java/dev/creapolis/pepinillo/data/sync/TaskCanonicalFieldsSyncTest.kt` (nuevo)
+- `android/local.properties` (sin trackear, copia del SDK)
+- `ios/Domain/Models/APIDTOs.swift`
+- `ios/Domain/Clients/SyncClient.swift`
+- `ios/Shared/Persistence/SwiftDataPersistenceService.swift`
+- `ios/Tests/IntegrationTests/PersistenceServiceTests.swift`
+- `.github/workflows/android-test.yml` (una línea: test nuevo al subset CI)
+
+- **T6** (S5): Android canónico. Result: OK (RED por campo ausente; 3 tests
+  nuevos + paquetes sync/repository en verde, 17 clases re-ejecutadas)
+  · Commit: `524ea8f8`
+- **T7** (S4): iOS canónico. Result: OK (RED por init sin campos; 21/21
+  PersistenceServiceTests + SyncClientTests verde) · Commit: `a0fae892`
+- **T8** (verificación V1/V2 + handoff + judgment-day): ronda 1 dual —
+  Juez A CHANGES_REQUESTED (2 P1: payload de sync sin fallback de due para
+  el cohort residual del backfill; InitialSyncManager sin tests — que
+  además destapó que el restore descartaba due/hoy/orden) · Juez B APPROVED.
+  Fixes: `applyDueDateFallback` en los 4 sitios de lectura + aserción en el
+  test BD real (RED en scratch) · restore de InitialSyncManager mapea los
+  campos + test de restore con decoy (no-tautología demostrada por stash).
+  Re-revisión acotada (ronda 2): en curso
+  · Commits: `4b01be09`, `34abd1c7`

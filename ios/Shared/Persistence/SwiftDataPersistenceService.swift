@@ -688,11 +688,13 @@ public final class SwiftDataPersistenceService {
             local.title = serverTask.title ?? local.title
             local.notes = serverTask.description
             local.isCompleted = serverTask.isFinished
-            // S6: never clobber a real local completion time. The protocol has
-            // no completion timestamp (finishDate is the due date), so fall back
-            // to the server update time — closer to the event than device-now.
+            // Issue #989 PR-B: the protocol carries a completion timestamp now.
+            // Keep the updatedAt fallback for legacy rows completed before the
+            // field existed — closer to the event than device-now.
             if serverTask.isFinished {
-                if local.completedAt == nil {
+                if let serverCompleted = serverTask.completedAt.flatMap(ISO8601DateFormatter().date(from:)) {
+                    local.completedAt = serverCompleted
+                } else if local.completedAt == nil {
                     local.completedAt = serverUpdatedAt
                 }
             } else {
@@ -709,10 +711,16 @@ public final class SwiftDataPersistenceService {
             if let createdStr = serverTask.createdDate {
                 local.createdAt = ISO8601DateFormatter().date(from: createdStr) ?? local.createdAt
             }
-            if let finishStr = serverTask.finishDate {
-                local.dueDate = ISO8601DateFormatter().date(from: finishStr)
-            } else {
-                local.dueDate = nil
+            // Issue #989 PR-B: dueDate is the canonical carrier. finishDate is
+            // no longer read — the backend backfilled due_date from it.
+            local.dueDate = serverTask.dueDate.flatMap(ISO8601DateFormatter().date(from:))
+            // The today-pin and drag order ride strict-newer server data only:
+            // tasks uploaded by pre-PR-B iOS hold false/0 server-side, and a
+            // timestamp tie (our own upload echo) is not the server's truth to
+            // clear them. Strictly newer means another device really edited.
+            if serverUpdatedAt > local.updatedAt {
+                local.scheduledForToday = serverTask.scheduledForToday ?? false
+                local.sortOrder = serverTask.sortOrder ?? 0
             }
             local.serverId = serverTask.id
             local.isDirty = false
@@ -745,9 +753,14 @@ public final class SwiftDataPersistenceService {
             newTask.syncId = serverTask.syncId
             newTask.serverId = serverTask.id
             newTask.isCompleted = serverTask.isFinished
-            // S6: same fallback as the update branch (no completion timestamp
-            // in the protocol; finishDate is the due date, not usable here).
-            newTask.completedAt = serverTask.isFinished ? (serverTask.updatedAt.flatMap(ISO8601DateFormatter().date(from:)) ?? Date.now) : nil
+            // Issue #989 PR-B: prefer the canonical completion timestamp; the
+            // updatedAt fallback covers legacy rows completed before the field
+            // existed.
+            newTask.completedAt = serverTask.isFinished
+                ? (serverTask.completedAt.flatMap(ISO8601DateFormatter().date(from:))
+                    ?? serverTask.updatedAt.flatMap(ISO8601DateFormatter().date(from:))
+                    ?? Date.now)
+                : nil
             newTask.completedPomodoros = serverTask.completedPomodoros
             newTask.recurrenceRule = serverTask.recurrenceRule
             newTask.isLocallyDeleted = serverTask.isDeleted
@@ -759,9 +772,10 @@ public final class SwiftDataPersistenceService {
             if let createdStr = serverTask.createdDate {
                 newTask.createdAt = ISO8601DateFormatter().date(from: createdStr) ?? Date.now
             }
-            if let finishStr = serverTask.finishDate {
-                newTask.dueDate = ISO8601DateFormatter().date(from: finishStr)
-            }
+            newTask.dueDate = serverTask.dueDate.flatMap(ISO8601DateFormatter().date(from:))
+            // Insert: the server row is authoritative (nothing local to lose).
+            newTask.scheduledForToday = serverTask.scheduledForToday ?? false
+            newTask.sortOrder = serverTask.sortOrder ?? 0
             context.insert(newTask)
 
             // Add subtasks from server
@@ -801,12 +815,14 @@ public final class SwiftDataPersistenceService {
     }
 
     /// Convert energy level string from server to EnergyLevel enum.
+    /// Unknown or missing values fail safe to .shallow — never .deep: an
+    /// unrecognized value must not upgrade a task to Deep Work (#989 S4).
     private static func energyLevelFromString(_ str: String?) -> EnergyLevel {
         switch str?.lowercased() {
         case "deep": return .deep
         case "shallow", "light": return .shallow
         case "admin": return .admin
-        default: return .deep
+        default: return .shallow
         }
     }
 

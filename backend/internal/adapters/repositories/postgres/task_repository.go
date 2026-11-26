@@ -20,6 +20,21 @@ func NewTaskRepository(db *gorm.DB) *TaskRepository {
 	return &TaskRepository{db: db}
 }
 
+// applyDueDateFallback bridges the migration 000020 backfill residual: rows
+// whose due_date stayed NULL (Apple tasks completed within the migration's
+// ±1h completion window) still carry their due date in the legacy finish_date.
+// Every task payload returned to clients must emit the resolved due date, or
+// canonical-only clients (which no longer read finishDate — #989 PR-B) would
+// wipe it on pull and lose it permanently on the next push. In-memory only:
+// nothing here is written back.
+func applyDueDateFallback(tasks []domain.Task) {
+	for i := range tasks {
+		if tasks[i].DueDate == nil {
+			tasks[i].DueDate = tasks[i].FinishDate
+		}
+	}
+}
+
 func (r *TaskRepository) ListByUser(ctx context.Context, userID string) ([]domain.Task, error) {
 	tasks := make([]domain.Task, 0)
 	err := r.db.WithContext(ctx).
@@ -30,6 +45,7 @@ func (r *TaskRepository) ListByUser(ctx context.Context, userID string) ([]domai
 	if err != nil {
 		return nil, err
 	}
+	applyDueDateFallback(tasks)
 	return tasks, nil
 }
 
@@ -56,6 +72,7 @@ func (r *TaskRepository) ListByUserPaginated(ctx context.Context, userID string,
 	if err != nil {
 		return nil, fmt.Errorf("list tasks paginated: %w", err)
 	}
+	applyDueDateFallback(tasks)
 	return tasks, nil
 }
 
@@ -121,6 +138,7 @@ func (r *TaskRepository) ListByFinishDate(ctx context.Context, userID string, da
 	if err != nil {
 		return nil, err
 	}
+	applyDueDateFallback(tasks)
 	return tasks, nil
 }
 
@@ -315,6 +333,8 @@ func (r *TaskRepository) Sync(ctx context.Context, userID string, tasks []domain
 			deleted = append(deleted, task.SyncID)
 		}
 	}
+
+	applyDueDateFallback(serverTasks)
 
 	return &ports.TaskSyncResult{
 		ServerTasks:     serverTasks,

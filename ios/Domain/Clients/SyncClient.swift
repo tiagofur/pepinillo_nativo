@@ -159,7 +159,12 @@ extension SyncClient: DependencyKey {
                         recurrenceRule: task.recurrenceRule,
                         recurringTemplateId: nil,
                         createdDate: iso.string(from: task.createdAt),
-                        finishDate: task.dueDate.map { iso.string(from: $0) },
+                        // Issue #989 PR-B: canonical fields only — finishDate
+                        // (the legacy carrier) is no longer sent.
+                        dueDate: task.dueDate.map { iso.string(from: $0) },
+                        completedAt: task.completedAt.map { iso.string(from: $0) },
+                        scheduledForToday: task.scheduledForToday,
+                        sortOrder: task.sortOrder,
                         isFinished: task.isCompleted,
                         priority: task.priority.rawValue,
                         category: nil,
@@ -369,7 +374,11 @@ extension SyncClient: DependencyKey {
                         energyLevel: task.energyLevel.rawValue.lowercased(),
                         recurrenceRule: task.recurrenceRule,
                         createdDate: iso.string(from: task.createdAt),
-                        finishDate: task.dueDate.map { iso.string(from: $0) },
+                        // Issue #989 PR-B: canonical fields only (initial upload).
+                        dueDate: task.dueDate.map { iso.string(from: $0) },
+                        completedAt: task.completedAt.map { iso.string(from: $0) },
+                        scheduledForToday: task.scheduledForToday,
+                        sortOrder: task.sortOrder,
                         isFinished: task.isCompleted,
                         priority: task.priority.rawValue,
                         estimatedPomodoros: task.estimatedPomodoros,
