@@ -44,7 +44,7 @@ struct PersistenceStoreRouterTests {
         directory: URL,
         fileName: String
     ) throws -> ModelContainer {
-        let schema = Schema(versionedSchema: SchemaV5.self)
+        let schema = Schema(versionedSchema: SchemaV7.self)
         let config = ModelConfiguration(
             schema: schema,
             url: directory.appendingPathComponent(fileName),
