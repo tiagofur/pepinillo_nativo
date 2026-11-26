@@ -3114,9 +3114,14 @@ components:
         energyLevel:
           type: ["string", "null"]
           description: >-
-            Canonical values: deep | shallow | admin. Legacy client values
-            (regular, light, low, medium, high) are normalized to the
-            canonical set on write; reads only return canonical values or null.
+            Canonical values: deep | shallow | admin. The server normalizes
+            legacy client values (regular, light, low, medium, high) to this
+            set on write (CHECK constraint) and reads only return canonical
+            values or null. Every shipped client now speaks the canonical set
+            on the wire (issue #989). The strict request enum is deferred:
+            un-updated app installs still send legacy values and oasdiff
+            flags a request enum as breaking — it lands behind a
+            contract-break label or a request/response schema split.
         recurrenceRule:
           type: ["string", "null"]
         recurringTemplateId:
