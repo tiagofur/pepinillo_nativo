@@ -13,7 +13,7 @@
 	import Segmented from '$lib/design/Segmented.svelte';
 	import Icon from '$lib/design/Icon.svelte';
 	import { groupByEnergy, PLAN_FILTERS, quickAddDefaults, type PlanFilter } from '$lib/domain/tasks/plan';
-		import type { TaskEnergy } from '$lib/domain/entities/types';
+	import type { TaskEnergy } from '$lib/domain/entities/types';
 	import { suggestEnergy } from '$lib/domain/tasks/energy';
 	import type { Task } from '$lib/domain/entities/types';
 

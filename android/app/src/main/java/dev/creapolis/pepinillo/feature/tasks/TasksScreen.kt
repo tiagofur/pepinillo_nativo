@@ -216,11 +216,15 @@ fun TasksScreen(
             // (S4) and tapping again clears it. Rows keep their start-focus.
             if (uiState.selectedFilter == TaskFilter.Today) {
                 val suggested = EnergySuggestion.suggestedLevel(LocalTime.now().hour)
-                val hasCandidates = uiState.tasks.any {
-                    !it.isCompleted && it.scheduledForToday && it.energyLevel == suggested
-                }
+                // Round 1 (judge A P3-2): candidates from the same Today
+                // universe the list uses (scheduled OR due today OR overdue) —
+                // filteredTasks is the unfiltered Today set while no energy
+                // filter is active.
+                val hasCandidates = filteredTasks.any { it.energyLevel == suggested }
                 val isSelected = uiState.energyFilter == suggested
-                val visible = hasCandidates || (uiState.energyFilter != null && isSelected)
+                // Round 1 (judge A P1-2): whenever a filter is on, the exit
+                // (chip + Show all) stays visible even if candidates vanish.
+                val visible = hasCandidates || uiState.energyFilter != null
                 if (visible) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -231,6 +235,7 @@ fun TasksScreen(
                             onClick = {
                                 viewModel.selectEnergyFilter(if (isSelected) null else suggested)
                             },
+                            modifier = Modifier.heightIn(min = 44.dp),
                             label = {
                                 Text(
                                     stringResource(R.string.energy_suggestion_chip, suggested.label),

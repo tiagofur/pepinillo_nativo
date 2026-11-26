@@ -1982,4 +1982,52 @@ struct TaskListFeatureTests {
         #expect(store.state.pendingCapturedTaskTitle == nil)
         #expect(store.state.tasks.isEmpty)
     }
+
+    // MARK: - Issue #990 (S4): suggestion-driven filtering + Today scoping
+
+    @Test func suggestedEnergyTappedFiltersToTheLevel() async {
+        let store = TestStore(initialState: TaskListFeature.State()) {
+            TaskListFeature()
+        } withDependencies: {
+            $0.persistenceClient.fetchTasks = { [] }
+        }
+
+        await store.send(.suggestedEnergyTapped(.deep)) {
+            $0.energyFilter = .deep
+        }
+        await store.send(.suggestedEnergyTapped(.admin)) {
+            $0.energyFilter = .admin
+        }
+    }
+
+    @Test func energyFilterClearedReturnsToAll() async {
+        var state = TaskListFeature.State()
+        state.energyFilter = .shallow
+        let store = TestStore(initialState: state) {
+            TaskListFeature()
+        } withDependencies: {
+            $0.persistenceClient.fetchTasks = { [] }
+        }
+
+        await store.send(.energyFilterCleared) {
+            $0.energyFilter = .all
+        }
+    }
+
+    @Test func planFilterSelectedResetsTheEnergyFilter() async {
+        var state = TaskListFeature.State()
+        state.selectedPlanFilter = .today
+        state.energyFilter = .deep
+        let store = TestStore(initialState: state) {
+            TaskListFeature()
+        } withDependencies: {
+            $0.persistenceClient.fetchTasks = { [] }
+        }
+
+        await store.send(.planFilterSelected(.inbox)) {
+            $0.selectedPlanFilter = .inbox
+            $0.energyFilter = .all
+        }
+    }
+
 }

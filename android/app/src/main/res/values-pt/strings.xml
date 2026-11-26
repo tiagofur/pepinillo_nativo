@@ -931,6 +931,6 @@
     <string name="rc_link_success_title">Compra vinculada!</string>
     <string name="rc_link_success_body">Vinculada a %1$s. Seu plano já está disponível na web.</string>
     <string name="rc_link_btn_continue">Continuar</string>
-    <string name="energy_suggestion_chip">Sugerido agora: %1$s</string>
+    <string name="energy_suggestion_chip">Filtrar por %1$s (sugerida agora)</string>
     <string name="energy_show_all">Mostrar tudo</string>
 </resources>

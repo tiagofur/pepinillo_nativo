@@ -206,6 +206,10 @@ class TasksViewModel @Inject constructor(
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), TasksUiState())
 
     fun selectFilter(filter: TaskFilter) {
+        // Issue #990 round 1 (judge A P1-2): the energy filter is Today-scoped —
+        // switching tabs must clear it (computeFilteredTasks applies it to
+        // every filter; the chip only renders on Today).
+        _energyFilter.value = null
         _selectedFilter.value = filter
     }
 

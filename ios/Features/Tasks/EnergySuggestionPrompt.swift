@@ -147,10 +147,8 @@ struct EnergySuggestionPrompt: View {
         )
         .padding(.horizontal, 16)
         .padding(.top, 8)
-        .transition(.asymmetric(
-            insertion: .move(edge: .top).combined(with: .opacity),
-            removal: .opacity
-        ))
+        // Reduce Motion (impeccable #5): fade only, no displacement.
+        .transition(.opacity)
     }
 
     private var suggestionReason: String {

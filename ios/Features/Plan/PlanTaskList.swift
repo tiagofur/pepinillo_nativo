@@ -24,7 +24,14 @@ struct PlanTaskList: View {
 
     private var filteredTasks: IdentifiedArrayOf<TaskListFeature.TaskItemState> {
         let filtered = TaskListFeature.planFilteredTasks(store.tasks, filter: filter)
-        return TaskListFeature.sortedPlanTasks(filtered, sortOrder: store.sortOrder)
+        // Issue #990 (S4/P0): the energy suggestion filter applies to the flat
+        // list and the Mac table too — grouped mode consumes it via
+        // EnergyGroupedTaskList's visibleLevels.
+        let energy = store.energyFilter
+        let energyFiltered = energy == .all
+            ? filtered
+            : filtered.filter { $0.energyLevel.rawValue == energy.rawValue }
+        return TaskListFeature.sortedPlanTasks(energyFiltered, sortOrder: store.sortOrder)
     }
 
     // MARK: - Body
@@ -136,25 +143,33 @@ struct PlanTaskList: View {
         EnergySuggestion.suggestedLevel(for: Date())
     }
 
+    // S3 candidates are computed on the UNFILTERED Today set — once the
+    // suggestion filter is active, filteredTasks is already narrowed.
+    private var todayUnfiltered: IdentifiedArrayOf<TaskListFeature.TaskItemState> {
+        let filtered = TaskListFeature.planFilteredTasks(store.tasks, filter: .today)
+        return TaskListFeature.sortedPlanTasks(filtered, sortOrder: store.sortOrder)
+    }
+
     @ViewBuilder
     private var energySuggestionPrompt: some View {
-        if filter == .today, !store.isGroupedByEnergy, !store.energySuggestionDismissed {
+        // Issue #990 round 1 (judge A P1-3): the UX brief states the active
+        // filter is NOT dismissed by the ✕ — the active bar stays mounted
+        // while filtering; only the inactive prompt honors the dismissal.
+        if filter == .today {
             let suggested = suggestedLevel
-            EnergySuggestionPrompt(
-                suggestedLevel: suggested,
-                hour: Calendar.current.component(.hour, from: Date()),
-                isActive: store.energyFilter != .all,
-                hasCandidates: store.energyFilter != .all
-                    || filteredTasks.contains { $0.energyLevel == suggested },
-                onFilter: { store.send(.suggestedEnergyTapped(suggested)) },
-                onClear: { store.send(.energyFilterCleared) },
-                onDismiss: {
-                    // The ✕ dismisses the suggestion for the session; while a
-                    // filter is active it also clears it (never a dead end).
-                    if store.energyFilter != .all { store.send(.energyFilterCleared) }
-                    store.send(.energySuggestionDismissed)
-                }
-            )
+            let isActive = store.energyFilter != .all
+            let candidates = todayUnfiltered.contains { $0.energyLevel == suggested }
+            if isActive || (!store.energySuggestionDismissed && candidates) {
+                EnergySuggestionPrompt(
+                    suggestedLevel: suggested,
+                    hour: Calendar.current.component(.hour, from: Date()),
+                    isActive: isActive,
+                    hasCandidates: true,
+                    onFilter: { store.send(.suggestedEnergyTapped(suggested)) },
+                    onClear: { store.send(.energyFilterCleared) },
+                    onDismiss: { store.send(.energySuggestionDismissed) }
+                )
+            }
         }
     }
 
@@ -169,11 +184,12 @@ struct PlanTaskList: View {
                 .frame(maxHeight: .infinity)
         } else if filter == .today {
             // Issue #990: the suggestion sits above Today's list, grouped or
-            // flat (S2); while filtering, the empty state keeps "Show all"
-            // reachable (never a dead end).
+            // flat (S2). The empty state renders whenever there are no tasks
+            // — with the filter active, "Show all" stays reachable above
+            // (round 1, judge A/B: never a blank list on first launch).
             VStack(spacing: 8) {
                 energySuggestionPrompt
-                if store.energyFilter != .all && tasks.isEmpty {
+                if tasks.isEmpty {
                     PepinilloEmptyState(
                         title: emptyTitle,
                         description: emptyDescription,

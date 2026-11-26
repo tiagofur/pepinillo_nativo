@@ -176,30 +176,32 @@ struct MacPlanView: View {
         if store.isLoading && !store.hasLoadedData {
             ProgressView()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-        } else if tasks.isEmpty && store.energyFilter == .all {
+        } else if tasks.isEmpty {
             emptyState
         } else {
             // Issue #990: the energy suggestion sits above the Plan table on
             // Today (system material — Plan is matte, no glass per design.md).
+            // Round 1 (judge A/B): the active bar stays mounted while the
+            // filter is on; only the inactive prompt honors the dismissal.
             VStack(spacing: 8) {
-                if filter == .today, !store.energySuggestionDismissed {
+                if filter == .today {
                     let suggested = EnergySuggestion.suggestedLevel(for: Date())
-                    EnergySuggestionPrompt(
-                        suggestedLevel: suggested,
-                        hour: Calendar.current.component(.hour, from: Date()),
-                        isActive: store.energyFilter != .all,
-                        hasCandidates: store.energyFilter != .all
-                            || tasks.contains { $0.energyLevel == suggested },
-                        onFilter: { store.send(.suggestedEnergyTapped(suggested)) },
-                        onClear: { store.send(.energyFilterCleared) },
-                        onDismiss: {
-                            if store.energyFilter != .all { store.send(.energyFilterCleared) }
-                            store.send(.energySuggestionDismissed)
-                        }
-                    )
+                    let isActive = store.energyFilter != .all
+                    let candidates = unfilteredToday.contains { $0.energyLevel == suggested }
+                    if isActive || (!store.energySuggestionDismissed && candidates) {
+                        EnergySuggestionPrompt(
+                            suggestedLevel: suggested,
+                            hour: Calendar.current.component(.hour, from: Date()),
+                            isActive: isActive,
+                            hasCandidates: true,
+                            onFilter: { store.send(.suggestedEnergyTapped(suggested)) },
+                            onClear: { store.send(.energyFilterCleared) },
+                            onDismiss: { store.send(.energySuggestionDismissed) }
+                        )
+                    }
                 }
                 if tasks.isEmpty {
-                    // Filtering emptied the list: keep "Show all" reachable above.
+                    // Filtering emptied the list: "Show all" stays reachable above.
                     emptyState
                 } else {
                     taskTable(tasks: tasks)
@@ -786,6 +788,12 @@ struct MacPlanView: View {
 
     // MARK: - Derived data
 
+    // Issue #990 (S3): candidates computed on the unfiltered Today set — once
+    // the suggestion filter is active, filteredTasks is already narrowed.
+    private var unfilteredToday: IdentifiedArrayOf<TaskListFeature.TaskItemState> {
+        TaskListFeature.planFilteredTasks(store.tasks, filter: .today)
+    }
+
     private var filteredTasks: IdentifiedArrayOf<TaskListFeature.TaskItemState> {
         let base: IdentifiedArrayOf<TaskListFeature.TaskItemState>
         switch filter {
@@ -801,12 +809,21 @@ struct MacPlanView: View {
             base = TaskListFeature.planFilteredTasks(store.tasks, filter: .completed)
         }
 
+        // Issue #990 (S4/P0): the energy filter applies to the Mac table too
+        // (grouped mode consumes it via EnergyGroupedTaskList's visibleLevels).
+        let energy = store.energyFilter
+        let energyBase: IdentifiedArrayOf<TaskListFeature.TaskItemState> = energy == .all
+            ? base
+            : IdentifiedArrayOf(uniqueElements: base.filter {
+                $0.energyLevel.rawValue == energy.rawValue
+            })
+
         let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
         let matching: IdentifiedArrayOf<TaskListFeature.TaskItemState>
         if query.isEmpty {
-            matching = base
+            matching = energyBase
         } else {
-            matching = IdentifiedArrayOf(uniqueElements: base.filter { task in
+            matching = IdentifiedArrayOf(uniqueElements: energyBase.filter { task in
                 task.title.localizedCaseInsensitiveContains(query)
                     || (task.notes?.localizedCaseInsensitiveContains(query) ?? false)
             })
