@@ -44,6 +44,10 @@ struct AppFeatureIntegrationTests {
         } withDependencies: {
             $0.persistenceClient.resolveAchievements = { derived in derived }
             $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
+            // Issue #986: sin este mock, efectos escapados de tests de
+            // suscripción hermanos consultan hasTokens fuera de scope durante
+            // este test (el suite dejó de correr en CI por el hueco de filtros).
+            $0.keychainClient.hasTokens = { true }
         }
 
         await store.send(.appURLReceived(try #require(URL(string: "pepinillo://plan")))) {
@@ -922,6 +926,10 @@ struct AppFeatureIntegrationTests {
         } withDependencies: {
             $0.persistenceClient.resolveAchievements = { derived in derived }
             $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
+            // Issue #986: sin este mock, efectos escapados de tests de
+            // suscripción hermanos consultan hasTokens fuera de scope durante
+            // este test (el suite dejó de correr en CI por el hueco de filtros).
+            $0.keychainClient.hasTokens = { true }
         }
 
         await store.send(.celebrationTriggered(.streakDay(7))) {
