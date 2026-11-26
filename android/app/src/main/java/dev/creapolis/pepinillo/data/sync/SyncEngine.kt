@@ -271,9 +271,17 @@ class SyncEngine @Inject constructor(
                     // waiting for the next incremental pull. Rows dirtied while the
                     // upload was in flight are skipped — their newer edit wins.
                     val currentlyDirty = taskDao.getDirtyTasks().map { it.id }.toSet()
+                    // #991 r1: plannedDate is local-only until PR-D puts it on the wire.
+                    // This converge re-upserts the echoed rows full-row (REPLACE) right
+                    // after mergeServerTasks preserved their local plan — re-attach it
+                    // by syncId or the initial-upload flow wipes it.
+                    val planBySyncId = allTasks.associate { it.id to it.plannedDate }
                     val mergedTaskEntities = response.tasks
                         .filter { it.syncId.isNotEmpty() && it.syncId !in currentlyDirty }
-                        .map { it.toEntity() }
+                        .map { dto ->
+                            val entity = dto.toEntity()
+                            entity.copy(plannedDate = entity.plannedDate ?: planBySyncId[dto.syncId])
+                        }
                     if (mergedTaskEntities.isNotEmpty()) {
                         taskDao.upsertAll(mergedTaskEntities)
                     }

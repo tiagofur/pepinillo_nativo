@@ -498,6 +498,53 @@ class SyncEngineTest {
         coVerify { preferenceSyncDao.getDirtyPreferences() }
     }
 
+    @Test
+    fun `initialUpload converge preserves local plannedDate until it travels on the wire`() = runTest {
+        every { authStore.getAccessToken() } returns "valid-token"
+        every { authStore.getOrCreateDeviceId() } returns "device-1"
+        every { authStore.getUserId() } returns "user-1"
+
+        val friday = 1_795_113_600_000L
+        val task = TaskEntity(
+            id = "task-planned",
+            title = "Planned",
+            createdAt = 1000L,
+            updatedAt = 2000L,
+            plannedDate = friday,
+        )
+        coEvery { taskDao.getAllTasksSync() } returns listOf(task)
+        coEvery { subtaskDao.getSubtasksForTaskSync(any()) } returns emptyList()
+        coEvery { sessionDao.getAllSessionsSync() } returns emptyList()
+        coEvery { preferenceSyncDao.getDirtyPreferences() } returns emptyList()
+        coEvery { taskDao.getDirtyTasks() } returns emptyList()
+        // mergeServerTasks resolves by syncId first — pin null so the echo is
+        // inserted fresh (relaxed mocks would fabricate plannedDate = 0).
+        coEvery { taskDao.getTaskById("task-planned") } returns null
+        coEvery { taskDao.getTaskByServerId(7) } returns null
+
+        val upsertSlot = slot<List<TaskEntity>>()
+        coEvery { taskDao.upsertAll(capture(upsertSlot)) } returns Unit
+
+        // The server echoes the uploaded row; its DTO cannot carry plannedDate yet.
+        coEvery { apiClient.initialUpload(any()) } returns NetworkResult.Success(
+            dev.creapolis.pepinillo.core.network.InitialUploadResponse(
+                tasks = listOf(
+                    TaskDto(id = 7, syncId = "task-planned", title = "Planned", updatedAt = "2025-01-01T00:00:00Z"),
+                ),
+                sessions = emptyList(),
+                settings = emptyList(),
+                serverTimestamp = "2025-01-01T00:00:00Z",
+                hasExistingData = false,
+            ),
+        )
+
+        val result = syncEngine.initialUpload()
+        assertTrue(result is InitialUploadResult.Success)
+
+        assertTrue("the converge upsert must run", upsertSlot.isCaptured)
+        assertEquals("converge must re-attach the local plan (#991 r2)", friday, upsertSlot.captured.first().plannedDate)
+    }
+
     // -----------------------------------------------------------------------
     // initialUpload -- returns hasExistingData correctly
     // -----------------------------------------------------------------------
