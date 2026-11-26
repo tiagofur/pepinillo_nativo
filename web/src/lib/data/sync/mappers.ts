@@ -90,6 +90,12 @@ export function taskToRemote(task: Task): RemoteTask {
 		...(subtasks.length > 0
 			? {
 					subTasks: subtasks.map((s) => ({
+						// Known server subtasks carry their id (`srv-<n>`): the
+						// sync upsert's association save UPDATES by primary key —
+						// a zero id would be re-INSERTed, duplicating the list on
+						// every winning web edit. Web-authored subtasks (no srv-
+						// prefix) insert once and gain ids on the next pull.
+						...(s.id.startsWith('srv-') ? { id: Number(s.id.slice(4)) } : {}),
 						title: s.title,
 						isFinished: s.isCompleted
 					}))
