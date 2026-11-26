@@ -385,6 +385,9 @@ struct MacPlanView: View {
 
     private func dueText(for task: TaskListFeature.TaskItemState) -> String {
         guard let dueDate = task.dueDate else {
+            if let planned = task.plannedDate {
+                return taskPlanningValueText(planned)
+            }
             return task.scheduledForToday ? String(localized: "Today") : "—"
         }
 
@@ -473,12 +476,31 @@ struct MacPlanView: View {
                 }
             }
 
-            Button(String(localized: "Move to Today")) {
-                for id in ids {
-                    store.send(.taskScheduledForToday(id, true))
+            // «Planificar para…» (issue #991 S4) — multi-selection like the old pin.
+            Menu(String(localized: "Schedule for…")) {
+                Button(String(localized: "Today")) {
+                    for id in ids {
+                        store.send(.taskPlannedDateChanged(id, TaskPlanning.plannedDay(.now)))
+                    }
                 }
+                Button(String(localized: "Tomorrow")) {
+                    for id in ids {
+                        store.send(.taskPlannedDateChanged(id, TaskPlanning.tomorrow()))
+                    }
+                }
+                Button(String(localized: "This Weekend")) {
+                    for id in ids {
+                        store.send(.taskPlannedDateChanged(id, TaskPlanning.upcomingWeekend()))
+                    }
+                }
+                Divider()
+                Button(String(localized: "Remove Date"), role: .destructive) {
+                    for id in ids {
+                        store.send(.taskPlannedDateChanged(id, nil))
+                    }
+                }
+                .disabled(tasks.allSatisfy { $0.plannedDate == nil })
             }
-            .disabled(tasks.allSatisfy(\.scheduledForToday))
 
             Divider()
 

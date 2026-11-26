@@ -27,6 +27,9 @@ public struct TaskItemDTO: Sendable, Equatable, Identifiable {
     public let isRecurringTemplate: Bool
     public let dueDate: Date?
     public let scheduledForToday: Bool
+    /// Local calendar day (start of day) the user plans to work on this —
+    /// replaces `scheduledForToday` (issue #991 S1).
+    public let plannedDate: Date?
     public let completedAt: Date?
     public let createdAt: Date
 
@@ -54,6 +57,7 @@ public struct TaskItemDTO: Sendable, Equatable, Identifiable {
         isRecurringTemplate: Bool = false,
         dueDate: Date? = nil,
         scheduledForToday: Bool = false,
+        plannedDate: Date? = nil,
         completedAt: Date? = nil,
         createdAt: Date = .now,
         syncId: String = UUID().uuidString,
@@ -78,6 +82,7 @@ public struct TaskItemDTO: Sendable, Equatable, Identifiable {
         self.isRecurringTemplate = isRecurringTemplate
         self.dueDate = dueDate
         self.scheduledForToday = scheduledForToday
+        self.plannedDate = plannedDate
         self.completedAt = completedAt
         self.createdAt = createdAt
         self.syncId = syncId
@@ -108,6 +113,7 @@ public struct TaskItemDTO: Sendable, Equatable, Identifiable {
         self.isRecurringTemplate = task.isRecurringTemplate
         self.dueDate = task.dueDate
         self.scheduledForToday = task.scheduledForToday
+        self.plannedDate = task.plannedDate
         self.completedAt = task.completedAt
         self.createdAt = task.createdAt
         self.syncId = task.syncId
@@ -124,7 +130,9 @@ public struct TaskItemDTO: Sendable, Equatable, Identifiable {
         title: String? = nil,
         isCompleted: Bool? = nil,
         energyLevel: EnergyLevel? = nil,
-        priority: TaskPriority? = nil
+        priority: TaskPriority? = nil,
+        plannedDate: (Date?)? = nil,
+        scheduledForToday: Bool? = nil
     ) -> TaskItemDTO {
         TaskItemDTO(
             id: id,
@@ -141,7 +149,8 @@ public struct TaskItemDTO: Sendable, Equatable, Identifiable {
             recurrenceRule: recurrenceRule,
             isRecurringTemplate: isRecurringTemplate,
             dueDate: dueDate,
-            scheduledForToday: scheduledForToday,
+            scheduledForToday: scheduledForToday ?? self.scheduledForToday,
+            plannedDate: plannedDate ?? self.plannedDate,
             completedAt: completedAt,
             createdAt: createdAt,
             syncId: syncId,

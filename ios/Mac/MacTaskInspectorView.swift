@@ -17,6 +17,7 @@ struct MacTaskInspectorView: View {
     var onToggleCompletion: (UUID) -> Void
 
     @FocusState private var focusedField: Field?
+    @State private var showsPlanningPicker = false
 
     private enum Field: Hashable {
         case title
@@ -205,11 +206,32 @@ struct MacTaskInspectorView: View {
                 .accessibilityValue("\(store.estimatedPomodoros)")
             }
 
-            Toggle(isOn: Binding(
-                get: { store.scheduledForToday },
-                set: { store.send(.scheduledForTodayChanged($0)) }
-            )) {
-                Text(String(localized: "Scheduled for Today"))
+            // «Planificar para…» (issue #991 S4) replaces the binary toggle.
+            HStack {
+                Text(String(localized: "Schedule for…"))
+                Spacer()
+                Text(taskPlanningValueText(store.plannedDate))
+                    .foregroundStyle(store.plannedDate == nil ? Color.secondary : Color.primary)
+                TaskPlanningMenu(plannedDate: store.plannedDate) { date in
+                    store.send(.planningDateChanged(date))
+                } onPickDate: {
+                    showsPlanningPicker.toggle()
+                } label: {
+                    Image(systemName: "chevron.up.chevron.down")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            if showsPlanningPicker {
+                DatePicker(
+                    String(localized: "Schedule for…"),
+                    selection: Binding(
+                        get: { store.plannedDate ?? .now },
+                        set: { store.send(.planningDateChanged($0)) }
+                    ),
+                    displayedComponents: [.date]
+                )
             }
 
             dueDateRow

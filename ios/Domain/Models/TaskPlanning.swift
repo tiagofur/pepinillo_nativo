@@ -65,6 +65,29 @@ public enum TaskPlanning {
         calendar.startOfDay(for: date)
     }
 
+    /// Start of tomorrow in the local calendar (S5 quick add from «Próximas»).
+    public static func tomorrow(from date: Date = Date(), calendar: Calendar = .current) -> Date {
+        calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: date))!
+    }
+
+    /// The coming Saturday — «Este fin de semana» (S4). If today is Saturday or
+    /// Sunday the plan lands on NEXT weekend's Saturday (the current one is over).
+    public static func upcomingWeekend(from date: Date = Date(), calendar: Calendar = .current) -> Date {
+        let today = calendar.startOfDay(for: date)
+        let weekday = calendar.component(.weekday, from: today)  // 1 = Sunday … 7 = Saturday
+        let daysUntilSaturday = (7 - weekday) % 7
+        return calendar.date(byAdding: .day, value: daysUntilSaturday == 0 ? 7 : daysUntilSaturday, to: today)!
+    }
+
+    /// Derived value of the legacy `scheduledForToday` boolean for a written
+    /// planned date (S9 compat: old installs and pre-PR-C surfaces read the
+    /// flag). True while the plan is today or already past — a postponed task
+    /// keeps the flag, so legacy «Hoy» surfaces keep showing it (S6).
+    public static func legacyFlag(plannedDate: Date?, now: Date = Date(), calendar: Calendar = .current) -> Bool {
+        guard let plannedDate else { return false }
+        return isOnOrBefore(plannedDate, now, calendar: calendar)
+    }
+
     // MARK: - Day comparisons
 
     static func isOnOrBefore(_ date: Date, _ reference: Date, calendar: Calendar) -> Bool {

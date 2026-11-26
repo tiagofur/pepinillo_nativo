@@ -205,4 +205,37 @@ struct TaskDetailFeatureTests {
             #expect($0.mutationError != nil)
         }
     }
+    @Test("planningDateChanged writes the planned day and derives the legacy flag (#991 S4)")
+    func planningDateChangedUpdatesPlanning() async {
+        let taskID = UUID(9)
+        var state = detailState(taskID: taskID)
+        state.plannedDate = nil
+        let friday = Calendar.current.date(byAdding: .day, value: 3, to: Calendar.current.startOfDay(for: .now))!
+
+        let saved = LockIsolated<TaskItemDTO?>(nil)
+        let store = TestStore(initialState: state) {
+            TaskDetailFeature()
+        } withDependencies: {
+            $0.persistenceClient.saveTask = { saved.setValue($0) }
+        }
+
+        store.exhaustivity = .off
+        await store.send(.planningDateChanged(friday)) {
+            $0.plannedDate = TaskPlanning.plannedDay(friday)
+            // Future plan derives flag = false (pre-PR-C surfaces stay truthful).
+            $0.scheduledForToday = false
+        }
+
+        #expect(saved.value?.plannedDate == TaskPlanning.plannedDay(friday))
+        #expect(saved.value?.scheduledForToday == false)
+
+        let today = Calendar.current.startOfDay(for: .now)
+        await store.send(.planningDateChanged(today)) {
+            $0.plannedDate = today
+            $0.scheduledForToday = true
+        }
+        #expect(saved.value?.plannedDate == today)
+        #expect(saved.value?.scheduledForToday == true)
+    }
+
 }

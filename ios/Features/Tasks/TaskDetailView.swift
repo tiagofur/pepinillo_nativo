@@ -241,17 +241,40 @@ struct TaskDetailView: View {
         }
     }
 
+    @State private var showsPlanningPicker = false
+
     private var schedulingSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Toggle(isOn: Binding(
-                get: { store.scheduledForToday },
-                set: { store.send(.scheduledForTodayChanged($0)) }
-            )) {
-                Label(String(localized: "Focus Today"), systemImage: "bolt.fill")
+            // «Planificar para…» (issue #991 S4) replaces the binary toggle.
+            HStack {
+                Label(String(localized: "Schedule for…"), systemImage: "calendar.badge.clock")
                     .font(.body.weight(.semibold))
+                Spacer()
+                Text(taskPlanningValueText(store.plannedDate))
+                    .foregroundStyle(store.plannedDate == nil ? Color.secondary : Color.primary)
+                TaskPlanningMenu(plannedDate: store.plannedDate) { date in
+                    store.send(.planningDateChanged(date))
+                } onPickDate: {
+                    withAnimation { showsPlanningPicker.toggle() }
+                } label: {
+                    Image(systemName: "chevron.up.chevron.down")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .frame(minWidth: 28, minHeight: 28)
+                }
             }
-            .toggleStyle(.switch)
-            .tint(.orange)
+
+            if showsPlanningPicker {
+                DatePicker(
+                    String(localized: "Schedule for…"),
+                    selection: Binding(
+                        get: { store.plannedDate ?? .now },
+                        set: { store.send(.planningDateChanged($0)) }
+                    ),
+                    displayedComponents: [.date]
+                )
+                .datePickerStyle(.graphical)
+            }
 
             Divider()
                 .opacity(0.1)

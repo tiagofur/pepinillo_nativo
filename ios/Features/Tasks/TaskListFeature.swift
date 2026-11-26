@@ -70,6 +70,7 @@ struct TaskListFeature {
         var isRecurringTemplate: Bool
         var dueDate: Date?
         var scheduledForToday: Bool
+        var plannedDate: Date?
         var sortOrder: Int
         var createdAt: Date
 
@@ -94,6 +95,7 @@ struct TaskListFeature {
                 isRecurringTemplate: dto.isRecurringTemplate,
                 dueDate: dto.dueDate,
                 scheduledForToday: dto.scheduledForToday,
+                plannedDate: dto.plannedDate,
                 sortOrder: dto.sortOrder,
                 createdAt: dto.createdAt
             )
@@ -114,6 +116,7 @@ struct TaskListFeature {
                 isRecurringTemplate: isRecurringTemplate,
                 dueDate: dueDate,
                 scheduledForToday: scheduledForToday,
+                plannedDate: plannedDate,
                 completedAt: completedAt,
                 createdAt: createdAt
             )
@@ -222,6 +225,7 @@ struct TaskListFeature {
         case priorityChanged(UUID, TaskPriority)
         case recurrenceChanged(UUID, String?)
         case taskScheduledForToday(UUID, Bool)
+        case taskPlannedDateChanged(UUID, Date?)
         case startFocusOnTask(UUID)
         case groupByEnergyToggled
         case energySuggestionDismissed
@@ -329,7 +333,8 @@ struct TaskListFeature {
                         isCompleted: task.isCompleted, priority: task.priority,
                         energyLevel: task.energyLevel, estimatedPomodoros: task.estimatedPomodoros,
                         completedPomodoros: task.completedPomodoros, sortOrder: task.sortOrder,
-                        dueDate: task.dueDate, scheduledForToday: task.scheduledForToday
+                        dueDate: task.dueDate, scheduledForToday: task.scheduledForToday,
+                        plannedDate: task.plannedDate
                     )
                 }
                 return .merge(
@@ -427,7 +432,10 @@ struct TaskListFeature {
                     recurrenceRule: nil,
                     isRecurringTemplate: false,
                     dueDate: quickAddDefaults.dueDate,
-                    scheduledForToday: quickAddDefaults.scheduledForToday,
+                    scheduledForToday: TaskPlanning.legacyFlag(
+                        plannedDate: quickAddDefaults.plannedDate, now: now
+                    ),
+                    plannedDate: quickAddDefaults.plannedDate,
                     sortOrder: sortOrder,
                     createdAt: now
                 )
@@ -446,7 +454,10 @@ struct TaskListFeature {
                         title: title,
                         sortOrder: sortOrder,
                         dueDate: quickAddDefaults.dueDate,
-                        scheduledForToday: quickAddDefaults.scheduledForToday,
+                        scheduledForToday: TaskPlanning.legacyFlag(
+                            plannedDate: quickAddDefaults.plannedDate, now: now
+                        ),
+                        plannedDate: quickAddDefaults.plannedDate,
                         createdAt: now
                     )
                     do {
@@ -785,7 +796,8 @@ struct TaskListFeature {
                                 energyLevel: item.energyLevel, estimatedPomodoros: item.estimatedPomodoros,
                                 completedPomodoros: item.completedPomodoros, sortOrder: item.sortOrder,
                                 recurrenceRule: rule, isRecurringTemplate: rule != nil,
-                                dueDate: item.dueDate, scheduledForToday: item.scheduledForToday
+                                dueDate: item.dueDate, scheduledForToday: item.scheduledForToday,
+                                plannedDate: item.plannedDate
                             )
                             try await persistence.saveTask(updated)
                             WidgetCenter.shared.reloadTimelines(ofKind: "TasksHomeScreenWidget")
@@ -799,29 +811,26 @@ struct TaskListFeature {
                 }
 
             case .taskScheduledForToday(let id, let scheduled):
-                guard let snapshot = state.tasks[id: id] else { return .none }
-                state.tasks[id: id]?.scheduledForToday = scheduled
-                return .run { send in
-                    do {
-                        if let item = try await persistence.fetchTask(id) {
-                            let updated = TaskItemDTO(
-                                id: item.id, title: item.title, notes: item.notes,
-                                isCompleted: item.isCompleted, priority: item.priority,
-                                energyLevel: item.energyLevel, estimatedPomodoros: item.estimatedPomodoros,
-                                completedPomodoros: item.completedPomodoros, sortOrder: item.sortOrder,
-                                recurrenceRule: item.recurrenceRule, isRecurringTemplate: item.isRecurringTemplate,
-                                dueDate: item.dueDate, scheduledForToday: scheduled
-                            )
-                            try await persistence.saveTask(updated)
-                            WidgetCenter.shared.reloadTimelines(ofKind: "TasksHomeScreenWidget")
-                        }
-                    } catch {
-                        await send(.mutationFailed(.update(
-                            task: snapshot,
-                            message: error.localizedDescription
-                        )))
-                    }
-                }
+                // The list gesture stays the one-tap «Hoy» shortcut (S4): today's
+                // plan or none — full-fidelity write via `updating` (issue #178).
+                let today = TaskPlanning.plannedDay(date.now)
+                return Self.persistPlannedDate(
+                    id: id,
+                    planned: scheduled ? today : nil,
+                    now: date.now,
+                    state: &state,
+                    persistence: persistence
+                )
+
+            case .taskPlannedDateChanged(let id, let newDate):
+                let planned = newDate.map { TaskPlanning.plannedDay($0) }
+                return Self.persistPlannedDate(
+                    id: id,
+                    planned: planned,
+                    now: date.now,
+                    state: &state,
+                    persistence: persistence
+                )
 
             case .groupByEnergyToggled:
                 state.isGroupedByEnergy.toggle()
@@ -1018,6 +1027,7 @@ struct TaskListFeature {
                         state.detail?.priority = task.priority
                         state.detail?.recurrenceRule = task.recurrenceRule
                         state.detail?.scheduledForToday = task.scheduledForToday
+                        state.detail?.plannedDate = task.plannedDate
                     }
                     state.mutationError = message
                 }
@@ -1047,21 +1057,53 @@ struct TaskListFeature {
         String(title.trimmingCharacters(in: .whitespacesAndNewlines).prefix(200))
     }
 
+    /// Writes a planned date full-fidelity: fetch → `updating` (never a partial
+    /// DTO rebuild, issue #178) → save. The legacy `scheduledForToday` boolean
+    /// is derived so pre-PR-C surfaces (widget, Siri, Mac Today) keep reading a
+    /// true «Hoy» until they switch to the unified rule (issue #991).
+    static func persistPlannedDate(
+        id: UUID,
+        planned: Date?,
+        now: Date,
+        state: inout State,
+        persistence: PersistenceClient
+    ) -> Effect<Action> {
+        guard let snapshot = state.tasks[id: id] else { return .none }
+        let flag = TaskPlanning.legacyFlag(plannedDate: planned, now: now)
+        state.tasks[id: id]?.plannedDate = planned
+        state.tasks[id: id]?.scheduledForToday = flag
+        return .run { send in
+            do {
+                if let item = try await persistence.fetchTask(id) {
+                    let updated = item.updating(
+                        plannedDate: .some(planned),
+                        scheduledForToday: flag
+                    )
+                    try await persistence.saveTask(updated)
+                    WidgetCenter.shared.reloadTimelines(ofKind: "TasksHomeScreenWidget")
+                }
+            } catch {
+                await send(.mutationFailed(.update(
+                    task: snapshot,
+                    message: error.localizedDescription
+                )))
+            }
+        }
+    }
+
     /// Default scheduling fields for Plan quick-add based on the active filter (issue #180).
+    /// S5 (#991): Upcoming inherits a planned date, not a deadline.
     static func planQuickAddDefaults(
         for filter: PlanFilter,
         now: Date = .now
-    ) -> (scheduledForToday: Bool, dueDate: Date?) {
-        let cal = Calendar.current
+    ) -> (plannedDate: Date?, dueDate: Date?) {
         switch filter {
         case .today:
-            return (true, nil)
+            return (TaskPlanning.plannedDay(now), nil)
         case .inbox, .completed:
-            return (false, nil)
+            return (nil, nil)
         case .upcoming:
-            let startOfToday = cal.startOfDay(for: now)
-            let dueDate = cal.date(byAdding: .day, value: 1, to: startOfToday)
-            return (false, dueDate)
+            return (TaskPlanning.tomorrow(from: now), nil)
         }
     }
 
@@ -1115,28 +1157,28 @@ struct TaskListFeature {
     ) -> IdentifiedArrayOf<TaskItemState> {
         // Recurring templates are series anchors — instances appear in Plan lists (#188).
         let visible = tasks.filter { !$0.isRecurringTemplate }
-        let cal = Calendar.current
-        switch filter {
-        case .today:
-            let startOfToday = cal.startOfDay(for: now)
-            return visible.filter { task in
-                guard !task.isCompleted else { return false }
-                if task.scheduledForToday { return true }
-                guard let due = task.dueDate else { return false }
-                return cal.isDate(due, inSameDayAs: now) || due < startOfToday
+        // Unified «Hoy» rule (issue #991 S2): one resolver for the whole app.
+        return visible.filter { task in
+            let bucket = TaskPlanning.bucket(
+                plannedDate: task.plannedDate,
+                dueDate: task.dueDate,
+                scheduledForToday: task.scheduledForToday,
+                isCompleted: task.isCompleted,
+                now: now
+            )
+            switch (filter, bucket) {
+            case (.today, .today):
+                return true
+            case (.inbox, .inbox):
+                return true
+            case (.upcoming, .upcoming):
+                // #182: no one-week cap — Upcoming holds every future date.
+                return true
+            case (.completed, .completed):
+                return true
+            default:
+                return false
             }
-        case .inbox:
-            return visible.filter { !$0.isCompleted && !$0.scheduledForToday && $0.dueDate == nil }
-        case .upcoming:
-            let startOfToday = cal.startOfDay(for: now)
-            return visible.filter { task in
-                guard !task.isCompleted, !task.scheduledForToday, let due = task.dueDate else { return false }
-                // All future dues (strictly after today). Issue #182: tasks due beyond 7 days
-                // were invisible because Upcoming capped at one week.
-                return due > startOfToday && !cal.isDate(due, inSameDayAs: now)
-            }
-        case .completed:
-            return visible.filter { $0.isCompleted }
         }
     }
 }

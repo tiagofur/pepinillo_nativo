@@ -616,8 +616,8 @@ struct PersistenceServiceTests {
         #expect(try service.fetchSessionCount(from: future) == 0)
     }
 
-    @Test("normalizeScheduledForToday clears stale manual Today pins (#190)")
-    func normalizeScheduledForTodayClearsStalePins() throws {
+    @Test("normalizeScheduledForToday re-derives the flag from the planned date (#991 S6)")
+    func normalizeScheduledForTodayReDerivesFlag() throws {
         let dir = FileManager.default.temporaryDirectory
             .appendingPathComponent("pepinillo-test-normalize-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
@@ -633,23 +633,39 @@ struct PersistenceServiceTests {
         let now = Date(timeIntervalSince1970: 1_700_000_000)
         let startOfToday = cal.startOfDay(for: now)
         let yesterday = cal.date(byAdding: .day, value: -1, to: startOfToday)!
+        let tomorrow = cal.date(byAdding: .day, value: 1, to: startOfToday)!
 
-        let stale = TaskItem(title: "Pinned yesterday")
-        stale.scheduledForToday = true
-        stale.updatedAt = yesterday
-        context.insert(stale)
+        // Postponed plan (S6): the flag STAYS — the task keeps its «Hoy» slot.
+        let postponed = TaskItem(title: "Planned yesterday")
+        postponed.plannedDate = yesterday
+        postponed.scheduledForToday = true
+        context.insert(postponed)
 
-        let dueToday = TaskItem(title: "Due today")
-        dueToday.scheduledForToday = true
-        dueToday.dueDate = startOfToday
-        dueToday.updatedAt = yesterday
-        context.insert(dueToday)
+        // Future plan: the flag stays off until its day comes.
+        let future = TaskItem(title: "Planned tomorrow")
+        future.plannedDate = tomorrow
+        future.scheduledForToday = false
+        context.insert(future)
+
+        // Legacy residue (boolean-only, pre-#991): the old #190 clearing applies.
+        let staleLegacy = TaskItem(title: "Pinned yesterday, no plan")
+        staleLegacy.scheduledForToday = true
+        staleLegacy.updatedAt = yesterday
+        context.insert(staleLegacy)
+
+        let legacyDueToday = TaskItem(title: "Legacy due today")
+        legacyDueToday.scheduledForToday = true
+        legacyDueToday.dueDate = startOfToday
+        legacyDueToday.updatedAt = yesterday
+        context.insert(legacyDueToday)
         try context.save()
 
         try service.normalizeScheduledForToday(now: now)
 
-        #expect(stale.scheduledForToday == false)
-        #expect(dueToday.scheduledForToday == true)
+        #expect(postponed.scheduledForToday == true, "S6: past plans keep the flag")
+        #expect(future.scheduledForToday == false, "future plans keep the flag off")
+        #expect(staleLegacy.scheduledForToday == false, "legacy residue still expires (#190)")
+        #expect(legacyDueToday.scheduledForToday == true, "legacy due-today keeps its pin")
     }
 
     // MARK: - AchievementRecord persistence (S1-S2)

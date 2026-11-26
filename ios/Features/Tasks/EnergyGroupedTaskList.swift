@@ -124,6 +124,9 @@ struct EnergyGroupedTaskList: View {
     @Bindable var store: StoreOf<TaskListFeature>
     let filteredTasks: IdentifiedArrayOf<TaskListFeature.TaskItemState>
     let currentDate: Date
+    // «Elegir fecha…» (issue #991 S4) — view-local sheet state.
+    @State private var planPickDateTarget: PlanPickTarget?
+    @State private var planPickDateDraft: Date = .now
 
     // Sections order: deep first (highest cognitive demand), then shallow, then admin
     private let sectionOrder: [EnergyLevel] = [.deep, .shallow, .admin]
@@ -181,6 +184,13 @@ struct EnergyGroupedTaskList: View {
                             onScheduledForTodayToggled: {
                                 store.send(.taskScheduledForToday(task.id, !task.scheduledForToday))
                             },
+                            onPlannedDateChanged: { date in
+                                store.send(.taskPlannedDateChanged(task.id, date))
+                            },
+                            onPickDateTapped: {
+                                planPickDateDraft = task.plannedDate ?? .now
+                                planPickDateTarget = PlanPickTarget(id: task.id)
+                            },
                             onEnergyChanged: { newLevel in
                                 store.send(.energyLevelChanged(task.id, newLevel))
                             },
@@ -229,5 +239,13 @@ struct EnergyGroupedTaskList: View {
         .animation(.smooth(duration: 0.3), value: filteredTasks.map(\.id))
         .animation(.smooth(duration: 0.2), value: store.energySuggestionDismissed)
         .refreshable { store.send(.refresh) }
+        .sheet(item: $planPickDateTarget) { targetID in
+            PlanDatePickerSheet(draft: $planPickDateDraft) { confirmed in
+                store.send(.taskPlannedDateChanged(targetID.id, confirmed))
+                planPickDateTarget = nil
+            } onCancel: {
+                planPickDateTarget = nil
+            }
+        }
     }
 }

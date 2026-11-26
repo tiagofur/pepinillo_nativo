@@ -432,16 +432,16 @@ public final class SwiftDataPersistenceService {
     // MARK: - Recurring Tasks
 
     /// Generates task instances from recurring templates whose nextOccurrence <= today.
-    /// Clears stale `scheduledForToday` flags after midnight (#190).
-    /// Manual Today pins (no due date) expire when `updatedAt` is before today.
-    /// Tasks with a future due date drop the sticky flag; overdue tasks rely on `dueDate`.
+    /// Re-derives the legacy `scheduledForToday` flag from `plannedDate` after
+    /// midnight (issue #991 S6 — supersedes the #190 rollover: past plans KEEP
+    /// the flag so postponed tasks stay visible; future plans pick the flag up
+    /// the day they come due, which pre-PR-C widget/Siri surfaces still read).
+    /// The old semantics (clearing pins at midnight) retired with the boolean.
     public func normalizeScheduledForToday(now: Date = .now) throws {
         let cal = Calendar.current
-        let startOfToday = cal.startOfDay(for: now)
         let descriptor = FetchDescriptor<TaskItem>(
             predicate: #Predicate {
-                $0.scheduledForToday == true
-                    && $0.isCompleted == false
+                $0.isCompleted == false
                     && $0.isLocallyDeleted == false
             }
         )
@@ -449,14 +449,28 @@ public final class SwiftDataPersistenceService {
         guard !tasks.isEmpty else { return }
 
         var changed = false
+        let startOfToday = cal.startOfDay(for: now)
         for task in tasks {
-            if let due = task.dueDate {
-                if cal.isDate(due, inSameDayAs: now) { continue }
-                task.scheduledForToday = false
-                changed = true
-            } else if task.updatedAt < startOfToday {
-                task.scheduledForToday = false
-                changed = true
+            if let planned = task.plannedDate {
+                // New semantics (#991 S6): the flag mirrors the plan — past
+                // plans KEEP it (postponed stays visible), future pick it up.
+                let flag = TaskPlanning.legacyFlag(plannedDate: planned, now: now, calendar: cal)
+                if task.scheduledForToday != flag {
+                    task.scheduledForToday = flag
+                    changed = true
+                }
+            } else if task.scheduledForToday {
+                // Legacy residue (boolean-only rows from pre-#991 syncs):
+                // keep the old #190 clearing so stale pins still expire.
+                if let due = task.dueDate {
+                    if !cal.isDate(due, inSameDayAs: now) {
+                        task.scheduledForToday = false
+                        changed = true
+                    }
+                } else if task.updatedAt < startOfToday {
+                    task.scheduledForToday = false
+                    changed = true
+                }
             }
         }
         if changed {

@@ -25,6 +25,7 @@ struct TaskDetailFeature {
         var completedPomodoros: Int
         var dueDate: Date?
         var scheduledForToday: Bool
+        var plannedDate: Date?
         var recurrenceRule: String?
         var createdAt: Date
         var subtasks: IdentifiedArrayOf<SubtaskState> = []
@@ -60,6 +61,7 @@ struct TaskDetailFeature {
             self.completedPomodoros = task.completedPomodoros
             self.dueDate = task.dueDate
             self.scheduledForToday = task.scheduledForToday
+            self.plannedDate = task.plannedDate
             self.recurrenceRule = task.recurrenceRule
             self.createdAt = task.createdAt
         }
@@ -81,6 +83,7 @@ struct TaskDetailFeature {
                 isRecurringTemplate: recurrenceRule != nil,
                 dueDate: dueDate,
                 scheduledForToday: scheduledForToday,
+                plannedDate: plannedDate,
                 completedAt: completedAt,
                 createdAt: createdAt
             )
@@ -103,7 +106,7 @@ struct TaskDetailFeature {
         case energyLevelChanged(EnergyLevel)
         case estimatedPomodorosChanged(Int)
         case dueDateChanged(Date?)
-        case scheduledForTodayChanged(Bool)
+        case planningDateChanged(Date?)
         case recurrenceChanged(String?)
         case completionToggled
 
@@ -238,9 +241,12 @@ struct TaskDetailFeature {
                 state.dueDate = date
                 return save(state, rollback: rollback)
 
-            case .scheduledForTodayChanged(let scheduled):
+            case .planningDateChanged(let date):
                 let rollback = state.toDTO()
-                state.scheduledForToday = scheduled
+                let planned = date.map { TaskPlanning.plannedDay($0) }
+                state.plannedDate = planned
+                // Derived legacy flag keeps pre-PR-C surfaces truthful (issue #991).
+                state.scheduledForToday = TaskPlanning.legacyFlag(plannedDate: planned)
                 return save(state, rollback: rollback)
 
             case .recurrenceChanged(let rule):
@@ -430,6 +436,7 @@ struct TaskDetailFeature {
         state.completedPomodoros = dto.completedPomodoros
         state.dueDate = dto.dueDate
         state.scheduledForToday = dto.scheduledForToday
+        state.plannedDate = dto.plannedDate
         state.recurrenceRule = dto.recurrenceRule
         state.createdAt = dto.createdAt
     }
