@@ -7,7 +7,7 @@
 	import type { MessageKey } from '$lib/i18n/messages';
 	import Sheet from '$lib/design/Sheet.svelte';
 	import { listSessions } from '$lib/data/local/idb';
-	import { RECURRENCE_PRESETS, type RecurrencePresetKey } from '$lib/domain/tasks/recurrence';
+	import { RECURRENCE_PRESETS, localDateKey, type RecurrencePresetKey } from '$lib/domain/tasks/recurrence';
 	import type { Task, TaskEnergy, TaskPriority } from '$lib/domain/entities/types';
 	import { suggestEnergy } from '$lib/domain/tasks/energy';
 	import Icon from '$lib/design/Icon.svelte';
@@ -187,14 +187,60 @@
 		/>
 	</label>
 
-	<label class="switch">
-		<input
-			type="checkbox"
-			checked={task?.scheduledForToday === true}
-			onchange={(e) => task && plan.updateTask(task.id, { scheduledForToday: e.currentTarget.checked })}
-		/>
-		<span>⭐ {t('plan.focusToday')}</span>
-	</label>
+	<!-- «Planificar para…» (issue #991 S4) replaces the binary today switch. -->
+	<div class="row-block">
+		<span class="label">⭐ {t('plan.scheduleFor')}</span>
+		<div class="plan-actions">
+			<button
+				class="btn btn-ghost pressable"
+				title={t('plan.planToday')}
+				onclick={() =>
+					task && plan.updateTask(task.id, { plannedDate: localDateKey(new Date()), scheduledForToday: true })}
+			>
+				{t('plan.filter.today')}
+			</button>
+			<button
+				class="btn btn-ghost pressable"
+				title={t('plan.planTomorrow')}
+				onclick={() => {
+					const d = new Date();
+					d.setDate(d.getDate() + 1);
+					task && plan.updateTask(task.id, { plannedDate: localDateKey(d), scheduledForToday: false });
+				}}
+			>
+				{t('plan.planTomorrow')}
+			</button>
+			<button
+				class="btn btn-ghost pressable"
+				title={t('plan.planWeekend')}
+				onclick={() => {
+					const d = new Date();
+					const delta = (6 - d.getDay() + 7) % 7 || 7; // next Saturday (0 = Sat → +7)
+					d.setDate(d.getDate() + delta);
+					task && plan.updateTask(task.id, { plannedDate: localDateKey(d), scheduledForToday: false });
+				}}
+			>
+				{t('plan.planWeekend')}
+			</button>
+		</div>
+		<label class="row-inline">
+			<input
+				type="date"
+				class="field"
+				value={task?.plannedDate ?? ''}
+				onchange={(e) => task && plan.updateTask(task.id, { plannedDate: e.currentTarget.value || null })}
+			/>
+			{#if task?.plannedDate}
+				<button
+					class="btn btn-ghost pressable"
+					title={t('plan.removeDate')}
+					onclick={() => task && plan.updateTask(task.id, { plannedDate: null })}
+				>
+					✕ {t('plan.removeDate')}
+				</button>
+			{/if}
+		</label>
+	</div>
 
 	<div class="row-block">
 		<span class="label">🔁 {t('plan.recurrence')}</span>
@@ -380,6 +426,18 @@
 		align-items: center;
 		gap: var(--space-3);
 		font-weight: 650;
+	}
+
+	.plan-actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: var(--space-2);
+	}
+
+	.row-inline {
+		display: flex;
+		align-items: center;
+		gap: var(--space-2);
 	}
 
 	.switch {

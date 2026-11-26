@@ -21,7 +21,7 @@ export function restorePlanFilter(value: unknown): PlanFilter {
 }
 
 export function isToday(task: Task, todayKey: string): boolean {
-	return task.scheduledForToday === true || task.dueDate === todayKey;
+	return planningBucket(task.plannedDate, task.dueDate, task.scheduledForToday === true, task.status).kind === 'today';
 }
 
 /**
@@ -63,21 +63,27 @@ export function planningBucket(
 }
 
 export function filterTasks(tasks: Task[], filter: PlanFilter, today: Date = new Date()): Task[] {
-	const todayKey = localDateKey(today);
+	// Unified «Hoy» rule (issue #991 S2): every pill goes through one resolver.
 	const active = tasks.filter((t) => t.status === 'active');
+	const buckets = new Map(
+		active.map((t) => [t.id, planningBucket(t.plannedDate, t.dueDate, t.scheduledForToday === true, t.status, today)])
+	);
 	switch (filter) {
 		case 'all':
 			return [...active].sort(byOrder);
 		case 'today':
-			return active.filter((t) => isToday(t, todayKey)).sort(byOrder);
+			return active.filter((t) => buckets.get(t.id)?.kind === 'today').sort(byOrder);
 		case 'inbox':
-			return active
-				.filter((t) => !isToday(t, todayKey) && !t.dueDate)
-				.sort(byOrder);
+			return active.filter((t) => buckets.get(t.id)?.kind === 'inbox').sort(byOrder);
 		case 'upcoming':
+			// #182: no one-week cap — sort by the first date (plan or due).
 			return active
-				.filter((t) => t.dueDate && t.dueDate !== todayKey)
-				.sort((a, b) => (a.dueDate ?? '').localeCompare(b.dueDate ?? '') || byOrder(a, b));
+				.filter((t) => buckets.get(t.id)?.kind === 'upcoming')
+				.sort(
+					(a, b) =>
+						(a.plannedDate ?? a.dueDate ?? '').localeCompare(b.plannedDate ?? b.dueDate ?? '') ||
+						byOrder(a, b)
+				);
 		case 'completed':
 			return tasks
 				.filter((t) => t.status === 'completed')
@@ -129,13 +135,14 @@ export function groupByEnergy(tasks: Task[]): { energy: TaskEnergy; tasks: Task[
 
 /** Defaults a quick-add inherits depending on the active pill. */
 export function quickAddDefaults(filter: PlanFilter, today: Date = new Date()): Partial<Task> {
+	// S5 (#991): quick add inherits a planned date — no invented deadlines.
 	switch (filter) {
 		case 'today':
-			return { scheduledForToday: true };
+			return { plannedDate: localDateKey(today), scheduledForToday: true };
 		case 'upcoming': {
 			const d = new Date(today);
 			d.setDate(d.getDate() + 1);
-			return { dueDate: localDateKey(d) };
+			return { plannedDate: localDateKey(d), scheduledForToday: false };
 		}
 		default:
 			return {};

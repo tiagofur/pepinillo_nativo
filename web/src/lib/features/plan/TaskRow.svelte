@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { Task } from '$lib/domain/entities/types';
-	import { subtaskProgress, dueInfo, formatDueShort } from '$lib/domain/tasks/plan';
+	import { subtaskProgress, dueInfo, formatDueShort, planningBucket } from '$lib/domain/tasks/plan';
 	import { t, currentLocale } from '$lib/i18n/i18n.svelte';
 	import type { MessageKey } from '$lib/i18n/messages';
 
@@ -117,6 +117,15 @@
 		);
 	});
 
+	// S6 (#991): a past plan on an active task without a due chip reads «Pospuesta».
+	let postponed = $derived.by(() => {
+		if (task.status !== 'active' || task.dueDate) return false;
+		if (!task.plannedDate) return false;
+		const bucket = planningBucket(task.plannedDate, task.dueDate, task.scheduledForToday === true, task.status);
+		return bucket.kind === 'today' && bucket.postponed;
+	});
+	let postponedLabel = $derived(postponed ? t('plan.postponed') : '');
+
 	let subs = $derived(subtaskProgress(task));
 </script>
 
@@ -159,6 +168,9 @@
 			{/if}
 			{#if task.recurrenceRule}
 				<span class="pill">🔁</span>
+			{/if}
+			{#if postponed}
+				<span class="pill due postponed">{postponedLabel}</span>
 			{/if}
 			{#if dueLabel}
 				<span class="pill due" class:overdue={task.dueDate && task.dueDate < localDateKey(new Date())}>{dueLabel}</span>
@@ -281,6 +293,11 @@
 	.pill.due.overdue {
 		color: var(--mode-pomodoro);
 		background: var(--mode-pomodoro-soft);
+	}
+
+	.pill.due.postponed {
+		color: var(--warning, #b45309);
+		background: color-mix(in srgb, var(--warning, #b45309) 10%, transparent);
 	}
 
 	.focus-btn {

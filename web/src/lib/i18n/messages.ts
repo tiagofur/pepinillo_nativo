@@ -89,6 +89,11 @@ export type MessageKey =
 	| 'plan.context.rename'
 	| 'plan.markIncomplete'
 	| 'plan.moveToday'
+	| 'plan.scheduleFor'
+	| 'plan.planTomorrow'
+	| 'plan.planWeekend'
+	| 'plan.removeDate'
+	| 'plan.postponed'
 	| 'plan.undo.deleted'
 	| 'plan.reorder'
 	| 'dashboard.title'
@@ -653,6 +658,21 @@ const en: Dict = {
 	'plan.context.rename': 'Rename Task',
 	'plan.markIncomplete': 'Mark Incomplete',
 	'plan.moveToday': 'Move to Today',
+	'plan.scheduleFor': 'Planejar para…',
+	'plan.planTomorrow': 'Amanhã',
+	'plan.planWeekend': 'Este fim de semana',
+	'plan.removeDate': 'Remover data',
+	'plan.postponed': 'Adiada',
+	'plan.scheduleFor': 'Planificar para…',
+	'plan.planTomorrow': 'Mañana',
+	'plan.planWeekend': 'Este fin de semana',
+	'plan.removeDate': 'Quitar fecha',
+	'plan.postponed': 'Pospuesta',
+	'plan.scheduleFor': 'Schedule for…',
+	'plan.planTomorrow': 'Tomorrow',
+	'plan.planWeekend': 'This Weekend',
+	'plan.removeDate': 'Remove Date',
+	'plan.postponed': 'Postponed',
 	'plan.undo.deleted': '"{title}" deleted',
 	'dashboard.refresh': 'Refresh',
 	'error.notFound': 'This page wandered off the garden',
