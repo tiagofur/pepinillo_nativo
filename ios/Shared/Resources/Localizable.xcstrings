@@ -50,489 +50,6 @@
         }
       }
     },
-    "Add a new task to your Pepinillo plan with a title and optional notes." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Add a new task to your Pepinillo plan with a title and optional notes."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Añade una tarea nueva a tu plan de Pepinillo con título y notas opcionales."
-          }
-        },
-        "pt" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Adiciona uma nova tarefa ao seu plano do Pepinillo com título e notas opcionais."
-          }
-        }
-      }
-    },
-    "Added %@ to your plan ✅" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Added %@ to your plan ✅"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tarea añadida a tu plan: %@ ✅"
-          }
-        },
-        "pt" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tarefa adicionada ao seu plano: %@ ✅"
-          }
-        }
-      }
-    },
-    "Create a Task" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Create a Task"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Crear una tarea"
-          }
-        },
-        "pt" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Criar uma tarefa"
-          }
-        }
-      }
-    },
-    "Free allows up to 3 active tasks. Upgrade in Pepinillo to add more." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Free allows up to 3 active tasks. Upgrade in Pepinillo to add more."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "El plan gratis permite hasta 3 tareas activas. Mejora en Pepinillo para añadir más."
-          }
-        },
-        "pt" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "O plano grátis permite até 3 tarefas ativas. Faça upgrade no Pepinillo para adicionar mais."
-          }
-        }
-      }
-    },
-    "Give the task a name first." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Give the task a name first."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Primero dale un nombre a la tarea."
-          }
-        },
-        "pt" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Primeiro dê um nome à tarefa."
-          }
-        }
-      }
-    },
-    "Pepinillo couldn't save the task. Open the app and try again." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pepinillo couldn't save the task. Open the app and try again."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pepinillo no pudo guardar la tarea. Abre la app e inténtalo de nuevo."
-          }
-        },
-        "pt" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "O Pepinillo não conseguiu salvar a tarefa. Abra o app e tente de novo."
-          }
-        }
-      }
-    },
-    "Today's Tasks" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Today's Tasks"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tareas de hoy"
-          }
-        },
-        "pt" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tarefas de hoje"
-          }
-        }
-      }
-    },
-    "Complete a Task" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Complete a Task"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Completar una tarea"
-          }
-        },
-        "pt" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Completar uma tarefa"
-          }
-        }
-      }
-    },
-    "Open a Task" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Open a Task"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Abrir una tarea"
-          }
-        },
-        "pt" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Abrir uma tarefa"
-          }
-        }
-      }
-    },
-    "Mark a task from your Pepinillo plan as done." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mark a task from your Pepinillo plan as done."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Marca una tarea de tu plan de Pepinillo como hecha."
-          }
-        },
-        "pt" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Marque uma tarefa do seu plano do Pepinillo como feita."
-          }
-        }
-      }
-    },
-    "Ask Pepinillo what tasks you planned for today." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ask Pepinillo what tasks you planned for today."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pregunta a Pepinillo qué tareas planeaste para hoy."
-          }
-        },
-        "pt" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pergunte ao Pepinillo quais tarefas você planejou para hoje."
-          }
-        }
-      }
-    },
-    "Open a task from your Pepinillo plan in the app." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Open a task from your Pepinillo plan in the app."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Abre una tarea de tu plan de Pepinillo en la app."
-          }
-        },
-        "pt" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Abra una tarefa do seu plano do Pepinillo no app."
-          }
-        }
-      }
-    },
-    "Marked %@ as done ✅" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Marked %@ as done ✅"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Marqué %@ como hecha ✅"
-          }
-        },
-        "pt" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Marquei %@ como feita ✅"
-          }
-        }
-      }
-    },
-    "%@ was already done." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ was already done."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ ya estaba hecha."
-          }
-        },
-        "pt" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ já estava feita."
-          }
-        }
-      }
-    },
-    "I couldn't find that task in Pepinillo." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "I couldn't find that task in Pepinillo."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No encontré esa tarea en Pepinillo."
-          }
-        },
-        "pt" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Não encontrei essa tarefa no Pepinillo."
-          }
-        }
-      }
-    },
-    "Pepinillo couldn't update the task. Open the app and try again." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pepinillo couldn't update the task. Open the app and try again."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pepinillo no pudo actualizar la tarea. Abre la app e inténtalo de nuevo."
-          }
-        },
-        "pt" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "O Pepinillo não conseguiu atualizar a tarefa. Abra o app e tente novamente."
-          }
-        }
-      }
-    },
-    "I couldn't access your tasks right now." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "I couldn't access your tasks right now."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No pude acceder a tus tareas ahora mismo."
-          }
-        },
-        "pt" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Não consegui acessar suas tarefas agora."
-          }
-        }
-      }
-    },
-    "No tasks scheduled for today 🎉" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No tasks scheduled for today 🎉"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No hay tareas programadas para hoy 🎉"
-          }
-        },
-        "pt" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Não há tarefas programadas para hoje 🎉"
-          }
-        }
-      }
-    },
-    "You have %lld for today: %@ and %lld more." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "You have %1$lld for today: %2$@ and %3$lld more."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tienes %1$lld para hoy: %2$@ y %3$lld más."
-          }
-        },
-        "pt" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Você tem %1$lld para hoje: %2$@ e %3$lld mais."
-          }
-        }
-      }
-    },
-    "You have %lld for today: %@" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "You have %1$lld for today: %2$@"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tienes %1$lld para hoy: %2$@"
-          }
-        },
-        "pt" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Você tem %1$lld para hoje: %2$@"
-          }
-        }
-      }
-    },
-    "Opening %@ in Pepinillo." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Opening %@ in Pepinillo."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Abriendo %@ en Pepinillo."
-          }
-        },
-        "pt" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Abrindo a %@ no Pepinillo."
-          }
-        }
-      }
-    },
     "—" : {
       "localizations" : {
         "es" : {
@@ -728,7 +245,9 @@
         }
       }
     },
-    "%@ · open session" : {},
+    "%@ · open session" : {
+
+    },
     "%@ (Pepinillo+)" : {
       "comment" : "WatchOS — locked mode chip VoiceOver label.",
       "extractionState" : "stale",
@@ -986,6 +505,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Temporizador %@"
+          }
+        }
+      }
+    },
+    "%@ was already done." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ was already done."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ ya estaba hecha."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ já estava feita."
           }
         }
       }
@@ -3343,6 +2885,54 @@
         }
       }
     },
+    "a11y.rclink.code.hint" : {
+      "comment" : "A11y — RcLink code field hint",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enter the 6-digit code from the web account page"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ingresá el código de 6 dígitos de la página de cuenta web"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Insira o código de 6 dígitos da página de conta web"
+          }
+        }
+      }
+    },
+    "a11y.rclink.code.label" : {
+      "comment" : "A11y — RcLink code field label",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Link code"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Código de vinculación"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Código de vinculação"
+          }
+        }
+      }
+    },
     "About" : {
       "localizations" : {
         "es" : {
@@ -3452,6 +3042,270 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Recuperação da conta"
+          }
+        }
+      }
+    },
+    "account.rclink.bound" : {
+      "comment" : "APIClientError.rcLinkAlreadyBound userMessage (409)",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This purchase is already linked to another account."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esta compra ya está vinculada a otra cuenta."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esta compra já está vinculada a outra conta."
+          }
+        }
+      }
+    },
+    "account.rclink.claim.button" : {
+      "comment" : "RcLinkView — primary CTA",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Link purchase"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vincular compra"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vincular compra"
+          }
+        }
+      }
+    },
+    "account.rclink.continue" : {
+      "comment" : "RcLinkView — success CTA",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continue"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continuar"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continuar"
+          }
+        }
+      }
+    },
+    "account.rclink.explanation" : {
+      "comment" : "RcLinkView — body",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bought Pepinillo+ or Everywhere in the iOS, macOS, or Android app? Enter the 6-digit code shown on app.pepinillo.app (Account) to bring your purchase to your web account."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¿Compraste Pepinillo+ o Everywhere en la app de iOS, macOS o Android? Ingresá el código de 6 dígitos que aparece en app.pepinillo.app (Cuenta) para llevar tu compra a tu cuenta web."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Comprou Pepinillo+ ou Everywhere no app de iOS, macOS ou Android? Insira o código de 6 dígitos mostrado em app.pepinillo.app (Conta) para levar sua compra à sua conta web."
+          }
+        }
+      }
+    },
+    "account.rclink.genericError" : {
+      "comment" : "RcLinkFeature — operational failures (judge A round 1)",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Could not link the purchase right now. Please try again shortly."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se pudo vincular la compra en este momento. Intentá de nuevo en un rato."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Não foi possível vincular a compra agora. Tente novamente em breve."
+          }
+        }
+      }
+    },
+    "account.rclink.invalid" : {
+      "comment" : "APIClientError.rcLinkNotClaimable userMessage (404)",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "That code is invalid or expired. Generate a new one on the web."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ese código no es válido o ya venció. Generá uno nuevo en la web."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Este código é inválido ou expirou. Gere um novo na web."
+          }
+        }
+      }
+    },
+    "account.rclink.row.title" : {
+      "comment" : "RcLinkView/AccountView/MacAccountView — canonical entry-point label (#953)",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use my purchase on the Web"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Usar mi compra en la Web"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Usar minha compra na Web"
+          }
+        }
+      }
+    },
+    "account.rclink.shortCode" : {
+      "comment" : "RcLinkFeature — short code guard",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enter the 6-digit code shown on the web account page."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ingresá los 6 dígitos del código que muestra la página de cuenta web."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Insira os 6 dígitos do código mostrado na página de conta web."
+          }
+        }
+      }
+    },
+    "account.rclink.success.body" : {
+      "comment" : "RcLinkView — success body (masked email)",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Linked to **%@**. Your plan is now available on the web."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vinculada a **%@**. Tu plan ya está disponible en la web."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vinculada a **%@**. Seu plano já está disponível na web."
+          }
+        }
+      }
+    },
+    "account.rclink.success.title" : {
+      "comment" : "RcLinkView — success heading",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Purchase linked!"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¡Compra vinculada!"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Compra vinculada!"
+          }
+        }
+      }
+    },
+    "account.rclink.title" : {
+      "comment" : "RcLinkView — heading",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bring your purchase to the web"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Traé tu compra a la web"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Traga sua compra para a web"
           }
         }
       }
@@ -3594,6 +3448,29 @@
         }
       }
     },
+    "Add a new task to your Pepinillo plan with a title and optional notes." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add a new task to your Pepinillo plan with a title and optional notes."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Añade una tarea nueva a tu plan de Pepinillo con título y notas opcionales."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Adiciona uma nova tarefa ao seu plano do Pepinillo com título e notas opcionais."
+          }
+        }
+      }
+    },
     "Add a task and press Return" : {
       "localizations" : {
         "es" : {
@@ -3612,6 +3489,7 @@
     },
     "Add a task for today and start focusing." : {
       "comment" : "Mac Plan — empty today description",
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -3826,6 +3704,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Adicione seu nome, conta e detalhes de assinatura agora para que Mais esteja pronto para sincronizar."
+          }
+        }
+      }
+    },
+    "Added %@ to your plan ✅" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Added %@ to your plan ✅"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tarea añadida a tu plan: %@ ✅"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tarefa adicionada ao seu plano: %@ ✅"
           }
         }
       }
@@ -4360,318 +4261,6 @@
         }
       }
     },
-    "account.rclink.row.title" : {
-      "comment" : "RcLinkView/AccountView/MacAccountView — canonical entry-point label (#953)",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Use my purchase on the Web"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Usar mi compra en la Web"
-          }
-        },
-        "pt" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Usar minha compra na Web"
-          }
-        }
-      }
-    },
-    "account.rclink.title" : {
-      "comment" : "RcLinkView — heading",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Bring your purchase to the web"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Traé tu compra a la web"
-          }
-        },
-        "pt" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Traga sua compra para a web"
-          }
-        }
-      }
-    },
-    "account.rclink.explanation" : {
-      "comment" : "RcLinkView — body",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Bought Pepinillo+ or Everywhere in the iOS, macOS, or Android app? Enter the 6-digit code shown on app.pepinillo.app (Account) to bring your purchase to your web account."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "¿Compraste Pepinillo+ o Everywhere en la app de iOS, macOS o Android? Ingresá el código de 6 dígitos que aparece en app.pepinillo.app (Cuenta) para llevar tu compra a tu cuenta web."
-          }
-        },
-        "pt" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Comprou Pepinillo+ ou Everywhere no app de iOS, macOS ou Android? Insira o código de 6 dígitos mostrado em app.pepinillo.app (Conta) para levar sua compra à sua conta web."
-          }
-        }
-      }
-    },
-    "account.rclink.claim.button" : {
-      "comment" : "RcLinkView — primary CTA",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Link purchase"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vincular compra"
-          }
-        },
-        "pt" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vincular compra"
-          }
-        }
-      }
-    },
-    "account.rclink.invalid" : {
-      "comment" : "APIClientError.rcLinkNotClaimable userMessage (404)",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "That code is invalid or expired. Generate a new one on the web."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ese código no es válido o ya venció. Generá uno nuevo en la web."
-          }
-        },
-        "pt" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Este código é inválido ou expirou. Gere um novo na web."
-          }
-        }
-      }
-    },
-    "account.rclink.bound" : {
-      "comment" : "APIClientError.rcLinkAlreadyBound userMessage (409)",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "This purchase is already linked to another account."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Esta compra ya está vinculada a otra cuenta."
-          }
-        },
-        "pt" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Esta compra já está vinculada a outra conta."
-          }
-        }
-      }
-    },
-    "account.rclink.shortCode" : {
-      "comment" : "RcLinkFeature — short code guard",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Enter the 6-digit code shown on the web account page."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ingresá los 6 dígitos del código que muestra la página de cuenta web."
-          }
-        },
-        "pt" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Insira os 6 dígitos do código mostrado na página de conta web."
-          }
-        }
-      }
-    },
-    "account.rclink.genericError" : {
-      "comment" : "RcLinkFeature — operational failures (judge A round 1)",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Could not link the purchase right now. Please try again shortly."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No se pudo vincular la compra en este momento. Intentá de nuevo en un rato."
-          }
-        },
-        "pt" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Não foi possível vincular a compra agora. Tente novamente em breve."
-          }
-        }
-      }
-    },
-    "account.rclink.success.title" : {
-      "comment" : "RcLinkView — success heading",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Purchase linked!"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "¡Compra vinculada!"
-          }
-        },
-        "pt" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Compra vinculada!"
-          }
-        }
-      }
-    },
-    "account.rclink.success.body" : {
-      "comment" : "RcLinkView — success body (masked email)",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Linked to **%@**. Your plan is now available on the web."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vinculada a **%@**. Tu plan ya está disponible en la web."
-          }
-        },
-        "pt" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vinculada a **%@**. Seu plano já está disponível na web."
-          }
-        }
-      }
-    },
-    "account.rclink.continue" : {
-      "comment" : "RcLinkView — success CTA",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Continue"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Continuar"
-          }
-        },
-        "pt" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Continuar"
-          }
-        }
-      }
-    },
-    "a11y.rclink.code.label" : {
-      "comment" : "A11y — RcLink code field label",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Link code"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Código de vinculación"
-          }
-        },
-        "pt" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Código de vinculação"
-          }
-        }
-      }
-    },
-    "a11y.rclink.code.hint" : {
-      "comment" : "A11y — RcLink code field hint",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Enter the 6-digit code from the web account page"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ingresá el código de 6 dígitos de la página de cuenta web"
-          }
-        },
-        "pt" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Insira o código de 6 dígitos da página de conta web"
-          }
-        }
-      }
-    },
     "Apple decides whether to share your name and email during Sign in with Apple. Birth date and profile photo are managed manually in Pepinillo, and you can keep using a private relay email or replace it locally here." : {
       "comment" : "A description of how the user can change their profile information.",
       "extractionState" : "stale",
@@ -4791,6 +4380,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Áreas para melhorar"
+          }
+        }
+      }
+    },
+    "Ask Pepinillo what tasks you planned for today." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ask Pepinillo what tasks you planned for today."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pregunta a Pepinillo qué tareas planeaste para hoy."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pergunte ao Pepinillo quais tarefas você planejou para hoje."
           }
         }
       }
@@ -5896,6 +5508,7 @@
     },
     "Capture what matters and it will show up here." : {
       "comment" : "Mac Plan — empty all-tasks description",
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -6367,6 +5980,22 @@
         }
       }
     },
+    "Complete ${task}" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Completar ${task}"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Concluir ${task}"
+          }
+        }
+      }
+    },
     "Complete 10 deep work sessions" : {
       "localizations" : {
         "es" : {
@@ -6416,6 +6045,7 @@
       }
     },
     "Complete a focus session to see it here." : {
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -6431,8 +6061,32 @@
         }
       }
     },
+    "Complete a Task" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Complete a Task"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Completar una tarea"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Completar uma tarefa"
+          }
+        }
+      }
+    },
     "Complete a task and your wins will show up here." : {
       "comment" : "Mac Plan — empty completed description",
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -6939,7 +6593,9 @@
       "comment" : "The title of an alert that appears when an error occurs while deleting the user's account.",
       "isCommentAutoGenerated" : true
     },
-    "Could not delete account. Check your connection and try again." : {},
+    "Could not delete account. Check your connection and try again." : {
+
+    },
     "Could not generate report" : {
       "comment" : "A title displayed when an error occurs while generating the report.",
       "isCommentAutoGenerated" : true,
@@ -7024,7 +6680,9 @@
       "comment" : "Alert message when a purchase is cancelled.",
       "isCommentAutoGenerated" : true
     },
-    "Could not sign in with Apple. Please try again." : {},
+    "Could not sign in with Apple. Please try again." : {
+
+    },
     "Couldn't Load Data" : {
       "comment" : "A label that indicates that the app couldn't load data.",
       "isCommentAutoGenerated" : true
@@ -7095,6 +6753,45 @@
         }
       }
     },
+    "Create ${taskTitle} with notes ${notes}" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Crear ${taskTitle} con notas ${notes}"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Criar ${taskTitle} com notas ${notes}"
+          }
+        }
+      }
+    },
+    "Create a Task" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Create a Task"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Crear una tarea"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Criar uma tarefa"
+          }
+        }
+      }
+    },
     "Create free account" : {
       "localizations" : {
         "en" : {
@@ -7134,6 +6831,7 @@
       }
     },
     "Current Session" : {
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -8195,7 +7893,9 @@
         }
       }
     },
-    "Discard" : {},
+    "Discard" : {
+
+    },
     "Dismiss energy suggestion" : {
       "comment" : "Accessibility label for the dismiss button on the energy suggestion banner.",
       "localizations" : {
@@ -10425,6 +10125,7 @@
       }
     },
     "Focus on task" : {
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -10476,7 +10177,9 @@
       "comment" : "Text displayed in a result when a focus session is already paused.",
       "isCommentAutoGenerated" : true
     },
-    "Focus session is not paused." : {},
+    "Focus session is not paused." : {
+
+    },
     "Focus session paused. Take a moment." : {
       "localizations" : {
         "es" : {
@@ -11453,6 +11156,29 @@
         }
       }
     },
+    "Free allows up to 3 active tasks. Upgrade in Pepinillo to add more." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Free allows up to 3 active tasks. Upgrade in Pepinillo to add more."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El plan gratis permite hasta 3 tareas activas. Mejora en Pepinillo para añadir más."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O plano grátis permite até 3 tarefas ativas. Faça upgrade no Pepinillo para adicionar mais."
+          }
+        }
+      }
+    },
     "Free Focus" : {
       "localizations" : {
         "es" : {
@@ -11776,6 +11502,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Começando"
+          }
+        }
+      }
+    },
+    "Give the task a name first." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Give the task a name first."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Primero dale un nombre a la tarea."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Primeiro dê um nome à tarefa."
           }
         }
       }
@@ -12284,6 +12033,29 @@
         }
       }
     },
+    "I couldn't access your tasks right now." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I couldn't access your tasks right now."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No pude acceder a tus tareas ahora mismo."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Não consegui acessar suas tarefas agora."
+          }
+        }
+      }
+    },
     "I couldn't compute the date range." : {
       "localizations" : {
         "es" : {
@@ -12296,6 +12068,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Não consegui calcular o intervalo de datas."
+          }
+        }
+      }
+    },
+    "I couldn't find that task in Pepinillo." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I couldn't find that task in Pepinillo."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No encontré esa tarea en Pepinillo."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Não encontrei essa tarefa no Pepinillo."
           }
         }
       }
@@ -12396,7 +12191,9 @@
         }
       }
     },
-    "Imported %lld reminders." : {},
+    "Imported %lld reminders." : {
+
+    },
     "Imported %lld reminders. Skipped %lld duplicates." : {
       "localizations" : {
         "en" : {
@@ -13166,6 +12963,29 @@
         }
       }
     },
+    "Mark a task from your Pepinillo plan as done." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mark a task from your Pepinillo plan as done."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Marca una tarea de tu plan de Pepinillo como hecha."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Marque uma tarefa do seu plano do Pepinillo como feita."
+          }
+        }
+      }
+    },
     "Mark as complete" : {
       "localizations" : {
         "es" : {
@@ -13243,6 +13063,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Marcar tarefa como incompleta"
+          }
+        }
+      }
+    },
+    "Marked %@ as done ✅" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Marked %@ as done ✅"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Marqué %@ como hecha ✅"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Marquei %@ como feita ✅"
           }
         }
       }
@@ -14326,6 +14169,7 @@
     },
     "No Completed Tasks" : {
       "comment" : "A title for a list of tasks that have been completed.",
+      "extractionState" : "stale",
       "isCommentAutoGenerated" : true,
       "localizations" : {
         "es" : {
@@ -14364,6 +14208,7 @@
     },
     "No deadlines on the horizon." : {
       "comment" : "Mac Plan — empty upcoming description",
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -14497,6 +14342,24 @@
       "comment" : "Error message displayed when there is no internet connection.",
       "isCommentAutoGenerated" : true
     },
+    "No Matches" : {
+      "comment" : "A description of a message displayed when a search query returns no results.",
+      "isCommentAutoGenerated" : true,
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sin coincidencias"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nenhuma correspondência"
+          }
+        }
+      }
+    },
     "No Matching Tasks" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -14514,7 +14377,9 @@
         }
       }
     },
-    "No new reminders to import." : {},
+    "No new reminders to import." : {
+
+    },
     "No Results" : {
       "comment" : "Mac Plan — empty search state title",
       "localizations" : {
@@ -14581,6 +14446,7 @@
       }
     },
     "No sessions yet" : {
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -14650,6 +14516,7 @@
     },
     "No Tasks" : {
       "comment" : "Mac Plan — empty state title",
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -14697,6 +14564,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nenhuma tarefa corresponde à sua busca."
+          }
+        }
+      }
+    },
+    "No tasks scheduled for today 🎉" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No tasks scheduled for today 🎉"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No hay tareas programadas para hoy 🎉"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Não há tarefas programadas para hoje 🎉"
           }
         }
       }
@@ -14818,6 +14708,7 @@
     },
     "Nothing for Today" : {
       "comment" : "A title that describes an empty task list when the user has no tasks scheduled for today.",
+      "extractionState" : "stale",
       "isCommentAutoGenerated" : true,
       "localizations" : {
         "es" : {
@@ -14836,6 +14727,7 @@
     },
     "Nothing Upcoming" : {
       "comment" : "A message that describes the empty state when there are no upcoming tasks.",
+      "extractionState" : "stale",
       "isCommentAutoGenerated" : true,
       "localizations" : {
         "es" : {
@@ -15103,6 +14995,68 @@
         }
       }
     },
+    "Open ${task}" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abrir ${task}"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abrir ${task}"
+          }
+        }
+      }
+    },
+    "Open a Task" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open a Task"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abrir una tarea"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abrir uma tarefa"
+          }
+        }
+      }
+    },
+    "Open a task from your Pepinillo plan in the app." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open a task from your Pepinillo plan in the app."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abre una tarea de tu plan de Pepinillo en la app."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abra una tarefa do seu plano do Pepinillo no app."
+          }
+        }
+      }
+    },
     "Open Pepinillo" : {
       "comment" : "Mac menu bar — open main window",
       "localizations" : {
@@ -15143,6 +15097,29 @@
     "Open Statistics (⌘4)" : {
       "comment" : "A tooltip for the button that opens the Statistics window.",
       "isCommentAutoGenerated" : true
+    },
+    "Opening %@ in Pepinillo." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opening %@ in Pepinillo."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abriendo %@ en Pepinillo."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abrindo a %@ no Pepinillo."
+          }
+        }
+      }
     },
     "Opening local data..." : {
       "comment" : "A label displayed in the app's main view while it's loading.",
@@ -15654,6 +15631,52 @@
         }
       }
     },
+    "Pepinillo couldn't save the task. Open the app and try again." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pepinillo couldn't save the task. Open the app and try again."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pepinillo no pudo guardar la tarea. Abre la app e inténtalo de nuevo."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O Pepinillo não conseguiu salvar a tarefa. Abra o app e tente de novo."
+          }
+        }
+      }
+    },
+    "Pepinillo couldn't update the task. Open the app and try again." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pepinillo couldn't update the task. Open the app and try again."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pepinillo no pudo actualizar la tarea. Abre la app e inténtalo de nuevo."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O Pepinillo não conseguiu atualizar a tarefa. Abra o app e tente novamente."
+          }
+        }
+      }
+    },
     "Pepinillo Focus" : {
       "localizations" : {
         "es" : {
@@ -16090,52 +16113,6 @@
         }
       }
     },
-    "plan.empty.completed.description" : {
-      "comment" : "Plan Completed filter empty state motivational description.",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Complete a task and your wins will show up here."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Completa una tarea y tus logros aparecerán aquí."
-          }
-        },
-        "pt" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Conclua uma tarefa e suas vitórias aparecerão aqui."
-          }
-        }
-      }
-    },
-    "plan.empty.completed.title" : {
-      "comment" : "Plan Completed filter empty state title.",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No Completed Tasks"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sin tareas completadas"
-          }
-        },
-        "pt" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sem tarefas concluídas"
-          }
-        }
-      }
-    },
     "plan.empty.all.description" : {
       "comment" : "Plan All filter empty state description (Mac).",
       "localizations" : {
@@ -16178,6 +16155,52 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Uma horta vazia"
+          }
+        }
+      }
+    },
+    "plan.empty.completed.description" : {
+      "comment" : "Plan Completed filter empty state motivational description.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Complete a task and your wins will show up here."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Completa una tarea y tus logros aparecerán aquí."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Conclua uma tarefa e suas vitórias aparecerão aqui."
+          }
+        }
+      }
+    },
+    "plan.empty.completed.title" : {
+      "comment" : "Plan Completed filter empty state title.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No Completed Tasks"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sin tareas completadas"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sem tarefas concluídas"
           }
         }
       }
@@ -17072,6 +17095,29 @@
         }
       }
     },
+    "Rate Pepinillo" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rate Pepinillo"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Calificar Pepinillo"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Avaliar Pepinillo"
+          }
+        }
+      }
+    },
     "Read the full privacy policy" : {
       "comment" : "Privacy card link to the full published policy.",
       "localizations" : {
@@ -17675,7 +17721,9 @@
         }
       }
     },
-    "Resume Focus Session?" : {},
+    "Resume Focus Session?" : {
+
+    },
     "Resume session" : {
       "localizations" : {
         "es" : {
@@ -18813,7 +18861,9 @@
       "comment" : "A label displayed when a user is not signed in.",
       "isCommentAutoGenerated" : true
     },
-    "Signed in with Apple, but account sync failed. Some cloud features may be unavailable." : {},
+    "Signed in with Apple, but account sync failed. Some cloud features may be unavailable." : {
+
+    },
     "Skip" : {
       "localizations" : {
         "es" : {
@@ -20163,7 +20213,9 @@
         }
       }
     },
-    "Sync failed: %@" : {},
+    "Sync failed: %@" : {
+
+    },
     "Sync tasks, focus sessions, and settings through your Pepinillo account." : {
       "comment" : "A benefit of the Everywhere/AI+ paywall tier: Pepinillo account sync.",
       "isCommentAutoGenerated" : true,
@@ -21006,6 +21058,29 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "Today: %1$lld %2$@, %3$lld minutes"
+          }
+        }
+      }
+    },
+    "Today's Tasks" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Today's Tasks"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tareas de hoy"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tarefas de hoje"
           }
         }
       }
@@ -22675,6 +22750,52 @@
         }
       }
     },
+    "You have %lld for today: %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You have %1$lld for today: %2$@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tienes %1$lld para hoy: %2$@"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Você tem %1$lld para hoje: %2$@"
+          }
+        }
+      }
+    },
+    "You have %lld for today: %@ and %lld more." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You have %1$lld for today: %2$@ and %3$lld more."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tienes %1$lld para hoy: %2$@ y %3$lld más."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Você tem %1$lld para hoje: %2$@ e %3$lld mais."
+          }
+        }
+      }
+    },
     "You have data on this device that hasn't been synced. Would you like to merge it with your account, or start fresh with your account data?" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -22978,7 +23099,9 @@
         }
       }
     },
-    "Your last session ended unexpectedly." : {},
+    "Your last session ended unexpectedly." : {
+
+    },
     "Your most used mode was %@." : {
       "localizations" : {
         "es" : {
