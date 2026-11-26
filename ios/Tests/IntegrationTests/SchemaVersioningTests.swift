@@ -18,22 +18,36 @@ struct SchemaVersioningTests {
     @Test("PepinilloMigrationPlan lists versioned schemas in order")
     func migrationPlanSchemasOrdered() {
         let schemas = PepinilloMigrationPlan.schemas
-        #expect(schemas.count == 6)
+        #expect(schemas.count == 7)
         #expect(schemas[0].versionIdentifier == Schema.Version(1, 0, 0))
         #expect(schemas[1].versionIdentifier == Schema.Version(2, 0, 0))
         #expect(schemas[2].versionIdentifier == Schema.Version(3, 0, 0))
         #expect(schemas[3].versionIdentifier == Schema.Version(4, 0, 0))
         #expect(schemas[4].versionIdentifier == Schema.Version(5, 0, 0))
         #expect(schemas[5].versionIdentifier == Schema.Version(6, 0, 0))
+        #expect(schemas[6].versionIdentifier == Schema.Version(7, 0, 0))
     }
 
-    @Test("PepinilloMigrationPlan has five sequential stages")
-    func migrationPlanHasFiveStages() {
-        #expect(PepinilloMigrationPlan.stages.count == 5)
+    @Test("PepinilloMigrationPlan has six sequential stages")
+    func migrationPlanHasSixStages() {
+        #expect(PepinilloMigrationPlan.stages.count == 6)
     }
 
-    @Test("Current schema (V6) includes all persisted models")
+    @Test("Current schema (V7) includes all persisted models")
     func currentSchemaIncludesAllModels() {
+        let modelNames = Set(SchemaV7.models.map { String(describing: $0) })
+        #expect(modelNames.contains("TaskItem"))
+        #expect(modelNames.contains("SubTask"))
+        #expect(modelNames.contains("FocusSessionRecord"))
+        #expect(modelNames.contains("DailyStats"))
+        #expect(modelNames.contains("UserPreferences"))
+        #expect(modelNames.contains("ProductivityReport"))
+        #expect(modelNames.contains("CachedUser"))
+        #expect(modelNames.contains("AchievementRecord"))
+    }
+
+    @Test("Frozen SchemaV6 pins all eight models for the V6→V7 stage")
+    func frozenV6PinsAllModels() {
         let modelNames = Set(SchemaV6.models.map { String(describing: $0) })
         #expect(modelNames.contains("TaskItem"))
         #expect(modelNames.contains("SubTask"))
@@ -56,11 +70,11 @@ struct SchemaVersioningTests {
         #expect(container.schema.entities.isEmpty == false)
     }
 
-    // MARK: - On-Disk Migration: V1 → V5
+    // MARK: - On-Disk Migration: V1 → V7
 
     @MainActor
-    @Test("V1 store migrates to V5: TaskItem data survives and gains sync columns")
-    func v1StoreMigratesToV5() throws {
+    @Test("V1 store migrates to V7: TaskItem data survives and gains sync columns")
+    func v1StoreMigratesToV7() throws {
         let dir = try makeTempDir(label: "migration-v1-v4")
         defer { cleanup(dir) }
         let storeURL = dir.appendingPathComponent("test.sqlite")
@@ -84,7 +98,7 @@ struct SchemaVersioningTests {
         }
 
         // 2. Re-open with full migration plan targeting V5.
-        let currentSchema = Schema(versionedSchema: SchemaV5.self)
+        let currentSchema = Schema(versionedSchema: SchemaV7.self)
         let currentConfig = ModelConfiguration(schema: currentSchema, url: storeURL, cloudKitDatabase: .none)
         let migratedContainer = try ModelContainer(
             for: currentSchema,
@@ -117,11 +131,11 @@ struct SchemaVersioningTests {
         #expect(session.syncedAt == nil, "FocusSessionRecord.syncedAt starts nil")
     }
 
-    // MARK: - On-Disk Migration: V2 → V5
+    // MARK: - On-Disk Migration: V2 → V7
 
     @MainActor
-    @Test("V2 store migrates to V5: TaskItem and CachedUser data survive, sync columns present")
-    func v2StoreMigratesToV5() throws {
+    @Test("V2 store migrates to V7: TaskItem and CachedUser data survive, sync columns present")
+    func v2StoreMigratesToV7() throws {
         let dir = try makeTempDir(label: "migration-v2-v4")
         defer { cleanup(dir) }
         let storeURL = dir.appendingPathComponent("test.sqlite")
@@ -146,7 +160,7 @@ struct SchemaVersioningTests {
         }
 
         // 2. Re-open with the full migration plan.
-        let currentSchema = Schema(versionedSchema: SchemaV5.self)
+        let currentSchema = Schema(versionedSchema: SchemaV7.self)
         let currentConfig = ModelConfiguration(schema: currentSchema, url: storeURL, cloudKitDatabase: .none)
         let migratedContainer = try ModelContainer(
             for: currentSchema,
@@ -172,11 +186,11 @@ struct SchemaVersioningTests {
         #expect(users.first?.email == "test@example.com")
     }
 
-    // MARK: - On-Disk Migration: V3 → V5 (FocusSessionRecord sync fields)
+    // MARK: - On-Disk Migration: V3 → V7 (FocusSessionRecord sync fields)
 
     @MainActor
-    @Test("V3 store migrates to V5: FocusSessionRecord gains isDirty and syncedAt")
-    func v3StoreMigratesToV5() throws {
+    @Test("V3 store migrates to V7: FocusSessionRecord gains isDirty and syncedAt")
+    func v3StoreMigratesToV7() throws {
         let dir = try makeTempDir(label: "migration-v3-v4")
         defer { cleanup(dir) }
         let storeURL = dir.appendingPathComponent("test.sqlite")
@@ -203,7 +217,7 @@ struct SchemaVersioningTests {
         }
 
         // 2. Migrate to V5.
-        let currentSchema = Schema(versionedSchema: SchemaV5.self)
+        let currentSchema = Schema(versionedSchema: SchemaV7.self)
         let currentConfig = ModelConfiguration(schema: currentSchema, url: storeURL, cloudKitDatabase: .none)
         let migratedContainer = try ModelContainer(
             for: currentSchema,
@@ -231,11 +245,11 @@ struct SchemaVersioningTests {
         #expect(session.syncedAt == nil, "syncedAt is nil for rows that predate V4")
     }
 
-    // MARK: - On-Disk Migration: V4 → V5 (unique id constraints)
+    // MARK: - On-Disk Migration: V4 → V7 (unique id constraints)
 
     @MainActor
-    @Test("V4 store migrates to V5: TaskItem data survives unique-id upgrade")
-    func v4StoreMigratesToV5() throws {
+    @Test("V4 store migrates to V7: TaskItem data survives unique-id upgrade")
+    func v4StoreMigratesToV7() throws {
         let dir = try makeTempDir(label: "migration-v4-v5")
         defer { cleanup(dir) }
         let storeURL = dir.appendingPathComponent("test.sqlite")
@@ -250,7 +264,7 @@ struct SchemaVersioningTests {
             try ctx.save()
         }
 
-        let currentSchema = Schema(versionedSchema: SchemaV5.self)
+        let currentSchema = Schema(versionedSchema: SchemaV7.self)
         let currentConfig = ModelConfiguration(schema: currentSchema, url: storeURL, cloudKitDatabase: .none)
         let migratedContainer = try ModelContainer(
             for: currentSchema,
@@ -267,7 +281,7 @@ struct SchemaVersioningTests {
     // MARK: - Write-Round-Trip on Migrated Store
 
     @MainActor
-    @Test("After V2→V5 migration, newly inserted tasks have correct sync defaults")
+    @Test("After V2→V7 migration, newly inserted tasks have correct sync defaults")
     func writeRoundTripAfterMigration() throws {
         let dir = try makeTempDir(label: "write-roundtrip")
         defer { cleanup(dir) }
@@ -284,7 +298,7 @@ struct SchemaVersioningTests {
         }
 
         // Open with full migration plan.
-        let currentSchema = Schema(versionedSchema: SchemaV5.self)
+        let currentSchema = Schema(versionedSchema: SchemaV7.self)
         let currentConfig = ModelConfiguration(schema: currentSchema, url: storeURL, cloudKitDatabase: .none)
         let container = try ModelContainer(
             for: currentSchema,

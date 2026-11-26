@@ -56,6 +56,9 @@ data class Task(
     val sortOrder: Int = 0,
     val dueDate: Long? = null,
     val scheduledForToday: Boolean = false,
+    /** Local-midnight epoch millis of the planned day — replaces scheduledForToday
+     * (issue #991 S1). Same encoding as dueDate; see domain/tasks/TaskPlanning.kt. */
+    val plannedDate: Long? = null,
     val recurrenceRule: String? = null,
     val isRecurringTemplate: Boolean = false,
     val recurringTemplateID: String? = null,

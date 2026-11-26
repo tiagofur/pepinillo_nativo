@@ -236,6 +236,9 @@ jobs:
             -default-test-execution-time-allowance 180 \
             -only-testing:PepinilloTests/LocalToCloudStoreMigratorTests \
             -only-testing:PepinilloTests/PersistenceStoreRouterTests \
+            -only-testing:PepinilloTests/PersistenceServiceTests \
+            -only-testing:PepinilloTests/TaskPlanningTests \
+            -only-testing:PepinilloTests/SchemaVersioningTests \
             -only-testing:PepinilloTests/AppGroupContainerTests \
             -only-testing:PepinilloTests/WidgetProGatingTests \
             -only-testing:PepinilloTests/TasksWidgetQueryTests \

@@ -506,6 +506,9 @@ public final class SwiftDataPersistenceService {
             instance.isRecurringTemplate = false
             instance.dueDate = nextOccurrence
             instance.scheduledForToday = cal.isDate(nextOccurrence, inSameDayAs: today)
+            // S8 (#991): instances are born planned on their occurrence day.
+            // The boolean stays written until the UI retires it (#991 PR-b).
+            instance.plannedDate = TaskPlanning.plannedDay(nextOccurrence, calendar: cal)
             context.insert(instance)
 
             // Advance the template's nextOccurrence

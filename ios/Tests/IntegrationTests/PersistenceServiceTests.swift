@@ -17,7 +17,7 @@ struct PersistenceServiceTests {
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: dir) }
         
-        let schema = Schema(versionedSchema: SchemaV5.self)
+        let schema = Schema(versionedSchema: SchemaV7.self)
         let config = ModelConfiguration(schema: schema, url: dir.appendingPathComponent("test.sqlite"), cloudKitDatabase: .none)
         let container = try ModelContainer(for: schema, configurations: [config])
         let context = container.mainContext
@@ -60,7 +60,7 @@ struct PersistenceServiceTests {
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: dir) }
         
-        let schema = Schema(versionedSchema: SchemaV5.self)
+        let schema = Schema(versionedSchema: SchemaV7.self)
         let config = ModelConfiguration(schema: schema, url: dir.appendingPathComponent("test.sqlite"), cloudKitDatabase: .none)
         let container = try ModelContainer(for: schema, configurations: [config])
         let context = container.mainContext
@@ -129,7 +129,7 @@ struct PersistenceServiceTests {
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: dir) }
 
-        let schema = Schema(versionedSchema: SchemaV5.self)
+        let schema = Schema(versionedSchema: SchemaV7.self)
         let config = ModelConfiguration(schema: schema, url: dir.appendingPathComponent("test.sqlite"), cloudKitDatabase: .none)
         let container = try ModelContainer(for: schema, configurations: [config])
         let context = container.mainContext
@@ -164,7 +164,7 @@ struct PersistenceServiceTests {
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: dir) }
 
-        let schema = Schema(versionedSchema: SchemaV5.self)
+        let schema = Schema(versionedSchema: SchemaV7.self)
         let config = ModelConfiguration(schema: schema, url: dir.appendingPathComponent("test.sqlite"), cloudKitDatabase: .none)
         let container = try ModelContainer(for: schema, configurations: [config])
         let context = container.mainContext
@@ -194,7 +194,7 @@ struct PersistenceServiceTests {
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: dir) }
 
-        let schema = Schema(versionedSchema: SchemaV5.self)
+        let schema = Schema(versionedSchema: SchemaV7.self)
         let config = ModelConfiguration(schema: schema, url: dir.appendingPathComponent("test.sqlite"), cloudKitDatabase: .none)
         let container = try ModelContainer(for: schema, configurations: [config])
         let context = container.mainContext
@@ -247,7 +247,7 @@ struct PersistenceServiceTests {
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: dir) }
 
-        let schema = Schema(versionedSchema: SchemaV5.self)
+        let schema = Schema(versionedSchema: SchemaV7.self)
         let config = ModelConfiguration(schema: schema, url: dir.appendingPathComponent("test.sqlite"), cloudKitDatabase: .none)
         let container = try ModelContainer(for: schema, configurations: [config])
         let context = container.mainContext
@@ -284,7 +284,7 @@ struct PersistenceServiceTests {
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: dir) }
 
-        let schema = Schema(versionedSchema: SchemaV5.self)
+        let schema = Schema(versionedSchema: SchemaV7.self)
         let config = ModelConfiguration(schema: schema, url: dir.appendingPathComponent("test.sqlite"), cloudKitDatabase: .none)
         let container = try ModelContainer(for: schema, configurations: [config])
         let context = container.mainContext
@@ -320,7 +320,7 @@ struct PersistenceServiceTests {
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: dir) }
 
-        let schema = Schema(versionedSchema: SchemaV5.self)
+        let schema = Schema(versionedSchema: SchemaV7.self)
         let config = ModelConfiguration(schema: schema, url: dir.appendingPathComponent("test.sqlite"), cloudKitDatabase: .none)
         let container = try ModelContainer(for: schema, configurations: [config])
         let context = container.mainContext
@@ -366,7 +366,7 @@ struct PersistenceServiceTests {
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: dir) }
 
-        let schema = Schema(versionedSchema: SchemaV5.self)
+        let schema = Schema(versionedSchema: SchemaV7.self)
         let config = ModelConfiguration(schema: schema, url: dir.appendingPathComponent("test.sqlite"), cloudKitDatabase: .none)
         let container = try ModelContainer(for: schema, configurations: [config])
         let context = container.mainContext
@@ -401,7 +401,7 @@ struct PersistenceServiceTests {
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: dir) }
 
-        let schema = Schema(versionedSchema: SchemaV5.self)
+        let schema = Schema(versionedSchema: SchemaV7.self)
         let config = ModelConfiguration(schema: schema, url: dir.appendingPathComponent("test.sqlite"), cloudKitDatabase: .none)
         let container = try ModelContainer(for: schema, configurations: [config])
         let context = container.mainContext
@@ -434,7 +434,7 @@ struct PersistenceServiceTests {
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: dir) }
 
-        let schema = Schema(versionedSchema: SchemaV5.self)
+        let schema = Schema(versionedSchema: SchemaV7.self)
         let config = ModelConfiguration(schema: schema, url: dir.appendingPathComponent("test.sqlite"), cloudKitDatabase: .none)
         let container = try ModelContainer(for: schema, configurations: [config])
         let context = container.mainContext
@@ -462,7 +462,7 @@ struct PersistenceServiceTests {
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: dir) }
 
-        let schema = Schema(versionedSchema: SchemaV5.self)
+        let schema = Schema(versionedSchema: SchemaV7.self)
         let config = ModelConfiguration(schema: schema, url: dir.appendingPathComponent("test.sqlite"), cloudKitDatabase: .none)
         let container = try ModelContainer(for: schema, configurations: [config])
         let context = container.mainContext
@@ -494,7 +494,7 @@ struct PersistenceServiceTests {
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: dir) }
 
-        let schema = Schema(versionedSchema: SchemaV5.self)
+        let schema = Schema(versionedSchema: SchemaV7.self)
         let config = ModelConfiguration(schema: schema, url: dir.appendingPathComponent("test.sqlite"), cloudKitDatabase: .none)
         let container = try ModelContainer(for: schema, configurations: [config])
         let context = container.mainContext
@@ -527,7 +527,7 @@ struct PersistenceServiceTests {
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: dir) }
 
-        let schema = Schema(versionedSchema: SchemaV5.self)
+        let schema = Schema(versionedSchema: SchemaV7.self)
         let config = ModelConfiguration(schema: schema, url: dir.appendingPathComponent("test.sqlite"), cloudKitDatabase: .none)
         let container = try ModelContainer(for: schema, configurations: [config])
         let context = container.mainContext
@@ -566,7 +566,7 @@ struct PersistenceServiceTests {
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: dir) }
 
-        let schema = Schema(versionedSchema: SchemaV5.self)
+        let schema = Schema(versionedSchema: SchemaV7.self)
         let config = ModelConfiguration(schema: schema, url: dir.appendingPathComponent("test.sqlite"), cloudKitDatabase: .none)
         let container = try ModelContainer(for: schema, configurations: [config])
         let context = container.mainContext
@@ -623,7 +623,7 @@ struct PersistenceServiceTests {
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: dir) }
 
-        let schema = Schema(versionedSchema: SchemaV5.self)
+        let schema = Schema(versionedSchema: SchemaV7.self)
         let config = ModelConfiguration(schema: schema, url: dir.appendingPathComponent("test.sqlite"), cloudKitDatabase: .none)
         let container = try ModelContainer(for: schema, configurations: [config])
         let context = container.mainContext
@@ -694,7 +694,7 @@ func upsertAppliesCanonicalTaskFields() throws {
     try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
     defer { try? FileManager.default.removeItem(at: dir) }
 
-    let schema = Schema(versionedSchema: SchemaV5.self)
+    let schema = Schema(versionedSchema: SchemaV7.self)
     let config = ModelConfiguration(schema: schema, url: dir.appendingPathComponent("test.sqlite"), cloudKitDatabase: .none)
     let container = try ModelContainer(for: schema, configurations: [config])
     let context = container.mainContext
@@ -738,7 +738,7 @@ func upsertKeepsLocalPinAndOrderOnTie() throws {
     try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
     defer { try? FileManager.default.removeItem(at: dir) }
 
-    let schema = Schema(versionedSchema: SchemaV5.self)
+    let schema = Schema(versionedSchema: SchemaV7.self)
     let config = ModelConfiguration(schema: schema, url: dir.appendingPathComponent("test.sqlite"), cloudKitDatabase: .none)
     let container = try ModelContainer(for: schema, configurations: [config])
     let context = container.mainContext
@@ -779,7 +779,7 @@ func upsertFailsUnknownEnergySafe() throws {
     try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
     defer { try? FileManager.default.removeItem(at: dir) }
 
-    let schema = Schema(versionedSchema: SchemaV5.self)
+    let schema = Schema(versionedSchema: SchemaV7.self)
     let config = ModelConfiguration(schema: schema, url: dir.appendingPathComponent("test.sqlite"), cloudKitDatabase: .none)
     let container = try ModelContainer(for: schema, configurations: [config])
     let context = container.mainContext

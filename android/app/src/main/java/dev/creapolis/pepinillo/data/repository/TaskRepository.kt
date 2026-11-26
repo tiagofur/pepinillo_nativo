@@ -17,6 +17,7 @@ import dev.creapolis.pepinillo.core.billing.FeatureGate
 import dev.creapolis.pepinillo.data.sync.WidgetRefreshWorker
 import dev.creapolis.pepinillo.domain.streak.StreakProtectionService
 import dev.creapolis.pepinillo.domain.tasks.RecurrenceCalculator
+import dev.creapolis.pepinillo.domain.tasks.TaskPlanning
 
 import dev.creapolis.pepinillo.feature.tasks.model.EnergyLevel
 import dev.creapolis.pepinillo.feature.tasks.model.Subtask
@@ -285,6 +286,8 @@ class TaskRepository @Inject constructor(
                 nextOccurrence = nextDue,
                 isRecurringTemplate = true,
                 scheduledForToday = scheduledForToday,
+                // S8 (#991): the occurrence is born planned on its own day.
+                plannedDate = TaskPlanning.plannedDay(nextDue),
                 updatedAt = now,
                 isDirty = true,
             ),
@@ -342,6 +345,7 @@ private fun TaskEntity.toDomain() = Task(
     sortOrder = sortOrder,
     dueDate = dueDate,
     scheduledForToday = scheduledForToday,
+    plannedDate = plannedDate,
     recurrenceRule = recurrenceRule,
     isRecurringTemplate = isRecurringTemplate,
     recurringTemplateID = recurringTemplateID,
@@ -361,6 +365,7 @@ private fun Task.toEntity() = TaskEntity(
     sortOrder = sortOrder,
     dueDate = dueDate,
     scheduledForToday = scheduledForToday,
+    plannedDate = plannedDate,
     recurrenceRule = recurrenceRule,
     isRecurringTemplate = isRecurringTemplate,
     recurringTemplateID = recurringTemplateID,
@@ -402,6 +407,8 @@ private fun Task.mergeInto(existing: TaskEntity, updatedAt: Long = System.curren
         sortOrder = sortOrder,
         dueDate = dueDate,
         scheduledForToday = scheduledForToday,
+        // Detail edits don't model the plan yet (#991 PR-b) — never clobber it.
+        plannedDate = plannedDate ?: existing.plannedDate,
         recurrenceRule = recurrenceRule,
         nextOccurrence = nextOccurrence,
         isRecurringTemplate = recurrenceRule != null,

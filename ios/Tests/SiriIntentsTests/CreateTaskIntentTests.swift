@@ -2,7 +2,7 @@
 // Pepinillo — Deep Work Companion for Apple
 //
 // RED→GREEN tests for the Siri "create a task" App Intent (issue #899).
-// Uses an on-disk SchemaV6 container with cloudKitDatabase: .none (same
+// Uses an on-disk SchemaV7 container with cloudKitDatabase: .none (same
 // pattern as SchemaVersioningTests) so persistence is verified without
 // touching the real app-group store.
 
@@ -19,7 +19,7 @@ struct CreateTaskIntentTests {
         let dir = FileManager.default.temporaryDirectory
             .appendingPathComponent("createtask-\(label)-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        let schema = Schema(versionedSchema: SchemaV6.self)
+        let schema = Schema(versionedSchema: SchemaV7.self)
         let config = ModelConfiguration(
             schema: schema,
             url: dir.appendingPathComponent("test.sqlite"),

@@ -15,7 +15,7 @@ struct LocalToCloudStoreMigratorTests {
         directory: URL,
         fileName: String
     ) throws -> ModelContainer {
-        let schema = Schema(versionedSchema: SchemaV5.self)
+        let schema = Schema(versionedSchema: SchemaV7.self)
         let config = ModelConfiguration(
             schema: schema,
             url: directory.appendingPathComponent(fileName),
@@ -379,7 +379,7 @@ private func migrateLegacyStoreForTesting(
     }
     guard FileManager.default.fileExists(atPath: legacyURL.path) else { return }
 
-    let schema = Schema(versionedSchema: SchemaV5.self)
+    let schema = Schema(versionedSchema: SchemaV7.self)
     let config = ModelConfiguration(schema: schema, url: legacyURL, cloudKitDatabase: .none)
     let legacyContainer = try ModelContainer(
         for: schema,

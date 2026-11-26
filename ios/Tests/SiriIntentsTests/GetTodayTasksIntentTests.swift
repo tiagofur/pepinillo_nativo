@@ -2,7 +2,7 @@
 // Pepinillo — Deep Work Companion for Apple
 //
 // RED→GREEN tests for the Siri "today's tasks" App Intent (issue #900).
-// On-disk SchemaV6 container with cloudKitDatabase: .none (same pattern as
+// On-disk SchemaV7 container with cloudKitDatabase: .none (same pattern as
 // CreateTaskIntentTests).
 
 import Testing
@@ -18,7 +18,7 @@ struct GetTodayTasksIntentTests {
         let dir = FileManager.default.temporaryDirectory
             .appendingPathComponent("todaytasks-\(label)-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        let schema = Schema(versionedSchema: SchemaV6.self)
+        let schema = Schema(versionedSchema: SchemaV7.self)
         let config = ModelConfiguration(
             schema: schema,
             url: dir.appendingPathComponent("test.sqlite"),

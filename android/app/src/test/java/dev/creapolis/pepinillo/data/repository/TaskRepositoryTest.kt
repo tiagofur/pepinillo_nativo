@@ -126,6 +126,37 @@ class TaskRepositoryTest {
         assertEquals("New title", entitySlot.captured.title)
     }
 
+    @Test
+    fun `updateTask preserves plannedDate from existing row until edits carry it`() = runTest {
+        val friday = 1_795_113_600_000L
+        val existing = TaskEntity(id = "task-planned", title = "Planned", plannedDate = friday)
+        // PR-b models the plan in the UI; until then edits arrive without one.
+        val edit = Task(id = "task-planned", title = "Renamed")
+        val entitySlot = slot<TaskEntity>()
+
+        coEvery { taskDao.getTaskById("task-planned") } returns existing
+        coEvery { taskDao.updateTask(capture(entitySlot)) } returns Unit
+
+        repo.updateTask(edit)
+
+        assertEquals("plannedDate must survive a detail edit (#991 r1)", friday, entitySlot.captured.plannedDate)
+    }
+
+    @Test
+    fun `updateTask keeps an explicit plannedDate from the edit`() = runTest {
+        val monday = 1_794_508_800_000L
+        val existing = TaskEntity(id = "task-replan", title = "Old plan", plannedDate = 1_795_113_600_000L)
+        val edit = Task(id = "task-replan", title = "Same", plannedDate = monday)
+        val entitySlot = slot<TaskEntity>()
+
+        coEvery { taskDao.getTaskById("task-replan") } returns existing
+        coEvery { taskDao.updateTask(capture(entitySlot)) } returns Unit
+
+        repo.updateTask(edit)
+
+        assertEquals("an explicit plan from the edit wins", monday, entitySlot.captured.plannedDate)
+    }
+
     // ── toggleCompletion: atomic single-statement UPDATE ──────────────────
 
     @Test

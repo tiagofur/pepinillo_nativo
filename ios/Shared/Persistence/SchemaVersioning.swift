@@ -1157,32 +1157,14 @@ enum SchemaV4: VersionedSchema {
     }
 }
 
-// MARK: - Schema V5 (CloudKit Unique IDs) — CURRENT
+// MARK: - Schema V7 (Add TaskItem.plannedDate) — CURRENT
 
-/// Adds `@Attribute(.unique)` on `id` for TaskItem, FocusSessionRecord, and DailyStats (#165).
-enum SchemaV5: VersionedSchema {
-    static var versionIdentifier: Schema.Version { Schema.Version(5, 0, 0) }
-
-    static var models: [any PersistentModel.Type] {
-        [
-            TaskItem.self,
-            SubTask.self,
-            FocusSessionRecord.self,
-            DailyStats.self,
-            UserPreferences.self,
-            ProductivityReport.self,
-            CachedUser.self,
-        ]
-    }
-}
-
-// MARK: - Schema V6 (Add AchievementRecord) — CURRENT
-
-/// Adds the AchievementRecord table for persisted achievements (S1-S2).
-/// Lightweight migration — only adds a new table, no existing model changes.
-/// Mirrors V5 style (live model classes).
-enum SchemaV6: VersionedSchema {
-    static var versionIdentifier: Schema.Version { Schema.Version(6, 0, 0) }
+/// Adds `TaskItem.plannedDate` — the local calendar day that replaces the
+/// `scheduledForToday` boolean (issue #991 S1). Lightweight migration: only
+/// adds an optional column. The boolean → planned date backfill runs as part
+/// of the V6→V7 stage (see `PepinilloMigrationPlan`).
+enum SchemaV7: VersionedSchema {
+    static var versionIdentifier: Schema.Version { Schema.Version(7, 0, 0) }
 
     static var models: [any PersistentModel.Type] {
         [
@@ -1212,6 +1194,7 @@ enum PepinilloMigrationPlan: SchemaMigrationPlan {
             SchemaV4.self,
             SchemaV5.self,
             SchemaV6.self,
+            SchemaV7.self,
         ]
     }
 
@@ -1223,6 +1206,38 @@ enum PepinilloMigrationPlan: SchemaMigrationPlan {
             .lightweight(fromVersion: SchemaV3.self, toVersion: SchemaV4.self),
             .lightweight(fromVersion: SchemaV4.self, toVersion: SchemaV5.self),
             .lightweight(fromVersion: SchemaV5.self, toVersion: SchemaV6.self),
+            .custom(
+                fromVersion: SchemaV6.self,
+                toVersion: SchemaV7.self,
+                willMigrate: nil,
+                didMigrate: { context in
+                    try TaskPlanningBackfill.backfillPlannedDates(in: context)
+                }
+            ),
         ]
+    }
+}
+
+/// One-shot data backfill for the V6→V7 stage (issue #991 S1): rows that were
+/// "in today's list" under the legacy boolean start with `plannedDate` set to
+/// today. Idempotent — rows that already carry a planned date are untouched,
+/// and the boolean is left in place for older-installs compat (the resolver's
+/// shim and the sync layer retire it separately).
+enum TaskPlanningBackfill {
+    static func backfillPlannedDates(
+        in context: ModelContext,
+        now: Date = Date(),
+        calendar: Calendar = .current
+    ) throws {
+        let today = calendar.startOfDay(for: now)
+        let descriptor = FetchDescriptor<TaskItem>(
+            predicate: #Predicate { $0.scheduledForToday && $0.plannedDate == nil }
+        )
+        let pending = try context.fetch(descriptor).filter { $0.plannedDate == nil }
+        guard !pending.isEmpty else { return }
+        for task in pending {
+            task.plannedDate = today
+        }
+        try context.save()
     }
 }

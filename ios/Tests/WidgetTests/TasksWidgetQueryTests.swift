@@ -5,7 +5,7 @@
 // predicate referenced `isDeleted` — SwiftData's in-memory deletion marker,
 // not a TaskItem schema field — and crashed every widget timeline with an
 // uncatchable SwiftData trap, so the widget always rendered its empty
-// state. These tests execute the real fetch against a SchemaV6 container
+// state. These tests execute the real fetch against a SchemaV7 container
 // (on-disk, same pattern as GetTodayTasksIntentTests).
 
 import Testing
@@ -20,7 +20,7 @@ struct TasksWidgetQueryTests {
         let dir = FileManager.default.temporaryDirectory
             .appendingPathComponent("taskswidget-\(label)-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        let schema = Schema(versionedSchema: SchemaV6.self)
+        let schema = Schema(versionedSchema: SchemaV7.self)
         let config = ModelConfiguration(
             schema: schema,
             url: dir.appendingPathComponent("test.sqlite"),
