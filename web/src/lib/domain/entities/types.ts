@@ -34,6 +34,9 @@ export interface Task {
 	/** Local calendar-day key (YYYY-MM-DD), not a timestamp — see plan.ts */
 	dueDate?: string | null;
 	scheduledForToday?: boolean;
+	/** Local calendar-day key the user plans to work on this task — replaces
+	 * scheduledForToday (issue #991 S1). Same day-key encoding as dueDate. */
+	plannedDate?: string | null;
 	completedAt?: string | null;
 	subtasks?: SubTask[];
 	recurrenceRule?: string | null;

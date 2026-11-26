@@ -24,6 +24,44 @@ export function isToday(task: Task, todayKey: string): boolean {
 	return task.scheduledForToday === true || task.dueDate === todayKey;
 }
 
+/**
+ * Issue #991 S2/S3 — unified «Hoy» rule, the web leg of the one rule every
+ * platform asserts against contracts/fixtures/task-planning-cases-991.json.
+ * `plannedDate` is a day key (YYYY-MM-DD, local) exactly like `dueDate`;
+ * day keys compare lexicographically. `scheduledForToday` is the legacy
+ * pre-#991 boolean: it acts as a sync shim only where the new semantics
+ * don't speak (no planned date, or a future one); a past planned date keeps
+ * its S6 postponement.
+ */
+export type PlanningBucket =
+	| { kind: 'today'; postponed: boolean }
+	| { kind: 'upcoming' }
+	| { kind: 'inbox' }
+	| { kind: 'completed' };
+
+export function planningBucket(
+	plannedDate: string | null | undefined,
+	dueDate: string | null | undefined,
+	scheduledForToday: boolean,
+	status: string,
+	today: Date = new Date()
+): PlanningBucket {
+	if (status === 'completed') return { kind: 'completed' };
+	const todayKey = localDateKey(today);
+	const isFuture = (key: string) => key > todayKey;
+
+	if (scheduledForToday && (!plannedDate || isFuture(plannedDate))) {
+		return { kind: 'today', postponed: false };
+	}
+	if (plannedDate && !isFuture(plannedDate)) {
+		return { kind: 'today', postponed: plannedDate !== todayKey };
+	}
+	if (dueDate && !isFuture(dueDate)) {
+		return { kind: 'today', postponed: false };
+	}
+	return plannedDate || dueDate ? { kind: 'upcoming' } : { kind: 'inbox' };
+}
+
 export function filterTasks(tasks: Task[], filter: PlanFilter, today: Date = new Date()): Task[] {
 	const todayKey = localDateKey(today);
 	const active = tasks.filter((t) => t.status === 'active');
