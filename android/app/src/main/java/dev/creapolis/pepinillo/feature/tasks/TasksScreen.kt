@@ -91,6 +91,10 @@ import dev.creapolis.pepinillo.ui.theme.PepinilloShapeTokens
 import dev.creapolis.pepinillo.ui.theme.isReduceMotionEnabled
 import dev.creapolis.pepinillo.ui.theme.MotionScheme
 import kotlinx.coroutines.delay
+import androidx.compose.material3.SuggestionChip
+import androidx.compose.material3.SuggestionChipDefaults
+import dev.creapolis.pepinillo.domain.tasks.EnergySuggestion
+import java.time.LocalTime
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -204,7 +208,54 @@ fun TasksScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // ── 2b. ENERGY SUGGESTION CHIP (issue #990) ──
+            // Only on "Today" (S2): suggests the level for the current hour
+            // (S1), hides when no candidate tasks exist (S3), tapping filters
+            // (S4) and tapping again clears it. Rows keep their start-focus.
+            if (uiState.selectedFilter == TaskFilter.Today) {
+                val suggested = EnergySuggestion.suggestedLevel(LocalTime.now().hour)
+                val hasCandidates = uiState.tasks.any {
+                    !it.isCompleted && it.scheduledForToday && it.energyLevel == suggested
+                }
+                val isSelected = uiState.energyFilter == suggested
+                val visible = hasCandidates || (uiState.energyFilter != null && isSelected)
+                if (visible) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        SuggestionChip(
+                            onClick = {
+                                viewModel.selectEnergyFilter(if (isSelected) null else suggested)
+                            },
+                            label = {
+                                Text(
+                                    stringResource(R.string.energy_suggestion_chip, suggested.label),
+                                    style = MaterialTheme.typography.labelLarge,
+                                )
+                            },
+                            icon = { Text(suggested.suggestionEmoji()) },
+                            colors = SuggestionChipDefaults.suggestionChipColors(
+                                containerColor = if (isSelected)
+                                    MaterialTheme.colorScheme.primaryContainer
+                                else
+                                    MaterialTheme.colorScheme.surfaceVariant,
+                            ),
+                        )
+                        if (uiState.energyFilter != null) {
+                            TextButton(onClick = { viewModel.selectEnergyFilter(null) }) {
+                                Text(stringResource(R.string.energy_show_all))
+                            }
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+            }
+
+            Spacer(modifier = Modifier.height(4.dp))
 
             // ── 3. TASK LIST ──
             if (filteredTasks.isEmpty() && !uiState.isLoading) {
@@ -669,4 +720,11 @@ private fun TaskFilter.accentColor(): Color = when (this) {
     TaskFilter.Inbox -> DomainColors.FilterInbox
     TaskFilter.Upcoming -> DomainColors.FilterUpcoming
     TaskFilter.Completed -> DomainColors.Positive
+}
+
+/** Issue #990: emoji del nivel para el chip de sugerencia (espejo del widget). */
+private fun dev.creapolis.pepinillo.feature.tasks.model.EnergyLevel.suggestionEmoji(): String = when (this) {
+    dev.creapolis.pepinillo.feature.tasks.model.EnergyLevel.Deep -> "\uD83D\uDD25"
+    dev.creapolis.pepinillo.feature.tasks.model.EnergyLevel.Light -> "\uD83D\uDCA7"
+    dev.creapolis.pepinillo.feature.tasks.model.EnergyLevel.Regular -> "\u26A1"
 }
