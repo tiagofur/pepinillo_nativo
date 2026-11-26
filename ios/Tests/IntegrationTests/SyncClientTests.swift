@@ -607,3 +607,131 @@ struct SyncClientTests {
         #expect(await probe.count() == 0, "Capability (backendSync=false) must win — no API calls")
     }
 }
+
+// MARK: - Issue #987 (premise disproved + regression pin)
+
+/// Issue #987 claimed SyncClient filtered dirty tasks by the SwiftData shadow
+/// `isDeleted` on the TaskItem @Model, making deletedSyncIds permanently empty.
+/// Disproved: fetchDirtyTasks returns [TaskItemDTO], whose isDeleted is mapped
+/// from the schema-backed isLocallyDeleted at construction
+/// (PersistenceClient.swift:116). This suite pins that contract so the
+/// tombstone routing cannot silently regress.
+@Suite("SyncClient tombstone routing", .appGroupDefaultsSerialized)
+@MainActor
+struct SyncClientTombstoneTests {
+
+    @Test("deleted dirty tasks report deletedSyncIds and skip the regular push")
+    func deletedDirtyTasksBecomeTombstones() async throws {
+        let saved = AppGroupDefaults.userCapabilities
+        defer { AppGroupDefaults.userCapabilities = saved }
+        AppGroupDefaults.userCapabilities = .everywherePlus
+        let savedCanSync = AppGroupDefaults.canBackendSync
+        defer { AppGroupDefaults.canBackendSync = savedCanSync }
+        AppGroupDefaults.canBackendSync = true
+
+        // TaskItemDTO.isDeleted is mapped from the schema-backed isLocallyDeleted
+        // flag at construction (PersistenceClient.swift:116).
+        let deletedTask = TaskItemDTO(
+            title: "Deleted on this device",
+            syncId: "sync-tombstone-987", isDirty: true, isDeleted: true
+        )
+        let aliveTask = TaskItemDTO(
+            title: "Still alive",
+            syncId: "sync-alive-987", isDirty: true
+        )
+
+        let capture = RequestCapture()
+
+        try await runTombstoneSync(
+            capture: capture,
+            deletedTask: deletedTask,
+            aliveTask: aliveTask
+        )
+
+        let requests = await capture.all()
+        #expect(requests.count == 1)
+        let request = try #require(requests.first)
+        #expect(request.deletedSyncIds == ["sync-tombstone-987"],
+                "logical deletes must ride deletedSyncIds (issue #987)")
+        #expect(request.tasks.map(\.syncId) == ["sync-alive-987"],
+                "tombstones must not ride the regular task push")
+        #expect(request.tasks.allSatisfy { !$0.isDeleted })
+    }
+
+    private actor RequestCapture {
+        var requests: [TaskSyncRequest] = []
+        func record(_ request: TaskSyncRequest) { requests.append(request) }
+        func all() -> [TaskSyncRequest] { requests }
+    }
+
+    // Issue #987 round 2: the overrides live in a dedicated helper — the
+    // mega-closure inside the test body otherwise times out Swift's
+    // type-checker (failed-to-produce-diagnostic).
+    private func runTombstoneSync(
+        capture: RequestCapture,
+        deletedTask: TaskItemDTO,
+        aliveTask: TaskItemDTO
+    ) async throws {
+        let hasTokens: @Sendable () async -> Bool = { true }
+        let noOpThrowing: @Sendable () async throws -> Void = {}
+        let liveTasks: @Sendable () async throws -> Void = {
+            try await SyncClient.liveValue.syncTasks()
+        }
+        let captureTasks: @Sendable (TaskSyncRequest) async throws -> TaskSyncResponse = { request in
+            await capture.record(request)
+            return TaskSyncResponse(tasks: [], deletedSyncIds: [], syncTimestamp: "")
+        }
+
+        // Struct stubs based on liveValue (the @DependencyClient generated
+        // init is itself a type-checker bomb at 30+ unimplemented defaults):
+        // copy live and override the members the syncAll path touches. The
+        // withDependencies block stays at 3 cheap assignments — the 20-member
+        // closure form times out Swift's type-checker (issue #987 round 2).
+        var apiStub = APIClient.liveValue
+        apiStub.syncTasks = captureTasks
+        apiStub.syncSessions = { (_: SessionSyncRequest) -> SessionSyncResponse in
+            SessionSyncResponse(sessions: [], serverTimestamp: "")
+        }
+        apiStub.upsertPreferences = { (_: PreferenceSyncRequest) -> PreferenceSyncResponse in
+            PreferenceSyncResponse(preferences: [], serverTimestamp: "")
+        }
+
+        var persistenceStub = PersistenceClient.liveValue
+        let noTasks: @Sendable () async throws -> [TaskItemDTO] = { [deletedTask, aliveTask] in
+            [deletedTask, aliveTask]
+        }
+        let noStringDate: @Sendable ([String], String) async throws -> Void = { _, _ in }
+        let noUUIDDate: @Sendable ([UUID]) async throws -> Void = { _ in }
+        let noSubtasks: @Sendable ([UUID]) async throws -> [UUID: [SubTaskDTO]] = { _ in [:] }
+        let noTaskSessions: @Sendable ([UUID]) async throws -> [UUID: [SessionRecordDTO]] = { _ in [:] }
+        persistenceStub.fetchDirtyTasks = noTasks
+        persistenceStub.markTasksSynced = noStringDate
+        persistenceStub.markSessionsSynced = noUUIDDate
+        persistenceStub.save = noOpThrowing
+        let noDateString: @Sendable (String) async throws -> Void = { _ in }
+        persistenceStub.saveLastSyncTimestamp = noDateString
+        persistenceStub.getLastSyncTimestamp = { nil }
+        persistenceStub.getLastSessionSyncTimestamp = { nil }
+        persistenceStub.fetchDirtySessions = { [] }
+        persistenceStub.getAllPreferencesAsKeyValue = { [] }
+        persistenceStub.fetchCachedUser = { nil }
+        persistenceStub.fetchSubtasksForTasks = noSubtasks
+        persistenceStub.fetchSessionsForTasks = noTaskSessions
+
+        var syncStub = SyncClient.liveValue
+        syncStub.syncSettings = noOpThrowing
+        syncStub.syncTasks = liveTasks
+        syncStub.syncSessions = noOpThrowing
+
+        let client = SyncClient.liveValue
+        try await withDependencies {
+            $0.keychainClient.hasTokens = hasTokens
+            $0.apiClient = apiStub
+            $0.persistenceClient = persistenceStub
+            $0.syncClient = syncStub
+        } operation: {
+            try await client.syncAll()
+        }
+    }
+
+}
