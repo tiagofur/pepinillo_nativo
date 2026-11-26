@@ -1,6 +1,6 @@
 # Verification Evidence — issue #986 (flatten CI -only-testing filters)
 
-1. Conversión completa: fast gate (9 líneas) y full gate (11 líneas) en
+1. Conversión completa: fast gate (8 filtros planos) y full gate (33 filtros: 9 suites + 24 FocusEngine) en
    formato plano Target/Suite — cero líneas con segmento de carpeta
    (verificado con rg).
 2. Ejecución local del fast gate final (8 filtros planos, cadena bash

@@ -215,7 +215,7 @@ jobs:
             -only-testing:PepinilloTests/WidgetProGatingTests \
             -only-testing:PepinilloTests/TasksWidgetQueryTests \
             -only-testing:PepinilloTests/FocusActivityAttributesTests \
-            -only-testing:PepinilloTests/SiriPauseResumeIntentTests \
+            -only-testing:PepinilloTests/SiriPauseResumeIntentTests
 
       - name: Run targeted tests (full — main)
         if: steps.suite.outputs.mode == 'full'
