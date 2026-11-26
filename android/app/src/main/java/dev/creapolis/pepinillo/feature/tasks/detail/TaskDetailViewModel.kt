@@ -9,6 +9,7 @@ import dev.creapolis.pepinillo.core.billing.SubscriptionState
 import dev.creapolis.pepinillo.data.local.preferences.UserPreferences
 import dev.creapolis.pepinillo.data.local.preferences.UserPreferencesRepository
 import dev.creapolis.pepinillo.data.repository.TaskRepository
+import dev.creapolis.pepinillo.domain.tasks.TaskPlanning
 import dev.creapolis.pepinillo.domain.tasks.DueDateEncoding
 import dev.creapolis.pepinillo.feature.tasks.model.EnergyLevel
 import dev.creapolis.pepinillo.feature.tasks.model.MAX_TASK_NOTES_LENGTH
@@ -161,6 +162,20 @@ class TaskDetailViewModel @Inject constructor(
         it.copy(dueDate = millis?.let(DueDateEncoding::fromPickerMillis))
     }
     fun toggleScheduledForToday() = updateTask { it.copy(scheduledForToday = !it.scheduledForToday) }
+
+    /**
+     * «Planificar para…» (issue #991 S4): writes the planned day (canonical
+     * local midnight via [DueDateEncoding.fromPickerMillis] on the picker
+     * boundary) and derives the legacy boolean so pre-PR-C surfaces (widget,
+     * tile) keep a truthful «Hoy». `null` clears the plan.
+     */
+    fun setPlannedDate(pickerMillis: Long?) = updateTask {
+        val planned = pickerMillis?.let(DueDateEncoding::fromPickerMillis)?.let(TaskPlanning::plannedDay)
+        it.copy(
+            plannedDate = planned,
+            scheduledForToday = planned != null && !TaskPlanning.isFutureDay(planned),
+        )
+    }
     fun updateRecurrence(option: RecurrenceOption) {
         if (option != RecurrenceOption.None && !featureGate.canUseRecurrence()) {
             _showPaywall.value = true

@@ -5,6 +5,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import dev.creapolis.pepinillo.ui.theme.MotionScheme
 import dev.creapolis.pepinillo.ui.theme.PepinilloShapeTokens
+import dev.creapolis.pepinillo.domain.tasks.TaskPlanning
 import dev.creapolis.pepinillo.domain.tasks.DueDateEncoding
 import java.util.Calendar
 import androidx.compose.foundation.background
@@ -329,13 +330,22 @@ private fun MetadataRow(
         }
     }
 
-    // Today indicator (only if no due date to avoid clutter)
-    if (task.scheduledForToday && task.dueDate == null) {
+    // Planned-day badge (issue #991): «Hoy» for today's plan, «Pospuesta»
+    // keeps a past plan visible (S6) — only if no due date to avoid clutter.
+    if (task.dueDate == null && TaskPlanning.isPlannedTodayOrPast(task)) {
         metadataItems.add {
-            val color = MaterialTheme.colorScheme.primary
+            val postponed = task.plannedDate != null &&
+                TaskPlanning.isFutureDay(task.plannedDate) == false &&
+                !TaskPlanning.isPlannedToday(task)
+            val color = if (postponed) DomainColors.DueToday else MaterialTheme.colorScheme.primary
             MetadataBadge(color = color) {
-                Icon(Icons.Rounded.Today, contentDescription = stringResource(R.string.cd_scheduled_today), modifier = Modifier.size(14.dp), tint = color)
-                Text(stringResource(R.string.filter_today), style = MaterialTheme.typography.bodySmall, color = color)
+                if (postponed) {
+                    Icon(Icons.Rounded.AccessTime, contentDescription = stringResource(R.string.task_plan_postponed), modifier = Modifier.size(14.dp), tint = color)
+                    Text(stringResource(R.string.task_plan_postponed), style = MaterialTheme.typography.bodySmall, color = color)
+                } else {
+                    Icon(Icons.Rounded.Today, contentDescription = stringResource(R.string.cd_scheduled_today), modifier = Modifier.size(14.dp), tint = color)
+                    Text(stringResource(R.string.filter_today), style = MaterialTheme.typography.bodySmall, color = color)
+                }
             }
         }
     }

@@ -28,6 +28,8 @@ import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.Event
+import androidx.compose.material.icons.rounded.ExpandMore
 import androidx.compose.material.icons.rounded.LocalFireDepartment
 import androidx.compose.material.icons.rounded.CalendarMonth
 import androidx.compose.material.icons.rounded.Checklist
@@ -53,6 +55,9 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material3.DatePicker
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.DropdownMenu
@@ -87,6 +92,7 @@ import dev.creapolis.pepinillo.feature.tasks.model.RecurrenceOption
 import dev.creapolis.pepinillo.feature.tasks.model.TaskPriority
 import dev.creapolis.pepinillo.feature.tasks.model.labelRes
 import dev.creapolis.pepinillo.domain.tasks.DueDateEncoding
+import dev.creapolis.pepinillo.domain.tasks.TaskPlanning
 import dev.creapolis.pepinillo.ui.haptics.PepinilloHaptics
 import dev.creapolis.pepinillo.ui.theme.DomainColors
 import dev.creapolis.pepinillo.ui.theme.priorityColor
@@ -418,36 +424,138 @@ fun TaskDetailScreen(
             border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
-                // Focus Today row
+                // «Planificar para…» row (issue #991 S4) replaces the binary toggle.
+                var showPlanSheet by remember { mutableStateOf(false) }
+                var showPlanDatePicker by remember { mutableStateOf(false) }
                 Row(
-                    modifier = Modifier.fillMaxWidth().height(48.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp)
+                        .clickable { showPlanSheet = true },
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
-                            imageVector = Icons.Rounded.LocalFireDepartment,
+                            imageVector = Icons.Rounded.Event,
                             contentDescription = null,
                             tint = DomainColors.DueToday,
                             modifier = Modifier.size(22.dp)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = stringResource(R.string.task_focus_today),
+                            text = stringResource(R.string.task_plan_for),
                             style = MaterialTheme.typography.bodyLarge,
                             fontWeight = FontWeight.SemiBold
                         )
                     }
-                    Switch(
-                        checked = task.scheduledForToday,
-                        onCheckedChange = { viewModel.toggleScheduledForToday() },
-                        colors = SwitchDefaults.colors(
-                            checkedThumbColor = Color.White,
-                            checkedTrackColor = DomainColors.DueToday,
-                            uncheckedThumbColor = MaterialTheme.colorScheme.outline,
-                            uncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = taskPlanningValueText(task.plannedDate),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = if (task.plannedDate != null) MaterialTheme.colorScheme.primary
+                            else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Icon(
+                            imageVector = Icons.Rounded.ExpandMore,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+
+                if (showPlanSheet) {
+                    ModalBottomSheet(onDismissRequest = { showPlanSheet = false }) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 8.dp)
+                        ) {
+                            Text(
+                                text = stringResource(R.string.task_plan_for),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier.padding(bottom = 12.dp)
+                            )
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                AssistChip(
+                                    onClick = {
+                                        viewModel.setPlannedDate(DueDateEncoding.toPickerMillis(TaskPlanning.plannedDay()))
+                                        showPlanSheet = false
+                                    },
+                                    label = { Text(stringResource(R.string.filter_today)) }
+                                )
+                                AssistChip(
+                                    onClick = {
+                                        viewModel.setPlannedDate(DueDateEncoding.toPickerMillis(TaskPlanning.tomorrow()))
+                                        showPlanSheet = false
+                                    },
+                                    label = { Text(stringResource(R.string.task_plan_tomorrow)) }
+                                )
+                                AssistChip(
+                                    onClick = {
+                                        viewModel.setPlannedDate(DueDateEncoding.toPickerMillis(TaskPlanning.upcomingWeekend()))
+                                        showPlanSheet = false
+                                    },
+                                    label = { Text(stringResource(R.string.task_plan_weekend)) }
+                                )
+                            }
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                AssistChip(
+                                    onClick = {
+                                        showPlanSheet = false
+                                        showPlanDatePicker = true
+                                    },
+                                    label = { Text(stringResource(R.string.task_plan_pick)) }
+                                )
+                                if (task.plannedDate != null) {
+                                    AssistChip(
+                                        onClick = {
+                                            viewModel.setPlannedDate(null)
+                                            showPlanSheet = false
+                                        },
+                                        label = { Text(stringResource(R.string.task_plan_remove)) },
+                                        colors = AssistChipDefaults.assistChipColors(
+                                            labelColor = MaterialTheme.colorScheme.error
+                                        )
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(24.dp))
+                        }
+                    }
+                }
+
+                if (showPlanDatePicker) {
+                    // Picker exchanges UTC-midnight millis; the plan is stored as
+                    // canonical local midnight (same boundary as due dates, C1).
+                    val planPickerState = rememberDatePickerState(
+                        initialSelectedDateMillis = DueDateEncoding.toPickerMillis(
+                            task.plannedDate ?: System.currentTimeMillis()
                         )
                     )
+                    DatePickerDialog(
+                        onDismissRequest = { showPlanDatePicker = false },
+                        confirmButton = {
+                            TextButton(
+                                onClick = {
+                                    viewModel.setPlannedDate(planPickerState.selectedDateMillis)
+                                    showPlanDatePicker = false
+                                }
+                            ) {
+                                Text(stringResource(R.string.btn_save))
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { showPlanDatePicker = false }) {
+                                Text(stringResource(R.string.btn_cancel))
+                            }
+                        }
+                    ) {
+                        DatePicker(state = planPickerState)
+                    }
                 }
 
                 HorizontalDivider(
@@ -1052,3 +1160,25 @@ fun TaskDetailScreen(
 
 /** Picker-format (UTC-midnight) millis of the local today — kept for picker initialization. */
 internal fun getUtcMidnightOfLocalToday(): Long = DueDateEncoding.toPickerMillis(System.currentTimeMillis())
+
+/** Value text for the «Planificar para…» row: Hoy / Mañana / dd MMM (issue #991). */
+@Composable
+private fun taskPlanningValueText(plannedDate: Long?): String {
+    if (plannedDate == null) return "—"
+    val today = java.util.Calendar.getInstance().apply {
+        set(java.util.Calendar.HOUR_OF_DAY, 0)
+        set(java.util.Calendar.MINUTE, 0)
+        set(java.util.Calendar.SECOND, 0)
+        set(java.util.Calendar.MILLISECOND, 0)
+    }.timeInMillis
+    val tomorrow = java.util.Calendar.getInstance().apply {
+        timeInMillis = today
+        add(java.util.Calendar.DAY_OF_YEAR, 1)
+    }.timeInMillis
+    return when (plannedDate) {
+        today -> stringResource(R.string.filter_today)
+        tomorrow -> stringResource(R.string.task_plan_tomorrow)
+        else -> java.text.SimpleDateFormat("dd MMM", java.util.Locale.getDefault())
+            .format(java.util.Date(plannedDate))
+    }
+}

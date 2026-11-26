@@ -8,6 +8,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dev.creapolis.pepinillo.R
 import dev.creapolis.pepinillo.core.billing.FeatureGate
 import dev.creapolis.pepinillo.data.repository.TaskRepository
+import dev.creapolis.pepinillo.domain.tasks.TaskPlanning
 import dev.creapolis.pepinillo.domain.tasks.DueDateEncoding
 import dev.creapolis.pepinillo.domain.timer.FocusEngine
 import dev.creapolis.pepinillo.feature.tasks.model.EnergyLevel
@@ -60,27 +61,33 @@ data class TasksUiState(
 )
 
 internal fun TasksUiState.computeFilteredTasks(): List<Task> {
-        // Compute "today" once per evaluation instead of allocating 3 Calendars per task.
-        val todayNorm = getNormalizedLocalDate()
-        // 1. Plan category filter
+        // 1. Plan category filter — unified «Hoy» rule (issue #991 S2), one
+        // resolver for the whole app (domain/tasks/TaskPlanning.kt).
         val statusFiltered = when (selectedFilter) {
-            // Today: explicitly scheduled today OR due today OR overdue
-            TaskFilter.Today -> tasks.filter { task ->
-                !task.isCompleted && (
-                    task.scheduledForToday ||
-                    (task.dueDate != null && (isDueTodayMs(task.dueDate, todayNorm) || isBeforeTodayMs(task.dueDate, todayNorm)))
-                )
+            TaskFilter.Today -> tasks.filter {
+                TaskPlanning.bucket(
+                    plannedDate = it.plannedDate,
+                    dueDate = it.dueDate,
+                    scheduledForToday = it.scheduledForToday,
+                    isCompleted = it.isCompleted,
+                ) is TaskPlanning.Bucket.Today
             }
-            // Inbox: no due date, not scheduled today
-            TaskFilter.Inbox -> tasks.filter { task ->
-                !task.isCompleted && !task.scheduledForToday && task.dueDate == null
+            TaskFilter.Inbox -> tasks.filter {
+                TaskPlanning.bucket(
+                    plannedDate = it.plannedDate,
+                    dueDate = it.dueDate,
+                    scheduledForToday = it.scheduledForToday,
+                    isCompleted = it.isCompleted,
+                ) is TaskPlanning.Bucket.Inbox
             }
-            // Upcoming: all future dues (strictly after today). Issue #182.
-            TaskFilter.Upcoming -> tasks.filter { task ->
-                !task.isCompleted &&
-                    !task.scheduledForToday &&
-                    task.dueDate != null &&
-                    isUpcomingMs(task.dueDate, todayNorm)
+            // #182: no one-week cap — Upcoming holds every future date.
+            TaskFilter.Upcoming -> tasks.filter {
+                TaskPlanning.bucket(
+                    plannedDate = it.plannedDate,
+                    dueDate = it.dueDate,
+                    scheduledForToday = it.scheduledForToday,
+                    isCompleted = it.isCompleted,
+                ) is TaskPlanning.Bucket.Upcoming
             }
             TaskFilter.Completed -> tasks.filter { it.isCompleted }
         }
@@ -239,22 +246,22 @@ class TasksViewModel @Inject constructor(
                 return@launch
             }
             val currentFilter = _selectedFilter.value
-            val scheduledForToday = currentFilter == TaskFilter.Today
-            val dueDate = if (currentFilter == TaskFilter.Upcoming) {
-                Calendar.getInstance().apply {
-                    add(Calendar.DAY_OF_YEAR, 1)
-                    set(Calendar.HOUR_OF_DAY, 0)
-                    set(Calendar.MINUTE, 0)
-                    set(Calendar.SECOND, 0)
-                    set(Calendar.MILLISECOND, 0)
-                }.timeInMillis
-            } else null
+            // S5 (#991): quick add inherits a planned date — today from «Hoy»,
+            // tomorrow from «Próximas». No deadline is invented anymore.
+            val plannedDate = when (currentFilter) {
+                TaskFilter.Today -> TaskPlanning.plannedDay()
+                TaskFilter.Upcoming -> TaskPlanning.plannedDay(
+                    Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, 1) }.timeInMillis
+                )
+                else -> null
+            }
 
             taskRepository.addTask(
                 Task(
                     title = title.trim().take(MAX_TASK_TITLE_LENGTH),
-                    scheduledForToday = scheduledForToday,
-                    dueDate = dueDate,
+                    scheduledForToday = currentFilter == TaskFilter.Today,
+                    plannedDate = plannedDate,
+                    dueDate = null,
                     // max+1 over the repository snapshot: tasks.size collides with an
                     // existing sort order when the list contains non-contiguous orders.
                     sortOrder = (taskRepository.getAllTasks().first().maxOfOrNull { it.sortOrder } ?: -1) + 1,

@@ -348,6 +348,12 @@
     <string name="task_stat_total_time">Tiempo Total de Enfoque</string>
     <string name="task_stat_completed_pomos">Pomodoros Completados</string>
     <string name="task_focus_today">Enfoque de Hoy</string>
+    <string name="task_plan_for">Planificar para…</string>
+    <string name="task_plan_tomorrow">Mañana</string>
+    <string name="task_plan_weekend">Este fin de semana</string>
+    <string name="task_plan_pick">Elegir fecha…</string>
+    <string name="task_plan_remove">Quitar fecha</string>
+    <string name="task_plan_postponed">Pospuesta</string>
     <string name="task_status_active">Activa</string>
     <string name="task_status_completed">Completada</string>
 

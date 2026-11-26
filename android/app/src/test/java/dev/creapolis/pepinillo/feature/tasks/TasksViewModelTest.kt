@@ -200,7 +200,9 @@ class TasksViewModelTest {
         viewModel.addQuickTask("Tomorrow task")
         testDispatcher.scheduler.advanceUntilIdle()
 
-        assertEquals("due tomorrow must be stored as local midnight", localMidnightOfTomorrow(), captured.captured.dueDate)
+        // S5 (#991): Upcoming quick-add plans tomorrow — no deadline is invented.
+        assertEquals("planned tomorrow must be stored as local midnight", localMidnightOfTomorrow(), captured.captured.plannedDate)
+        assertEquals("no deadline may be invented for a plan", null, captured.captured.dueDate)
 
         val upcoming = TasksUiState(
             tasks = listOf(captured.captured),

@@ -1,5 +1,7 @@
 package dev.creapolis.pepinillo.feature.tasks.model
 
+import dev.creapolis.pepinillo.domain.tasks.TaskPlanning
+
 import java.util.UUID
 
 /** Max task title length (iOS parity) so multi-device sync stays consistent. */
@@ -55,12 +57,12 @@ data class Task(
     val completedPomodoros: Int = 0,
     val sortOrder: Int = 0,
     val dueDate: Long? = null,
-    val scheduledForToday: Boolean = false,
+    override val scheduledForToday: Boolean = false,
     /** Local-midnight epoch millis of the planned day — replaces scheduledForToday
      * (issue #991 S1). Same encoding as dueDate; see domain/tasks/TaskPlanning.kt. */
-    val plannedDate: Long? = null,
+    override val plannedDate: Long? = null,
     val recurrenceRule: String? = null,
     val isRecurringTemplate: Boolean = false,
     val recurringTemplateID: String? = null,
     val createdAt: Long = System.currentTimeMillis(),
-)
+) : TaskPlanning.HasPlan
