@@ -96,4 +96,35 @@ struct EnergySuggestionTests {
         let level = EnergySuggestion.suggestedLevel(for: date, calendar: calendar)
         #expect(level == .deep)
     }
+
+    // MARK: - Issue #990 (S1): the shared 24-hour fixture
+
+    /// contracts/fixtures/energy-hours-989.json is the single source of truth
+    /// for the hour → level table; every platform's suite asserts its engine
+    /// against the same file.
+    @Test func matchesSharedFixtureTable() throws {
+        let fixtureURL = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent() // TaskFeatureTests
+            .deletingLastPathComponent() // Tests
+            .deletingLastPathComponent() // ios
+            .deletingLastPathComponent() // repo root
+            .appendingPathComponent("contracts/fixtures/energy-hours-989.json")
+        let raw = try Data(contentsOf: fixtureURL)
+        let table = try JSONDecoder().decode(EnergyHoursTable.self, from: raw)
+        #expect(table.hours.count == 24)
+        for entry in table.hours {
+            #expect(
+                EnergySuggestion.suggestedLevel(forHour: entry.hour) == EnergyLevel(rawValue: entry.level),
+                "hour \(entry.hour) must map to \(entry.level)"
+            )
+        }
+    }
+}
+
+struct EnergyHoursTable: Decodable {
+    let hours: [HourEntry]
+    struct HourEntry: Decodable {
+        let hour: Int
+        let level: String
+    }
 }

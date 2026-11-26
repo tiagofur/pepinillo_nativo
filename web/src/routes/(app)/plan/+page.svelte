@@ -13,6 +13,7 @@
 	import Segmented from '$lib/design/Segmented.svelte';
 	import Icon from '$lib/design/Icon.svelte';
 	import { groupByEnergy, PLAN_FILTERS, quickAddDefaults, type PlanFilter } from '$lib/domain/tasks/plan';
+	import type { TaskEnergy } from '$lib/domain/entities/types';
 	import { suggestEnergy } from '$lib/domain/tasks/energy';
 	import type { Task } from '$lib/domain/entities/types';
 
@@ -86,11 +87,27 @@
 	let selectedTask = $derived(plan.tasks.find((x) => x.id === selectedId) ?? null);
 	let suggestion = $derived(suggestEnergy(new Date().getHours()));
 
+	/* Issue #990: the energy suggestion is an actionable Today-scoped filter
+	 * (S2–S4). Not persisted; dismissal lasts the session. Hidden when the
+	 * suggested level has no candidate tasks (S3). */
+	let energyFilter = $state<TaskEnergy | null>(null);
+	let suggestionDismissed = $state(false);
+	$effect(() => {
+		void plan.filter;
+		energyFilter = null;
+	});
+	let suggestionVisible = $derived(
+		plan.filter === 'today' &&
+			!suggestionDismissed &&
+			(energyFilter !== null || plan.visible.some((t) => t.energy === suggestion))
+	);
+
 	/** Toolbar search (Mac `.searchable`): narrows the visible subset by title. */
 	let displayed = $derived.by(() => {
+		const base = energyFilter ? plan.visible.filter((task) => task.energy === energyFilter) : plan.visible;
 		const q = query.trim().toLowerCase();
-		if (!q) return plan.visible;
-		return plan.visible.filter((task) => task.title.toLowerCase().includes(q));
+		if (!q) return base;
+		return base.filter((task) => task.title.toLowerCase().includes(q));
 	});
 
 	/** ⌘⌥I / toolbar toggle: open the inspector on the first visible task. */
@@ -325,6 +342,31 @@
 
 		<div class="inspector-grid" class:with-inspector={!!selectedTask}>
 		<div class="list-area">
+			{#if suggestionVisible}
+				<div class="energy-prompt" role="group">
+					{#if energyFilter}
+						<span class="energy-active">
+							✨ {t(`plan.energy.${energyFilter}`)} · {t('plan.energyFilterActive')}
+							<button class="pill-action pressable" onclick={() => (energyFilter = null)}>
+								{t('plan.showAll')}
+							</button>
+						</span>
+					{:else}
+						<button
+							class="suggest-pill pressable"
+							onclick={() => (energyFilter = suggestion)}
+							aria-label={t('plan.energyFilterAria', { energy: t(`plan.energy.${suggestion}`) })}
+						>
+							✨ {t(`plan.energy.${suggestion}`)} · {t('plan.energySuggestedNow')}
+						</button>
+						<button
+							class="pill-dismiss"
+							onclick={() => (suggestionDismissed = true)}
+							aria-label={t('plan.energyDismissAria')}
+						>✕</button>
+					{/if}
+				</div>
+			{/if}
 			{#if displayed.length === 0}
 				<!-- Mac ContentUnavailableView: symbol, title, description and the
 					 contextual action directly on the content background -->
@@ -400,10 +442,6 @@
 
 		<TaskInspector task={selectedTask} onclose={() => selectTask(null)} />
 	</div>
-
-	{#if plan.filter === 'today' && displayed.length > 0 && app.tier === 'free'}
-		<p class="suggest-hint">✨ {t('plan.energyHint', { energy: t(`plan.energy.${suggestion}`) })}</p>
-	{/if}
 
 	{#if showCapNotice && plan.freeCapReached}
 		<div class="cap card" role="alert">
@@ -579,9 +617,43 @@
 
 	}
 
-	.suggest-hint {
-		color: var(--muted);
-		font-size: var(--text-xs);
+	.energy-prompt {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		margin-bottom: 8px;
+	}
+	.suggest-pill,
+	.energy-active {
+		font-size: 0.85rem;
+		font-weight: 600;
+		color: var(--fg);
+		background: var(--surface-2);
+		border: 1px solid var(--border);
+		border-radius: 999px;
+		padding: 6px 14px;
+		min-height: 36px;
+	}
+	.suggest-pill {
+		cursor: pointer;
+	}
+	.pill-action {
+		margin-inline-start: 8px;
+		background: none;
+		border: none;
+		color: var(--accent);
+		font: inherit;
+		font-weight: 600;
+		cursor: pointer;
+		min-height: 36px;
+	}
+	.pill-dismiss {
+		background: none;
+		border: none;
+		color: var(--fg-muted);
+		cursor: pointer;
+		min-height: 36px;
+		min-width: 36px;
 	}
 
 	.cap {

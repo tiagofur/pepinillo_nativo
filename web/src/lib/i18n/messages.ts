@@ -293,6 +293,11 @@ export type MessageKey =
 	| 'plan.energy.admin'
 	| 'plan.energySuggest'
 	| 'plan.energyHint'
+	| 'plan.energySuggestedNow'
+	| 'plan.energyFilterActive'
+	| 'plan.showAll'
+	| 'plan.energyFilterAria'
+	| 'plan.energyDismissAria'
 	| 'plan.due.today'
 	| 'plan.due.tomorrow'
 	| 'plan.due.overdue'
@@ -856,6 +861,11 @@ const en: Dict = {
 	'plan.energy.admin': 'Admin',
 	'plan.energySuggest': 'Suggest for now',
 	'plan.energyHint': 'Suggested energy right now: {energy}',
+	'plan.energySuggestedNow': 'suggested now',
+	'plan.energyFilterActive': 'showing only',
+	'plan.showAll': 'Show all',
+	'plan.energyFilterAria': 'Filter the list by {energy}',
+	'plan.energyDismissAria': 'Dismiss the energy suggestion',
 	'plan.due.today': 'Today',
 	'plan.due.tomorrow': 'Tomorrow',
 	'plan.due.overdue': 'Overdue',
@@ -1477,6 +1487,11 @@ const es: Dict = {
 	'plan.energy.admin': 'Admin',
 	'plan.energySuggest': 'Sugerir para ahora',
 	'plan.energyHint': 'Energía sugerida ahora: {energy}',
+	'plan.energySuggestedNow': 'sugerida ahora',
+	'plan.energyFilterActive': 'mostrando solo',
+	'plan.showAll': 'Mostrar todo',
+	'plan.energyFilterAria': 'Filtrar la lista por {energy}',
+	'plan.energyDismissAria': 'Ocultar la sugerencia de energía',
 	'plan.due.today': 'Hoy',
 	'plan.due.tomorrow': 'Mañana',
 	'plan.due.overdue': 'Vencida',
@@ -2069,6 +2084,11 @@ const pt: Dict = {
 	'plan.energy.admin': 'Admin',
 	'plan.energySuggest': 'Sugerir para agora',
 	'plan.energyHint': 'Energia sugerida agora: {energy}',
+	'plan.energySuggestedNow': 'sugerida agora',
+	'plan.energyFilterActive': 'mostrando apenas',
+	'plan.showAll': 'Mostrar tudo',
+	'plan.energyFilterAria': 'Filtrar a lista por {energy}',
+	'plan.energyDismissAria': 'Dispensar a sugestão de energia',
 	'plan.due.today': 'Hoje',
 	'plan.due.tomorrow': 'Amanhã',
 	'plan.due.overdue': 'Vencida',

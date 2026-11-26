@@ -191,6 +191,10 @@ struct TaskListFeature {
         case filterChanged(TaskFilter)
         case planFilterSelected(PlanFilter)
         case energyFilterChanged(EnergyFilter)
+        /// Issue #990 (S4): tapping the suggestion filters the list to the level.
+        case suggestedEnergyTapped(EnergyLevel)
+        /// Issue #990 (S4): "Show all" clears the energy filter.
+        case energyFilterCleared
         case sortOrderChanged(SortOrder)
         case newTaskTitleChanged(String)
         case newTaskRequested
@@ -348,6 +352,9 @@ struct TaskListFeature {
 
             case .planFilterSelected(let filter):
                 state.selectedPlanFilter = filter
+                // Issue #990: the energy suggestion/filter is a Today-scoped
+                // interaction — switching pills clears it.
+                state.energyFilter = .all
                 // Clear detail column selection when switching filters
                 if let currentDetail = state.detail {
                     state.tasks[id: currentDetail.taskID] = TaskItemState.from(currentDetail.toDTO())
@@ -358,6 +365,15 @@ struct TaskListFeature {
 
             case .energyFilterChanged(let filter):
                 state.energyFilter = filter
+                return .none
+
+            case .suggestedEnergyTapped(let level):
+                // Issue #990 (S4): the suggestion filters Hoy to its level.
+                state.energyFilter = EnergyFilter(rawValue: level.rawValue) ?? .all
+                return .none
+
+            case .energyFilterCleared:
+                state.energyFilter = .all
                 return .none
 
             case .sortOrderChanged(let order):
