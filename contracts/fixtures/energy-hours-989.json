@@ -1,0 +1,101 @@
+{
+  "issue": 990,
+  "hours": [
+    {
+      "hour": 0,
+      "level": "admin"
+    },
+    {
+      "hour": 1,
+      "level": "admin"
+    },
+    {
+      "hour": 2,
+      "level": "admin"
+    },
+    {
+      "hour": 3,
+      "level": "admin"
+    },
+    {
+      "hour": 4,
+      "level": "admin"
+    },
+    {
+      "hour": 5,
+      "level": "admin"
+    },
+    {
+      "hour": 6,
+      "level": "deep"
+    },
+    {
+      "hour": 7,
+      "level": "deep"
+    },
+    {
+      "hour": 8,
+      "level": "deep"
+    },
+    {
+      "hour": 9,
+      "level": "deep"
+    },
+    {
+      "hour": 10,
+      "level": "deep"
+    },
+    {
+      "hour": 11,
+      "level": "shallow"
+    },
+    {
+      "hour": 12,
+      "level": "shallow"
+    },
+    {
+      "hour": 13,
+      "level": "admin"
+    },
+    {
+      "hour": 14,
+      "level": "admin"
+    },
+    {
+      "hour": 15,
+      "level": "deep"
+    },
+    {
+      "hour": 16,
+      "level": "deep"
+    },
+    {
+      "hour": 17,
+      "level": "deep"
+    },
+    {
+      "hour": 18,
+      "level": "shallow"
+    },
+    {
+      "hour": 19,
+      "level": "shallow"
+    },
+    {
+      "hour": 20,
+      "level": "shallow"
+    },
+    {
+      "hour": 21,
+      "level": "admin"
+    },
+    {
+      "hour": 22,
+      "level": "admin"
+    },
+    {
+      "hour": 23,
+      "level": "admin"
+    }
+  ]
+}
