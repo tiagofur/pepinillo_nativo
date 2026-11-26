@@ -100,3 +100,41 @@ describe('mergePrefs', () => {
 		expect(merged.onboardingCompleted).toBe(true);
 	});
 });
+
+describe('mergeTasks with canonical payloads (#989 PR-C, S6)', () => {
+	it('a tie no longer loses fields because the remote copy is full-fidelity', () => {
+		const stamp = '2026-11-25T10:00:00.000Z';
+		const local = {
+			id: 't1',
+			title: 'Same',
+			status: 'active' as const,
+			priority: 'none' as const,
+			energy: 'shallow' as const,
+			estimatedPomodoros: 1,
+			list: 'inbox' as const,
+			order: 3,
+			createdAt: stamp,
+			updatedAt: stamp,
+			dueDate: '2026-11-26',
+			scheduledForToday: true,
+			notes: 'kept',
+			completedPomodoros: 7,
+			subtasks: [{ id: 's1', title: 'sub', isCompleted: false, sortOrder: 0, createdAt: stamp }]
+		};
+		// Server echo of the same task (same updatedAt stamp, full payload).
+		const remote = {
+			...local,
+			completedPomodoros: 7,
+			focusedSeconds: 5400,
+			trackingMode: 'pomodoro'
+		};
+		const merged = mergeTasks([local], [remote]);
+		const winner = merged.find((t) => t.id === 't1')!;
+		expect(winner.dueDate).toBe('2026-11-26');
+		expect(winner.scheduledForToday).toBe(true);
+		expect(winner.notes).toBe('kept');
+		expect(winner.subtasks).toHaveLength(1);
+		expect(winner.completedPomodoros).toBe(7);
+		expect(winner.focusedSeconds).toBe(5400);
+	});
+});

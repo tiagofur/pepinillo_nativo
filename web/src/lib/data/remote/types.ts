@@ -40,6 +40,30 @@ export type RemoteTask = {
 	updatedAt: string;
 	createdDate?: string | null;
 	category?: string | null;
+	/* ---- #989 PR-C (S6): canonical task-model fields ---- */
+	dueDate?: string | null;
+	completedAt?: string | null;
+	scheduledForToday?: boolean;
+	sortOrder?: number;
+	description?: string | null;
+	completedPomodoros?: number;
+	focusedSeconds?: number;
+	focusedSecondsPomodoro?: number;
+	focusedSecondsFlowtime?: number;
+	focusedSecondsTimeblock?: number;
+	focusedSecondsStopwatch?: number;
+	completedFlowtimeSessions?: number;
+	completedTimeblockSessions?: number;
+	completedStopwatchSeconds?: number;
+	subTasks?: RemoteSubTask[];
+};
+
+/** Backend subtask shape (nested in RemoteTask.subTasks). */
+export type RemoteSubTask = {
+	id?: number | null;
+	taskId?: number | null;
+	title?: string | null;
+	isFinished: boolean;
 };
 
 /** Backend focus session shape (subset for sync). */
