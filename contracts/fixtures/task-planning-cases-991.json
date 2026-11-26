@@ -1,0 +1,202 @@
+{
+  "issue" : 991,
+  "description" : "Shared case table for the unified «Hoy» rule (issue #991 S2/S3/S6). Every platform's planning suite asserts its resolver against these cases. Day semantics: dates are local calendar days without time. `planned` and `due` are whole-day offsets relative to today in the device's local calendar (negative = past, 0 = today, positive = future; null = no date). `legacyScheduledForToday` models rows written by pre-#991 clients (the boolean that plannedDate replaces); `recurringInstance` is informational. Expected buckets are exclusive for active tasks (exactly one of today/upcoming/inbox is true); `postponed` (S6) is only meaningful when today is true: the planned day is strictly before today and is what places the task in «Hoy».",
+  "cases" : [
+    {
+      "name" : "planned today, no due",
+      "planned" : 0,
+      "due" : null,
+      "status" : "active",
+      "expected" : {
+        "today" : true,
+        "postponed" : false,
+        "upcoming" : false,
+        "inbox" : false
+      }
+    },
+    {
+      "name" : "planned yesterday, no due (postponed — S6)",
+      "planned" : -1,
+      "due" : null,
+      "status" : "active",
+      "expected" : {
+        "today" : true,
+        "postponed" : true,
+        "upcoming" : false,
+        "inbox" : false
+      }
+    },
+    {
+      "name" : "planned long past, no due (still today, never rolls back to inbox)",
+      "planned" : -30,
+      "due" : null,
+      "status" : "active",
+      "expected" : {
+        "today" : true,
+        "postponed" : true,
+        "upcoming" : false,
+        "inbox" : false
+      }
+    },
+    {
+      "name" : "due yesterday, no plan (overdue — not postponed)",
+      "planned" : null,
+      "due" : -1,
+      "status" : "active",
+      "expected" : {
+        "today" : true,
+        "postponed" : false,
+        "upcoming" : false,
+        "inbox" : false
+      }
+    },
+    {
+      "name" : "planned yesterday and due today (stale plan reads as postponed)",
+      "planned" : -1,
+      "due" : 0,
+      "status" : "active",
+      "expected" : {
+        "today" : true,
+        "postponed" : true,
+        "upcoming" : false,
+        "inbox" : false
+      }
+    },
+    {
+      "name" : "planned tomorrow but due yesterday (overdue due wins today)",
+      "planned" : 1,
+      "due" : -1,
+      "status" : "active",
+      "expected" : {
+        "today" : true,
+        "postponed" : false,
+        "upcoming" : false,
+        "inbox" : false
+      }
+    },
+    {
+      "name" : "planned tomorrow, no due (upcoming)",
+      "planned" : 1,
+      "due" : null,
+      "status" : "active",
+      "expected" : {
+        "today" : false,
+        "postponed" : false,
+        "upcoming" : true,
+        "inbox" : false
+      }
+    },
+    {
+      "name" : "due in 7 days, no plan (upcoming — no one-week cap, #182)",
+      "planned" : null,
+      "due" : 7,
+      "status" : "active",
+      "expected" : {
+        "today" : false,
+        "postponed" : false,
+        "upcoming" : true,
+        "inbox" : false
+      }
+    },
+    {
+      "name" : "due in 30 days, no plan (upcoming far beyond the old cap)",
+      "planned" : null,
+      "due" : 30,
+      "status" : "active",
+      "expected" : {
+        "today" : false,
+        "postponed" : false,
+        "upcoming" : true,
+        "inbox" : false
+      }
+    },
+    {
+      "name" : "planned in 3 days, no due (upcoming)",
+      "planned" : 3,
+      "due" : null,
+      "status" : "active",
+      "expected" : {
+        "today" : false,
+        "postponed" : false,
+        "upcoming" : true,
+        "inbox" : false
+      }
+    },
+    {
+      "name" : "no planned date and no due (inbox)",
+      "planned" : null,
+      "due" : null,
+      "status" : "active",
+      "expected" : {
+        "today" : false,
+        "postponed" : false,
+        "upcoming" : false,
+        "inbox" : true
+      }
+    },
+    {
+      "name" : "legacy boolean only, no planned date (sync shim → today)",
+      "planned" : null,
+      "due" : null,
+      "status" : "active",
+      "legacyScheduledForToday" : true,
+      "expected" : {
+        "today" : true,
+        "postponed" : false,
+        "upcoming" : false,
+        "inbox" : false
+      }
+    },
+    {
+      "name" : "legacy boolean with future plan (flag keeps it in today)",
+      "planned" : 1,
+      "due" : null,
+      "status" : "active",
+      "legacyScheduledForToday" : true,
+      "expected" : {
+        "today" : true,
+        "postponed" : false,
+        "upcoming" : false,
+        "inbox" : false
+      }
+    },
+    {
+      "name" : "legacy boolean with past plan (past plan keeps postponed badge)",
+      "planned" : -1,
+      "due" : null,
+      "status" : "active",
+      "legacyScheduledForToday" : true,
+      "expected" : {
+        "today" : true,
+        "postponed" : true,
+        "upcoming" : false,
+        "inbox" : false
+      }
+    },
+    {
+      "name" : "completed task belongs to no active bucket",
+      "planned" : 0,
+      "due" : null,
+      "status" : "completed",
+      "expected" : {
+        "today" : false,
+        "postponed" : false,
+        "upcoming" : false,
+        "inbox" : false
+      }
+    },
+    {
+      "name" : "recurring instance born with planned day of occurrence (S8)",
+      "planned" : 0,
+      "due" : null,
+      "status" : "active",
+      "recurringInstance" : true,
+      "expected" : {
+        "today" : true,
+        "postponed" : false,
+        "upcoming" : false,
+        "inbox" : false
+      }
+    }
+  ]
+}
