@@ -119,6 +119,9 @@ extension Notification.Name {
     /// (a Mac-target class, so the menu routes through a notification instead
     /// of a direct reference).
     static let macQuickCaptureToggleRequested = Notification.Name("pepinillo.mac.quickCapture.toggle")
+    /// Posted by Focus > Link Task (⌘K, issue #993) and observed by
+    /// `MacFocusView` (which owns the focus-scoped store the picker binds to).
+    static let macFocusLinkTaskRequested = Notification.Name("pepinillo.mac.focus.linkTask")
 }
 
 /// Zen stage on the Mac focus view (issue #797): shared by the pinch gesture
@@ -145,6 +148,16 @@ struct PepinilloCommands: Commands {
 
         // MARK: Focus Menu
         CommandMenu(String(localized: "menu.focus.title", defaultValue: "Focus")) {
+            Button(String(localized: "menu.focus.linktask", defaultValue: "Link Task")) {
+                // Issue #993 (S1): ⌘K opens the task picker from any tab —
+                // switch to Focus first, then present once the view mounts.
+                store.send(.tabSelected(.focus))
+                DispatchQueue.main.async {
+                    NotificationCenter.default.post(name: .macFocusLinkTaskRequested, object: nil)
+                }
+            }
+            .keyboardShortcut("k", modifiers: .command)
+
             Button(String(localized: "menu.focus.startpause", defaultValue: "Start / Pause")) {
                 FocusToggleCommand.toggle(store: store)
             }

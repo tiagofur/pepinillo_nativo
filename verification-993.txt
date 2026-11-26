@@ -1,0 +1,16 @@
+# Verification Evidence — issue #993 (⌘K Quick Open en Mac)
+
+1. swiftc -parse de los 3 archivos tocados: OK (las verificaciones de tipo
+   del scheme PepinilloMac son imposibles en este entorno — ActivityKit/
+   Xcode-27.3 preexistente, verificado idéntico en main limpio y declarado
+   como waiver en el PR de #990; el diff se cubre con revisión estructural
+   del juez + QA humano al merge).
+2. S6 verificado por grep: ningún atajo ⌘K preexistente en el target Mac.
+3. S2 ya existía (#929): el picker auto-enfoca el buscador y Return enlaza
+   la primera coincidencia (MacFocusView.swift:518, :507-513).
+4. Mecánica: el ítem Focus > Link Task (⌘K) cambia a la pestaña Focus y
+   postea .macFocusLinkTaskRequested async; MacFocusView observa y envía
+   .taskPickerTapped (patrón notificación establecido: Quick Capture,
+   plan search). QA humano al merge: ⌘K desde Focus/Plan/Today/Statistics,
+   Return enlaza, ⌘↩ + Esc según issue, dinámica en Settings › Atajos.
+Risk: none

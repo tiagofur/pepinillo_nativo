@@ -221,6 +221,7 @@ struct MacSettingsView: View {
             Section {
                 LabeledContent("Global shortcut", value: "⌃⌥Space")
                 LabeledContent("Quick Capture", value: "⌃⌥T")
+                LabeledContent("Link Task", value: "⌘K")
                 LabeledContent("Skip / next phase", value: "⌃⌥→")
                 LabeledContent("End session", value: "⌃⌥X")
                 LabeledContent("Open Pepinillo", value: "⌃⌥P")

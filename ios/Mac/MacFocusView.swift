@@ -103,6 +103,11 @@ struct MacFocusView: View {
                 }
             }
         }
+        .onReceive(NotificationCenter.default.publisher(for: .macFocusLinkTaskRequested)) { _ in
+            // Issue #993 (S1-S2): ⌘K abre el picker con el buscador enfocado;
+            // Return enlaza la primera coincidencia (comportamiento #929).
+            store.send(.taskPickerTapped)
+        }
         .popover(isPresented: taskPickerPresented, arrowEdge: .bottom) {
             MacTaskPickerView(
                 linkedTaskID: store.linkedTaskID,
