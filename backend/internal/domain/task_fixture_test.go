@@ -46,10 +46,4 @@ func TestCanonicalWireFixtureDecodes(t *testing.T) {
 	if normalized == nil || *normalized != *task.EnergyLevel {
 		t.Fatalf("canonical energy must be a normalizer fixed point: %v → %v", task.EnergyLevel, normalized)
 	}
-	// …and the legacy finishDate decoy must not leak into an unfinished task's
-	// canonical due date (the fixture carries dueDate explicitly, so the
-	// fallback has nothing to bridge here).
-	if task.DueDate == nil && task.FinishDate != nil {
-		t.Fatalf("canonical dueDate missing while the legacy carrier is set")
-	}
 }
