@@ -798,4 +798,28 @@ func upsertFailsUnknownEnergySafe() throws {
     // An unrecognized value must not upgrade a task to Deep Work.
     #expect(after.energyLevel == .shallow)
 }
+
+// MARK: - Issue #989 (S7): canonical wire fixture
+
+@Test("canonical wire fixture decodes into TaskSyncDTO")
+func canonicalWireFixtureDecodes() throws {
+    // contracts/fixtures/task-canonical-989.json, resolved from the source
+    // file location so the same repo file feeds every platform's suite.
+    let fixtureURL = URL(fileURLWithPath: #filePath)
+        .deletingLastPathComponent() // Tests/IntegrationTests
+        .deletingLastPathComponent() // Tests
+        .deletingLastPathComponent() // ios
+        .deletingLastPathComponent() // repo root
+        .appendingPathComponent("contracts/fixtures/task-canonical-989.json")
+    let raw = try Data(contentsOf: fixtureURL)
+    let dto = try JSONDecoder().decode(TaskSyncDTO.self, from: raw)
+    #expect(dto.syncId == "fixture-989-canonical")
+    #expect(dto.dueDate == "2026-11-26T12:00:00Z")
+    #expect(dto.completedAt == nil)
+    #expect(dto.scheduledForToday == true)
+    #expect(dto.sortOrder == 6)
+    #expect(dto.energyLevel == "shallow")
+    #expect(dto.subTasks?.count == 2)
+}
+
 }

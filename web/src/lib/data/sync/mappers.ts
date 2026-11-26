@@ -9,6 +9,7 @@ import type {
 	TaskStatus
 } from '$lib/domain/entities/types';
 import type { RemoteFocusSession, RemoteTask, UserPreference } from '$lib/data/remote/types';
+import { localDateKey } from '$lib/domain/tasks/recurrence';
 
 const PRIORITY_TO_INT: Record<TaskPriority, number> = {
 	none: 0,
@@ -41,7 +42,24 @@ export function normalizeEnergy(raw: string): TaskEnergy {
 	return 'shallow';
 }
 
+/**
+ * Web-local due dates are calendar-day keys (YYYY-MM-DD); the wire carries
+ * timestamps. Encode as the UTC instant of that key's local noon so the
+ * server-side day matches every client's local day.
+ */
+function dueKeyToWire(dateKey: string): string {
+	return new Date(`${dateKey}T12:00:00`).toISOString();
+}
+
 export function taskToRemote(task: Task): RemoteTask {
+	// Issue #989 PR-C (S6): full-fidelity wire. Counters and trackingMode are
+	// mirrored from the local (server-synced) copy so a web push preserves
+	// what the phones accumulate — before this change every web push reset
+	// them server-side (full-row save of a payload that omitted them).
+	// subTasks only travel when web actually holds some: an empty list must
+	// stay undefined so the backend's non-nil-slice rule never wipes the
+	// phone's subtasks.
+	const subtasks = task.subtasks ?? [];
 	return {
 		syncId: task.id,
 		title: task.title,
@@ -50,11 +68,39 @@ export function taskToRemote(task: Task): RemoteTask {
 		priority: PRIORITY_TO_INT[task.priority] ?? 0,
 		estimatedPomodoros: task.estimatedPomodoros,
 		isDeleted: task.status === 'archived',
-		trackingMode: 'pomodoro',
+		trackingMode: task.trackingMode ?? '',
 		recurrenceRule: task.recurrenceRule ?? null,
 		updatedAt: task.updatedAt,
 		createdDate: task.createdAt,
-		category: task.list
+		category: task.list,
+		dueDate: task.dueDate ? dueKeyToWire(task.dueDate) : null,
+		completedAt: task.completedAt ?? null,
+		scheduledForToday: task.scheduledForToday === true,
+		sortOrder: task.order,
+		description: task.notes ?? null,
+		completedPomodoros: task.completedPomodoros ?? 0,
+		focusedSeconds: task.focusedSeconds ?? 0,
+		focusedSecondsPomodoro: task.focusedSecondsPomodoro ?? 0,
+		focusedSecondsFlowtime: task.focusedSecondsFlowtime ?? 0,
+		focusedSecondsTimeblock: task.focusedSecondsTimeblock ?? 0,
+		focusedSecondsStopwatch: task.focusedSecondsStopwatch ?? 0,
+		completedFlowtimeSessions: task.completedFlowtimeSessions ?? 0,
+		completedTimeblockSessions: task.completedTimeblockSessions ?? 0,
+		completedStopwatchSeconds: task.completedStopwatchSeconds ?? 0,
+		...(subtasks.length > 0
+			? {
+					subTasks: subtasks.map((s) => ({
+						// Known server subtasks carry their id (`srv-<n>`): the
+						// sync upsert's association save UPDATES by primary key —
+						// a zero id would be re-INSERTed, duplicating the list on
+						// every winning web edit. Web-authored subtasks (no srv-
+						// prefix) insert once and gain ids on the next pull.
+						...(s.id.startsWith('srv-') ? { id: Number(s.id.slice(4)) } : {}),
+						title: s.title,
+						isFinished: s.isCompleted
+					}))
+				}
+			: {})
 	};
 }
 
@@ -114,10 +160,35 @@ export function remoteToTask(rt: RemoteTask, order = 0): Task {
 		energy: normalizeEnergy(rt.energyLevel ?? 'shallow'),
 		estimatedPomodoros: rt.estimatedPomodoros ?? 0,
 		list: VALID_LISTS.has(category) ? category : 'inbox',
-		order,
+		// Issue #989 PR-C (S6): the wire now carries the canonical drag order —
+		// it beats the caller's stable-index fallback (legacy payloads omit it).
+		order: rt.sortOrder ?? order,
 		recurrenceRule: rt.recurrenceRule ?? null,
 		createdAt: rt.createdDate ?? rt.updatedAt,
-		updatedAt: rt.updatedAt
+		updatedAt: rt.updatedAt,
+		// Full-fidelity mirror (#989 PR-C): after one pull the web copy holds
+		// everything the phones accumulate, so the next push preserves it.
+		dueDate: rt.dueDate ? localDateKey(new Date(rt.dueDate)) : null,
+		completedAt: rt.completedAt ?? null,
+		scheduledForToday: rt.scheduledForToday === true,
+		notes: rt.description ?? undefined,
+		completedPomodoros: rt.completedPomodoros ?? 0,
+		focusedSeconds: rt.focusedSeconds ?? 0,
+		focusedSecondsPomodoro: rt.focusedSecondsPomodoro ?? 0,
+		focusedSecondsFlowtime: rt.focusedSecondsFlowtime ?? 0,
+		focusedSecondsTimeblock: rt.focusedSecondsTimeblock ?? 0,
+		focusedSecondsStopwatch: rt.focusedSecondsStopwatch ?? 0,
+		completedFlowtimeSessions: rt.completedFlowtimeSessions ?? 0,
+		completedTimeblockSessions: rt.completedTimeblockSessions ?? 0,
+		completedStopwatchSeconds: rt.completedStopwatchSeconds ?? 0,
+		trackingMode: rt.trackingMode ?? undefined,
+		subtasks: (rt.subTasks ?? []).map((st, i) => ({
+			id: st.id != null ? `srv-${st.id}` : `${rt.syncId}-sub-${i}`,
+			title: st.title ?? '',
+			isCompleted: st.isFinished,
+			sortOrder: i,
+			createdAt: rt.updatedAt
+		}))
 	};
 }
 

@@ -158,6 +158,44 @@ func TestTaskSyncPersistsAndNormalizesNewFields(t *testing.T) {
 		}
 	}
 
+	// Issue #989 PR-C round 1 (judge B P1): subtasks pushed WITH server ids
+	// must UPDATE in place — GORM's association save re-inserts zero-PK
+	// children, so repeated pushes of id-less payloads duplicate the list and
+	// the duplicates propagate to every client on pull. Clients now send the
+	// ids they pulled; this pins the server side of that contract.
+	var dueRow domain.Task
+	for _, task := range all {
+		if task.SyncID == "td989-due" {
+			dueRow = task
+		}
+	}
+	if dueRow.ID == 0 {
+		t.Fatalf("td989-due missing for the subtask id guard")
+	}
+	if err := db.Exec(
+		`INSERT INTO subtasks (id, task_id, title, is_finished) VALUES (9001, ?, 'kept', false)`,
+		dueRow.ID,
+	).Error; err != nil {
+		t.Fatal(err)
+	}
+	subTitle := "kept"
+	pushWithKnownSubtask := func() {
+		payload := dueRow
+		payload.SubTasks = []domain.SubTask{{ID: 9001, TaskID: dueRow.ID, Title: &subTitle, IsFinished: false}}
+		if _, err := repo.Sync(context.Background(), userID, []domain.Task{payload}, nil, nil); err != nil {
+			t.Fatal(err)
+		}
+	}
+	pushWithKnownSubtask()
+	pushWithKnownSubtask()
+	var subCount int64
+	if err := db.Model(&domain.SubTask{}).Where("task_id = ?", dueRow.ID).Count(&subCount).Error; err != nil {
+		t.Fatal(err)
+	}
+	if subCount != 1 {
+		t.Fatalf("repeated pushes of a known-id subtask must not duplicate: count = %d, want 1", subCount)
+	}
+
 	// Issue #989 round 1 (P1): completed30d resolves through
 	// COALESCE(completed_at, finish_date), so both a new-shape completion
 	// (Android origin: completed_at set, finish stale) and a legacy-shape

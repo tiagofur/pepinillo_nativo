@@ -31,6 +31,7 @@ export interface Task {
 	/* ---- W3 parity fields (Room v14 / SchemaV6) ---- */
 	notes?: string;
 	completedPomodoros?: number;
+	/** Local calendar-day key (YYYY-MM-DD), not a timestamp — see plan.ts */
 	dueDate?: string | null;
 	scheduledForToday?: boolean;
 	completedAt?: string | null;
@@ -38,6 +39,17 @@ export interface Task {
 	recurrenceRule?: string | null;
 	/** Recurring series: when this occurrence was last completed. */
 	lastCompletedAt?: string | null;
+	/* ---- #989 PR-C: full-fidelity mirror fields (optional, written by the
+	 * sync pull so a web push preserves the counters phones accumulate) ---- */
+	focusedSeconds?: number;
+	focusedSecondsPomodoro?: number;
+	focusedSecondsFlowtime?: number;
+	focusedSecondsTimeblock?: number;
+	focusedSecondsStopwatch?: number;
+	completedFlowtimeSessions?: number;
+	completedTimeblockSessions?: number;
+	completedStopwatchSeconds?: number;
+	trackingMode?: string;
 }
 
 export type SessionStatus = 'idle' | 'running' | 'paused' | 'completed' | 'skipped';

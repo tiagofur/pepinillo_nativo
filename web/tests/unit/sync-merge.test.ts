@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { mergePrefs, mergeSessions, mergeTasks } from '$lib/data/sync/merge';
+import { remoteToTask } from '$lib/data/sync/mappers';
+import type { RemoteTask } from '$lib/data/remote/types';
 import { DEFAULT_PREFERENCES, type FocusSession, type Preferences, type Task } from '$lib/domain/entities/types';
 
 function makeTask(overrides: Partial<Task>): Task {
@@ -98,5 +100,60 @@ describe('mergePrefs', () => {
 		const local: Preferences = { ...DEFAULT_PREFERENCES, onboardingCompleted: true };
 		const merged = mergePrefs(local, { onboardingCompleted: false });
 		expect(merged.onboardingCompleted).toBe(true);
+	});
+});
+
+describe('mergeTasks with canonical payloads (#989 PR-C, S6)', () => {
+	it('a tie no longer loses fields because the remote copy is full-fidelity', () => {
+		const stamp = '2026-11-25T10:00:00.000Z';
+		const local = {
+			id: 't1',
+			title: 'Same',
+			status: 'active' as const,
+			priority: 'none' as const,
+			energy: 'shallow' as const,
+			estimatedPomodoros: 1,
+			list: 'inbox' as const,
+			order: 3,
+			createdAt: stamp,
+			updatedAt: stamp,
+			dueDate: '2026-11-26',
+			scheduledForToday: true,
+			notes: 'kept',
+			completedPomodoros: 7,
+			subtasks: [{ id: 's1', title: 'sub', isCompleted: false, sortOrder: 0, createdAt: stamp }]
+		};
+		// Server echo of the same task (same updatedAt stamp), built through
+		// the real inbound mapper so the tie path is exercised end-to-end.
+		const remoteWire: RemoteTask = {
+			id: 1,
+			syncId: 't1',
+			title: 'Same',
+			energyLevel: 'shallow',
+			isFinished: false,
+			priority: 0,
+			estimatedPomodoros: 1,
+			completedPomodoros: 7,
+			focusedSeconds: 5400,
+			isDeleted: false,
+			trackingMode: 'pomodoro',
+			updatedAt: stamp,
+			createdDate: stamp,
+			category: 'inbox',
+			dueDate: '2026-11-26T12:00:00Z',
+			scheduledForToday: true,
+			sortOrder: 3,
+			description: 'kept',
+			subTasks: [{ id: 9, taskId: 1, title: 'sub', isFinished: false }]
+		};
+		const remote = remoteToTask(remoteWire, 3);
+		const merged = mergeTasks([local], [remote]);
+		const winner = merged.find((t) => t.id === 't1')!;
+		expect(winner.dueDate).toBe('2026-11-26');
+		expect(winner.scheduledForToday).toBe(true);
+		expect(winner.notes).toBe('kept');
+		expect(winner.subtasks).toHaveLength(1);
+		expect(winner.completedPomodoros).toBe(7);
+		expect(winner.focusedSeconds).toBe(5400);
 	});
 });
