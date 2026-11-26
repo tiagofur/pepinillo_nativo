@@ -1,0 +1,27 @@
+# Verification Evidence — issues #984 + #985 (widget Tasks)
+
+## #984 — fetch limit después del filtro de hoy
+1. RED observado: test nuevo `todayTaskSurvivesLargeNonTodayBacklog`
+   (55 tareas inbox con sortOrder menor + 1 de hoy) → FAILED contra el
+   código con fetchLimit=50 pre-filtro.
+2. GREEN: filtro de hoy empujado al #Predicate (fechas capturadas:
+   todayStart/tomorrowStart; coalescing en dueDate) + límite después →
+   `TasksWidgetQueryTests` 5/5 TEST SUCCEEDED.
+
+## #985 — conteo free abre el store
+3. Provider: `loadIfAuthorized` deja de usarse en buildEntry — el
+   contenedor abre para todo tier (el gate protege solo la lista
+   interactiva; el conteo diario es la intención documentada del método
+   y de TasksWidgetEntry.todayTaskCount). Free con tareas hoy →
+   TasksWidgetFreeCountView muestra «N tareas para hoy». Falta de
+   lectura → estado vacío desbloqueado (sin estado engañoso bloqueado).
+4. WidgetProGatingTests (matriz loadIfAuthorized) sin cambios: el helper
+   conserva su contrato — el desfase era del provider. TEST SUCCEEDED.
+
+## Decisión documentada (Decisions Made Without Asking en el PR)
+- Free: el conteo abre el store una vez (intención original del código).
+- Error de lectura en cualquier tier → estado vacío desbloqueado.
+
+Risk: item 3 (widget Tasks visible en home screen; el predicado cambia
+el SQL generado — cubierto por TasksWidgetQueryTests ejecutando el
+fetch real contra contenedor en memoria)

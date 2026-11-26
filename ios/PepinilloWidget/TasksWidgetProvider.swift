@@ -32,16 +32,12 @@ struct TasksWidgetProvider: AppIntentTimelineProvider {
 
     private func buildEntry(configuration: ConfigureTasksWidgetIntent, now: Date = Date.now) async -> TasksWidgetEntry {
         // Tier split (PRD/04): free gets the daily count, Pro the interactive
-        // list. One authorized SwiftData pass serves both.
+        // list. Issue #985: the count needs the store on EVERY tier — the gate
+        // only protects the interactive list — so the container opens for one
+        // authorized SwiftData pass regardless of tier.
         let isPro = TasksWidgetAccess.isCurrentUserAuthorized(now: now)
         do {
-            guard let container = try TasksWidgetAccess.loadIfAuthorized(now: now, {
-                try makeWidgetModelContainer()
-            }) else {
-                // Unreachable (isPro mirrors the same check) — kept as a
-                // type-level safety net for the loadIfAuthorized contract.
-                return .empty
-            }
+            let container = try makeWidgetModelContainer()
             // Fetch active tasks, then apply the same "Today" semantics used by
             // the Plan screen: explicitly scheduled for today, due today, or
             // overdue. The query lives in TasksWidgetQuery (compiled into the
@@ -85,7 +81,9 @@ struct TasksWidgetProvider: AppIntentTimelineProvider {
                 todayTaskCount: todayTasks.count
             )
         } catch {
-            // If an authorized SwiftData fetch fails, return an unlocked empty state.
+            // If the SwiftData fetch fails on any tier, return the unlocked
+            // empty state (#985: the count read failing must not produce a
+            // misleading locked state either).
             return .empty
         }
     }

@@ -21,25 +21,33 @@ enum TasksWidgetQuery {
         calendar: Calendar = .current
     ) throws -> [TaskItem] {
         let context = ModelContext(container)
+        // Issue #984: the today filter lives IN the predicate (with captured
+        // day boundaries) so the fetch limit bounds only today-relevant rows —
+        // a fetch limit applied before the in-memory filter let 50+ earlier
+        // inbox/upcoming tasks crowd today's tasks out of the widget.
+        let todayStart = calendar.startOfDay(for: now)
+        let tomorrowStart = calendar.date(byAdding: .day, value: 1, to: todayStart) ?? now
         var descriptor = FetchDescriptor<TaskItem>(
             predicate: #Predicate<TaskItem> { task in
                 task.isCompleted == false
                     && task.isRecurringTemplate == false
                     && task.isLocallyDeleted == false
+                    && (task.scheduledForToday
+                        || (task.dueDate ?? tomorrowStart) < tomorrowStart)
             },
             sortBy: [
                 SortDescriptor(\.sortOrder),
                 SortDescriptor(\.createdAt, order: .reverse),
             ]
         )
-        // Bound the fetch: the widget renders at most 8 tasks. We fetch 50 so
-        // the in-memory today/due/overdue filter has enough candidates without
-        // scanning the full table.
+        // Bound the fetch AFTER the predicate: the widget renders at most 8.
         descriptor.fetchLimit = 50
         // Avoid loading relationships in widget process
         descriptor.relationshipKeyPathsForPrefetching = []
 
-        let todayStart = calendar.startOfDay(for: now)
+        // Belt and suspenders: the in-memory filter mirrors the predicate
+        // (calendar.isDateInToday covers any same-day due timestamp whose
+        // instant encoding differs from the captured boundary).
         return try context.fetch(descriptor).filter { task in
             let isDueToday = task.dueDate.map { calendar.isDateInToday($0) } ?? false
             let isOverdue = task.dueDate.map { $0 < todayStart } ?? false
