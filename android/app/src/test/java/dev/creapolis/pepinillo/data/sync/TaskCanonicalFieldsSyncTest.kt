@@ -206,6 +206,40 @@ class TaskCanonicalFieldsSyncTest {
         assertEquals("canonical energy maps onto the Android label", "Light", merged.energyLevel)
     }
 
+    // #991 r1: plannedDate is local-only until PR-D puts it on the wire —
+    // the full-row pull must not wipe it (the S8 recurrence writer depends on it).
+    @Test
+    fun `pull merge preserves local plannedDate until it travels on the wire`() = runTest {
+        val friday = 1_795_113_600_000L
+        val local = TaskEntity(
+            id = "task-3", title = "Local", createdAt = 1000L, updatedAt = 1000L,
+            isDirty = false, serverId = 12, scheduledForToday = false, sortOrder = 0,
+            plannedDate = friday,
+        )
+        coEvery { taskDao.getDirtyTasks() } returns emptyList()
+        // The merge resolves by syncId first — pin it to null so the row comes
+        // from getTaskByServerId (a relaxed mock would fabricate plannedDate=0).
+        coEvery { taskDao.getTaskById("task-3") } returns null
+        coEvery { taskDao.getTaskByServerId(12) } returns local
+        coEvery { apiClient.syncTasks(any()) } returns NetworkResult.Success(
+            TaskSyncResponse(tasks = emptyList()),
+        )
+        coEvery { apiClient.getTasks() } returns NetworkResult.Success(
+            listOf(
+                TaskDto(
+                    id = 12, syncId = "task-3", title = "Server", updatedAt = rfc3339Utc(2026, 11, 25, 8),
+                    scheduledForToday = false, sortOrder = 3, energyLevel = "deep",
+                ),
+            ),
+        )
+
+        syncEngine.syncTasks()
+
+        val mergedSlot = slot<TaskEntity>()
+        coVerify { taskDao.updateTask(capture(mergedSlot)) }
+        assertEquals("local plan must survive the pull (#991 r1)", friday, mergedSlot.captured.plannedDate)
+    }
+
     // S5: a stale server pin (server newer, says false) clears the local pin —
     // full-row semantics, no silent resurrection.
     @Test

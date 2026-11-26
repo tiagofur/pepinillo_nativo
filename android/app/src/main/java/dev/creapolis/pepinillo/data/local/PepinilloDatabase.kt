@@ -119,11 +119,6 @@ abstract class PepinilloDatabase : RoomDatabase() {
     }
 
     companion object {
-        // No-op migration: schema change is metadata-only (added @ColumnInfo(defaultValue=...)
-        // on UserEntity columns that already existed via MIGRATION_5_6 and MIGRATION_7_8).
-        // Room still detects the schema-hash change, so this empty migration is the contract
-        // that acknowledges it. Without it, upgrading from v8 crashes with
-        // "A migration from 8 to 9 was required but not found".
         /**
          * v14 → v15: add `planned_date` to `tasks` (issue #991 S1) and backfill
          * the upgrade cohort: rows that were "in today's list" under the legacy
@@ -150,6 +145,11 @@ abstract class PepinilloDatabase : RoomDatabase() {
             }
         }
 
+        // No-op migration: schema change is metadata-only (added @ColumnInfo(defaultValue=...)
+        // on UserEntity columns that already existed via MIGRATION_5_6 and MIGRATION_7_8).
+        // Room still detects the schema-hash change, so this empty migration is the contract
+        // that acknowledges it. Without it, upgrading from v8 crashes with
+        // "A migration from 8 to 9 was required but not found".
         val MIGRATION_8_9 = object : Migration(8, 9) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 // Intentionally empty — no SQL needed.

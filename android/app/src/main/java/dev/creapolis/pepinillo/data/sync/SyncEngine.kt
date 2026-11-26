@@ -501,6 +501,9 @@ class SyncEngine @Inject constructor(
                     // pre-PR-A guard existed only because the server could not
                     // carry the flag).
                     scheduledForToday = serverEntity.scheduledForToday,
+                    // plannedDate is local-only until #991 PR-D puts it on the
+                    // wire — preserving local here, server truth then (PR-D).
+                    plannedDate = local.plannedDate,
                     sortOrder = serverEntity.sortOrder,
                     recurrenceRule = serverEntity.recurrenceRule,
                     recurringTemplateID = serverEntity.recurringTemplateID,
