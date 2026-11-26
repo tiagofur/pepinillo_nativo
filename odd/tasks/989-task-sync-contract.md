@@ -153,5 +153,26 @@ Allowed edit surfaces adicionales:
   Fixes: `applyDueDateFallback` en los 4 sitios de lectura + aserción en el
   test BD real (RED en scratch) · restore de InitialSyncManager mapea los
   campos + test de restore con decoy (no-tautología demostrada por stash).
-  Re-revisión acotada (ronda 2): en curso
-  · Commits: `4b01be09`, `34abd1c7`
+  Re-revisión acotada (ronda 2): APPROVED dual · Commits: `4b01be09`, `34abd1c7`
+
+## PR-C (T9..T11) — feat/989-web-canonical-fixture, base main 5689b203
+
+Allowed edit surfaces adicionales:
+- `web/src/lib/data/remote/types.ts`
+- `web/src/lib/data/sync/mappers.ts`
+- `web/src/lib/domain/entities/types.ts`
+- `web/tests/unit/sync-mappers.test.ts` / `sync-merge.test.ts` / `task-fixture.test.ts` (nuevo)
+- `contracts/fixtures/task-canonical-989.json` (nuevo)
+- `backend/internal/domain/task_fixture_test.go` (nuevo)
+- `android/app/src/test/java/dev/creapolis/pepinillo/data/sync/TaskCanonicalFixtureTest.kt` (nuevo)
+- `ios/Tests/IntegrationTests/PersistenceServiceTests.swift`
+- `contracts/openapi.yaml` (descripción energyLevel)
+
+- **T9** (S6): web canónico. Result: OK (RED 3 tests; 143/143 suite web;
+  check 0 errores; build OK) · Commit: `fac5bd05`
+- **T10** (S7): fixture compartido + tests backend/Android/iOS/web.
+  Result: OK (go + gradle + xcodebuild 22/22 + vitest) · Commit: `6a46732e`
+- **T11** (S1 slice de enum): oasdiff marca request-enum breaking (clientes
+  sin actualizar) → decisión documentada en el contrato: enum diferido
+  detrás de contract-break o split request/response. Result: OK (lint 0
+  errores, diff sin breaking) · Commit: `cf0a0493`
