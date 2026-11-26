@@ -1,0 +1,21 @@
+# Verification Evidence — issue #986 (flatten CI -only-testing filters)
+
+1. Conversión completa: fast gate (9 líneas) y full gate (11 líneas) en
+   formato plano Target/Suite — cero líneas con segmento de carpeta
+   (verificado con rg).
+2. Ejecución local de los 9 suites aplanados del fast gate:
+   145 test cases corridos (vs 0 efectivos antes) — TEST SUCCEEDED salvo
+   2 fallos PREEXISTENTES expuestos (contaminación cruzada de efectos
+   escapados de suscripción → KeychainClient.hasTokens unimplemented;
+   ambos PASAN en aislado). Excluidos del gate con comentario y
+   follow-up #1003.
+3. Suites verificados con test-case real: FocusFeatureReducerTests,
+   WidgetProGatingTests (12), AppGroupContainerTests, FocusActivityAttributes,
+   SiriPauseResumeIntent, AppFeatureIntegrationTests (40/42), +
+   TaskListFeatureTests/PaywallFeatureTests/TasksWidgetQueryTests ya verificados.
+4. Full gate: LocalToCloudStoreMigratorTests/PersistenceStoreRouterTests
+   aplanados también.
+5. make test (guardrails) OK. Sin cambios de producción (solo .github +
+   2 tests que requieren mock de keychain que el reducer ya consulta).
+Risk: item 5 (gate de CI expone 2 fallos preexistentes → excluidos con
+documentación y follow-up #1003; el resto del gate se vuelve REAL)
