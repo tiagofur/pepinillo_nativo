@@ -148,7 +148,10 @@ struct EnergyGroupedTaskList: View {
     var body: some View {
         List {
             // Suggestion banner as a List item so it scrolls with content
-            if !store.energySuggestionDismissed {
+            // Issue #990 round 2: the actionable prompt above the list owns
+            // the suggestion surface while a filter is active — the legacy
+            // informational banner would contradict it.
+            if !store.energySuggestionDismissed && store.energyFilter == .all {
                 EnergySuggestionBanner(
                     suggestedLevel: suggestedLevel,
                     hour: currentHour,
