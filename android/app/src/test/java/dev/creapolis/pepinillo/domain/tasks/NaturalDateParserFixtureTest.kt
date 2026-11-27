@@ -113,7 +113,7 @@ class NaturalDateParserFixtureTest {
     @Test
     fun `grammar matches the shared case table`() {
         val fixture = loadFixture()
-        assertTrue("the shared table keeps the whole grammar covered", fixture.cases.size >= 36)
+        assertTrue("the shared table keeps the whole grammar covered", fixture.cases.size >= 44)
         val now = localCal(
             fixture.fixedNow.year,
             fixture.fixedNow.month,

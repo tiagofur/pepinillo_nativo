@@ -118,22 +118,37 @@ object NaturalDateParser {
 
     private val TRAILING_PUNCT = charArrayOf('.', ',', '!', '?')
 
-    // UNICODE_CHARACTER_CLASS keeps \s unicode-aware, matching the JS
-    // whitespace semantics of the other resolvers (NBSP before a date, etc.).
-    private val ISO_RX = Pattern.compile("""(?:^|\s)(\d{4})-(\d{2})-(\d{2})${'$'}""", Pattern.UNICODE_CHARACTER_CLASS)
-    private val DMY_RX = Pattern.compile("""(?:^|\s)(\d{1,2})/(\d{1,2})/(\d{4})${'$'}""", Pattern.UNICODE_CHARACTER_CLASS)
-    private val DM_RX = Pattern.compile("""(?:^|\s)(\d{1,2})/(\d{1,2})${'$'}""", Pattern.UNICODE_CHARACTER_CLASS)
+    /** The exact JS `\s` set (the shared spec's "whitespace") — NOT
+     *  Char.isWhitespace, which diverges on U+001C–U+001F (included there,
+     *  excluded by JS) and U+FEFF (excluded there, included by JS). Judge B
+     *  P1 of this PR: cross-platform S2 equivalence requires this set. */
+    private fun isJsWhitespace(c: Char): Boolean = when (c) {
+        '\t', '\n', '\u000B', '\u000C', '\r', ' ', '\u00A0', '\u1680',
+        '\u2028', '\u2029', '\u202F', '\u205F', '\u3000', '\uFEFF' -> true
+        in '\u2000'..'\u200A' -> true
+        else -> false
+    }
+
+    private fun trimJs(value: String): String =
+        value.dropWhile { isJsWhitespace(it) }.dropLastWhile { isJsWhitespace(it) }
+
+    // Explicit JS-\s boundary class and ASCII [0-9] digits (JS \d): without
+    // them UNICODE_CHARACTER_CLASS would accept Arabic-Indic digits and
+    // platform whitespace would diverge from the web resolver (judge A P2).
+    private val ISO_RX = Pattern.compile("""(?:^|[\t\n\u000B\f\r\u0020\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000\uFEFF])([0-9]{4})-([0-9]{2})-([0-9]{2})${'$'}""")
+    private val DMY_RX = Pattern.compile("""(?:^|[\t\n\u000B\f\r\u0020\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000\uFEFF])([0-9]{1,2})/([0-9]{1,2})/([0-9]{4})${'$'}""")
+    private val DM_RX = Pattern.compile("""(?:^|[\t\n\u000B\f\r\u0020\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000\uFEFF])([0-9]{1,2})/([0-9]{1,2})${'$'}""")
 
     /** True when [lower] ends with [phrase] at a word boundary (start of text
-     *  or after whitespace). */
+     *  or after a JS-`\s` whitespace character — never punctuation). */
     private fun endsAtWordBoundary(lower: String, phrase: String): Boolean {
         if (!lower.endsWith(phrase)) return false
         val start = lower.length - phrase.length
         if (start == 0) return true
-        return lower[start - 1].isWhitespace()
+        return isJsWhitespace(lower[start - 1])
     }
 
-    private fun rstrip(value: String): String = value.trimEnd { it.isWhitespace() }
+    private fun rstrip(value: String): String = value.trimEnd { isJsWhitespace(it) }
 
     /** Real-calendar roundtrip: lenient Calendars roll Feb 31 → Mar 3, so a
      *  read-back mismatch means the input was not a real day. */
@@ -158,7 +173,7 @@ object NaturalDateParser {
         }.timeInMillis
 
     fun parse(text: String, nowMillis: Long): Parsed {
-        val trimmed = text.trim()
+        val trimmed = trimJs(text)
         if (trimmed.isEmpty()) return Parsed(trimmed, null)
 
         // The probe drops ONE trailing punctuation mark so «el viernes.»
