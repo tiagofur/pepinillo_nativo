@@ -172,8 +172,8 @@ export function remoteToTask(rt: RemoteTask, order = 0): Task {
 		completedAt: rt.completedAt ?? null,
 		scheduledForToday: rt.scheduledForToday === true,
 		// Issue #991: optional passthrough — the wire carries it once PR-D
-		// ships; until then remote rows carry undefined and mergeTasks keeps
-		// the local plan.
+		// ships; until then this is always null and mergeTasks keeps the
+		// local plan.
 		plannedDate: rt.plannedDate ?? null,
 		notes: rt.description ?? undefined,
 		completedPomodoros: rt.completedPomodoros ?? 0,

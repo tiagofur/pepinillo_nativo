@@ -20,6 +20,7 @@ import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.ripple
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
@@ -81,7 +82,7 @@ internal fun TaskPlanningSection(task: Task, viewModel: TaskDetailViewModel) {
                         .height(48.dp)
                         .clickable(
                             interactionSource = remember { MutableInteractionSource() },
-                            indication = null,
+                            indication = ripple(),
                             role = Role.Button,
                             onClickLabel = stringResource(R.string.task_plan_for)
                         ) { showPlanSheet = true },

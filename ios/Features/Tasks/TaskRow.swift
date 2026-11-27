@@ -232,7 +232,7 @@ struct TaskRow: View, Equatable {
         // 2c. Future plan with no due date: show the chosen day (brief: the
         // Próximas row must display which day the user picked).
         if !task.isCompleted, let planned = task.plannedDate,
-           planned >= Calendar.current.startOfDay(for: .now), task.dueDate == nil {
+           planned > Calendar.current.startOfDay(for: .now), task.dueDate == nil {
             return (planned.formatted(.dateTime.weekday(.abbreviated).day()), "calendar", .secondary)
         }
 

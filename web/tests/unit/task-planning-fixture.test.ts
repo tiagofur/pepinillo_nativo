@@ -89,3 +89,39 @@ describe('unified planning rule against the shared case table (S3)', () => {
 		expect(afterMidnight).toEqual({ kind: 'today', postponed: true });
 	});
 });
+
+import { mergeTasks } from '$lib/data/sync/merge';
+
+describe('mergeTasks keeps the local plan until PR-D (#991 r2)', () => {
+	it('a remote row without plannedDate does not wipe the local plan', () => {
+		const local = {
+			id: 't1', title: 'Planned', status: 'active', priority: 'none', energy: 'shallow',
+			estimatedPomodoros: 1, list: 'inbox', order: 0, createdAt: '2026-11-26T00:00:00',
+			updatedAt: '2026-11-26T00:00:00', plannedDate: '2026-11-27'
+		};
+		const remote = {
+			id: 't1', title: 'Planned', status: 'active', priority: 'none', energy: 'shallow',
+			estimatedPomodoros: 1, list: 'inbox', order: 0, createdAt: '2026-11-26T00:00:00',
+			// remote is a tie / newer (web pushed its own updatedAt → tie → remote wins)
+			updatedAt: '2026-11-26T00:00:00', plannedDate: null
+		};
+		const merged = mergeTasks([local], [remote]);
+		expect(merged).toHaveLength(1);
+		expect(merged[0].plannedDate).toBe('2026-11-27');
+	});
+
+	it('a remote row that carries a plan (PR-D) wins', () => {
+		const local = {
+			id: 't2', title: 'X', status: 'active', priority: 'none', energy: 'shallow',
+			estimatedPomodoros: 1, list: 'inbox', order: 0, createdAt: '2026-11-26T00:00:00',
+			updatedAt: '2026-11-26T00:00:00', plannedDate: '2026-11-27'
+		};
+		const remote = {
+			id: 't2', title: 'X', status: 'active', priority: 'none', energy: 'shallow',
+			estimatedPomodoros: 1, list: 'inbox', order: 0, createdAt: '2026-11-26T00:00:00',
+			updatedAt: '2026-11-26T01:00:00', plannedDate: '2026-11-28'
+		};
+		const merged = mergeTasks([local], [remote]);
+		expect(merged[0].plannedDate).toBe('2026-11-28');
+	});
+});

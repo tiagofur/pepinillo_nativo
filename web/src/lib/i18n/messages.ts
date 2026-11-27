@@ -1189,12 +1189,12 @@ const en: Dict = {
 };
 
 const es: Dict = {
+	...en,
 	'plan.scheduleFor': 'Planificar para…',
 	'plan.planTomorrow': 'Mañana',
 	'plan.planWeekend': 'Este fin de semana',
 	'plan.removeDate': 'Quitar fecha',
 	'plan.postponed': 'Pospuesta',
-	...en,
 	'app.tagline': 'Planificá, enfocate y celebrá tu deep work — nativo, en todas tus pantallas.',
 	'nav.focus': 'Foco',
 	'nav.plan': 'Plan',
@@ -1791,12 +1791,12 @@ const es: Dict = {
 };
 
 const pt: Dict = {
+	...en,
 	'plan.scheduleFor': 'Planejar para…',
 	'plan.planTomorrow': 'Amanhã',
 	'plan.planWeekend': 'Este fim de semana',
 	'plan.removeDate': 'Remover data',
 	'plan.postponed': 'Adiada',
-	...en,
 	'app.tagline': 'Planeje, concentre-se e celebre seu deep work — nativo, em todas as suas telas.',
 	'nav.focus': 'Foco',
 	'nav.plan': 'Plano',
