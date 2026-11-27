@@ -74,6 +74,9 @@ export function taskToRemote(task: Task): RemoteTask {
 		createdDate: task.createdAt,
 		category: task.list,
 		dueDate: task.dueDate ? dueKeyToWire(task.dueDate) : null,
+		// Issue #991 S9: the plan travels on the wire (noon encoding, same
+		// convention as dueDate).
+		plannedDate: task.plannedDate ? dueKeyToWire(task.plannedDate) : null,
 		completedAt: task.completedAt ?? null,
 		scheduledForToday: task.scheduledForToday === true,
 		sortOrder: task.order,
@@ -171,10 +174,9 @@ export function remoteToTask(rt: RemoteTask, order = 0): Task {
 		dueDate: rt.dueDate ? localDateKey(new Date(rt.dueDate)) : null,
 		completedAt: rt.completedAt ?? null,
 		scheduledForToday: rt.scheduledForToday === true,
-		// Issue #991: optional passthrough — the wire carries it once PR-D
-		// ships; until then this is always null and mergeTasks keeps the
-		// local plan.
-		plannedDate: rt.plannedDate ?? null,
+		// Issue #991 S9: the wire now carries plannedDate — decode noon-UTC
+		// into the local day key (same round trip as dueDate).
+		plannedDate: rt.plannedDate ? localDateKey(new Date(rt.plannedDate)) : null,
 		notes: rt.description ?? undefined,
 		completedPomodoros: rt.completedPomodoros ?? 0,
 		focusedSeconds: rt.focusedSeconds ?? 0,

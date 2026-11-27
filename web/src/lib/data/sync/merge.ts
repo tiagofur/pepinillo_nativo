@@ -31,9 +31,10 @@ export function mergeTasks(local: Task[], remote: Task[]): Task[] {
 		if (!existing) {
 			byId.set(t.id, t);
 		} else if (latest(existing.updatedAt, t.updatedAt) === t.updatedAt) {
-			// Issue #991: plannedDate is local-only until PR-D puts it on the
-			// wire — a remote row without a plan must not wipe the local one
-			// (mirror of Android SyncEngine's converge preservation).
+			// Issue #991 PR-D: the wire carries plannedDate, but rows pushed by
+			// un-updated installs (old cohort) still arrive without a plan — a
+			// remote row without one must not wipe the local plan (mixed-cohort
+			// defense; server truth wins once the field is present).
 			byId.set(
 				t.id,
 				!t.plannedDate && existing.plannedDate

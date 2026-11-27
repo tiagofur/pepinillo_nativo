@@ -37,6 +37,7 @@ import org.junit.Before
 import org.junit.Test
 import java.util.Calendar
 import java.util.TimeZone
+import dev.creapolis.pepinillo.domain.tasks.DueDateEncoding
 
 /**
  * Issue #989 PR-B (S5): the task sync wire carries the canonical task-model
@@ -204,6 +205,44 @@ class TaskCanonicalFieldsSyncTest {
         assertEquals("server drag order must apply full-row", 7, merged.sortOrder)
         assertEquals("completedAt must come from the canonical field", completed, merged.completedAt)
         assertEquals("canonical energy maps onto the Android label", "Light", merged.energyLevel)
+    }
+
+    // #991 PR-D (juez r1): a wire plannedDate must REACH Room — the pull
+    // decode (TaskDto.toEntity) historically dropped the field.
+    @Test
+    fun `pull merge applies server plannedDate to a local-null row`() = runTest {
+        val local = TaskEntity(
+            id = "task-4", title = "Local", createdAt = 1000L, updatedAt = 1000L,
+            isDirty = false, serverId = 13, scheduledForToday = false, sortOrder = 0,
+            plannedDate = null,
+        )
+        coEvery { taskDao.getDirtyTasks() } returns emptyList()
+        coEvery { taskDao.getTaskById("task-5") } returns null
+        coEvery { taskDao.getTaskByServerId(13) } returns local
+        coEvery { apiClient.syncTasks(any()) } returns NetworkResult.Success(
+            TaskSyncResponse(tasks = emptyList()),
+        )
+        coEvery { apiClient.getTasks() } returns NetworkResult.Success(
+            listOf(
+                TaskDto(
+                    id = 13, syncId = "task-4", title = "Server", updatedAt = rfc3339Utc(2026, 11, 25, 8),
+                    scheduledForToday = false, sortOrder = 2, energyLevel = "deep",
+                    plannedDate = "2026-11-27T12:00:00Z",
+                ),
+            ),
+        )
+
+        syncEngine.syncTasks()
+
+        val mergedSlot = slot<TaskEntity>()
+        coVerify { taskDao.updateTask(capture(mergedSlot)) }
+        // The sync decode stores the raw RFC3339 instant (same as dueDate),
+        // NOT the picker's local-midnight conversion — day classification is
+        // what matters downstream (DueDateEncoding/TaskPlanning normalize).
+        val expected = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("UTC")).apply {
+            clear(); set(2026, 10, 27, 12, 0, 0)
+        }.timeInMillis
+        assertEquals("server plan must land in Room (PR-D decode)", expected, mergedSlot.captured.plannedDate)
     }
 
     // #991 r1: plannedDate is local-only until PR-D puts it on the wire —

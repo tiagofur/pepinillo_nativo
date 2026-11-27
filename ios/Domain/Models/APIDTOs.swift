@@ -230,6 +230,7 @@ public struct TaskSyncDTO: Codable, Sendable, Equatable {
     public let dueDate: String?
     public let completedAt: String?
     public let scheduledForToday: Bool?
+    public let plannedDate: String?
     public let sortOrder: Int?
     public let isFinished: Bool
     public let priority: Int
@@ -253,7 +254,7 @@ public struct TaskSyncDTO: Codable, Sendable, Equatable {
         recurrenceRule: String? = nil, recurringTemplateId: String? = nil,
         createdDate: String? = nil, finishDate: String? = nil,
         dueDate: String? = nil, completedAt: String? = nil,
-        scheduledForToday: Bool? = nil, sortOrder: Int? = nil,
+        scheduledForToday: Bool? = nil, plannedDate: String? = nil, sortOrder: Int? = nil,
         isFinished: Bool = false, priority: Int = 0, category: String? = nil,
         trackingMode: String? = nil, estimatedPomodoros: Int = 0, completedPomodoros: Int = 0,
         focusedSeconds: Int = 0,
@@ -275,6 +276,7 @@ public struct TaskSyncDTO: Codable, Sendable, Equatable {
         self.dueDate = dueDate
         self.completedAt = completedAt
         self.scheduledForToday = scheduledForToday
+        self.plannedDate = plannedDate
         self.sortOrder = sortOrder
         self.isFinished = isFinished
         self.priority = priority

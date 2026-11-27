@@ -737,6 +737,10 @@ public final class SwiftDataPersistenceService {
             // clear them. Strictly newer means another device really edited.
             if serverUpdatedAt > local.updatedAt {
                 local.scheduledForToday = serverTask.scheduledForToday ?? false
+                // Issue #991 PR-D (juez r1): server null (old-cohort push) must
+                // not wipe the local plan — same fallback as Android/web.
+                local.plannedDate = serverTask.plannedDate.flatMap(ISO8601DateFormatter().date(from:))
+                    ?? local.plannedDate
                 local.sortOrder = serverTask.sortOrder ?? 0
             }
             local.serverId = serverTask.id
@@ -792,6 +796,9 @@ public final class SwiftDataPersistenceService {
             newTask.dueDate = serverTask.dueDate.flatMap(ISO8601DateFormatter().date(from:))
             // Insert: the server row is authoritative (nothing local to lose).
             newTask.scheduledForToday = serverTask.scheduledForToday ?? false
+            // Issue #991 PR-D (juez r1): the insert branch is the fresh-install
+            // path — the whole server snapshot lands here, plans included.
+            newTask.plannedDate = serverTask.plannedDate.flatMap(ISO8601DateFormatter().date(from:))
             newTask.sortOrder = serverTask.sortOrder ?? 0
             context.insert(newTask)
 

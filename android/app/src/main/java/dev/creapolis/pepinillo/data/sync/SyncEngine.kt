@@ -271,17 +271,18 @@ class SyncEngine @Inject constructor(
                     // waiting for the next incremental pull. Rows dirtied while the
                     // upload was in flight are skipped — their newer edit wins.
                     val currentlyDirty = taskDao.getDirtyTasks().map { it.id }.toSet()
-                    // #991 r1: plannedDate is local-only until PR-D puts it on the wire.
-                    // This converge re-upserts the echoed rows full-row (REPLACE) right
-                    // after mergeServerTasks preserved their local plan — re-attach it
-                    // by syncId or the initial-upload flow wipes it.
+                    // #991 PR-D: plannedDate travels on the wire now, but the
+                    // initial-upload converge still re-attaches the local plan by
+                    // syncId — rows echoed by an un-migrated server (or old
+                    // cohort) arrive without one.
                     val planBySyncId = allTasks.associate { it.id to it.plannedDate }
                     val mergedTaskEntities = response.tasks
                         .filter { it.syncId.isNotEmpty() && it.syncId !in currentlyDirty }
                         .map { dto ->
                             val entity = dto.toEntity()
                             entity.copy(plannedDate = entity.plannedDate ?: planBySyncId[dto.syncId])
-                        }
+                        } // PR-D: the wire carries plannedDate; the local fallback
+                        // still defends rows echoed by an un-migrated server.
                     if (mergedTaskEntities.isNotEmpty()) {
                         taskDao.upsertAll(mergedTaskEntities)
                     }
@@ -509,9 +510,11 @@ class SyncEngine @Inject constructor(
                     // pre-PR-A guard existed only because the server could not
                     // carry the flag).
                     scheduledForToday = serverEntity.scheduledForToday,
-                    // plannedDate is local-only until #991 PR-D puts it on the
-                    // wire — preserving local here, server truth then (PR-D).
-                    plannedDate = local.plannedDate,
+                    // Issue #991 PR-D: plannedDate travels on the wire now —
+                    // server truth wins, same as dueDate/flag (the initial-upload
+                    // converge path below still re-attaches the local plan for
+                    // un-migrated remote rows).
+                    plannedDate = serverEntity.plannedDate ?: local.plannedDate,
                     sortOrder = serverEntity.sortOrder,
                     recurrenceRule = serverEntity.recurrenceRule,
                     recurringTemplateID = serverEntity.recurringTemplateID,
@@ -1009,6 +1012,9 @@ class SyncEngine @Inject constructor(
             recurringTemplateId = recurringTemplateID,
             dueDate = dueDate?.toRfc3339(),
             scheduledForToday = scheduledForToday,
+            // Issue #991 S9: the plan travels on the wire — local midnight
+            // millis to ISO instant (same encoder as dueDate).
+            plannedDate = plannedDate?.toRfc3339(),
             sortOrder = sortOrder,
             isFinished = isCompleted,
             priority = when (priority) {
@@ -1058,6 +1064,9 @@ class SyncEngine @Inject constructor(
             recurrenceRule = recurrenceRule,
             recurringTemplateID = recurringTemplateId,
             dueDate = dueDate?.let { parseRfc3339(it, fallback = 0L).takeIf { d -> d > 0L } },
+            // Issue #991 PR-D (juez r1): the plan decodes off the wire like
+            // dueDate — without this, pulled rows lose the plan server-side.
+            plannedDate = plannedDate?.let { parseRfc3339(it, fallback = 0L).takeIf { d -> d > 0L } },
             scheduledForToday = scheduledForToday,
             sortOrder = sortOrder,
             estimatedPomodoros = estimatedPomodoros,

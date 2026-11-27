@@ -277,6 +277,9 @@ class InitialSyncManager @Inject constructor(
             // the canonical task-model fields entirely — mirror SyncEngine's
             // pull mapping.
             dueDate = dueDate?.let { parseRfc3339(it, fallback = 0L).takeIf { d -> d > 0L } },
+            // Issue #991 PR-D (juez r1): the initial restore must not wipe
+            // server plans — decode like dueDate.
+            plannedDate = plannedDate?.let { parseRfc3339(it, fallback = 0L).takeIf { d -> d > 0L } },
             scheduledForToday = scheduledForToday,
             sortOrder = sortOrder,
             estimatedPomodoros = estimatedPomodoros,

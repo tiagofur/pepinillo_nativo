@@ -23,6 +23,8 @@ describe('canonical wire fixture (S7)', () => {
 		// computed through the same helper so the assertion is TZ-stable).
 		expect(task.dueDate).toBe(localDateKey(new Date('2026-11-26T12:00:00Z')));
 		expect(task.scheduledForToday).toBe(true);
+		// Issue #991 S9: the plan decodes into the local day key.
+		expect(task.plannedDate).toBe(localDateKey(new Date('2026-11-26T12:00:00Z')));
 		expect(task.notes).toBe('Written on the phone, edited on the web');
 		expect(task.completedPomodoros).toBe(5);
 		expect(task.focusedSeconds).toBe(3600);
