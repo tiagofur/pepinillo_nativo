@@ -273,6 +273,10 @@ struct TaskListFeature {
         case delegate(Delegate)
         enum Delegate: Equatable {
             case startFocus(UUID, String)
+            /// Launch a Time Block of `minutes` with this task linked, from
+            /// a calendar-gap chip (#992 S3). AppFeature drives the launch
+            /// sequence (mode + duration + link + start).
+            case startFocusFromGap(UUID, String, Int)
             case taskDeleted(UUID)
             case taskCompletionChanged(UUID, Bool)
             case showPaywall
