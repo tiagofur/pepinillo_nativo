@@ -209,6 +209,7 @@ jobs:
             -test-timeouts-enabled YES \
             -default-test-execution-time-allowance 120 \
             -only-testing:PepinilloTests/TaskListFeatureTests \
+            -only-testing:PepinilloTests/NaturalDateParserTests \
             -only-testing:PepinilloTests/PaywallFeatureTests \
             -only-testing:PepinilloTests/FocusFeatureReducerTests \
             -only-testing:PepinilloTests/AppGroupContainerTests \
@@ -238,6 +239,7 @@ jobs:
             -only-testing:PepinilloTests/PersistenceStoreRouterTests \
             -only-testing:PepinilloTests/PersistenceServiceTests \
             -only-testing:PepinilloTests/TaskPlanningTests \
+            -only-testing:PepinilloTests/NaturalDateParserTests \
             -only-testing:PepinilloTests/SchemaVersioningTests \
             -only-testing:PepinilloTests/AppGroupContainerTests \
             -only-testing:PepinilloTests/WidgetProGatingTests \
