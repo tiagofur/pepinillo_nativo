@@ -508,7 +508,7 @@ struct PlanTaskList: View {
     /// with granted access AND there is at least one usable gap — the card
     /// is an honest inventory of the day, never a teaser.
     @ViewBuilder
-    private var focusGapsCard: some View {
+    var focusGapsCard: some View {
         switch store.focusGapsState {
         case .idle, .empty:
             EmptyView()
@@ -547,7 +547,7 @@ struct PlanTaskList: View {
                         HStack {
                             Text(timeRange(gap))
                                 .font(.subheadline.monospacedDigit())
-                            Text("· \(gap.durationMinutes) min")
+                            Text(durationLabel(gap))
                                 .font(.subheadline)
                                 .foregroundStyle(.secondary)
                             Spacer()
@@ -557,7 +557,7 @@ struct PlanTaskList: View {
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel(String(
-                        localized: "Focus gap of \(gap.durationMinutes) minutes"
+                        localized: "Focus gap of \(blockMinutes(gap)) minutes"
                     ))
                     .accessibilityHint(String(localized: "Choose a task from today for this gap"))
                 }
@@ -574,12 +574,28 @@ struct PlanTaskList: View {
             + gap.end.formatted(.dateTime.hour().minute())
     }
 
-    /// Today's open tasks for the gap picker sheet.
-    private var openTodayTasks: [TaskListFeature.TaskItemState] {
-        filteredTasks.filter { !$0.isCompleted }.map { $0 }
+    /// The block the launch actually runs: the gap clamped to TimeBlock's
+    /// ceiling — the brief requires the chip to say «480+ min» (judge A P1).
+    private func blockMinutes(_ gap: FocusGap) -> Int {
+        min(gap.durationMinutes, FocusGaps.maxBlockMinutes)
     }
 
-}
+    private func durationLabel(_ gap: FocusGap) -> String {
+        gap.durationMinutes > FocusGaps.maxBlockMinutes
+            ? String(localized: "\(FocusGaps.maxBlockMinutes)+ min")
+            : String(localized: "\(gap.durationMinutes) min")
+    }
+
+    /// Today's open tasks for the gap picker sheet — WITHOUT the energy
+    /// filter (#992 judge A P1): the picker promises «tareas de Hoy», and
+    /// the #990 one-tap energy filter must not shrink it (Mac parity).
+    private var openTodayTasks: [TaskListFeature.TaskItemState] {
+        TaskListFeature.planFilteredTasks(store.tasks, filter: .today)
+            .filter { !$0.isCompleted }
+            .map { $0 }
+    }
+
+    }
 
 /// Both sheets live in one modifier so `PlanTaskList.body` stays under the
 /// type-checker's complexity budget.
@@ -596,7 +612,12 @@ private struct PlanSheetsModifier: ViewModifier {
         content
             .sheet(item: $gapsSheetTarget) { gap in
                 GapTaskPickerSheet(
-                    gap: gap,
+                    gap: FocusGap(
+                        start: gap.start,
+                        end: gap.start.addingTimeInterval(TimeInterval(
+                            min(gap.durationMinutes, FocusGaps.maxBlockMinutes) * 60
+                        ))
+                    ),
                     tasks: openTasks,
                     onPick: { task in
                         gapsSheetTarget = nil

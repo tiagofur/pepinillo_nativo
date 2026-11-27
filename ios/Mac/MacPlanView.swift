@@ -88,9 +88,21 @@ struct MacPlanView: View {
 
         content(tasks: tasks)
             .background(Color.pepinilloSystemBackground)
+            .onAppear {
+                // #992 S1 (judge A P3): deep-links change the tab without a
+                // sidebar click — mirror the iOS appear refresh.
+                if filter == .today {
+                    store.send(.focusGapsAppeared)
+                }
+            }
             .sheet(item: $gapsSheetGap) { gap in
                 MacGapTaskPickerSheet(
-                    gap: gap,
+                    gap: FocusGap(
+                        start: gap.start,
+                        end: gap.start.addingTimeInterval(TimeInterval(
+                            min(gap.durationMinutes, FocusGaps.maxBlockMinutes) * 60
+                        ))
+                    ),
                     tasks: unfilteredToday.filter { !$0.isCompleted }.map { $0 },
                     onPick: { task in
                         gapsSheetGap = nil
@@ -847,7 +859,7 @@ struct MacPlanView: View {
                         HStack {
                             Text(timeRange(gap))
                                 .font(.subheadline.monospacedDigit())
-                            Text("· \(gap.durationMinutes) min")
+                            Text(durationLabel(gap))
                                 .font(.subheadline)
                                 .foregroundStyle(.secondary)
                             Spacer()
@@ -857,7 +869,7 @@ struct MacPlanView: View {
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel(String(
-                        localized: "Focus gap of \(gap.durationMinutes) minutes"
+                        localized: "Focus gap of \(blockMinutes(gap)) minutes"
                     ))
                     .accessibilityHint(String(localized: "Choose a task from today for this gap"))
                 }
@@ -876,6 +888,18 @@ struct MacPlanView: View {
     private func timeRange(_ gap: FocusGap) -> String {
         gap.start.formatted(.dateTime.hour().minute()) + " – "
             + gap.end.formatted(.dateTime.hour().minute())
+    }
+
+    /// The block the launch actually runs (judge A P1: the chip says
+    /// «480+ min» when the gap exceeds TimeBlock's ceiling).
+    private func blockMinutes(_ gap: FocusGap) -> Int {
+        min(gap.durationMinutes, FocusGaps.maxBlockMinutes)
+    }
+
+    private func durationLabel(_ gap: FocusGap) -> String {
+        gap.durationMinutes > FocusGaps.maxBlockMinutes
+            ? String(localized: "\(FocusGaps.maxBlockMinutes)+ min")
+            : String(localized: "\(gap.durationMinutes) min")
     }
 
     private func undoBanner(

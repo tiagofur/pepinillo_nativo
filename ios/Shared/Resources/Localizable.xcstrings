@@ -34,6 +34,28 @@
         }
       }
     },
+    "%lld+ min" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld+ min"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld+ min"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld+ min"
+          }
+        }
+      }
+    },
     "-%@" : {
       "localizations" : {
         "es" : {
