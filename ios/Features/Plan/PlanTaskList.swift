@@ -113,7 +113,7 @@ struct PlanTaskList: View {
             gapsSheetTarget: $gapsSheetGap,
             datePickTarget: $planPickDateTarget,
             datePickDraft: $planPickDateDraft,
-            openTasks: openTodayTasks,
+            openTasks: FocusGapsCard.openTasks(in: store),
             onGapPick: { task, gap in
                 store.send(.delegate(.startFocusFromGap(
                     task.id, task.title, min(gap.durationMinutes, FocusGaps.maxBlockMinutes)
@@ -228,7 +228,11 @@ struct PlanTaskList: View {
             // — with the filter active, "Show all" stays reachable above
             // (round 1, judge A/B: never a blank list on first launch).
             VStack(spacing: 8) {
-                focusGapsCard
+                FocusGapsCard(
+                    store: store,
+                    selectedGap: $gapsSheetGap,
+                    usesGlassBackground: true
+                )
                 energySuggestionPrompt
                 if tasks.isEmpty {
                     PepinilloEmptyState(
@@ -504,103 +508,8 @@ struct PlanTaskList: View {
         .padding(.horizontal, 16)
     }
 
-    /// «Huecos de hoy» (#992 S1/S5): renders nothing unless the user is Pro
-    /// with granted access AND there is at least one usable gap — the card
-    /// is an honest inventory of the day, never a teaser.
-    @ViewBuilder
-    var focusGapsCard: some View {
-        switch store.focusGapsState {
-        case .idle, .empty:
-            EmptyView()
-        case .needsAccess:
-            HStack(spacing: 12) {
-                Image(systemName: "calendar.badge.plus")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                Text(String(localized: "See where focus fits today"))
-                    .font(.subheadline)
-                    .lineLimit(2)
-                Spacer()
-                Button(String(localized: "Connect Calendar")) {
-                    store.send(.connectCalendarTapped)
-                }
-                .font(.subheadline.weight(.semibold))
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
-            .pepinilloGlass(cornerRadius: GlassCornerRadius.tile)
-            .padding(.horizontal, 16)
-        case .ready(let gaps):
-            VStack(alignment: .leading, spacing: 10) {
-                HStack(spacing: 6) {
-                    Image(systemName: "calendar")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .accessibilityHidden(true)
-                    Text(String(localized: "Where focus fits today"))
-                        .font(.subheadline.weight(.semibold))
-                    Spacer()
-                    Text(String(localized: "From your calendar today"))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                ForEach(gaps) { gap in
-                    Button {
-                        gapsSheetGap = gap
-                    } label: {
-                        HStack {
-                            Text(timeRange(gap))
-                                .font(.subheadline.monospacedDigit())
-                            Text(durationLabel(gap))
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
-                            Spacer()
-                            Image(systemName: "play.circle")
-                                .foregroundStyle(.tint)
-                        }
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(String(
-                        localized: "Focus gap of \(blockMinutes(gap)) minutes"
-                    ) + ", " + timeRange(gap))
-                    .accessibilityHint(String(localized: "Choose a task from today for this gap"))
-                }
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
-            .pepinilloGlass(cornerRadius: GlassCornerRadius.tile)
-            .padding(.horizontal, 16)
-        }
     }
 
-    private func timeRange(_ gap: FocusGap) -> String {
-        gap.start.formatted(.dateTime.hour().minute()) + " – "
-            + gap.end.formatted(.dateTime.hour().minute())
-    }
-
-    /// The block the launch actually runs: the gap clamped to TimeBlock's
-    /// ceiling — the brief requires the chip to say «480+ min» (judge A P1).
-    private func blockMinutes(_ gap: FocusGap) -> Int {
-        min(gap.durationMinutes, FocusGaps.maxBlockMinutes)
-    }
-
-    private func durationLabel(_ gap: FocusGap) -> String {
-        gap.durationMinutes > FocusGaps.maxBlockMinutes
-            ? String(localized: "\(FocusGaps.maxBlockMinutes)+ min")
-            : String(localized: "\(gap.durationMinutes) min")
-    }
-
-    /// Today's open tasks for the gap picker sheet — WITHOUT the energy
-    /// filter (#992 judge A P1): the picker promises «tareas de Hoy», and
-    /// the #990 one-tap energy filter must not shrink it (Mac parity).
-    private var openTodayTasks: [TaskListFeature.TaskItemState] {
-        let today = TaskListFeature.planFilteredTasks(store.tasks, filter: .today)
-            .filter { !$0.isCompleted }
-        return TaskListFeature.sortedPlanTasks(today, sortOrder: store.sortOrder).map { $0 }
-    }
-
-
-}
 /// Both sheets live in one modifier so `PlanTaskList.body` stays under the
 /// type-checker's complexity budget.
 private struct PlanSheetsModifier: ViewModifier {
@@ -615,7 +524,7 @@ private struct PlanSheetsModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
             .sheet(item: $gapsSheetTarget) { gap in
-                GapTaskPickerSheet(
+                FocusGapTaskPickerSheet(
                     gap: FocusGap(
                         start: gap.start,
                         end: gap.start.addingTimeInterval(TimeInterval(
@@ -636,50 +545,6 @@ private struct PlanSheetsModifier: ViewModifier {
                     onDateCancel()
                 }
             }
-    }
-}
-
-/// #992 S3: pick one of today's open tasks for the chosen gap; picking
-/// hands the launch to the reducer delegate.
-private struct GapTaskPickerSheet: View {
-    let gap: FocusGap
-    let tasks: [TaskListFeature.TaskItemState]
-    let onPick: (TaskListFeature.TaskItemState) -> Void
-    @Environment(\.dismiss) private var dismiss
-
-    var body: some View {
-        NavigationStack {
-            List(tasks) { task in
-                Button {
-                    onPick(task)
-                } label: {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(task.title)
-                            .font(.subheadline)
-                            .foregroundStyle(.primary)
-                            .lineLimit(1)
-                    }
-                }
-            }
-            .navigationTitle(String(
-                localized: "Choose a task for your \(gap.durationMinutes)-minute block"
-            ))
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button(String(localized: "Cancel")) { dismiss() }
-                }
-            }
-            .overlay {
-                if tasks.isEmpty {
-                    ContentUnavailableView(
-                        String(localized: "No open tasks for today"),
-                        systemImage: "checkmark.circle"
-                    )
-                }
-            }
-        }
-        .presentationDetents([.medium, .large])
     }
 }
 
