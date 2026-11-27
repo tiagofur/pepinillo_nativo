@@ -182,10 +182,12 @@ describe('restorePlanFilter (#975)', () => {
 	});
 });
 
-describe('quickAddDefaults', () => {
-	it('today marks scheduled; upcoming seeds tomorrow', () => {
+describe('quickAddDefaults (S5 #991)', () => {
+	it('today plans today; upcoming plans tomorrow without a deadline', () => {
+		expect(quickAddDefaults('today', TODAY).plannedDate).toBe('2026-11-16');
 		expect(quickAddDefaults('today', TODAY).scheduledForToday).toBe(true);
-		expect(quickAddDefaults('upcoming', TODAY).dueDate).toBe('2026-11-17');
+		expect(quickAddDefaults('upcoming', TODAY).plannedDate).toBe('2026-11-17');
+		expect(quickAddDefaults('upcoming', TODAY).dueDate).toBeUndefined();
 		expect(quickAddDefaults('inbox', TODAY)).toEqual({});
 	});
 });

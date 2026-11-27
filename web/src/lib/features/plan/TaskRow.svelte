@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { Task } from '$lib/domain/entities/types';
-	import { subtaskProgress, dueInfo, formatDueShort } from '$lib/domain/tasks/plan';
+	import { subtaskProgress, dueInfo, formatDueShort, planningBucket } from '$lib/domain/tasks/plan';
 	import { t, currentLocale } from '$lib/i18n/i18n.svelte';
 	import type { MessageKey } from '$lib/i18n/messages';
 
@@ -117,6 +117,22 @@
 		);
 	});
 
+	// S6 (#991): a past plan reads «Pospuesta · <día original>» even when a due
+	// chip exists (brief); a future plan without due shows its chosen day.
+	let postponed = $derived.by(() => {
+		if (task.status !== 'active' || !task.plannedDate) return false;
+		const bucket = planningBucket(task.plannedDate, task.dueDate, task.scheduledForToday === true, task.status);
+		return bucket.kind === 'today' && bucket.postponed;
+	});
+	let postponedLabel = $derived(
+		postponed ? `${t('plan.postponed')} · ${formatDueShort(task.plannedDate ?? '', currentLocale())}` : ''
+	);
+	let plannedFutureLabel = $derived.by(() => {
+		if (task.status !== 'active' || task.dueDate || !task.plannedDate) return '';
+		const bucket = planningBucket(task.plannedDate, task.dueDate, task.scheduledForToday === true, task.status);
+		return bucket.kind === 'upcoming' ? formatDueShort(task.plannedDate, currentLocale()) : '';
+	});
+
 	let subs = $derived(subtaskProgress(task));
 </script>
 
@@ -159,6 +175,12 @@
 			{/if}
 			{#if task.recurrenceRule}
 				<span class="pill">🔁</span>
+			{/if}
+			{#if postponed}
+				<span class="pill due postponed">{postponedLabel}</span>
+			{/if}
+			{#if plannedFutureLabel}
+				<span class="pill due">📅 {plannedFutureLabel}</span>
 			{/if}
 			{#if dueLabel}
 				<span class="pill due" class:overdue={task.dueDate && task.dueDate < localDateKey(new Date())}>{dueLabel}</span>
@@ -281,6 +303,11 @@
 	.pill.due.overdue {
 		color: var(--mode-pomodoro);
 		background: var(--mode-pomodoro-soft);
+	}
+
+	.pill.due.postponed {
+		color: var(--warning, #b45309);
+		background: color-mix(in srgb, var(--warning, #b45309) 10%, transparent);
 	}
 
 	.focus-btn {

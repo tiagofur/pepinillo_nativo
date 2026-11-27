@@ -20,10 +20,6 @@ export function restorePlanFilter(value: unknown): PlanFilter {
 	return PLAN_FILTER_IDS.includes(value as PlanFilter) ? (value as PlanFilter) : 'today';
 }
 
-export function isToday(task: Task, todayKey: string): boolean {
-	return task.scheduledForToday === true || task.dueDate === todayKey;
-}
-
 /**
  * Issue #991 S2/S3 — unified «Hoy» rule, the web leg of the one rule every
  * platform asserts against contracts/fixtures/task-planning-cases-991.json.
@@ -38,6 +34,18 @@ export type PlanningBucket =
 	| { kind: 'upcoming' }
 	| { kind: 'inbox' }
 	| { kind: 'completed' };
+
+/**
+ * Derived value of the legacy `scheduledForToday` boolean for a written
+ * planned date — mirrors iOS `TaskPlanning.legacyFlag` / Android's
+ * `setPlannedDate` derivation (issue #991): true while the plan is today or
+ * already past, so pre-PR-C surfaces keep a truthful «Hoy» (S6 keeps a
+ * postponed task's flag).
+ */
+export function derivedLegacyFlag(plannedDate: string | null | undefined, today: Date = new Date()): boolean {
+	if (!plannedDate) return false;
+	return planningBucket(plannedDate, null, false, 'active', today).kind === 'today';
+}
 
 export function planningBucket(
 	plannedDate: string | null | undefined,
@@ -63,21 +71,27 @@ export function planningBucket(
 }
 
 export function filterTasks(tasks: Task[], filter: PlanFilter, today: Date = new Date()): Task[] {
-	const todayKey = localDateKey(today);
+	// Unified «Hoy» rule (issue #991 S2): every pill goes through one resolver.
 	const active = tasks.filter((t) => t.status === 'active');
+	const buckets = new Map(
+		active.map((t) => [t.id, planningBucket(t.plannedDate, t.dueDate, t.scheduledForToday === true, t.status, today)])
+	);
 	switch (filter) {
 		case 'all':
 			return [...active].sort(byOrder);
 		case 'today':
-			return active.filter((t) => isToday(t, todayKey)).sort(byOrder);
+			return active.filter((t) => buckets.get(t.id)?.kind === 'today').sort(byOrder);
 		case 'inbox':
-			return active
-				.filter((t) => !isToday(t, todayKey) && !t.dueDate)
-				.sort(byOrder);
+			return active.filter((t) => buckets.get(t.id)?.kind === 'inbox').sort(byOrder);
 		case 'upcoming':
+			// #182: no one-week cap — sort by the first date (plan or due).
 			return active
-				.filter((t) => t.dueDate && t.dueDate !== todayKey)
-				.sort((a, b) => (a.dueDate ?? '').localeCompare(b.dueDate ?? '') || byOrder(a, b));
+				.filter((t) => buckets.get(t.id)?.kind === 'upcoming')
+				.sort(
+					(a, b) =>
+						(a.plannedDate ?? a.dueDate ?? '').localeCompare(b.plannedDate ?? b.dueDate ?? '') ||
+						byOrder(a, b)
+				);
 		case 'completed':
 			return tasks
 				.filter((t) => t.status === 'completed')
@@ -129,13 +143,14 @@ export function groupByEnergy(tasks: Task[]): { energy: TaskEnergy; tasks: Task[
 
 /** Defaults a quick-add inherits depending on the active pill. */
 export function quickAddDefaults(filter: PlanFilter, today: Date = new Date()): Partial<Task> {
+	// S5 (#991): quick add inherits a planned date — no invented deadlines.
 	switch (filter) {
 		case 'today':
-			return { scheduledForToday: true };
+			return { plannedDate: localDateKey(today), scheduledForToday: true };
 		case 'upcoming': {
 			const d = new Date(today);
 			d.setDate(d.getDate() + 1);
-			return { dueDate: localDateKey(d) };
+			return { plannedDate: localDateKey(d), scheduledForToday: false };
 		}
 		default:
 			return {};

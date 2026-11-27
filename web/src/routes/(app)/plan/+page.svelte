@@ -184,9 +184,59 @@
 				}))
 			},
 			{
-				id: 'moveToday',
-				label: t('plan.moveToday'),
-				onselect: () => void plan.updateTask(task.id, { scheduledForToday: true })
+				// «Planificar para…» (issue #991): the inspector hosts the native
+				// date input; the menu keeps the quick days + removal.
+				id: 'planFor',
+				label: t('plan.scheduleFor'),
+				kind: 'submenu',
+				children: [
+					{
+						id: 'planToday',
+						label: t('plan.filter.today'),
+						checked: task.plannedDate === localDateKey(new Date()),
+						onselect: () =>
+							void plan.updateTask(task.id, {
+								plannedDate: localDateKey(new Date()),
+								scheduledForToday: derivedLegacyFlag(localDateKey(new Date()))
+							})
+					},
+					{
+						id: 'planTomorrow',
+						label: t('plan.planTomorrow'),
+						onselect: () => {
+							const d = new Date();
+							d.setDate(d.getDate() + 1);
+							void plan.updateTask(task.id, {
+								plannedDate: localDateKey(d),
+								scheduledForToday: derivedLegacyFlag(localDateKey(d))
+							});
+						}
+					},
+					{
+						id: 'planWeekend',
+						label: t('plan.planWeekend'),
+						onselect: () => {
+							const d = new Date();
+							const delta = (6 - d.getDay() + 7) % 7 || 7;
+							d.setDate(d.getDate() + delta);
+							void plan.updateTask(task.id, {
+								plannedDate: localDateKey(d),
+								scheduledForToday: derivedLegacyFlag(localDateKey(d))
+							});
+						}
+					},
+					...(task.plannedDate
+						? [
+								{
+									id: 'planRemove',
+									label: t('plan.removeDate'),
+									destructive: true,
+									onselect: () =>
+										void plan.updateTask(task.id, { plannedDate: null, scheduledForToday: false })
+								}
+							]
+						: [])
+				]
 			},
 			{ id: 'sep2', kind: 'separator' },
 			{

@@ -14,6 +14,8 @@ struct TaskRow: View, Equatable {
     let onComplete: () -> Void
     let onStartFocus: () -> Void
     var onScheduledForTodayToggled: (() -> Void)?
+    var onPlannedDateChanged: ((Date?) -> Void)?
+    var onPickDateTapped: (() -> Void)?
     var onEnergyChanged: ((EnergyLevel) -> Void)?
     var onRecurrenceChanged: ((String?) -> Void)?
     var onPaywallTapped: (() -> Void)?
@@ -73,16 +75,30 @@ struct TaskRow: View, Equatable {
                 Label(String(localized: "Energy Level"), systemImage: "bolt")
             }
 
-            // Today scheduling
-            Button {
-                onScheduledForTodayToggled?()
-            } label: {
-                Label(
-                    task.scheduledForToday
-                        ? String(localized: "Remove from Today")
-                        : String(localized: "Add to Today"),
-                    systemImage: task.scheduledForToday ? "minus.circle" : "bolt.circle.fill"
-                )
+            // «Planificar para…» (issue #991 S4) — the swipe keeps the one-tap
+            // Today shortcut; the menu carries the full choice here.
+            if let onPlannedDateChanged {
+                TaskPlanningMenu(
+                    plannedDate: task.plannedDate,
+                    onChange: { onPlannedDateChanged($0) },
+                    onPickDate: onPickDateTapped
+                ) {
+                    Label(
+                        String(localized: "Schedule for…"),
+                        systemImage: "calendar.badge.clock"
+                    )
+                }
+            } else {
+                Button {
+                    onScheduledForTodayToggled?()
+                } label: {
+                    Label(
+                        task.scheduledForToday
+                            ? String(localized: "Remove from Today")
+                            : String(localized: "Add to Today"),
+                        systemImage: task.scheduledForToday ? "minus.circle" : "bolt.circle.fill"
+                    )
+                }
             }
 
             // Recurrence — Pro-gated in list context menu (issue #181)
@@ -205,6 +221,21 @@ struct TaskRow: View, Equatable {
             }
         }
 
+        // 2b. «Pospuesta · <día original>» (S6, brief): keeps the stale plan
+        // visible with its original day.
+        if !task.isCompleted, let planned = task.plannedDate,
+           planned < Calendar.current.startOfDay(for: .now) {
+            let day = planned.formatted(.dateTime.weekday(.abbreviated))
+            return ("\(String(localized: "Postponed")) · \(day)", "arrow.uturn.left", .orange)
+        }
+
+        // 2c. Future plan with no due date: show the chosen day (brief: the
+        // Próximas row must display which day the user picked).
+        if !task.isCompleted, let planned = task.plannedDate,
+           planned > Calendar.current.startOfDay(for: .now), task.dueDate == nil {
+            return (planned.formatted(.dateTime.weekday(.abbreviated).day()), "calendar", .secondary)
+        }
+
         // 3. If due date exists but not urgent, still show energy
         if task.dueDate == nil {
             // Due-today via scheduledForToday toggle (no explicit date)
@@ -272,6 +303,9 @@ struct TaskRow: View, Equatable {
         } else if isOverdue {
             return Color.red.opacity(0.04)
         } else if isDueToday {
+            return Color.orange.opacity(0.04)
+        } else if !task.isCompleted, let planned = task.plannedDate,
+                  planned < Calendar.current.startOfDay(for: .now) {
             return Color.orange.opacity(0.04)
         } else if task.scheduledForToday {
             return Color.green.opacity(0.04)

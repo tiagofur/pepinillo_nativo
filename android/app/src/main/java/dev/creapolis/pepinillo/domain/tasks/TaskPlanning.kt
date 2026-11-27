@@ -38,6 +38,28 @@ object TaskPlanning {
      */
     fun plannedDay(millis: Long): Long = DueDateEncoding.startOfLocalDay(millis)
 
+    /** Local midnight of today (S4 «Hoy» chip). */
+    fun plannedDay(): Long = DueDateEncoding.startOfLocalDay()
+
+    /** Local midnight of tomorrow (S4 «Mañana» / S5 quick add). */
+    fun tomorrow(now: Long = System.currentTimeMillis()): Long {
+        val cal = java.util.Calendar.getInstance().apply {
+            timeInMillis = DueDateEncoding.startOfLocalDay(now)
+            add(java.util.Calendar.DAY_OF_YEAR, 1)
+        }
+        return cal.timeInMillis
+    }
+
+    /** Local midnight of the coming Saturday — «Este fin de semana» (S4).
+     *  If today is Saturday or Sunday, next weekend's Saturday. */
+    fun upcomingWeekend(now: Long = System.currentTimeMillis()): Long {
+        val cal = java.util.Calendar.getInstance().apply { timeInMillis = DueDateEncoding.startOfLocalDay(now) }
+        // Calendar.DAY_OF_WEEK: 1 = Sunday … 7 = Saturday
+        val daysUntilSaturday = (java.util.Calendar.SATURDAY - cal.get(java.util.Calendar.DAY_OF_WEEK) + 7) % 7
+        cal.add(java.util.Calendar.DAY_OF_YEAR, if (daysUntilSaturday == 0) 7 else daysUntilSaturday)
+        return cal.timeInMillis
+    }
+
     /**
      * The bucket a task belongs to right now.
      *
@@ -72,6 +94,29 @@ object TaskPlanning {
         return if (plannedDate != null || dueDate != null) Bucket.Upcoming else Bucket.Inbox
     }
 
+    /** True when [millis] falls strictly after the local day of [now]. */
+    fun isFutureDay(millis: Long, now: Long = System.currentTimeMillis()): Boolean =
+        DueDateEncoding.normalizedLocalDate(millis).after(DueDateEncoding.normalizedLocalDate(now))
+
     private fun isFutureDay(millis: Long, today: Calendar): Boolean =
         DueDateEncoding.normalizedLocalDate(millis).after(today)
+
+    /** True when the task's plan is today or already past (S6 badge logic). */
+    fun isPlannedTodayOrPast(task: HasPlan, now: Long = System.currentTimeMillis()): Boolean {
+        if (task.scheduledForToday) return true
+        val planned = task.plannedDate ?: return false
+        return !isFutureDay(planned, now)
+    }
+
+    /** True when the task's plan is exactly today's local day. */
+    fun isPlannedToday(task: HasPlan, now: Long = System.currentTimeMillis()): Boolean {
+        val planned = task.plannedDate ?: return false
+        return DueDateEncoding.isSameLocalDay(planned, DueDateEncoding.normalizedLocalDate(now))
+    }
+
+    /** Minimal read surface for badge/filter call sites. */
+    interface HasPlan {
+        val scheduledForToday: Boolean
+        val plannedDate: Long?
+    }
 }

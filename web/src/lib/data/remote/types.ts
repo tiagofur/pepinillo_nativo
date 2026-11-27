@@ -44,6 +44,7 @@ export type RemoteTask = {
 	dueDate?: string | null;
 	completedAt?: string | null;
 	scheduledForToday?: boolean;
+	plannedDate?: string | null;
 	sortOrder?: number;
 	description?: string | null;
 	completedPomodoros?: number;

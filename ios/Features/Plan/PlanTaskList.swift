@@ -18,6 +18,10 @@ struct PlanTaskList: View {
     @State private var collapsedSections: Set<PlanFilter> = []
     @State private var taskToDelete: UUID?
     @State private var quickAddExpanded: Bool = false
+    // «Elegir fecha…» (issue #991 S4): the sheet is view-local UI state; the
+    // confirmed date flows through the reducer action.
+    @State private var planPickDateTarget: PlanPickTarget?
+    @State private var planPickDateDraft: Date = .now
     @FocusState private var quickAddFocused: Bool
 
     // MARK: - Filtered tasks
@@ -87,6 +91,14 @@ struct PlanTaskList: View {
             .animation(MotionTokens.snappy, value: store.recentlyDeletedTask != nil)
         }
         .onAppear { store.send(.onAppear) }
+        .sheet(item: $planPickDateTarget) { targetID in
+            PlanDatePickerSheet(draft: $planPickDateDraft) { confirmed in
+                store.send(.taskPlannedDateChanged(targetID.id, confirmed))
+                planPickDateTarget = nil
+            } onCancel: {
+                planPickDateTarget = nil
+            }
+        }
         .alert(
             String(localized: "Import Failed"),
             isPresented: Binding(
@@ -239,6 +251,13 @@ struct PlanTaskList: View {
                         onStartFocus: { store.send(.startFocusOnTask(task.id)) },
                         onScheduledForTodayToggled: {
                             store.send(.taskScheduledForToday(task.id, !task.scheduledForToday))
+                        },
+                        onPlannedDateChanged: { date in
+                            store.send(.taskPlannedDateChanged(task.id, date))
+                        },
+                        onPickDateTapped: {
+                            planPickDateDraft = task.plannedDate ?? .now
+                            planPickDateTarget = PlanPickTarget(id: task.id)
                         },
                         onEnergyChanged: { level in
                             store.send(.energyLevelChanged(task.id, level))

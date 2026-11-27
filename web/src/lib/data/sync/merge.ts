@@ -31,7 +31,15 @@ export function mergeTasks(local: Task[], remote: Task[]): Task[] {
 		if (!existing) {
 			byId.set(t.id, t);
 		} else if (latest(existing.updatedAt, t.updatedAt) === t.updatedAt) {
-			byId.set(t.id, t);
+			// Issue #991: plannedDate is local-only until PR-D puts it on the
+			// wire — a remote row without a plan must not wipe the local one
+			// (mirror of Android SyncEngine's converge preservation).
+			byId.set(
+				t.id,
+				!t.plannedDate && existing.plannedDate
+					? { ...t, plannedDate: existing.plannedDate }
+					: t
+			);
 		}
 	}
 	// Stable-ish ordering: active first by order, then by updatedAt desc.

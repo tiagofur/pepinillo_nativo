@@ -5,6 +5,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import dev.creapolis.pepinillo.ui.theme.MotionScheme
 import dev.creapolis.pepinillo.ui.theme.PepinilloShapeTokens
+import dev.creapolis.pepinillo.domain.tasks.TaskPlanning
 import dev.creapolis.pepinillo.domain.tasks.DueDateEncoding
 import java.util.Calendar
 import androidx.compose.foundation.background
@@ -26,6 +27,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Event
 import androidx.compose.material.icons.rounded.CalendarMonth
 import androidx.compose.material.icons.rounded.AccessTime
 import androidx.compose.material.icons.filled.BatteryFull
@@ -329,13 +331,39 @@ private fun MetadataRow(
         }
     }
 
-    // Today indicator (only if no due date to avoid clutter)
-    if (task.scheduledForToday && task.dueDate == null) {
+    // Planned-day badge (issue #991): «Hoy» for today's plan, «Pospuesta · día»
+    // keeps a past plan visible (S6, brief) even when a due chip exists, and a
+    // future plan shows its chosen day in Próximas.
+    if (TaskPlanning.isPlannedTodayOrPast(task)) {
+        metadataItems.add {
+            val postponed = task.plannedDate != null &&
+                !TaskPlanning.isFutureDay(task.plannedDate) &&
+                !TaskPlanning.isPlannedToday(task)
+            val color = if (postponed) DomainColors.DueToday else MaterialTheme.colorScheme.primary
+            MetadataBadge(color = color) {
+                if (postponed) {
+                    val dayLabel = task.plannedDate?.let {
+                        java.text.SimpleDateFormat("EEE d", java.util.Locale.getDefault()).format(java.util.Date(it))
+                    } ?: ""
+                    Icon(Icons.Rounded.AccessTime, contentDescription = stringResource(R.string.task_plan_postponed), modifier = Modifier.size(14.dp), tint = color)
+                    Text(stringResource(R.string.task_plan_postponed) + " · " + dayLabel, style = MaterialTheme.typography.bodySmall, color = color)
+                } else {
+                    Icon(Icons.Rounded.Today, contentDescription = stringResource(R.string.cd_scheduled_today), modifier = Modifier.size(14.dp), tint = color)
+                    Text(stringResource(R.string.filter_today), style = MaterialTheme.typography.bodySmall, color = color)
+                }
+            }
+        }
+    } else if (task.dueDate == null && task.plannedDate != null && TaskPlanning.isFutureDay(task.plannedDate)) {
+        // Future plan in Próximas: the chosen day stays visible (brief).
         metadataItems.add {
             val color = MaterialTheme.colorScheme.primary
             MetadataBadge(color = color) {
-                Icon(Icons.Rounded.Today, contentDescription = stringResource(R.string.cd_scheduled_today), modifier = Modifier.size(14.dp), tint = color)
-                Text(stringResource(R.string.filter_today), style = MaterialTheme.typography.bodySmall, color = color)
+                Icon(Icons.Rounded.Event, contentDescription = stringResource(R.string.task_plan_for), modifier = Modifier.size(14.dp), tint = color)
+                Text(
+                    java.text.SimpleDateFormat("EEE d", java.util.Locale.getDefault()).format(java.util.Date(task.plannedDate)),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = color
+                )
             }
         }
     }

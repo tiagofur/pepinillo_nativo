@@ -89,6 +89,11 @@ export type MessageKey =
 	| 'plan.context.rename'
 	| 'plan.markIncomplete'
 	| 'plan.moveToday'
+	| 'plan.scheduleFor'
+	| 'plan.planTomorrow'
+	| 'plan.planWeekend'
+	| 'plan.removeDate'
+	| 'plan.postponed'
 	| 'plan.undo.deleted'
 	| 'plan.reorder'
 	| 'dashboard.title'
@@ -582,6 +587,11 @@ export type MessageKey =
 type Dict = Record<MessageKey, string>;
 
 const en: Dict = {
+	'plan.scheduleFor': 'Schedule for…',
+	'plan.planTomorrow': 'Tomorrow',
+	'plan.planWeekend': 'This Weekend',
+	'plan.removeDate': 'Remove Date',
+	'plan.postponed': 'Postponed',
 	'app.name': 'Pepinillo',
 	'app.tagline': 'Plan, focus, and celebrate your deep work — natively, on every screen you own.',
 	'nav.focus': 'Focus',
@@ -1180,6 +1190,11 @@ const en: Dict = {
 
 const es: Dict = {
 	...en,
+	'plan.scheduleFor': 'Planificar para…',
+	'plan.planTomorrow': 'Mañana',
+	'plan.planWeekend': 'Este fin de semana',
+	'plan.removeDate': 'Quitar fecha',
+	'plan.postponed': 'Pospuesta',
 	'app.tagline': 'Planificá, enfocate y celebrá tu deep work — nativo, en todas tus pantallas.',
 	'nav.focus': 'Foco',
 	'nav.plan': 'Plan',
@@ -1777,6 +1792,11 @@ const es: Dict = {
 
 const pt: Dict = {
 	...en,
+	'plan.scheduleFor': 'Planejar para…',
+	'plan.planTomorrow': 'Amanhã',
+	'plan.planWeekend': 'Este fim de semana',
+	'plan.removeDate': 'Remover data',
+	'plan.postponed': 'Adiada',
 	'app.tagline': 'Planeje, concentre-se e celebre seu deep work — nativo, em todas as suas telas.',
 	'nav.focus': 'Foco',
 	'nav.plan': 'Plano',

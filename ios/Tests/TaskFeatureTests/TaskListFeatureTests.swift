@@ -90,6 +90,7 @@ struct TaskListFeatureTests {
                 recurrenceRule: nil,
                 isRecurringTemplate: false,
                 scheduledForToday: true,
+                plannedDate: TaskPlanning.plannedDay(testDate),
                 sortOrder: 0,
                 createdAt: testDate
             ))
@@ -364,6 +365,7 @@ struct TaskListFeatureTests {
                 recurrenceRule: nil,
                 isRecurringTemplate: false,
                 scheduledForToday: true,
+                plannedDate: TaskPlanning.plannedDay(testDate),
                 sortOrder: 0,
                 createdAt: testDate
             ))
@@ -672,25 +674,83 @@ struct TaskListFeatureTests {
 
     // MARK: - Issue #180: Plan-aware quick-add
 
-    @Test func planQuickAddDefaultsTodaySchedulesForToday() {
-        let defaults = TaskListFeature.planQuickAddDefaults(for: .today)
-        #expect(defaults.scheduledForToday == true)
+    @Test func planQuickAddDefaultsTodayPlansToday() {
+        let now = Date(timeIntervalSince1970: 1_700_000_000)
+        let defaults = TaskListFeature.planQuickAddDefaults(for: .today, now: now)
+        #expect(defaults.plannedDate == TaskPlanning.plannedDay(now))
         #expect(defaults.dueDate == nil)
     }
 
-    @Test func planQuickAddDefaultsInboxLeavesTaskUnscheduled() {
+    @Test func planQuickAddDefaultsInboxLeavesTaskUnplanned() {
         let defaults = TaskListFeature.planQuickAddDefaults(for: .inbox)
-        #expect(defaults.scheduledForToday == false)
+        #expect(defaults.plannedDate == nil)
         #expect(defaults.dueDate == nil)
     }
 
-    @Test func planQuickAddDefaultsUpcomingSetsTomorrowDueDate() {
+    @Test func planQuickAddDefaultsUpcomingPlansTomorrowWithoutDeadline() {
+        // S5 (#991): quick add from Upcoming inherits a planned date, no due date.
         let now = Date(timeIntervalSince1970: 1_700_000_000)
         let defaults = TaskListFeature.planQuickAddDefaults(for: .upcoming, now: now)
-        let tomorrow = Calendar.current.date(byAdding: .day, value: 1, to: Calendar.current.startOfDay(for: now))
+        #expect(defaults.plannedDate == TaskPlanning.tomorrow(from: now))
+        #expect(defaults.dueDate == nil)
+    }
 
-        #expect(defaults.scheduledForToday == false)
-        #expect(defaults.dueDate == tomorrow)
+    // MARK: - Issue #991 S2: unified «Hoy» rule in the Plan filters
+
+    private func plannedTaskState(id: UUID, plannedDate: Date?) -> TaskListFeature.TaskItemState {
+        var task = TaskListFeature.TaskItemState(
+            id: id,
+            title: "Planned Task",
+            isCompleted: false,
+            priority: .none,
+            energyLevel: .deep,
+            estimatedPomodoros: 1,
+            completedPomodoros: 0,
+            subtaskProgress: .init(completed: 0, total: 0),
+            recurrenceRule: nil,
+            isRecurringTemplate: false,
+            scheduledForToday: false,
+            sortOrder: 0,
+            createdAt: Date(timeIntervalSince1970: 1_690_000_000)
+        )
+        task.plannedDate = plannedDate
+        return task
+    }
+
+    @Test func planFilteredTasksPostponedPlanStaysInToday() {
+        let cal = Calendar.current
+        let today = cal.startOfDay(for: Date(timeIntervalSince1970: 1_700_000_000))
+        let yesterday = cal.date(byAdding: .day, value: -1, to: today)!
+        var task = plannedTaskState(id: UUID(1), plannedDate: nil)
+        task.plannedDate = yesterday
+        task.scheduledForToday = true
+        let tasks = IdentifiedArrayOf(uniqueElements: [task])
+
+        #expect(TaskListFeature.planFilteredTasks(tasks, filter: .today, now: today).count == 1)
+        #expect(TaskListFeature.planFilteredTasks(tasks, filter: .inbox, now: today).isEmpty)
+        #expect(TaskListFeature.planFilteredTasks(tasks, filter: .upcoming, now: today).isEmpty)
+    }
+
+    @Test func planFilteredTasksFuturePlanLandsInUpcoming() {
+        let cal = Calendar.current
+        let today = cal.startOfDay(for: Date(timeIntervalSince1970: 1_700_000_000))
+        let later = cal.date(byAdding: .day, value: 3, to: today)!
+        var task = plannedTaskState(id: UUID(1), plannedDate: nil)
+        task.plannedDate = later
+        let tasks = IdentifiedArrayOf(uniqueElements: [task])
+
+        #expect(TaskListFeature.planFilteredTasks(tasks, filter: .upcoming, now: today).count == 1)
+        #expect(TaskListFeature.planFilteredTasks(tasks, filter: .today, now: today).isEmpty)
+        #expect(TaskListFeature.planFilteredTasks(tasks, filter: .inbox, now: today).isEmpty)
+    }
+
+    @Test func planFilteredTasksNoDatesLandsInInbox() {
+        let today = Date(timeIntervalSince1970: 1_700_000_000)
+        let task = plannedTaskState(id: UUID(1), plannedDate: nil)
+        let tasks = IdentifiedArrayOf(uniqueElements: [task])
+
+        #expect(TaskListFeature.planFilteredTasks(tasks, filter: .inbox, now: today).count == 1)
+        #expect(TaskListFeature.planFilteredTasks(tasks, filter: .today, now: today).isEmpty)
     }
 
     @Test func addTaskInInboxFilterStaysInInbox() async {
@@ -729,11 +789,12 @@ struct TaskListFeatureTests {
         let saved = savedTask.value
         #expect(saved?.scheduledForToday == false)
         #expect(saved?.dueDate == nil)
+        #expect(saved?.plannedDate == nil, "inbox quick-add stays unplanned (S5)")
         #expect(TaskListFeature.planFilteredTasks(store.state.tasks, filter: .inbox, now: testDate).ids == [testID])
         #expect(TaskListFeature.planFilteredTasks(store.state.tasks, filter: .today, now: testDate).isEmpty)
     }
 
-    @Test func addTaskInUpcomingFilterSetsDueDateAndAppearsInUpcoming() async {
+    @Test func addTaskInUpcomingFilterPlansTomorrowAndAppearsInUpcoming() async {
         let testID = UUID(0)
         let testDate = Date(timeIntervalSince1970: 1_700_000_000)
         let tomorrow = Calendar.current.date(byAdding: .day, value: 1, to: Calendar.current.startOfDay(for: testDate))!
@@ -764,15 +825,86 @@ struct TaskListFeatureTests {
                 scheduledForToday: false,
                 isCompleted: false,
                 sortOrder: 0,
-                dueDate: tomorrow
+                plannedDate: tomorrow
             ))
         }
 
         let saved = savedTask.value
-        #expect(saved?.scheduledForToday == false)
-        #expect(saved?.dueDate == tomorrow)
+        #expect(saved?.scheduledForToday == false, "a future plan derives flag = false")
+        #expect(saved?.plannedDate == tomorrow, "S5: Upcoming quick-add plans tomorrow")
+        #expect(saved?.dueDate == nil, "S5: no deadline is invented anymore")
         #expect(TaskListFeature.planFilteredTasks(store.state.tasks, filter: .upcoming, now: testDate).ids == [testID])
         #expect(TaskListFeature.planFilteredTasks(store.state.tasks, filter: .inbox, now: testDate).isEmpty)
+    }
+
+    // MARK: - Issue #991: planned-date persistence keeps every field (issue #178 class)
+
+    @Test func taskPlannedDateChangedPersistsFullFidelity() async {
+        let testID = UUID(3)
+        let testDate = Date(timeIntervalSince1970: 1_700_000_000)
+        let friday = Calendar.current.date(byAdding: .day, value: 3, to: Calendar.current.startOfDay(for: testDate))!
+        var initial = TaskListFeature.State()
+        initial.tasks = IdentifiedArrayOf(uniqueElements: [plannedTaskState(id: testID, plannedDate: nil)])
+
+        // A row that already carries completion + recurrence + sync metadata —
+        // a partial DTO rebuild would wipe them (issue #178 class).
+        let complete = TaskItemDTO(
+            id: testID,
+            title: "Planned Task",
+            isCompleted: false,
+            energyLevel: .deep,
+            recurrenceRule: RecurrencePreset.weekly.rawValue,
+            completedAt: testDate,
+            createdAt: testDate,
+            syncId: "sync-123",
+            serverId: 42,
+            syncedAt: testDate
+        )
+        let savedDTO = LockIsolated<TaskItemDTO?>(nil)
+        let store = TestStore(initialState: initial) {
+            TaskListFeature()
+        } withDependencies: {
+            $0.persistenceClient.fetchTask = { _ in complete }
+            $0.persistenceClient.saveTask = { savedDTO.setValue($0) }
+            $0.date = .constant(testDate)
+        }
+
+        store.exhaustivity = .off
+        await store.send(.taskPlannedDateChanged(testID, friday))
+
+        let saved = try! #require(savedDTO.value, "saveTask must be called with the full DTO")
+        #expect(saved.plannedDate == TaskPlanning.plannedDay(friday))
+        #expect(saved.scheduledForToday == false, "a future plan derives flag = false")
+        // Full fidelity: nothing else is touched by the planning write.
+        #expect(saved.recurrenceRule == RecurrencePreset.weekly.rawValue)
+        #expect(saved.completedAt == testDate)
+        #expect(saved.syncId == "sync-123")
+        #expect(saved.serverId == 42)
+        #expect(saved.isDirty == true, "the row re-marks dirty for sync")
+    }
+
+    @Test func todayToggleWritesPlannedDayAndDerivedFlag() async {
+        let testID = UUID(4)
+        let testDate = Date(timeIntervalSince1970: 1_700_000_000)
+        var initial = TaskListFeature.State()
+        initial.tasks = IdentifiedArrayOf(uniqueElements: [plannedTaskState(id: testID, plannedDate: nil)])
+
+        let complete = basicTaskDTO(id: testID)
+        let savedDTO = LockIsolated<TaskItemDTO?>(nil)
+        let store = TestStore(initialState: initial) {
+            TaskListFeature()
+        } withDependencies: {
+            $0.persistenceClient.fetchTask = { _ in complete }
+            $0.persistenceClient.saveTask = { savedDTO.setValue($0) }
+            $0.date = .constant(testDate)
+        }
+
+        store.exhaustivity = .off
+        await store.send(.taskScheduledForToday(testID, true))
+
+        let saved = try! #require(savedDTO.value, "saveTask must be called")
+        #expect(saved.plannedDate == TaskPlanning.plannedDay(testDate))
+        #expect(saved.scheduledForToday == true, "today's plan derives flag = true")
     }
 
     @Test func addTaskInCompletedFilterDoesNotAutoComplete() async {
@@ -1381,6 +1513,7 @@ struct TaskListFeatureTests {
                 recurrenceRule: nil,
                 isRecurringTemplate: false,
                 scheduledForToday: true,
+                plannedDate: TaskPlanning.plannedDay(testDate),
                 sortOrder: 0,
                 createdAt: testDate
             ))
@@ -1696,6 +1829,7 @@ struct TaskListFeatureTests {
         isCompleted: Bool,
         sortOrder: Int,
         dueDate: Date? = nil,
+        plannedDate: Date? = nil,
         priority: TaskPriority = .none
     ) -> TaskListFeature.TaskItemState {
         TaskListFeature.TaskItemState(
@@ -1711,6 +1845,7 @@ struct TaskListFeatureTests {
             isRecurringTemplate: false,
             dueDate: dueDate,
             scheduledForToday: scheduledForToday,
+            plannedDate: plannedDate,
             sortOrder: sortOrder,
             createdAt: Date(timeIntervalSince1970: 1_000_000)
         )
