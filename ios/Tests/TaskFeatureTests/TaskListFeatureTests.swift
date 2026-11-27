@@ -1928,6 +1928,137 @@ struct TaskListFeatureTests {
         #expect(savedOrder.value.map(\.id) == [third, first, second, untouched])
     }
 
+    // MARK: «Huecos de hoy» (#992 S1/S5)
+
+    @Test func freeUserNeverFetchesGaps() async {
+        let store = TestStore(initialState: TaskListFeature.State()) {
+            TaskListFeature()
+        } withDependencies: {
+            $0.calendarClient.isAuthorized = { true }
+            $0.calendarClient.fetchDayEvents = { _, _ in [] }
+        }
+
+        store.exhaustivity = .off
+        await store.send(.focusGapsAppeared)
+        // No state change expected: free users stay idle (S5).
+    }
+
+    @Test func proWithoutAccessSeesConnectCard() async {
+        var state = TaskListFeature.State()
+        state.isProUser = true
+        let store = TestStore(initialState: state) {
+            TaskListFeature()
+        } withDependencies: {
+            $0.calendarClient.isAuthorized = { false }
+        }
+
+        await store.send(.focusGapsAppeared) {
+            $0.focusGapsState = .needsAccess
+        }
+    }
+
+    @Test func proWithAccessComputesGaps() async {
+        var state = TaskListFeature.State()
+        state.isProUser = true
+        let gregorian = Calendar(identifier: .gregorian)
+        let noon = gregorian.date(from: DateComponents(
+            timeZone: .current, year: 2026, month: 11, day: 27, hour: 12
+        ))!
+        // The first block ends exactly at noon (= now), so the usable gap
+        // is noon..14:00 — two full hours.
+        let expected = FocusGap(
+            start: noon,
+            end: noon.addingTimeInterval(2 * 60 * 60)
+        )
+        let store = TestStore(initialState: state) {
+            TaskListFeature()
+        } withDependencies: {
+            $0.calendarClient.isAuthorized = { true }
+            $0.calendarClient.fetchDayEvents = { start, _ in
+                #expect(start == noon, "the fetch window starts at now")
+                return [
+                    DayEvent(start: noon.addingTimeInterval(-3_600), end: noon),
+                    DayEvent(start: noon.addingTimeInterval(2 * 3_600), end: noon.addingTimeInterval(3 * 3_600))
+                ]
+            }
+            $0.date = .constant(noon)
+        }
+
+        await store.send(.focusGapsAppeared)
+        await store.receive(.focusGapsComputed([expected])) {
+            $0.focusGapsState = .ready([expected])
+        }
+    }
+
+    @Test func authorizedWithoutGapsStaysEmpty() async {
+        var state = TaskListFeature.State()
+        state.isProUser = true
+        let gregorian = Calendar(identifier: .gregorian)
+        let noon = gregorian.date(from: DateComponents(
+            timeZone: .current, year: 2026, month: 11, day: 27, hour: 12
+        ))!
+        let store = TestStore(initialState: state) {
+            TaskListFeature()
+        } withDependencies: {
+            $0.calendarClient.isAuthorized = { true }
+            // An all-day event occupies the whole day → no gaps (S1).
+            $0.calendarClient.fetchDayEvents = { _, _ in
+                [DayEvent(start: noon, end: noon.addingTimeInterval(86_400), isAllDay: true)]
+            }
+            $0.date = .constant(noon)
+        }
+
+        await store.send(.focusGapsAppeared)
+        await store.receive(.focusGapsComputed([])) {
+            $0.focusGapsState = .empty
+        }
+    }
+
+    @Test func connectCalendarGrantsThenComputes() async {
+        var state = TaskListFeature.State()
+        state.isProUser = true
+        let noon = Date(timeIntervalSince1970: 1_000_000)
+        // The card is showing its «Conectar calendario» CTA when tapped.
+        state.focusGapsState = .needsAccess
+        let store = TestStore(initialState: state) {
+            TaskListFeature()
+        } withDependencies: {
+            $0.calendarClient.isAuthorized = { true }
+            $0.calendarClient.requestAccess = { true }
+            $0.calendarClient.fetchDayEvents = { _, _ in [] }
+            $0.date = .constant(noon)
+        }
+
+        await store.send(.connectCalendarTapped) {
+            $0.focusGapsState = .idle
+        }
+        await store.receive(.connectCalendarResult(true))
+        await store.receive(.focusGapsAppeared)
+        await store.receive(.focusGapsComputed([])) {
+            $0.focusGapsState = .empty
+        }
+    }
+
+    @Test func deniedAccessHidesTheCard() async {
+        var state = TaskListFeature.State()
+        state.isProUser = true
+        // The card is showing its CTA; the system prompt comes back denied.
+        state.focusGapsState = .needsAccess
+        let store = TestStore(initialState: state) {
+            TaskListFeature()
+        } withDependencies: {
+            $0.calendarClient.isAuthorized = { false }
+            $0.calendarClient.requestAccess = { false }
+        }
+
+        await store.send(.connectCalendarTapped) {
+            $0.focusGapsState = .idle
+        }
+        // Denied: the card goes away and nothing re-triggers (S1) — the
+        // state was already reset to .idle by the tap.
+        await store.receive(.connectCalendarResult(false))
+    }
+
     private func makeTask(
         id: UUID,
         title: String,

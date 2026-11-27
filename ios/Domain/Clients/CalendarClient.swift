@@ -26,6 +26,11 @@ struct CalendarClient: Sendable {
 
     /// Remove a previously created focus event by its identifier.
     var removeFocusEvent: @Sendable (_ eventIdentifier: String) async throws -> Void = { _ in }
+
+    /// Read the events between two instants (read path of the «Huecos de
+    /// hoy» card, #992 S1). Only the fields the gap engine needs travel —
+    /// EKEvent mapping happens here, so the engine stays EventKit-free.
+    var fetchDayEvents: @Sendable (_ start: Date, _ end: Date) async throws -> [DayEvent] = { _, _ in [] }
 }
 
 extension CalendarClient: DependencyKey {
@@ -62,6 +67,12 @@ extension CalendarClient: DependencyKey {
             removeFocusEvent: { identifier in
                 guard let event = store.event(withIdentifier: identifier) else { return }
                 try store.remove(event, span: .thisEvent)
+            },
+            fetchDayEvents: { start, end in
+                let predicate = store.predicateForEvents(withStart: start, end: end, calendars: nil)
+                return store.events(matching: predicate).map { event in
+                    DayEvent(start: event.startDate, end: event.endDate, isAllDay: event.isAllDay)
+                }
             }
         )
     }()
