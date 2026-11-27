@@ -89,6 +89,50 @@
         }
       }
     },
+    "Choose a task from today for this gap" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose a task from today for this gap"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Elige una tarea de hoy para este hueco"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Escolha uma tarefa de hoje para este intervalo"
+          }
+        }
+      }
+    },
+    "From your calendar today" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "From your calendar today"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "De tu calendario de hoy"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Do seu calendário de hoje"
+          }
+        }
+      }
+    },
     "See where focus fits today" : {
       "localizations" : {
         "en" : {

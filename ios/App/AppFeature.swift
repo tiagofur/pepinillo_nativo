@@ -1518,7 +1518,7 @@ struct AppFeature {
 
             // #992 S3: a calendar-gap chip launches a Time Block sized to
             // the gap (the reducer already clamps custom duration 1…480).
-            case .tasks(.delegate(.startFocusFromGap(let taskID, let title, let minutes))):
+            case .tasks(.delegate(.startFocusFromGap(let taskID, _, let minutes))):
                 if let task = state.tasks.tasks[id: taskID] {
                     state.selectedTab = .focus
                     return .concatenate(

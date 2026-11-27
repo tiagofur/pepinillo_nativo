@@ -539,6 +539,10 @@ struct PlanTaskList: View {
                         .accessibilityHidden(true)
                     Text(String(localized: "Where focus fits today"))
                         .font(.subheadline.weight(.semibold))
+                    Spacer()
+                    Text(String(localized: "From your calendar today"))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
                 ForEach(gaps) { gap in
                     Button {
@@ -558,7 +562,7 @@ struct PlanTaskList: View {
                     .buttonStyle(.plain)
                     .accessibilityLabel(String(
                         localized: "Focus gap of \(blockMinutes(gap)) minutes"
-                    ))
+                    ) + ", " + timeRange(gap))
                     .accessibilityHint(String(localized: "Choose a task from today for this gap"))
                 }
             }
@@ -590,13 +594,13 @@ struct PlanTaskList: View {
     /// filter (#992 judge A P1): the picker promises «tareas de Hoy», and
     /// the #990 one-tap energy filter must not shrink it (Mac parity).
     private var openTodayTasks: [TaskListFeature.TaskItemState] {
-        TaskListFeature.planFilteredTasks(store.tasks, filter: .today)
+        let today = TaskListFeature.planFilteredTasks(store.tasks, filter: .today)
             .filter { !$0.isCompleted }
-            .map { $0 }
+        return TaskListFeature.sortedPlanTasks(today, sortOrder: store.sortOrder).map { $0 }
     }
 
-    }
 
+}
 /// Both sheets live in one modifier so `PlanTaskList.body` stays under the
 /// type-checker's complexity budget.
 private struct PlanSheetsModifier: ViewModifier {

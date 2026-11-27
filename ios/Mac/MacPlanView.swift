@@ -851,6 +851,10 @@ struct MacPlanView: View {
                         .accessibilityHidden(true)
                     Text(String(localized: "Where focus fits today"))
                         .font(.subheadline.weight(.semibold))
+                    Spacer()
+                    Text(String(localized: "From your calendar today"))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
                 ForEach(gaps) { gap in
                     Button {
@@ -870,7 +874,7 @@ struct MacPlanView: View {
                     .buttonStyle(.plain)
                     .accessibilityLabel(String(
                         localized: "Focus gap of \(blockMinutes(gap)) minutes"
-                    ))
+                    ) + ", " + timeRange(gap))
                     .accessibilityHint(String(localized: "Choose a task from today for this gap"))
                 }
             }
