@@ -98,20 +98,20 @@ struct NaturalDateParserTests {
         _ expected: ExpectedDateDTO?, now: Date, calendar: Calendar
     ) -> Date? {
         guard let expected else { return nil }
-        let noon = calendar.startOfDay(for: now)
+        let day = calendar.startOfDay(for: now)
         switch expected {
         case .symbolic("today"):
-            return noon
+            return day
         case .symbolic("tomorrow"):
-            return calendar.date(byAdding: .day, value: 1, to: noon)
+            return calendar.date(byAdding: .day, value: 1, to: day)
         case .symbolic("dayAfterTomorrow"):
-            return calendar.date(byAdding: .day, value: 2, to: noon)
+            return calendar.date(byAdding: .day, value: 2, to: day)
         case .nextWeekday(let weekday):
-            let raw = calendar.component(.weekday, from: noon)  // 1 = Sunday … 7 = Saturday
+            let raw = calendar.component(.weekday, from: day)  // 1 = Sunday … 7 = Saturday
             let isoToday = raw == 1 ? 7 : raw - 1
             var delta = (weekday - isoToday + 7) % 7
             if delta == 0 { delta = 7 }
-            return calendar.date(byAdding: .day, value: delta, to: noon)
+            return calendar.date(byAdding: .day, value: delta, to: day)
         case .explicit(let year, let month, let day):
             var comps = DateComponents()
             comps.year = year

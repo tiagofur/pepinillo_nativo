@@ -232,17 +232,19 @@ public enum NaturalDateParser {
 
     private static let trailingPunctuation: Set<Character> = [".", ",", "!", "?"]
 
-    /// The exact JS `\s` set (the shared spec's "whitespace") — NOT
-    /// Character.isWhitespace, which diverges on U+001C–U+001F (included
-    /// there, excluded by JS) and U+FEFF (excluded there, included by JS).
-    /// Judge B P1 of PR-b: cross-platform S2 equivalence requires this set.
-    fileprivate static func isJsWhitespace(_ c: Character) -> Bool {
-        switch c {
-        case "\t", "\n", "\u{000B}", "\u{000C}", "\r", " ", "\u{00A0}", "\u{1680}",
-             "\u{2028}", "\u{2029}", "\u{202F}", "\u{205F}", "\u{3000}", "\u{FEFF}":
+    /// The exact JS `\s` set (the shared spec's "whitespace") tested on
+    /// Unicode scalars — NOT Character.isWhitespace/Character checks, which
+    /// diverge on U+001C–U+001F (included there, excluded by JS), U+FEFF
+    /// (excluded there, included by JS) and CRLF (one grapheme, two units).
+    /// Judge B P1s of PR-b and PR-c: cross-platform S2 equivalence requires
+    /// this exact set on this exact unit.
+    fileprivate static func isJsWhitespace(_ scalar: Unicode.Scalar) -> Bool {
+        switch scalar.value {
+        case 0x09...0x0D, 0x20, 0xA0, 0x1680,
+             0x2000...0x200A, 0x2028, 0x2029, 0x202F, 0x205F, 0x3000, 0xFEFF:
             return true
         default:
-            return ("\u{2000}"..."\u{200A}").contains(c)
+            return false
         }
     }
 
@@ -339,12 +341,22 @@ public enum NaturalDateParser {
 
     /// Word boundary = start of text or a JS-`\s` whitespace character,
     /// NEVER punctuation (regex \b would accept «compra:viernes»).
+    /// Comparisons run on Unicode SCALARS with exact equality: Swift Strings
+    /// are grapheme clusters with canonical equivalence, so `"\r\n"` is one
+    /// Character (JS sees two code units, the last one whitespace) and
+    /// decomposed NFD text would canonically match its NFC phrase — both
+    /// diverge from the web reference (judge B P1s, #994 PR-c).
     private static func endsAtWordBoundary(_ lower: String, _ phrase: String) -> Bool {
-        guard lower.hasSuffix(phrase) else { return false }
-        let start = lower.count - phrase.count
+        let lowerScalars = Array(lower.unicodeScalars)
+        let phraseScalars = Array(phrase.unicodeScalars)
+        let start = lowerScalars.count - phraseScalars.count
+        guard start >= 0 else { return false }
+        for offset in 0..<phraseScalars.count
+        where lowerScalars[start + offset] != phraseScalars[offset] {
+            return false
+        }
         if start == 0 { return true }
-        let before = lower[lower.index(lower.startIndex, offsetBy: start - 1)]
-        return isJsWhitespace(before)
+        return isJsWhitespace(lowerScalars[start - 1])
     }
 
     /// Real-calendar roundtrip: constructing a nonexistent day (Feb 31) must
@@ -386,26 +398,27 @@ public enum NaturalDateParser {
 }
 
 private extension String {
-    /// Trailing JS-`\s` whitespace only.
+    /// Trailing JS-`\s` whitespace only, compared on Unicode scalars (a
+    /// trailing "\r\n" is one Character but two JS units — both strip).
     func rstripWhitespace() -> String {
-        var end = endIndex
-        while end > startIndex, NaturalDateParser.isJsWhitespace(self[index(before: end)]) {
-            end = index(before: end)
+        var scalars = Array(unicodeScalars)
+        while let last = scalars.last, NaturalDateParser.isJsWhitespace(last) {
+            scalars.removeLast()
         }
-        return String(self[startIndex..<end])
+        return String(String.UnicodeScalarView(scalars))
     }
 
-    /// Trim of the exact JS `\s` set (JS `String.prototype.trim` semantics),
-    /// not `.whitespacesAndNewlines` (diverges on U+001C–U+001F / U+FEFF).
+    /// Trim of the exact JS `\s` set (JS `String.prototype.trim` semantics)
+    /// on Unicode scalars — not `.whitespacesAndNewlines` (diverges on
+    /// U+001C–U+001F / U+FEFF / CRLF clusters).
     func trimJsWhitespace() -> String {
-        var start = startIndex
-        var end = endIndex
-        while start < end, NaturalDateParser.isJsWhitespace(self[start]) {
-            start = index(after: start)
+        var scalars = Array(unicodeScalars)
+        while let first = scalars.first, NaturalDateParser.isJsWhitespace(first) {
+            scalars.removeFirst()
         }
-        while end > start, NaturalDateParser.isJsWhitespace(self[index(before: end)]) {
-            end = index(before: end)
+        while let last = scalars.last, NaturalDateParser.isJsWhitespace(last) {
+            scalars.removeLast()
         }
-        return String(self[start..<end])
+        return String(String.UnicodeScalarView(scalars))
     }
 }
