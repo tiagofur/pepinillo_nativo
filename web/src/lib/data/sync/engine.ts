@@ -8,6 +8,7 @@ import type {
 	UserPreference
 } from '$lib/data/remote/types';
 import { prefsToRemoteSettings, sessionToRemote, taskToRemote } from './mappers';
+import { computeFocusCounters } from './counters';
 
 export type SyncSnapshot = {
 	deviceId: string;
@@ -24,9 +25,14 @@ export async function runInitialUpload(
 		.map(sessionToRemote)
 		.filter((s): s is NonNullable<typeof s> => s != null);
 
+	// #998 S5: derive the focus counters from the completed sessions being
+	// pushed (the phones do the same); tasks without known completed
+	// sessions keep their mirrored counters.
+	const tasks = computeFocusCounters(snapshot.tasks, snapshot.sessions).map(taskToRemote);
+
 	return api.initialUpload({
 		deviceId: snapshot.deviceId,
-		tasks: snapshot.tasks.map(taskToRemote),
+		tasks,
 		sessions,
 		settings: prefsToRemoteSettings(snapshot.prefs)
 	});

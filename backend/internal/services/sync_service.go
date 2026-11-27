@@ -183,8 +183,11 @@ func (s *SyncService) InitialUpload(ctx context.Context, userID, deviceID string
 	}
 	hasExistingData := len(existingTasks) > 0
 
-	// 2. Upsert tasks via the existing Sync method (handles SyncID-based conflict detection,
-	// subtask replacement, and returns the merged state inside a transaction).
+	// 2. Upsert tasks via the existing Sync method (handles SyncID-based
+	// conflict detection, LWW clamping and chunked transactions; subtasks
+	// reconcile by id/content with deletion of the missing rows — #998 S1/S2:
+	// the old "subtask replacement" wording was wrong, that rule lives in
+	// repo.Upsert, not on the sync path).
 	for i := range req.Tasks {
 		req.Tasks[i].UserID = userID
 		if req.Tasks[i].UpdatedAt.IsZero() {

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 
 	"pepinillo/backend/internal/domain"
 	"pepinillo/backend/internal/ports"
@@ -234,7 +235,10 @@ func (r *TaskRepository) upsertSyncItem(tx *gorm.DB, userID string, incoming dom
 		// which could overwrite another user's row via Save-by-PK.
 		incoming.ID = 0
 		incoming.UpdatedAt = clientUpdatedAt
-		if err := tx.Save(&incoming).Error; err != nil {
+		if err := tx.Omit(clause.Associations).Save(&incoming).Error; err != nil {
+			return err
+		}
+		if err := reconcileSyncSubtasks(tx, &incoming); err != nil {
 			return err
 		}
 		return nil
@@ -265,7 +269,15 @@ func (r *TaskRepository) upsertSyncItem(tx *gorm.DB, userID string, incoming dom
 	// resolveSyncTimestamp. Comparing and storing on different
 	// timelines systematically rejects slow-clock devices.
 	incoming.UpdatedAt = clientUpdatedAt
-	if err := tx.Save(&incoming).Error; err != nil {
+	// Issue #998 (S1): GORM's Save with associations updates children by PK
+	// and RE-INSERTS zero-PK children (duplicates for any client that omits
+	// the subtask server id) while a subtask deleted on the client is never
+	// removed server-side (resurrects on the next pull). The task row and
+	// the subtasks are now written explicitly.
+	if err := tx.Omit(clause.Associations).Save(&incoming).Error; err != nil {
+		return err
+	}
+	if err := reconcileSyncSubtasks(tx, &incoming); err != nil {
 		return err
 	}
 	*applied = append(*applied, incoming.SyncID)
