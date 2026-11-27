@@ -421,6 +421,26 @@ class AuthStore {
 
 	private async pullAndApply(): Promise<void> {
 		const api = this.api!;
+		// #998 S4: every pull holds the busy flag so a debounced push or a
+		// WS-triggered pull cannot run concurrently. syncNow already holds
+		// the flag when calling this; the direct resolveMerge('pull') path
+		// did not (that was the overlap hole).
+		const wasSyncing = this.syncing;
+		this.syncing = true;
+		try {
+			await this.runPull();
+		} catch (e) {
+			if (!wasSyncing) {
+				this.lastSyncError = e instanceof ApiError ? e.code : 'sync_error';
+			}
+			throw e;
+		} finally {
+			this.syncing = wasSyncing;
+		}
+	}
+
+	private async runPull(): Promise<void> {
+		const api = this.api!;
 		const pull = await runFullPull(api);
 		const [localTasks, localSessions] = await Promise.all([listAllTasks(), listSessions()]);
 		const remoteTasks = pull.tasks.map((rt, i) => remoteTaskMapper(rt, i));
@@ -495,7 +515,11 @@ class AuthStore {
 		if (this.pullThrottle !== null) return;
 		this.pullThrottle = window.setTimeout(() => {
 			this.pullThrottle = null;
+			// #998 S4: a pull landing while a sync holds the flag is deferred,
+			// not silently dropped (the next WS push re-triggers anyway, but
+			// an in-flight push cycle alone would otherwise lose it).
 			if (this.user && !this.syncing) void this.pullAndApply();
+			else this.schedulePull();
 		}, 5000);
 	}
 }
