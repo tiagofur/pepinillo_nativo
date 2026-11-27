@@ -44,6 +44,10 @@
     { "name": "pt: «semana» is not a date token", "input": "Reunião na próxima semana", "expectedTitle": "Reunião na próxima semana", "expectedDate": null },
     { "name": "pt: weekday at the start never parses", "input": "Sexta entrega", "expectedTitle": "Sexta entrega", "expectedDate": null },
     { "name": "bare numeric date with no title left stays untouched", "input": "3/12", "expectedTitle": "3/12", "expectedDate": null },
-    { "name": "bare phrase with no title left stays untouched", "input": "mañana", "expectedTitle": "mañana", "expectedDate": null }
+    { "name": "bare phrase with no title left stays untouched", "input": "mañana", "expectedTitle": "mañana", "expectedDate": null },
+    { "name": "dd/mm must be a real calendar day (29/2 only in leap years)", "input": "Informe 29/2", "expectedTitle": "Informe 29/2", "expectedDate": null },
+    { "name": "dd/mm equal to today resolves to today", "input": "Informe 27/11", "expectedTitle": "Informe", "expectedDate": { "kind": "explicit", "year": 2026, "month": 11, "day": 27 } },
+    { "name": "numeric date with trailing punctuation travels together", "input": "Informe 3/12.", "expectedTitle": "Informe", "expectedDate": { "kind": "explicit", "year": 2026, "month": 12, "day": 3 } },
+    { "name": "ISO month/day out of range never parses", "input": "Cierre 2026-13-45", "expectedTitle": "Cierre 2026-13-45", "expectedDate": null }
   ]
 }

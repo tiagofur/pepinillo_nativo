@@ -32,7 +32,10 @@ interface DatePhrase {
 	weekday?: number;
 }
 
-/** Longest-first so «pasado mañana» wins over «mañana». */
+/** Every parent phrase precedes its suffixes («pasado mañana» before
+ * «mañana», «segunda-feira» before «segunda») so the longer reading wins;
+ * exact-suffix matching makes the rest of the order irrelevant. Keep this
+ * order when porting the table to Android/iOS. */
 const DATE_PHRASES: DatePhrase[] = [
 	{ phrase: 'pasado mañana', kind: 'dayAfterTomorrow' },
 	{ phrase: 'pasado manana', kind: 'dayAfterTomorrow' },

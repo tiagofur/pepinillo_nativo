@@ -74,7 +74,7 @@ describe('natural date grammar against the shared case table (#994 S1/S2)', () =
 	);
 
 	it('the shared table keeps the whole grammar covered', () => {
-		expect(fixture.cases.length).toBeGreaterThanOrEqual(36);
+		expect(fixture.cases.length).toBeGreaterThanOrEqual(44);
 	});
 
 	it('every case matches the web parser', () => {
