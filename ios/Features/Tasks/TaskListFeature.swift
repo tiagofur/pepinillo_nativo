@@ -724,24 +724,23 @@ struct TaskListFeature {
                       let snapshot = state.tasks[id: undo.taskID] else { return .none }
                 let taskID = undo.taskID
                 let originalTitle = undo.originalTitle
-                let now = date.now
                 state.tasks[id: taskID]?.title = originalTitle
+                state.tasks[id: taskID]?.plannedDate = nil
+                state.tasks[id: taskID]?.scheduledForToday = false
                 state.parsedDateUndo = nil
                 return .merge(
                     .cancel(id: _UndoTimerID.parsedDateUndo(taskID)),
-                    // Clears the planned date + re-derives the legacy flag
-                    // and persists them (same seam as the row menu).
-                    Self.persistPlannedDate(
-                        id: taskID,
-                        planned: nil,
-                        now: now,
-                        state: &state,
-                        persistence: persistence
-                    ),
+                    // ONE read-modify-write: two concurrent fetch→save effects
+                    // could interleave and the title save would re-persist the
+                    // stale fetched planned date (judge A P1, #994 PR-d).
                     .run { send in
                         do {
                             if let item = try await persistence.fetchTask(taskID) {
-                                try await persistence.saveTask(item.updating(title: originalTitle))
+                                try await persistence.saveTask(item.updating(
+                                    title: originalTitle,
+                                    plannedDate: .some(nil),
+                                    scheduledForToday: false
+                                ))
                                 WidgetCenter.shared.reloadTimelines(ofKind: "TasksHomeScreenWidget")
                             }
                         } catch {

@@ -1,4 +1,5 @@
 import { localDateKey } from './recurrence';
+import { derivedLegacyFlag } from './plan';
 
 /**
  * Issue #994 (S1/S2): a planned date typed at the END of capture text.
@@ -214,7 +215,11 @@ export function parseNaturalDateSuffix(text: string, now: Date): NaturalDatePars
 	// 2. Grammar phrases, longest-first.
 	for (const candidate of DATE_PHRASES) {
 		if (!endsAtWordBoundary(lowerProbe, candidate.phrase)) continue;
-		const start = lowerProbe.length - candidate.phrase.length;
+		// Slice by the ORIGINAL length: lowercasing can expand a code unit
+		// («İ» → 2 units) and shifting by the lowered length mangles titles
+		// (judge B P1 of PR-c). The phrase itself is NFC Latin — its length
+		// is identical in both casings.
+		const start = probe.length - candidate.phrase.length;
 		return finish(resolvePhrase(candidate, now), start);
 	}
 
@@ -248,4 +253,24 @@ function resolvePhrase(candidate: DatePhrase, now: Date): string {
 		}
 	}
 	return localDateKey(day);
+}
+
+/**
+ * Quick-add overrides for a natural-language date (#994 PR-d): the cleaned
+ * title plus the pill override (plannedDate + derived legacy flag) to pass
+ * through `plan.addTask`'s existing `defaults` parameter. Shared by the ⌘K
+ * palette and the Plan bar so both entries behave identically.
+ */
+export function parsedQuickAddOverrides(
+	text: string,
+	now: Date
+): { title: string; overrides: { plannedDate: string; scheduledForToday: boolean } } {
+	const parsed = parseNaturalDateSuffix(text, now);
+	const overrides = parsed.plannedDate
+		? {
+				plannedDate: parsed.plannedDate,
+				scheduledForToday: derivedLegacyFlag(parsed.plannedDate, now)
+			}
+		: {};
+	return { title: parsed.title, overrides };
 }

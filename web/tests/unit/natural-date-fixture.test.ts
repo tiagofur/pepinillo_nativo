@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { resolve } from 'node:path';
-import { parseNaturalDateSuffix } from '$lib/domain/tasks/natural-date';
+import { parseNaturalDateSuffix, parsedQuickAddOverrides } from '$lib/domain/tasks/natural-date';
 import { localDateKey } from '$lib/domain/tasks/recurrence';
 
 /**
@@ -93,5 +93,28 @@ describe('natural date grammar against the shared case table (#994 S1/S2)', () =
 		const result = parseNaturalDateSuffix(raw, now);
 		expect(result.plannedDate).toBeNull();
 		expect(result.title).toBe('Reunión lunes de estrategia');
+	});
+});
+
+describe('parsedQuickAddOverrides — the quick-add wiring seam (#994 PR-d)', () => {
+	const now = localNoon(2026, 11, 27);
+
+	it('a trailing date yields the cleaned title and the pill override with the derived flag', () => {
+		const { title, overrides } = parsedQuickAddOverrides('Enviar informe el viernes', now);
+		expect(title).toBe('Enviar informe');
+		expect(overrides.plannedDate).toBe('2026-12-04');
+		expect(overrides.scheduledForToday).toBe(false);
+	});
+
+	it('a date parsed today keeps the legacy flag true', () => {
+		const { overrides } = parsedQuickAddOverrides('Enviar informe hoy', now);
+		expect(overrides.plannedDate).toBe('2026-11-27');
+		expect(overrides.scheduledForToday).toBe(true);
+	});
+
+	it('no match keeps the input as the title and adds no override', () => {
+		const { title, overrides } = parsedQuickAddOverrides('Viernes de rollout', now);
+		expect(title).toBe('Viernes de rollout');
+		expect(overrides).toEqual({});
 	});
 });

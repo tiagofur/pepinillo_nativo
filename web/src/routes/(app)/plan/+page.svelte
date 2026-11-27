@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { plan } from '$lib/stores/plan.svelte';
+	import { toast } from '$lib/stores/toast.svelte';
 	import { focus } from '$lib/stores/focus.svelte';
 	import { app } from '$lib/stores/app.svelte';
 	import { t, currentLocale } from '$lib/i18n/i18n.svelte';
@@ -12,8 +13,8 @@
 	import ContextMenu, { type ContextMenuItem } from '$lib/features/shell/ContextMenu.svelte';
 	import Segmented from '$lib/design/Segmented.svelte';
 	import Icon from '$lib/design/Icon.svelte';
-	import { groupByEnergy, PLAN_FILTERS, quickAddDefaults, type PlanFilter, derivedLegacyFlag, formatDueShort } from '$lib/domain/tasks/plan';
-	import { parseNaturalDateSuffix } from '$lib/domain/tasks/natural-date';
+	import { PLAN_FILTERS, formatDueShort, groupByEnergy, quickAddDefaults, type PlanFilter } from '$lib/domain/tasks/plan';
+	import { parsedQuickAddOverrides } from '$lib/domain/tasks/natural-date';
 	import type { TaskEnergy } from '$lib/domain/entities/types';
 	import { suggestEnergy } from '$lib/domain/tasks/energy';
 	import type { Task } from '$lib/domain/entities/types';
@@ -253,23 +254,19 @@
 		const defaults = quickAddDefaults(plan.filter);
 		// #994: a natural-language date at the end of the text overrides the
 		// pill default; the toast offers «Quitar fecha» (S4).
-		const now = new Date();
-		const parsed = parseNaturalDateSuffix(quickValue, now);
-		const overrides = parsed.plannedDate
-			? { plannedDate: parsed.plannedDate, scheduledForToday: derivedLegacyFlag(parsed.plannedDate, now) }
-			: {};
-		const created = await plan.addTask(parsed.title, { ...defaults, ...overrides });
+		const { title, overrides } = parsedQuickAddOverrides(quickValue, new Date());
+		const created = await plan.addTask(title, { ...defaults, ...overrides });
 		if (!created) {
 			// Cap blocked: keep the typed text so the user loses nothing.
 			showCapNotice = true;
 			return;
 		}
-		if (parsed.plannedDate) {
+		if (overrides.plannedDate) {
 			const originalTitle = quickValue;
 			toast.show(
 				t('plan.taskParsedBanner', {
-					title: parsed.title,
-					date: formatDueShort(parsed.plannedDate, currentLocale())
+					title,
+					date: formatDueShort(overrides.plannedDate, currentLocale())
 				}),
 				{
 					actionLabel: t('plan.removeDate'),

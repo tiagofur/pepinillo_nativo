@@ -232,7 +232,11 @@ object NaturalDateParser {
         // 2. Grammar phrases, longest-first.
         for (candidate in DATE_PHRASES) {
             if (!endsAtWordBoundary(lowerProbe, candidate.phrase)) continue
-            val start = lowerProbe.length - candidate.phrase.length
+            // Slice by the ORIGINAL length: lowercasing can expand a code
+            // unit («İ» → 2 units) and shifting by the lowered length
+            // mangles titles (judge B P1 of PR-c). The phrase itself is NFC
+            // Latin — its length is identical in both casings.
+            val start = probe.length - candidate.phrase.length
             return finish(resolvePhrase(candidate, nowMillis), start)
         }
 

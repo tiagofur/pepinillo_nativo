@@ -4,6 +4,7 @@ import android.content.Context
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.UUID
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -274,11 +275,23 @@ class TasksViewModel @Inject constructor(
             }
             val newSortOrder =
                 (taskRepository.getAllTasks().first().maxOfOrNull { it.sortOrder } ?: -1) + 1
+            // The caller assigns the id so the undo binds to THIS row without
+            // a post-insert lookup that a concurrent insert could hijack
+            // (judge A/B P2, #994 PR-d).
+            val newTaskId = UUID.randomUUID().toString()
+            // The legacy flag follows the EFFECTIVE date (iOS/web parity):
+            // a parsed future date lands in «Próximas», never in «Hoy» just
+            // because the pill said so (judge A/B P2, #994 PR-d).
+            val scheduledForToday = parsed.plannedDate?.let { planned ->
+                !DueDateEncoding.normalizedLocalDate(planned)
+                    .after(DueDateEncoding.normalizedLocalDate(System.currentTimeMillis()))
+            } ?: (currentFilter == TaskFilter.Today)
 
             taskRepository.addTask(
                 Task(
+                    id = newTaskId,
                     title = effectiveTitle.take(MAX_TASK_TITLE_LENGTH),
-                    scheduledForToday = currentFilter == TaskFilter.Today,
+                    scheduledForToday = scheduledForToday,
                     plannedDate = plannedDate,
                     dueDate = null,
                     // max+1 over the repository snapshot: tasks.size collides with an
@@ -289,20 +302,16 @@ class TasksViewModel @Inject constructor(
                 if (parsed.plannedDate != null) {
                     // The undo snackbar replaces the plain «añadida» toast for
                     // this add — one transient surface, not two.
-                    val created = taskRepository.getAllTasks().first()
-                        .firstOrNull { it.sortOrder == newSortOrder }
-                    if (created != null) {
-                        parsedDateUndoExpiryJob?.cancel()
-                        _parsedDateUndoEvent.value = ParsedDateUndoState(
-                            taskId = created.id,
-                            title = trimmedTitle,
-                            dateText = SimpleDateFormat("EEE d", Locale.getDefault())
-                                .format(Date(parsed.plannedDate)),
-                        )
-                        parsedDateUndoExpiryJob = launch {
-                            delay(UNDO_SNACKBAR_DURATION_MS)
-                            _parsedDateUndoEvent.value = null
-                        }
+                    parsedDateUndoExpiryJob?.cancel()
+                    _parsedDateUndoEvent.value = ParsedDateUndoState(
+                        taskId = newTaskId,
+                        title = trimmedTitle,
+                        dateText = SimpleDateFormat("EEE d", Locale.getDefault())
+                            .format(Date(parsed.plannedDate)),
+                    )
+                    parsedDateUndoExpiryJob = launch {
+                        delay(UNDO_SNACKBAR_DURATION_MS)
+                        _parsedDateUndoEvent.value = null
                     }
                 } else if (currentFilter == TaskFilter.Completed) {
                     _successMessage.value = R.string.msg_task_added_to_inbox
@@ -384,10 +393,6 @@ class TasksViewModel @Inject constructor(
         }
     }
 
-    fun dismissParsedDateUndo() {
-        parsedDateUndoExpiryJob?.cancel()
-        _parsedDateUndoEvent.value = null
-    }
 
     fun reorderTasks(fromIndex: Int, toIndex: Int) {
         if (fromIndex == toIndex) return

@@ -10,8 +10,8 @@
 	import { toast } from '$lib/stores/toast.svelte';
 	import { t, currentLocale } from '$lib/i18n/i18n.svelte';
 	import type { MessageKey } from '$lib/i18n/messages';
-	import { parseNaturalDateSuffix } from '$lib/domain/tasks/natural-date';
-	import { derivedLegacyFlag, formatDueShort } from '$lib/domain/tasks/plan';
+	import { parsedQuickAddOverrides } from '$lib/domain/tasks/natural-date';
+	import { formatDueShort } from '$lib/domain/tasks/plan';
 	import Icon from '$lib/design/Icon.svelte';
 
 	interface Command {
@@ -118,19 +118,15 @@
 			// #994: a natural-language date at the end of the capture plans the
 			// task and leaves the title; «Quitar fecha» on the toast restores
 			// the original text.
-			const now = new Date();
-			const parsed = parseNaturalDateSuffix(result.label, now);
-			const overrides = parsed.plannedDate
-				? { plannedDate: parsed.plannedDate, scheduledForToday: derivedLegacyFlag(parsed.plannedDate, now) }
-				: {};
-			const task = await plan.addTask(parsed.title, overrides);
+			const { title, overrides } = parsedQuickAddOverrides(result.label, new Date());
+			const task = await plan.addTask(title, overrides);
 			if (task) {
-				if (parsed.plannedDate) {
+				if (overrides.plannedDate) {
 					const originalTitle = result.label;
 					toast.show(
 						t('plan.taskParsedBanner', {
-							title: parsed.title,
-							date: formatDueShort(parsed.plannedDate, currentLocale())
+							title,
+							date: formatDueShort(overrides.plannedDate, currentLocale())
 						}),
 						{
 							actionLabel: t('plan.removeDate'),

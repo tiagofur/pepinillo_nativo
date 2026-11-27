@@ -52,6 +52,9 @@
     { "name": "BOM between words is whitespace (JS \\uFEFF)", "input": "informe\uFEFFviernes", "expectedTitle": "informe", "expectedDate": { "kind": "nextWeekday", "weekday": 5 } },
     { "name": "U+001F separator is not whitespace", "input": "informe\u001Fviernes", "expectedTitle": "informe\u001Fviernes", "expectedDate": null },
     { "name": "pt guard «pela manhã» blocks the parse", "input": "Comprar pela manhã", "expectedTitle": "Comprar pela manhã", "expectedDate": null },
-    { "name": "non-ASCII digits are not dates (JS \\d is ASCII-only)", "input": "Nota ٣/٤", "expectedTitle": "Nota ٣/٤", "expectedDate": null }
+    { "name": "non-ASCII digits are not dates (JS \\d is ASCII-only)", "input": "Nota ٣/٤", "expectedTitle": "Nota ٣/٤", "expectedDate": null },
+    { "name": "Turkish İ in the prefix keeps the title clean (lowercase expands a code unit)", "input": "İNFORME MAÑANA", "expectedTitle": "İNFORME", "expectedDate": "tomorrow" },
+    { "name": "CRLF before the date is whitespace (two code units, the last one is \\s)", "input": "informe\r\nviernes", "expectedTitle": "informe", "expectedDate": { "kind": "nextWeekday", "weekday": 5 } },
+    { "name": "NFD decomposed text never matches its NFC phrase", "input": "Entregar el sa\u0301bado", "expectedTitle": "Entregar el sa\u0301bado", "expectedDate": null }
   ]
 }

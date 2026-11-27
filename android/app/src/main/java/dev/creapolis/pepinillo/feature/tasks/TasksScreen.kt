@@ -391,6 +391,9 @@ fun TasksScreen(
         val parsedDateUndoState by viewModel.parsedDateUndoEvent.collectAsState()
         LaunchedEffect(parsedDateUndoState) {
             val undo = parsedDateUndoState ?: return@LaunchedEffect
+            // A still-queued older snackbar would run ITS onAction against
+            // THIS (newer) undo state — drop it first (judge B P2, #994 PR-d).
+            snackbarController?.hostState?.currentSnackbarData?.dismiss()
             snackbarController?.show(
                 message = R.string.tasks_parsed_plan_msg,
                 undo.title,
