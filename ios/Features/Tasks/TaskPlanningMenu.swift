@@ -41,6 +41,7 @@ struct TaskPlanningMenu<MenuLabel: View>: View {
                     systemImage: isToday ? "checkmark" : "sun.max"
                 )
             }
+            .accessibilityAddTraits(isToday ? .isSelected : [])
             Button {
                 onChange(TaskPlanning.tomorrow())
             } label: {
@@ -49,6 +50,7 @@ struct TaskPlanningMenu<MenuLabel: View>: View {
                     systemImage: isTomorrow ? "checkmark" : "sunrise"
                 )
             }
+            .accessibilityAddTraits(isTomorrow ? .isSelected : [])
             Button {
                 onChange(TaskPlanning.upcomingWeekend())
             } label: {
@@ -57,6 +59,7 @@ struct TaskPlanningMenu<MenuLabel: View>: View {
                     systemImage: isWeekend ? "checkmark" : "calendar"
                 )
             }
+            .accessibilityAddTraits(isWeekend ? .isSelected : [])
             if let onPickDate {
                 Button {
                     onPickDate()

@@ -679,8 +679,6 @@ struct TaskListFeatureTests {
         let defaults = TaskListFeature.planQuickAddDefaults(for: .today, now: now)
         #expect(defaults.plannedDate == TaskPlanning.plannedDay(now))
         #expect(defaults.dueDate == nil)
-        // Derived legacy flag stays truthful for pre-PR-C surfaces (#991).
-        #expect(defaults.plannedDate != nil)
     }
 
     @Test func planQuickAddDefaultsInboxLeavesTaskUnplanned() {
@@ -837,6 +835,76 @@ struct TaskListFeatureTests {
         #expect(saved?.dueDate == nil, "S5: no deadline is invented anymore")
         #expect(TaskListFeature.planFilteredTasks(store.state.tasks, filter: .upcoming, now: testDate).ids == [testID])
         #expect(TaskListFeature.planFilteredTasks(store.state.tasks, filter: .inbox, now: testDate).isEmpty)
+    }
+
+    // MARK: - Issue #991: planned-date persistence keeps every field (issue #178 class)
+
+    @Test func taskPlannedDateChangedPersistsFullFidelity() async {
+        let testID = UUID(3)
+        let testDate = Date(timeIntervalSince1970: 1_700_000_000)
+        let friday = Calendar.current.date(byAdding: .day, value: 3, to: Calendar.current.startOfDay(for: testDate))!
+        var initial = TaskListFeature.State()
+        initial.tasks = IdentifiedArrayOf(uniqueElements: [plannedTaskState(id: testID, plannedDate: nil)])
+
+        // A row that already carries completion + recurrence + sync metadata —
+        // a partial DTO rebuild would wipe them (issue #178 class).
+        let complete = TaskItemDTO(
+            id: testID,
+            title: "Planned Task",
+            isCompleted: false,
+            energyLevel: .deep,
+            recurrenceRule: RecurrencePreset.weekly.rawValue,
+            completedAt: testDate,
+            createdAt: testDate,
+            syncId: "sync-123",
+            serverId: 42,
+            syncedAt: testDate
+        )
+        let savedDTO = LockIsolated<TaskItemDTO?>(nil)
+        let store = TestStore(initialState: initial) {
+            TaskListFeature()
+        } withDependencies: {
+            $0.persistenceClient.fetchTask = { _ in complete }
+            $0.persistenceClient.saveTask = { savedDTO.setValue($0) }
+            $0.date = .constant(testDate)
+        }
+
+        store.exhaustivity = .off
+        await store.send(.taskPlannedDateChanged(testID, friday))
+
+        let saved = try! #require(savedDTO.value, "saveTask must be called with the full DTO")
+        #expect(saved.plannedDate == TaskPlanning.plannedDay(friday))
+        #expect(saved.scheduledForToday == false, "a future plan derives flag = false")
+        // Full fidelity: nothing else is touched by the planning write.
+        #expect(saved.recurrenceRule == RecurrencePreset.weekly.rawValue)
+        #expect(saved.completedAt == testDate)
+        #expect(saved.syncId == "sync-123")
+        #expect(saved.serverId == 42)
+        #expect(saved.isDirty == true, "the row re-marks dirty for sync")
+    }
+
+    @Test func todayToggleWritesPlannedDayAndDerivedFlag() async {
+        let testID = UUID(4)
+        let testDate = Date(timeIntervalSince1970: 1_700_000_000)
+        var initial = TaskListFeature.State()
+        initial.tasks = IdentifiedArrayOf(uniqueElements: [plannedTaskState(id: testID, plannedDate: nil)])
+
+        let complete = basicTaskDTO(id: testID)
+        let savedDTO = LockIsolated<TaskItemDTO?>(nil)
+        let store = TestStore(initialState: initial) {
+            TaskListFeature()
+        } withDependencies: {
+            $0.persistenceClient.fetchTask = { _ in complete }
+            $0.persistenceClient.saveTask = { savedDTO.setValue($0) }
+            $0.date = .constant(testDate)
+        }
+
+        store.exhaustivity = .off
+        await store.send(.taskScheduledForToday(testID, true))
+
+        let saved = try! #require(savedDTO.value, "saveTask must be called")
+        #expect(saved.plannedDate == TaskPlanning.plannedDay(testDate))
+        #expect(saved.scheduledForToday == true, "today's plan derives flag = true")
     }
 
     @Test func addTaskInCompletedFilterDoesNotAutoComplete() async {

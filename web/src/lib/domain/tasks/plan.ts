@@ -20,10 +20,6 @@ export function restorePlanFilter(value: unknown): PlanFilter {
 	return PLAN_FILTER_IDS.includes(value as PlanFilter) ? (value as PlanFilter) : 'today';
 }
 
-export function isToday(task: Task, todayKey: string): boolean {
-	return planningBucket(task.plannedDate, task.dueDate, task.scheduledForToday === true, task.status).kind === 'today';
-}
-
 /**
  * Issue #991 S2/S3 — unified «Hoy» rule, the web leg of the one rule every
  * platform asserts against contracts/fixtures/task-planning-cases-991.json.
@@ -38,6 +34,18 @@ export type PlanningBucket =
 	| { kind: 'upcoming' }
 	| { kind: 'inbox' }
 	| { kind: 'completed' };
+
+/**
+ * Derived value of the legacy `scheduledForToday` boolean for a written
+ * planned date — mirrors iOS `TaskPlanning.legacyFlag` / Android's
+ * `setPlannedDate` derivation (issue #991): true while the plan is today or
+ * already past, so pre-PR-C surfaces keep a truthful «Hoy» (S6 keeps a
+ * postponed task's flag).
+ */
+export function derivedLegacyFlag(plannedDate: string | null | undefined, today: Date = new Date()): boolean {
+	if (!plannedDate) return false;
+	return planningBucket(plannedDate, null, false, 'active', today).kind === 'today';
+}
 
 export function planningBucket(
 	plannedDate: string | null | undefined,

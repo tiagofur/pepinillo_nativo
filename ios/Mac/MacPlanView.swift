@@ -386,7 +386,8 @@ struct MacPlanView: View {
     private func dueText(for task: TaskListFeature.TaskItemState) -> String {
         guard let dueDate = task.dueDate else {
             if let planned = task.plannedDate {
-                return taskPlanningValueText(planned)
+                // Brief: the planned chip carries the bolt/star vocabulary.
+                return "⚡ " + taskPlanningValueText(planned)
             }
             return task.scheduledForToday ? String(localized: "Today") : "—"
         }

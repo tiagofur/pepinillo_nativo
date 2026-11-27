@@ -195,7 +195,10 @@
 						label: t('plan.filter.today'),
 						checked: task.plannedDate === localDateKey(new Date()),
 						onselect: () =>
-							void plan.updateTask(task.id, { plannedDate: localDateKey(new Date()), scheduledForToday: true })
+							void plan.updateTask(task.id, {
+								plannedDate: localDateKey(new Date()),
+								scheduledForToday: derivedLegacyFlag(localDateKey(new Date()))
+							})
 					},
 					{
 						id: 'planTomorrow',
@@ -203,7 +206,10 @@
 						onselect: () => {
 							const d = new Date();
 							d.setDate(d.getDate() + 1);
-							void plan.updateTask(task.id, { plannedDate: localDateKey(d), scheduledForToday: false });
+							void plan.updateTask(task.id, {
+								plannedDate: localDateKey(d),
+								scheduledForToday: derivedLegacyFlag(localDateKey(d))
+							});
 						}
 					},
 					{
@@ -213,7 +219,10 @@
 							const d = new Date();
 							const delta = (6 - d.getDay() + 7) % 7 || 7;
 							d.setDate(d.getDate() + delta);
-							void plan.updateTask(task.id, { plannedDate: localDateKey(d), scheduledForToday: false });
+							void plan.updateTask(task.id, {
+								plannedDate: localDateKey(d),
+								scheduledForToday: derivedLegacyFlag(localDateKey(d))
+							});
 						}
 					},
 					...(task.plannedDate
@@ -222,7 +231,8 @@
 									id: 'planRemove',
 									label: t('plan.removeDate'),
 									destructive: true,
-									onselect: () => void plan.updateTask(task.id, { plannedDate: null })
+									onselect: () =>
+										void plan.updateTask(task.id, { plannedDate: null, scheduledForToday: false })
 								}
 							]
 						: [])

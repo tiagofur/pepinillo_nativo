@@ -2,92 +2,7 @@
   "sourceLanguage" : "en",
   "strings" : {
     "" : {
-      "Choose Date…" : {
-      "comment" : "Planning menu — open the native date picker (issue #991)",
-      "Postponed" : {
-      "comment" : "Chip for a task whose planned day is past but uncompleted (issue #991 S6)",
-      "Remove Date" : {
-      "comment" : "Planning menu — clear the planned date (issue #991)",
-      "Schedule for…" : {
-      "comment" : "Planning menu title — replaces the binary Today toggle (issue #991 S4)",
-      "This Weekend" : {
-      "comment" : "Planning menu — the coming Saturday (issue #991)",
       "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Este fin de semana"
-          }
-        },
-        "pt" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Este fim de semana"
-          }
-        }
-      }
-    },
-    "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Planificar para…"
-          }
-        },
-        "pt" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Planejar para…"
-          }
-        }
-      }
-    },
-    "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Quitar fecha"
-          }
-        },
-        "pt" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Remover data"
-          }
-        }
-      }
-    },
-    "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pospuesta"
-          }
-        },
-        "pt" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Adiada"
-          }
-        }
-      }
-    },
-    "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Elegir fecha…"
-          }
-        },
-        "pt" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Escolher data…"
-          }
-        }
-      }
-    },
-    "localizations" : {
         "es" : {
           "stringUnit" : {
             "state" : "translated",
@@ -131,6 +46,91 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "-%@"
+          }
+        }
+      }
+    },
+    "Choose Date…" : {
+      "comment" : "Planning menu — open the native date picker (issue #991)",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Elegir fecha…"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Escolher data…"
+          }
+        }
+      }
+    },
+    "Postponed" : {
+      "comment" : "Chip for a task whose planned day is past but uncompleted (issue #991 S6)",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pospuesta"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Adiada"
+          }
+        }
+      }
+    },
+    "Remove Date" : {
+      "comment" : "Planning menu — clear the planned date (issue #991)",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quitar fecha"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remover data"
+          }
+        }
+      }
+    },
+    "Schedule for…" : {
+      "comment" : "Planning menu title — replaces the binary Today toggle (issue #991 S4)",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Planificar para…"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Planejar para…"
+          }
+        }
+      }
+    },
+    "This Weekend" : {
+      "comment" : "Planning menu — the coming Saturday (issue #991)",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Este fin de semana"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Este fim de semana"
           }
         }
       }

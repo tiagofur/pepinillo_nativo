@@ -260,8 +260,11 @@ struct TaskDetailView: View {
                     Image(systemName: "chevron.up.chevron.down")
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                        .frame(minWidth: 28, minHeight: 28)
+                        .frame(minWidth: 44, minHeight: 44)  // HIG 44pt minimum (issue #90)
+                        .contentShape(Rectangle())
                 }
+                .accessibilityLabel(String(localized: "Schedule for…"))
+                .accessibilityValue(taskPlanningValueText(store.plannedDate))
             }
 
             if showsPlanningPicker {

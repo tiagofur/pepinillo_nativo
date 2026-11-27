@@ -117,14 +117,21 @@
 		);
 	});
 
-	// S6 (#991): a past plan on an active task without a due chip reads «Pospuesta».
+	// S6 (#991): a past plan reads «Pospuesta · <día original>» even when a due
+	// chip exists (brief); a future plan without due shows its chosen day.
 	let postponed = $derived.by(() => {
-		if (task.status !== 'active' || task.dueDate) return false;
-		if (!task.plannedDate) return false;
+		if (task.status !== 'active' || !task.plannedDate) return false;
 		const bucket = planningBucket(task.plannedDate, task.dueDate, task.scheduledForToday === true, task.status);
 		return bucket.kind === 'today' && bucket.postponed;
 	});
-	let postponedLabel = $derived(postponed ? t('plan.postponed') : '');
+	let postponedLabel = $derived(
+		postponed ? `${t('plan.postponed')} · ${formatDueShort(task.plannedDate ?? '', currentLocale())}` : ''
+	);
+	let plannedFutureLabel = $derived.by(() => {
+		if (task.status !== 'active' || task.dueDate || !task.plannedDate) return '';
+		const bucket = planningBucket(task.plannedDate, task.dueDate, task.scheduledForToday === true, task.status);
+		return bucket.kind === 'upcoming' ? formatDueShort(task.plannedDate, currentLocale()) : '';
+	});
 
 	let subs = $derived(subtaskProgress(task));
 </script>
@@ -171,6 +178,9 @@
 			{/if}
 			{#if postponed}
 				<span class="pill due postponed">{postponedLabel}</span>
+			{/if}
+			{#if plannedFutureLabel}
+				<span class="pill due">📅 {plannedFutureLabel}</span>
 			{/if}
 			{#if dueLabel}
 				<span class="pill due" class:overdue={task.dueDate && task.dueDate < localDateKey(new Date())}>{dueLabel}</span>

@@ -587,6 +587,11 @@ export type MessageKey =
 type Dict = Record<MessageKey, string>;
 
 const en: Dict = {
+	'plan.scheduleFor': 'Schedule for…',
+	'plan.planTomorrow': 'Tomorrow',
+	'plan.planWeekend': 'This Weekend',
+	'plan.removeDate': 'Remove Date',
+	'plan.postponed': 'Postponed',
 	'app.name': 'Pepinillo',
 	'app.tagline': 'Plan, focus, and celebrate your deep work — natively, on every screen you own.',
 	'nav.focus': 'Focus',
@@ -658,21 +663,6 @@ const en: Dict = {
 	'plan.context.rename': 'Rename Task',
 	'plan.markIncomplete': 'Mark Incomplete',
 	'plan.moveToday': 'Move to Today',
-	'plan.scheduleFor': 'Planejar para…',
-	'plan.planTomorrow': 'Amanhã',
-	'plan.planWeekend': 'Este fim de semana',
-	'plan.removeDate': 'Remover data',
-	'plan.postponed': 'Adiada',
-	'plan.scheduleFor': 'Planificar para…',
-	'plan.planTomorrow': 'Mañana',
-	'plan.planWeekend': 'Este fin de semana',
-	'plan.removeDate': 'Quitar fecha',
-	'plan.postponed': 'Pospuesta',
-	'plan.scheduleFor': 'Schedule for…',
-	'plan.planTomorrow': 'Tomorrow',
-	'plan.planWeekend': 'This Weekend',
-	'plan.removeDate': 'Remove Date',
-	'plan.postponed': 'Postponed',
 	'plan.undo.deleted': '"{title}" deleted',
 	'dashboard.refresh': 'Refresh',
 	'error.notFound': 'This page wandered off the garden',
@@ -1199,6 +1189,11 @@ const en: Dict = {
 };
 
 const es: Dict = {
+	'plan.scheduleFor': 'Planificar para…',
+	'plan.planTomorrow': 'Mañana',
+	'plan.planWeekend': 'Este fin de semana',
+	'plan.removeDate': 'Quitar fecha',
+	'plan.postponed': 'Pospuesta',
 	...en,
 	'app.tagline': 'Planificá, enfocate y celebrá tu deep work — nativo, en todas tus pantallas.',
 	'nav.focus': 'Foco',
@@ -1796,6 +1791,11 @@ const es: Dict = {
 };
 
 const pt: Dict = {
+	'plan.scheduleFor': 'Planejar para…',
+	'plan.planTomorrow': 'Amanhã',
+	'plan.planWeekend': 'Este fim de semana',
+	'plan.removeDate': 'Remover data',
+	'plan.postponed': 'Adiada',
 	...en,
 	'app.tagline': 'Planeje, concentre-se e celebre seu deep work — nativo, em todas as suas telas.',
 	'nav.focus': 'Foco',

@@ -210,13 +210,17 @@ struct TaskDetailFeatureTests {
         let taskID = UUID(9)
         var state = detailState(taskID: taskID)
         state.plannedDate = nil
-        let friday = Calendar.current.date(byAdding: .day, value: 3, to: Calendar.current.startOfDay(for: .now))!
+        // Deterministic clock: the reducer derives the legacy flag from it.
+        let testDate = Date(timeIntervalSince1970: 1_700_000_000)
+        let today = Calendar.current.startOfDay(for: testDate)
+        let friday = Calendar.current.date(byAdding: .day, value: 3, to: today)!
 
         let saved = LockIsolated<TaskItemDTO?>(nil)
         let store = TestStore(initialState: state) {
             TaskDetailFeature()
         } withDependencies: {
             $0.persistenceClient.saveTask = { saved.setValue($0) }
+            $0.date = .constant(testDate)
         }
 
         store.exhaustivity = .off
@@ -229,13 +233,14 @@ struct TaskDetailFeatureTests {
         #expect(saved.value?.plannedDate == TaskPlanning.plannedDay(friday))
         #expect(saved.value?.scheduledForToday == false)
 
-        let today = Calendar.current.startOfDay(for: .now)
         await store.send(.planningDateChanged(today)) {
             $0.plannedDate = today
             $0.scheduledForToday = true
         }
         #expect(saved.value?.plannedDate == today)
         #expect(saved.value?.scheduledForToday == true)
+        // Drain the debounced widget-reload effect (1 s) before the test ends.
+        await store.finish()
     }
 
 }

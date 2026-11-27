@@ -241,12 +241,12 @@ struct TaskDetailFeature {
                 state.dueDate = date
                 return save(state, rollback: rollback)
 
-            case .planningDateChanged(let date):
+            case .planningDateChanged(let newDate):
                 let rollback = state.toDTO()
-                let planned = date.map { TaskPlanning.plannedDay($0) }
+                let planned = newDate.map { TaskPlanning.plannedDay($0) }
                 state.plannedDate = planned
                 // Derived legacy flag keeps pre-PR-C surfaces truthful (issue #991).
-                state.scheduledForToday = TaskPlanning.legacyFlag(plannedDate: planned)
+                state.scheduledForToday = TaskPlanning.legacyFlag(plannedDate: planned, now: date.now)
                 return save(state, rollback: rollback)
 
             case .recurrenceChanged(let rule):

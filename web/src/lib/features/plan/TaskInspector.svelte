@@ -8,6 +8,7 @@
 	import Sheet from '$lib/design/Sheet.svelte';
 	import { listSessions } from '$lib/data/local/idb';
 	import { RECURRENCE_PRESETS, localDateKey, type RecurrencePresetKey } from '$lib/domain/tasks/recurrence';
+	import { derivedLegacyFlag } from '$lib/domain/tasks/plan';
 	import type { Task, TaskEnergy, TaskPriority } from '$lib/domain/entities/types';
 	import { suggestEnergy } from '$lib/domain/tasks/energy';
 	import Icon from '$lib/design/Icon.svelte';
@@ -195,7 +196,11 @@
 				class="btn btn-ghost pressable"
 				title={t('plan.planToday')}
 				onclick={() =>
-					task && plan.updateTask(task.id, { plannedDate: localDateKey(new Date()), scheduledForToday: true })}
+					task &&
+					plan.updateTask(task.id, {
+						plannedDate: localDateKey(new Date()),
+						scheduledForToday: derivedLegacyFlag(localDateKey(new Date()))
+					})}
 			>
 				{t('plan.filter.today')}
 			</button>
@@ -205,7 +210,11 @@
 				onclick={() => {
 					const d = new Date();
 					d.setDate(d.getDate() + 1);
-					task && plan.updateTask(task.id, { plannedDate: localDateKey(d), scheduledForToday: false });
+					task &&
+					plan.updateTask(task.id, {
+						plannedDate: localDateKey(d),
+						scheduledForToday: derivedLegacyFlag(localDateKey(d))
+					});
 				}}
 			>
 				{t('plan.planTomorrow')}
@@ -217,24 +226,33 @@
 					const d = new Date();
 					const delta = (6 - d.getDay() + 7) % 7 || 7; // next Saturday (0 = Sat → +7)
 					d.setDate(d.getDate() + delta);
-					task && plan.updateTask(task.id, { plannedDate: localDateKey(d), scheduledForToday: false });
+					task &&
+					plan.updateTask(task.id, {
+						plannedDate: localDateKey(d),
+						scheduledForToday: derivedLegacyFlag(localDateKey(d))
+					});
 				}}
 			>
 				{t('plan.planWeekend')}
 			</button>
 		</div>
 		<label class="row-inline">
+			<span class="label">{t('plan.scheduleFor')}</span>
 			<input
 				type="date"
 				class="field"
 				value={task?.plannedDate ?? ''}
-				onchange={(e) => task && plan.updateTask(task.id, { plannedDate: e.currentTarget.value || null })}
+				onchange={(e) => {
+					if (!task) return;
+					const planned = e.currentTarget.value || null;
+					plan.updateTask(task.id, { plannedDate: planned, scheduledForToday: derivedLegacyFlag(planned) });
+				}}
 			/>
 			{#if task?.plannedDate}
 				<button
 					class="btn btn-ghost pressable"
 					title={t('plan.removeDate')}
-					onclick={() => task && plan.updateTask(task.id, { plannedDate: null })}
+					onclick={() => task && plan.updateTask(task.id, { plannedDate: null, scheduledForToday: false })}
 				>
 					✕ {t('plan.removeDate')}
 				</button>

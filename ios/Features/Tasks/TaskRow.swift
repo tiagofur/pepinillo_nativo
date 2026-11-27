@@ -221,11 +221,19 @@ struct TaskRow: View, Equatable {
             }
         }
 
-        // 2b. Planned day strictly in the past, active, no due chip above it
-        // (due chips outrank): «Pospuesta» keeps the stale plan visible (S6).
+        // 2b. «Pospuesta · <día original>» (S6, brief): keeps the stale plan
+        // visible with its original day.
         if !task.isCompleted, let planned = task.plannedDate,
            planned < Calendar.current.startOfDay(for: .now) {
-            return (String(localized: "Postponed"), "arrow.uturn.left", .orange)
+            let day = planned.formatted(.dateTime.weekday(.abbreviated))
+            return ("\(String(localized: "Postponed")) · \(day)", "arrow.uturn.left", .orange)
+        }
+
+        // 2c. Future plan with no due date: show the chosen day (brief: the
+        // Próximas row must display which day the user picked).
+        if !task.isCompleted, let planned = task.plannedDate,
+           planned >= Calendar.current.startOfDay(for: .now), task.dueDate == nil {
+            return (planned.formatted(.dateTime.weekday(.abbreviated).day()), "calendar", .secondary)
         }
 
         // 3. If due date exists but not urgent, still show energy
