@@ -160,6 +160,18 @@ func TestTaskSyncSubtasksReconcile(t *testing.T) {
 		t.Fatalf("nil subtasks: list changed! want 3, got %d", got)
 	}
 
+	// ── (d2) empty NON-nil slice: replace with nothing (all rows deleted) ──
+	push = newTask("ts998-base")
+	push.ID = seeded.ID
+	push.UpdatedAt = now.Add(3*time.Minute + time.Second)
+	push.SubTasks = []domain.SubTask{}
+	if _, err := repo.Sync(ctx, userID, []domain.Task{push}, nil, nil); err != nil {
+		t.Fatalf("push empty: %v", err)
+	}
+	if got := countSubtasks(seeded.ID); got != 0 {
+		t.Fatalf("empty non-nil slice: want 0 subtasks, got %d", got)
+	}
+
 	// ── (e) foreign PK: another user's subtask id must never be touched ──
 	other := newTask("ts998-other")
 	other.UserID = otherUserID

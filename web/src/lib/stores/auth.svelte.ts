@@ -156,6 +156,12 @@ class AuthStore {
 			}
 		}
 		this.disconnectWs();
+		// #998 S4: a pending pull throttle must not survive the session
+		// (the re-arm would loop a no-op every 5 s after sign-out).
+		if (this.pullThrottle !== null) {
+			clearTimeout(this.pullThrottle);
+			this.pullThrottle = null;
+		}
 		await this.clearSession();
 	}
 
@@ -407,7 +413,7 @@ class AuthStore {
 			const response = await runInitialUpload(api, { deviceId, tasks, sessions, prefs });
 			void response;
 			// 2. Pull authoritative server state and merge.
-			if (!initial) await this.pullAndApply();
+			if (!initial) await this.runPull();
 			const meta = await getSyncMeta();
 			this.lastSyncAt = new Date().toISOString();
 			await saveSyncMeta({ lastSyncAt: this.lastSyncAt, lastPullAt: Date.now() });
@@ -420,22 +426,19 @@ class AuthStore {
 	}
 
 	private async pullAndApply(): Promise<void> {
-		const api = this.api!;
-		// #998 S4: every pull holds the busy flag so a debounced push or a
-		// WS-triggered pull cannot run concurrently. syncNow already holds
-		// the flag when calling this; the direct resolveMerge('pull') path
-		// did not (that was the overlap hole).
-		const wasSyncing = this.syncing;
+		// #998 S4: the standalone pull owns the busy flag and refuses a
+		// second concurrent entry (double resolveMerge click). syncNow does
+		// NOT go through here — it already holds the flag and drives
+		// runPull directly.
+		if (this.syncing) return;
 		this.syncing = true;
 		try {
 			await this.runPull();
 		} catch (e) {
-			if (!wasSyncing) {
-				this.lastSyncError = e instanceof ApiError ? e.code : 'sync_error';
-			}
+			this.lastSyncError = e instanceof ApiError ? e.code : 'sync_error';
 			throw e;
 		} finally {
-			this.syncing = wasSyncing;
+			this.syncing = false;
 		}
 	}
 
