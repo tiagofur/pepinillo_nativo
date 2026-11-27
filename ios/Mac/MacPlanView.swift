@@ -775,12 +775,25 @@ struct MacPlanView: View {
                 message: String(format: String(localized: "\"%@\" deleted"), deleted.title),
                 action: { store.send(.undoDeleteTask) }
             )
+        } else if let undo = store.parsedDateUndo,
+                  let planned = store.tasks[id: undo.taskID]?.plannedDate {
+            undoBanner(
+                systemImage: "calendar.badge.minus",
+                message: String(
+                    format: String(localized: "\"%@\" planned for %@"),
+                    undo.originalTitle,
+                    planned.formatted(.dateTime.weekday(.abbreviated).day())
+                ),
+                actionLabel: String(localized: "Remove Date"),
+                action: { store.send(.undoParsedDateTask) }
+            )
         }
     }
 
     private func undoBanner(
         systemImage: String,
         message: String,
+        actionLabel: String = String(localized: "Undo"),
         action: @escaping () -> Void
     ) -> some View {
         HStack(spacing: 12) {
@@ -795,7 +808,7 @@ struct MacPlanView: View {
 
             Spacer()
 
-            Button(String(localized: "Undo"), action: action)
+            Button(actionLabel, action: action)
                 .font(.subheadline.weight(.semibold))
         }
         .padding(.horizontal, 16)

@@ -314,17 +314,18 @@ public enum NaturalDateParser {
         if let match = dayMonthRegex.firstMatch(in: probe, range: probeRange) {
             let dayOfMonth = Int(group(match, 1)) ?? -1
             let month = Int(group(match, 2)) ?? -1
-            let year = calendar.component(.year, from: now)
-            guard let candidate = realCalendarDay(year, month, dayOfMonth, calendar) else {
-                return noMatch
-            }
-            let resolved: Date
-            if calendar.compare(candidate, to: now, toGranularity: .day) == .orderedAscending,
-               let nextYear = realCalendarDay(year + 1, month, dayOfMonth, calendar) {
-                resolved = nextYear
-            } else {
+            let baseYear = calendar.component(.year, from: now)
+            // Always the next real calendar day (S1): «29/2» lands on the next
+            // leap year, never rolls over to March 1st and never stays in the past.
+            var resolved: Date?
+            for year in baseYear...(baseYear + 8) {
+                guard let candidate = realCalendarDay(year, month, dayOfMonth, calendar),
+                      calendar.compare(candidate, to: now, toGranularity: .day) != .orderedAscending
+                else { continue }
                 resolved = candidate
+                break
             }
+            guard let resolved else { return noMatch }
             return finish(resolved, droppingSuffixOf: String(probe[Range(match.range, in: probe)!]))
         }
 

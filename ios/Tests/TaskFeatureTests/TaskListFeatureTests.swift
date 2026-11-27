@@ -113,6 +113,112 @@ struct TaskListFeatureTests {
         // No state change expected
     }
 
+    @Test func addTaskParsesNaturalDateAtEnd() async {
+        let testID = UUID(0)
+        // 2026-11-27 is a Friday — «el viernes» falls to next week (S1).
+        let gregorian = Calendar(identifier: .gregorian)
+        let friday = gregorian.date(from: DateComponents(
+            timeZone: .current, year: 2026, month: 11, day: 27, hour: 12
+        ))!
+        let nextFriday = gregorian.date(byAdding: .day, value: 7, to: friday)!
+
+        let store = TestStore(initialState: TaskListFeature.State()) {
+            TaskListFeature()
+        } withDependencies: {
+            $0.persistenceClient.fetchTasks = { [] }
+            $0.persistenceClient.saveTask = { _ in }
+            $0.uuid = .constant(testID)
+            $0.date = .constant(friday)
+        }
+
+        await store.send(.newTaskTitleChanged("Enviar informe el viernes")) {
+            $0.newTaskTitle = "Enviar informe el viernes"
+        }
+
+        store.exhaustivity = .off
+
+        await store.send(.addTaskTapped) {
+            $0.newTaskTitle = ""
+            $0.tasks[id: testID]?.title = "Enviar informe"
+            $0.tasks[id: testID]?.plannedDate = TaskPlanning.plannedDay(nextFriday)
+            $0.tasks[id: testID]?.scheduledForToday = false
+            $0.parsedDateUndo = TaskListFeature.ParsedDateUndo(
+                taskID: testID,
+                originalTitle: "Enviar informe el viernes"
+            )
+        }
+    }
+
+    @Test func addTaskWithoutNaturalDateKeepsPillDefaults() async {
+        let testID = UUID(0)
+        let testDate = Date(timeIntervalSince1970: 1_000_000)
+
+        let store = TestStore(initialState: TaskListFeature.State()) {
+            TaskListFeature()
+        } withDependencies: {
+            $0.persistenceClient.fetchTasks = { [] }
+            $0.persistenceClient.saveTask = { _ in }
+            $0.uuid = .constant(testID)
+            $0.date = .constant(testDate)
+        }
+
+        await store.send(.newTaskTitleChanged("Buy groceries")) {
+            $0.newTaskTitle = "Buy groceries"
+        }
+
+        store.exhaustivity = .off
+
+        await store.send(.addTaskTapped) {
+            $0.newTaskTitle = ""
+            $0.tasks[id: testID]?.title = "Buy groceries"
+            $0.tasks[id: testID]?.plannedDate = TaskPlanning.plannedDay(testDate)
+            $0.parsedDateUndo = nil
+        }
+    }
+
+    @Test func undoParsedDateRestoresTitleAndClearsPlan() async {
+        let taskID = UUID(0)
+        let gregorian = Calendar(identifier: .gregorian)
+        let friday = gregorian.date(from: DateComponents(
+            timeZone: .current, year: 2026, month: 11, day: 27, hour: 12
+        ))!
+
+        var initialState = TaskListFeature.State()
+        var task = makeTask(
+            id: taskID, title: "Enviar informe",
+            scheduledForToday: false, isCompleted: false, sortOrder: 0
+        )
+        task.plannedDate = TaskPlanning.plannedDay(friday)
+        initialState.tasks = [task]
+        initialState.parsedDateUndo = TaskListFeature.ParsedDateUndo(
+            taskID: taskID, originalTitle: "Enviar informe el viernes"
+        )
+
+        let store = TestStore(initialState: initialState) {
+            TaskListFeature()
+        } withDependencies: {
+            $0.persistenceClient.fetchTask = { _ in
+                TaskItemDTO(
+                    id: taskID,
+                    title: "Enviar informe",
+                    scheduledForToday: true,
+                    plannedDate: TaskPlanning.plannedDay(friday)
+                )
+            }
+            $0.persistenceClient.saveTask = { _ in }
+            $0.date = .constant(friday)
+        }
+
+        store.exhaustivity = .off
+
+        await store.send(.undoParsedDateTask) {
+            $0.tasks[id: taskID]?.title = "Enviar informe el viernes"
+            $0.tasks[id: taskID]?.plannedDate = nil
+            $0.tasks[id: taskID]?.scheduledForToday = false
+            $0.parsedDateUndo = nil
+        }
+    }
+
     @Test func completeTaskTogglesCompletion() async {
         let testDate = Date(timeIntervalSince1970: 1_700_000_000)
         var initialState = TaskListFeature.State()

@@ -86,9 +86,17 @@ struct PlanTaskList: View {
                     undoBanner(taskTitle: deletedTask.title)
                         .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
+                if let undo = store.parsedDateUndo,
+                   let planned = store.tasks[id: undo.taskID]?.plannedDate {
+                    parsedDateBanner(title: undo.originalTitle, planned: planned)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
                 addTaskBar
             }
-            .animation(MotionTokens.snappy, value: store.recentlyDeletedTask != nil)
+            .animation(
+                MotionTokens.snappy,
+                value: store.recentlyDeletedTask != nil || store.parsedDateUndo != nil
+            )
         }
         .onAppear { store.send(.onAppear) }
         .sheet(item: $planPickDateTarget) { targetID in
@@ -432,6 +440,38 @@ struct PlanTaskList: View {
                 store.send(.undoDeleteTask)
             } label: {
                 Text(String(localized: "Undo"))
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.tint)
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .pepinilloGlass(cornerRadius: GlassCornerRadius.tile)
+        .shadow(color: .black.opacity(0.1), radius: 8, y: 4)
+        .padding(.horizontal, 16)
+    }
+
+    /// «Quitar fecha» undo banner for a quick-add that recognized a
+    /// natural-language date (#994 S4): clearing the plan also restores the
+    /// recognized text into the title.
+    private func parsedDateBanner(title: String, planned: Date) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: "calendar.badge.minus")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+            Text(String(
+                format: String(localized: "\"%@\" planned for %@"),
+                title,
+                planned.formatted(.dateTime.weekday(.abbreviated).day())
+            ))
+            .font(.subheadline)
+            .lineLimit(1)
+            Spacer()
+            Button {
+                HapticManager.impact(.light)
+                store.send(.undoParsedDateTask)
+            } label: {
+                Text(String(localized: "Remove Date"))
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.tint)
             }

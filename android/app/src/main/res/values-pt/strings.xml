@@ -613,6 +613,7 @@
     <string name="task_plan_weekend">Este fim de semana</string>
     <string name="task_plan_pick">Escolher data…</string>
     <string name="task_plan_remove">Remover data</string>
+    <string name="tasks_parsed_plan_msg">\"%1$s\" planejada para %2$s</string>
     <string name="task_plan_postponed">Adiada</string>
     <string name="task_status_active">Ativa</string>
     <string name="task_status_completed">Concluída</string>

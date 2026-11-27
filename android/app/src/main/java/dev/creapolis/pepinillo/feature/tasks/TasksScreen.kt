@@ -387,6 +387,23 @@ fun TasksScreen(
             )
         }
 
+        // ── «Quitar fecha» undo for natural-language quick adds (#994 S4) ──
+        val parsedDateUndoState by viewModel.parsedDateUndoEvent.collectAsState()
+        LaunchedEffect(parsedDateUndoState) {
+            val undo = parsedDateUndoState ?: return@LaunchedEffect
+            // A still-queued older snackbar would run ITS onAction against
+            // THIS (newer) undo state — drop it first (judge B P2, #994 PR-d).
+            snackbarController?.hostState?.currentSnackbarData?.dismiss()
+            snackbarController?.show(
+                message = R.string.tasks_parsed_plan_msg,
+                undo.title,
+                undo.dateText,
+                actionLabel = R.string.task_plan_remove,
+                duration = androidx.compose.material3.SnackbarDuration.Long,
+                onAction = { viewModel.undoParsedDate() },
+            )
+        }
+
         if (useBottomSheet && selectedTaskId != null) {
             val detailViewModel: TaskDetailViewModel = hiltViewModel(key = selectedTaskId!!)
             LaunchedEffect(selectedTaskId) {

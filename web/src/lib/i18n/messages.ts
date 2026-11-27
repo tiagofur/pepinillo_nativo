@@ -341,6 +341,7 @@ export type MessageKey =
 	| 'quickCapture.placeholder'
 	| 'quickCapture.hint'
 	| 'quickCapture.captured'
+	| 'plan.taskParsedBanner'
 	| 'palette.placeholder'
 	| 'palette.addTask'
 	| 'palette.empty'
@@ -915,6 +916,7 @@ const en: Dict = {
 	'quickCapture.placeholder': 'Capture a task…',
 	'quickCapture.hint': '⌘K / Ctrl+K from anywhere',
 	'quickCapture.captured': '{title} captured to Inbox',
+	'plan.taskParsedBanner': '"{title}" planned for {date}',
 	'palette.placeholder': 'Search commands or capture a task…',
 	'palette.addTask': 'Add task',
 	'palette.empty': 'No matching commands',
@@ -1546,6 +1548,7 @@ const es: Dict = {
 	'quickCapture.placeholder': 'Capturar una tarea…',
 	'quickCapture.hint': '⌘K / Ctrl+K desde cualquier lugar',
 	'quickCapture.captured': '{title} capturada en Inbox',
+	'plan.taskParsedBanner': '"{title}" planificada para {date}',
 	'palette.placeholder': 'Buscá comandos o capturá una tarea…',
 	'palette.addTask': 'Agregar tarea',
 	'palette.empty': 'Sin comandos que coincidan',
@@ -2148,6 +2151,7 @@ const pt: Dict = {
 	'quickCapture.placeholder': 'Capturar uma tarefa…',
 	'quickCapture.hint': '⌘K / Ctrl+K de qualquer lugar',
 	'quickCapture.captured': '{title} capturada na Inbox',
+	'plan.taskParsedBanner': '"{title}" planejada para {date}',
 	'palette.placeholder': 'Busque comandos ou capture uma tarefa…',
 	'palette.addTask': 'Adicionar tarefa',
 	'palette.empty': 'Nenhum comando correspondente',

@@ -218,21 +218,25 @@ object NaturalDateParser {
         DM_RX.matcher(probe).takeIf { it.find() }?.let { m ->
             val day = m.group(1).toInt()
             val month = m.group(2).toInt()
-            val year = Calendar.getInstance().apply { timeInMillis = nowMillis }.get(Calendar.YEAR)
-            val noon = localNoon(year, month, day) ?: return noMatch
-            val resolved =
-                if (noon.timeInMillis < startOfToday(nowMillis)) {
-                    localNoon(year + 1, month, day)?.timeInMillis ?: return noMatch
-                } else {
-                    noon.timeInMillis
-                }
+            val baseYear = Calendar.getInstance().apply { timeInMillis = nowMillis }.get(Calendar.YEAR)
+            // Always the next real calendar day (S1): «29/2» lands on the next
+            // leap year, never rolls over to March 1st and never stays in the past.
+            val resolved = generateSequence(baseYear) { it + 1 }
+                .take(9)
+                .map { year -> localNoon(year, month, day)?.timeInMillis }
+                .firstOrNull { it != null && it >= startOfToday(nowMillis) }
+                ?: return noMatch
             return finish(resolved, m.start())
         }
 
         // 2. Grammar phrases, longest-first.
         for (candidate in DATE_PHRASES) {
             if (!endsAtWordBoundary(lowerProbe, candidate.phrase)) continue
-            val start = lowerProbe.length - candidate.phrase.length
+            // Slice by the ORIGINAL length: lowercasing can expand a code
+            // unit («İ» → 2 units) and shifting by the lowered length
+            // mangles titles (judge B P1 of PR-c). The phrase itself is NFC
+            // Latin — its length is identical in both casings.
+            val start = probe.length - candidate.phrase.length
             return finish(resolvePhrase(candidate, nowMillis), start)
         }
 

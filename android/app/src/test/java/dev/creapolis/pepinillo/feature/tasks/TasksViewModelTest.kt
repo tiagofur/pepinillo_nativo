@@ -4,6 +4,7 @@ import android.content.Context
 import dev.creapolis.pepinillo.core.billing.FeatureGate
 import dev.creapolis.pepinillo.core.billing.SubscriptionState
 import dev.creapolis.pepinillo.data.repository.TaskRepository
+import dev.creapolis.pepinillo.domain.tasks.TaskPlanning
 import dev.creapolis.pepinillo.domain.timer.FocusEngine
 import dev.creapolis.pepinillo.feature.tasks.model.Task
 import io.mockk.coEvery
@@ -242,5 +243,82 @@ class TasksViewModelTest {
                 0,
             )
         }.timeInMillis
+    }
+
+    // ── Natural-language quick add wiring (#994 S3-S5) ──
+
+    private fun stubQuickAddPath() {
+        // A relaxed Flow mock would suspend .first() forever on an empty flow.
+        coEvery { taskRepository.getActiveCount() } returns flowOf(0)
+    }
+
+    @Test
+    fun `addQuickTask parses the trailing date and exposes the undo event`() = runTest {
+        stubQuickAddPath()
+        every { featureGate.canAddTask(any()) } returns true
+        coEvery { taskRepository.addTask(any()) } returns Result.success(Unit)
+        val captured = slot<Task>()
+        coEvery { taskRepository.addTask(capture(captured)) } returns Result.success(Unit)
+
+        viewModel.addQuickTask("Comprar mañana")
+        testDispatcher.scheduler.runCurrent()
+
+        // The recognized span leaves the title; the pill default is replaced.
+        assertEquals("Comprar", captured.captured.title)
+        val expectedTomorrow = TaskPlanning.plannedDay(
+            Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, 1) }.timeInMillis
+        )
+        assertEquals(expectedTomorrow, captured.captured.plannedDate)
+        // The legacy flag follows the EFFECTIVE date: tomorrow is future → false.
+        assertEquals(false, captured.captured.scheduledForToday)
+
+        val undo = viewModel.parsedDateUndoEvent.value
+        assertNotNull("the parsed add must expose the undo event", undo)
+        assertEquals("Comprar mañana", undo?.title)
+    }
+
+    @Test
+    fun `addQuickTask without a trailing date stays byte-identical`() = runTest {
+        stubQuickAddPath()
+        every { featureGate.canAddTask(any()) } returns true
+        val captured = slot<Task>()
+        coEvery { taskRepository.addTask(capture(captured)) } returns Result.success(Unit)
+
+        viewModel.addQuickTask("Viernes de rollout")
+        testDispatcher.scheduler.runCurrent()
+
+        assertEquals("Viernes de rollout", captured.captured.title)
+        // «Hoy» pill default: today's planned day + the legacy flag.
+        assertEquals(TaskPlanning.plannedDay(), captured.captured.plannedDate)
+        assertEquals(true, captured.captured.scheduledForToday)
+        assertNull("no undo event for a no-match add", viewModel.parsedDateUndoEvent.value)
+    }
+
+    @Test
+    fun `undoParsedDate restores the original title and clears the plan`() = runTest {
+        stubQuickAddPath()
+        every { featureGate.canAddTask(any()) } returns true
+        coEvery { taskRepository.addTask(any()) } returns Result.success(Unit)
+        val created = slot<Task>()
+        coEvery { taskRepository.addTask(capture(created)) } returns Result.success(Unit)
+
+        viewModel.addQuickTask("Comprar mañana")
+        testDispatcher.scheduler.runCurrent()
+        val undo = viewModel.parsedDateUndoEvent.value
+        assertNotNull(undo)
+        // The row as persisted after the add (id assigned by the caller).
+        val stored = created.captured.copy(id = undo!!.taskId)
+        tasksFlow.value = listOf(stored)
+
+        val updated = slot<Task>()
+        coEvery { taskRepository.updateTask(capture(updated)) } returns Result.success(Unit)
+
+        viewModel.undoParsedDate()
+        testDispatcher.scheduler.runCurrent()
+
+        assertEquals("the recognized text returns to the title", "Comprar mañana", updated.captured.title)
+        assertNull("the parsed plan is cleared", updated.captured.plannedDate)
+        assertEquals(false, updated.captured.scheduledForToday)
+        assertNull("the undo window closes", viewModel.parsedDateUndoEvent.value)
     }
 }

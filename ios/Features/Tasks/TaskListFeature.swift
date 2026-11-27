@@ -46,6 +46,10 @@ struct TaskListFeature {
         var recentlyDeletedTask: TaskItemState?
         /// Most recent task completed from this window. Powers the macOS undo banner.
         var recentlyCompletedTask: TaskItemState?
+        /// Most recent quick-add that recognized a natural-language date
+        /// (#994 S4). Powers the «Quitar fecha» undo banner: clearing the
+        /// date also puts the recognized text back into the title.
+        var parsedDateUndo: ParsedDateUndo?
         var isProUser: Bool = false
         /// When true the task list renders sections by energy level.
         var isGroupedByEnergy: Bool = false
@@ -53,6 +57,13 @@ struct TaskListFeature {
         /// for this session. Resets on next cold launch.
         var energySuggestionDismissed: Bool = false
         @Presents var detail: TaskDetailFeature.State?
+    }
+
+    /// Rollback payload for the natural-date undo banner (#994 S4): the
+    /// task whose plan must clear and the exact text the parser removed.
+    struct ParsedDateUndo: Equatable {
+        let taskID: UUID
+        let originalTitle: String
     }
 
     struct TaskItemState: Equatable, Identifiable {
@@ -217,6 +228,10 @@ struct TaskListFeature {
         case taskDeleted(UUID)
         case undoDeleteTask
         case undoTimerExpired(UUID)
+        /// Undo the natural-date recognition on the last quick-add (#994 S4):
+        /// clears the planned date and restores the original text.
+        case undoParsedDateTask
+        case parsedDateUndoTimerExpired(UUID)
         case taskMoved(IndexSet, Int)
         /// Reorder the visible native Plan table by the given task IDs. Unlike
         /// `taskMoved`, this does not depend on the shared sidebar filter.
@@ -267,6 +282,7 @@ struct TaskListFeature {
     private enum _UndoTimerID: Hashable {
         case undoTimer(UUID)
         case completionUndoTimer(UUID)
+        case parsedDateUndo(UUID)
     }
     private enum _SpotlightIndexID: Hashable { case indexTasks }
 
@@ -420,9 +436,15 @@ struct TaskListFeature {
                     for: state.selectedPlanFilter,
                     now: now
                 )
+                // #994: a natural-language date typed at the END of the text
+                // replaces/refreshes the pill default; the recognized span
+                // leaves the title and the undo banner can put it back (S4/S5).
+                let parsed = NaturalDateParser.parse(title, now: now)
+                let effectiveTitle = parsed.title.isEmpty ? title : parsed.title
+                let plannedDate = parsed.plannedDate ?? quickAddDefaults.plannedDate
                 let newTask = TaskItemState(
                     id: newID,
-                    title: title,
+                    title: effectiveTitle,
                     isCompleted: false,
                     priority: .none,
                     energyLevel: .deep,
@@ -433,9 +455,9 @@ struct TaskListFeature {
                     isRecurringTemplate: false,
                     dueDate: quickAddDefaults.dueDate,
                     scheduledForToday: TaskPlanning.legacyFlag(
-                        plannedDate: quickAddDefaults.plannedDate, now: now
+                        plannedDate: plannedDate, now: now
                     ),
-                    plannedDate: quickAddDefaults.plannedDate,
+                    plannedDate: plannedDate,
                     sortOrder: sortOrder,
                     createdAt: now
                 )
@@ -447,30 +469,45 @@ struct TaskListFeature {
                 // click away — Apple's Reminders instead keeps an always-
                 // armed inline row, a different affordance model).
                 state.isNewTaskComposerPresented = false
-
-                return .run { send in
-                    let dto = TaskItemDTO(
-                        id: newID,
-                        title: title,
-                        sortOrder: sortOrder,
-                        dueDate: quickAddDefaults.dueDate,
-                        scheduledForToday: TaskPlanning.legacyFlag(
-                            plannedDate: quickAddDefaults.plannedDate, now: now
-                        ),
-                        plannedDate: quickAddDefaults.plannedDate,
-                        createdAt: now
-                    )
-                    do {
-                        try await persistence.saveTask(dto)
-                        WidgetCenter.shared.reloadTimelines(ofKind: "TasksHomeScreenWidget")
-                    } catch {
-                        await send(.mutationFailed(.addTask(
-                            id: newID,
-                            title: title,
-                            message: error.localizedDescription
-                        )))
-                    }
+                if parsed.plannedDate != nil {
+                    state.parsedDateUndo = ParsedDateUndo(taskID: newID, originalTitle: title)
                 }
+
+                var effects: [Effect<Action>] = [
+                    .run { send in
+                        let dto = TaskItemDTO(
+                            id: newID,
+                            title: effectiveTitle,
+                            sortOrder: sortOrder,
+                            dueDate: quickAddDefaults.dueDate,
+                            scheduledForToday: TaskPlanning.legacyFlag(
+                                plannedDate: plannedDate, now: now
+                            ),
+                            plannedDate: plannedDate,
+                            createdAt: now
+                        )
+                        do {
+                            try await persistence.saveTask(dto)
+                            WidgetCenter.shared.reloadTimelines(ofKind: "TasksHomeScreenWidget")
+                        } catch {
+                            await send(.mutationFailed(.addTask(
+                                id: newID,
+                                title: effectiveTitle,
+                                message: error.localizedDescription
+                            )))
+                        }
+                    }
+                ]
+                if parsed.plannedDate != nil {
+                    effects.append(
+                        .run { send in
+                            try await Task.sleep(for: .seconds(5))
+                            await send(.parsedDateUndoTimerExpired(newID))
+                        }
+                        .cancellable(id: _UndoTimerID.parsedDateUndo(newID), cancelInFlight: false)
+                    )
+                }
+                return .merge(effects)
 
             // #669: Share-Extension capture. Loaded → adopt the parked title
             // through the same quick-add pipeline (cap → paywall keeps the
@@ -679,6 +716,45 @@ struct TaskListFeature {
             case .undoTimerExpired(let id):
                 if state.recentlyDeletedTask?.id == id {
                     state.recentlyDeletedTask = nil
+                }
+                return .none
+
+            case .undoParsedDateTask:
+                guard let undo = state.parsedDateUndo,
+                      let snapshot = state.tasks[id: undo.taskID] else { return .none }
+                let taskID = undo.taskID
+                let originalTitle = undo.originalTitle
+                state.tasks[id: taskID]?.title = originalTitle
+                state.tasks[id: taskID]?.plannedDate = nil
+                state.tasks[id: taskID]?.scheduledForToday = false
+                state.parsedDateUndo = nil
+                return .merge(
+                    .cancel(id: _UndoTimerID.parsedDateUndo(taskID)),
+                    // ONE read-modify-write: two concurrent fetch→save effects
+                    // could interleave and the title save would re-persist the
+                    // stale fetched planned date (judge A P1, #994 PR-d).
+                    .run { send in
+                        do {
+                            if let item = try await persistence.fetchTask(taskID) {
+                                try await persistence.saveTask(item.updating(
+                                    title: originalTitle,
+                                    plannedDate: .some(nil),
+                                    scheduledForToday: false
+                                ))
+                                WidgetCenter.shared.reloadTimelines(ofKind: "TasksHomeScreenWidget")
+                            }
+                        } catch {
+                            await send(.mutationFailed(.update(
+                                task: snapshot,
+                                message: error.localizedDescription
+                            )))
+                        }
+                    }
+                )
+
+            case .parsedDateUndoTimerExpired(let id):
+                if state.parsedDateUndo?.taskID == id {
+                    state.parsedDateUndo = nil
                 }
                 return .none
 
