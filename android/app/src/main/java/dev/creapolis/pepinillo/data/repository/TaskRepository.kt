@@ -303,9 +303,19 @@ class TaskRepository @Inject constructor(
         )
 
         // Wear direct push (WorkManager doesn't reach the watch).
+        // Issue #991 (S7): the tile shows the unified «Hoy» list, not every
+        // active task — same resolver as the app lists and the widget.
         runCatching {
             val activeTasks = taskDao.getActiveTasks().first().map { it.toDomain() }
-            val widgetTasks = activeTasks.take(5).map { WidgetTask.fromTask(it) }
+            val todayTasks = activeTasks.filter {
+                TaskPlanning.bucket(
+                    plannedDate = it.plannedDate,
+                    dueDate = it.dueDate,
+                    scheduledForToday = it.scheduledForToday,
+                    isCompleted = it.isCompleted,
+                ) is TaskPlanning.Bucket.Today
+            }
+            val widgetTasks = todayTasks.take(5).map { WidgetTask.fromTask(it) }
             val stats = sessionRepository.getTodayStats().first()
             val allDays = sessionRepository.getAllDaysWithSessions().first()
             val streak = StreakProtectionService.computeProtectedStreak(

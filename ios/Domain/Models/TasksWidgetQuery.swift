@@ -21,19 +21,21 @@ enum TasksWidgetQuery {
         calendar: Calendar = .current
     ) throws -> [TaskItem] {
         let context = ModelContext(container)
-        // Issue #984: the today filter lives IN the predicate (with captured
-        // day boundaries) so the fetch limit bounds only today-relevant rows —
-        // a fetch limit applied before the in-memory filter let 50+ earlier
-        // inbox/upcoming tasks crowd today's tasks out of the widget.
-        let todayStart = calendar.startOfDay(for: now)
-        let tomorrowStart = calendar.date(byAdding: .day, value: 1, to: todayStart) ?? now
+        // Issue #991 (S7): the widget reads the SAME unified «Hoy» rule as the
+        // app — TaskPlanning.bucket (planned ≤ today keeps postponed tasks
+        // visible; future plans stay out). SwiftData predicates can't call the
+        // resolver, so the predicate fetches every candidate that MIGHT be in
+        // today (any plan, any flag, any due) and the in-memory filter applies
+        // the exact rule. Issue #984's concern stands: the fetch limit only
+        // bounds candidate rows, never today's own.
         var descriptor = FetchDescriptor<TaskItem>(
             predicate: #Predicate<TaskItem> { task in
                 task.isCompleted == false
                     && task.isRecurringTemplate == false
                     && task.isLocallyDeleted == false
                     && (task.scheduledForToday
-                        || (task.dueDate ?? tomorrowStart) < tomorrowStart)
+                        || task.plannedDate != nil
+                        || task.dueDate != nil)
             },
             sortBy: [
                 SortDescriptor(\.sortOrder),
@@ -45,13 +47,18 @@ enum TasksWidgetQuery {
         // Avoid loading relationships in widget process
         descriptor.relationshipKeyPathsForPrefetching = []
 
-        // Belt and suspenders: the in-memory filter mirrors the predicate
-        // (calendar.isDateInToday covers any same-day due timestamp whose
-        // instant encoding differs from the captured boundary).
         return try context.fetch(descriptor).filter { task in
-            let isDueToday = task.dueDate.map { calendar.isDateInToday($0) } ?? false
-            let isOverdue = task.dueDate.map { $0 < todayStart } ?? false
-            return task.scheduledForToday || isDueToday || isOverdue
+            if case .today = TaskPlanning.bucket(
+                plannedDate: task.plannedDate,
+                dueDate: task.dueDate,
+                scheduledForToday: task.scheduledForToday,
+                isCompleted: task.isCompleted,
+                now: now,
+                calendar: calendar
+            ) {
+                return true
+            }
+            return false
         }
     }
 }

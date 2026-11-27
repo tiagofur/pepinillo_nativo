@@ -41,6 +41,7 @@ struct TasksWidgetQueryTests {
         sortOrder: Int = 0,
         createdAt: Date? = nil,
         scheduledForToday: Bool = false,
+        plannedDate: Date? = nil,
         dueDate: Date? = nil,
         isCompleted: Bool = false,
         isLocallyDeleted: Bool = false,
@@ -51,6 +52,7 @@ struct TasksWidgetQueryTests {
         task.sortOrder = sortOrder
         if let createdAt { task.createdAt = createdAt }
         task.scheduledForToday = scheduledForToday
+        task.plannedDate = plannedDate
         task.dueDate = dueDate
         task.isCompleted = isCompleted
         task.isLocallyDeleted = isLocallyDeleted
@@ -127,10 +129,17 @@ struct TasksWidgetQueryTests {
         try insert("Overdue", in: container, sortOrder: 3, dueDate: yesterday)
         try insert("Upcoming", in: container, sortOrder: 4, dueDate: tomorrow)
         try insert("Inbox", in: container, sortOrder: 5)
+        // S7 (#991): planned tasks join the unified rule.
+        try insert("PlannedToday", in: container, sortOrder: 6, plannedDate: now)
+        try insert("Postponed", in: container, sortOrder: 7, plannedDate: yesterday)
+        try insert("PlannedFuture", in: container, sortOrder: 8, plannedDate: tomorrow)
 
         let today = try TasksWidgetQuery.todayTasks(in: container, now: now, calendar: calendar)
 
-        #expect(Set(today.map(\.title)) == ["Scheduled", "DueToday", "Overdue"])
+        #expect(
+            Set(today.map(\.title))
+                == ["Scheduled", "DueToday", "Overdue", "PlannedToday", "Postponed"]
+        )
     }
 
     // MARK: - S3: widget display order

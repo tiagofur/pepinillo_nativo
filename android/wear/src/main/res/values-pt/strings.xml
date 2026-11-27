@@ -49,7 +49,7 @@
     <string name="mode_chrono">Cronômetro</string>
 
     <!-- Tiles -->
-    <string name="tile_tasks_title">Tarefas (%1$d/%2$d prontas)</string>
+    <string name="tile_tasks_title">Tarefas de hoje (%1$d/%2$d concluídas)</string>
     <string name="tile_no_tasks">Sem tarefas</string>
     <string name="tile_locked_tasks">Desbloquear Tile de Tarefas</string>
     <string name="tile_locked_focus">Desbloquear Tile de Foco</string>

@@ -31,9 +31,20 @@ enum TaskIntentService {
         return (try? context.fetch(descriptor)) ?? []
     }
 
-    /// Today's plan (S2): active tasks flagged `scheduledForToday`, in plan order.
+    /// Today's plan (S7, issue #991): the unified «Hoy» rule — planned today
+    /// or past (postponed included), due today or overdue.
     static func todayTasks(in container: ModelContainer) -> [TaskItem] {
-        activeTasks(in: container).filter(\.scheduledForToday)
+        activeTasks(in: container).filter { task in
+            if case .today = TaskPlanning.bucket(
+                plannedDate: task.plannedDate,
+                dueDate: task.dueDate,
+                scheduledForToday: task.scheduledForToday,
+                isCompleted: task.isCompleted
+            ) {
+                return true
+            }
+            return false
+        }
     }
 
     /// The deep-link route both platforms already understand (AppFeature

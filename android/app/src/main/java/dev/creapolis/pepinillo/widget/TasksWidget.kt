@@ -55,6 +55,7 @@ import dev.creapolis.pepinillo.feature.tasks.model.Task
 import kotlinx.coroutines.flow.first
 import org.json.JSONArray
 import org.json.JSONObject
+import dev.creapolis.pepinillo.domain.tasks.TaskPlanning
 
 // ─────────────────────────── Data model ───────────────────────────────────
 
@@ -179,9 +180,18 @@ class TasksWidget : GlanceAppWidget() {
                 context.applicationContext, WidgetEntryPoint::class.java,
             )
             val taskRepo = entryPoint.taskRepository()
-            val activeTasks = taskRepo.getActiveTasks().first()
-            val activeCount = activeTasks.size
-            val widgetTasks = activeTasks.take(MAX_WIDGET_TASKS).map { task ->
+            // Issue #991 (S7): the widget shows the unified «Hoy» list — same
+            // rule as the app (TaskPlanning.bucket) — not every active task.
+            val todayTasks = taskRepo.getActiveTasks().first().filter { task ->
+                TaskPlanning.bucket(
+                    plannedDate = task.plannedDate,
+                    dueDate = task.dueDate,
+                    scheduledForToday = task.scheduledForToday,
+                    isCompleted = task.isCompleted,
+                ) is TaskPlanning.Bucket.Today
+            }
+            val activeCount = todayTasks.size
+            val widgetTasks = todayTasks.take(MAX_WIDGET_TASKS).map { task ->
                 val energyEmoji = when (task.energyLevel) {
                     EnergyLevel.Deep -> "\uD83D\uDD25"
                     EnergyLevel.Light -> "\uD83D\uDCA7"
