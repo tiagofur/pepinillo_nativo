@@ -50,6 +50,10 @@ struct TaskListFeature {
         /// (#994 S4). Powers the «Quitar fecha» undo banner: clearing the
         /// date also puts the recognized text back into the title.
         var parsedDateUndo: ParsedDateUndo?
+        /// «Huecos de hoy» card state (#992 S1/S5): only Pro users with
+        /// granted calendar access and at least one usable gap ever show a
+        /// card — every other state renders nothing.
+        var focusGapsState: FocusGapsState = .idle
         var isProUser: Bool = false
         /// When true the task list renders sections by energy level.
         var isGroupedByEnergy: Bool = false
@@ -64,6 +68,19 @@ struct TaskListFeature {
     struct ParsedDateUndo: Equatable {
         let taskID: UUID
         let originalTitle: String
+    }
+
+    /// Lifecycle of the «Huecos de hoy» card (#992 S1/S5). `.idle`,
+    /// `.needsAccess` (denied/dismissed) and `.empty` render nothing — only
+    /// `.ready` shows chips.
+    enum FocusGapsState: Equatable {
+        case idle
+        /// Pro user without granted calendar read access: the card offers
+        /// the in-context «Conectar calendario» CTA.
+        case needsAccess
+        /// Authorized but no usable gap ≥ the minimum today.
+        case empty
+        case ready([FocusGap])
     }
 
     struct TaskItemState: Equatable, Identifiable {
@@ -245,11 +262,21 @@ struct TaskListFeature {
         case groupByEnergyToggled
         case energySuggestionDismissed
         case paywallRequested
+        /// Refresh the «Huecos de hoy» card when Hoy appears (#992 S1).
+        case focusGapsAppeared
+        /// The card's «Conectar calendario» CTA (in-context request).
+        case connectCalendarTapped
+        case connectCalendarResult(Bool)
+        case focusGapsComputed([FocusGap])
 
         // Delegation
         case delegate(Delegate)
         enum Delegate: Equatable {
             case startFocus(UUID, String)
+            /// Launch a Time Block of `minutes` with this task linked, from
+            /// a calendar-gap chip (#992 S3). AppFeature drives the launch
+            /// sequence (mode + duration + link + start).
+            case startFocusFromGap(UUID, String, Int)
             case taskDeleted(UUID)
             case taskCompletionChanged(UUID, Bool)
             case showPaywall
@@ -291,6 +318,7 @@ struct TaskListFeature {
     @Dependency(\.remindersClient) var remindersClient
     @Dependency(\.uuid) var uuid
     @Dependency(\.date) var date
+    @Dependency(\.calendarClient) var calendarClient
 
     var body: some ReducerOf<Self> {
         Reduce { state, action in
@@ -382,6 +410,11 @@ struct TaskListFeature {
                     state.detail = nil
                     state.selectedTaskID = nil
                 }
+                // #992: the gaps card is Today-scoped too — refresh when the
+                // pill leads back to Hoy.
+                if filter == .today {
+                    return .send(.focusGapsAppeared)
+                }
                 return .none
 
             case .energyFilterChanged(let filter):
@@ -392,6 +425,47 @@ struct TaskListFeature {
                 // Issue #990 (S4): the suggestion filters Hoy to its level.
                 state.energyFilter = EnergyFilter(rawValue: level.rawValue) ?? .all
                 return .none
+
+            // MARK: «Huecos de hoy» (#992 S1/S5)
+
+            case .focusGapsAppeared:
+                // Only Pro users ever see the card (S5); everyone else stays
+                // in `.idle` — no card, no fetch, no prompt.
+                guard state.isProUser else {
+                    state.focusGapsState = .idle
+                    return .none
+                }
+                guard calendarClient.isAuthorized() else {
+                    state.focusGapsState = .needsAccess
+                    return .none
+                }
+                let now = date.now
+                let day = Calendar.current.startOfDay(for: now)
+                let dayEnd = Calendar.current.date(byAdding: .day, value: 1, to: day)!
+                return .run { [calendarClient] send in
+                    let events = (try? await calendarClient.fetchDayEvents(now, dayEnd)) ?? []
+                    let gaps = FocusGaps.computeGaps(events: events, now: now)
+                    await send(.focusGapsComputed(gaps))
+                }
+
+            case .focusGapsComputed(let gaps):
+                state.focusGapsState = gaps.isEmpty ? .empty : .ready(gaps)
+                return .none
+
+            case .connectCalendarTapped:
+                guard state.isProUser else { return .send(.paywallRequested) }
+                state.focusGapsState = .idle
+                return .run { [calendarClient] send in
+                    let granted = (try? await calendarClient.requestAccess()) ?? false
+                    await send(.connectCalendarResult(granted))
+                }
+
+            case .connectCalendarResult(let granted):
+                guard granted else {
+                    state.focusGapsState = .idle  // denied → the card is gone (S1)
+                    return .none
+                }
+                return .send(.focusGapsAppeared)
 
             case .energyFilterCleared:
                 state.energyFilter = .all

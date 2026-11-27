@@ -88,6 +88,30 @@ struct MacPlanView: View {
 
         content(tasks: tasks)
             .background(Color.pepinilloSystemBackground)
+            .onAppear {
+                // #992 S1 (judge A P3): deep-links change the tab without a
+                // sidebar click — mirror the iOS appear refresh.
+                if filter == .today {
+                    store.send(.focusGapsAppeared)
+                }
+            }
+            .sheet(item: $gapsSheetGap) { gap in
+                MacGapTaskPickerSheet(
+                    gap: FocusGap(
+                        start: gap.start,
+                        end: gap.start.addingTimeInterval(TimeInterval(
+                            min(gap.durationMinutes, FocusGaps.maxBlockMinutes) * 60
+                        ))
+                    ),
+                    tasks: unfilteredToday.filter { !$0.isCompleted }.map { $0 },
+                    onPick: { task in
+                        gapsSheetGap = nil
+                        store.send(.delegate(.startFocusFromGap(
+                            task.id, task.title, min(gap.durationMinutes, FocusGaps.maxBlockMinutes)
+                        )))
+                    }
+                )
+            }
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 VStack(spacing: 0) {
                     undoBannerContent
@@ -189,6 +213,7 @@ struct MacPlanView: View {
             // filter is on; only the inactive prompt honors the dismissal.
             VStack(spacing: 8) {
                 if filter == .today {
+                    focusGapsCard
                     let suggested = EnergySuggestion.suggestedLevel(for: Date())
                     let isActive = store.energyFilter != .all
                     let candidates = unfilteredToday.contains { $0.energyLevel == suggested }
@@ -790,6 +815,97 @@ struct MacPlanView: View {
         }
     }
 
+    /// «Huecos de hoy» (#992 S1/S5): identical gate to iOS — only Pro with
+    /// granted access and a usable gap ever renders anything.
+    @ViewBuilder
+    private var focusGapsCard: some View {
+        switch store.focusGapsState {
+        case .idle, .empty:
+            EmptyView()
+        case .needsAccess:
+            HStack(spacing: 12) {
+                Image(systemName: "calendar.badge.plus")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                Text(String(localized: "See where focus fits today"))
+                    .font(.subheadline)
+                    .lineLimit(2)
+                Spacer()
+                Button(String(localized: "Connect Calendar")) {
+                    store.send(.connectCalendarTapped)
+                }
+                .font(.subheadline.weight(.semibold))
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .background(
+                RoundedRectangle(cornerRadius: GlassCornerRadius.tile, style: .continuous)
+                    .fill(Color.pepinilloSecondarySystemGroupedBackground)
+            )
+        case .ready(let gaps):
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(spacing: 6) {
+                    Image(systemName: "calendar")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .accessibilityHidden(true)
+                    Text(String(localized: "Where focus fits today"))
+                        .font(.subheadline.weight(.semibold))
+                    Spacer()
+                    Text(String(localized: "From your calendar today"))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                ForEach(gaps) { gap in
+                    Button {
+                        gapsSheetGap = gap
+                    } label: {
+                        HStack {
+                            Text(timeRange(gap))
+                                .font(.subheadline.monospacedDigit())
+                            Text(durationLabel(gap))
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                            Spacer()
+                            Image(systemName: "play.circle")
+                                .foregroundStyle(.tint)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(String(
+                        localized: "Focus gap of \(blockMinutes(gap)) minutes"
+                    ) + ", " + timeRange(gap))
+                    .accessibilityHint(String(localized: "Choose a task from today for this gap"))
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .background(
+                RoundedRectangle(cornerRadius: GlassCornerRadius.tile, style: .continuous)
+                    .fill(Color.pepinilloSecondarySystemGroupedBackground)
+            )
+        }
+    }
+
+    @State private var gapsSheetGap: FocusGap?
+
+    private func timeRange(_ gap: FocusGap) -> String {
+        gap.start.formatted(.dateTime.hour().minute()) + " – "
+            + gap.end.formatted(.dateTime.hour().minute())
+    }
+
+    /// The block the launch actually runs (judge A P1: the chip says
+    /// «480+ min» when the gap exceeds TimeBlock's ceiling).
+    private func blockMinutes(_ gap: FocusGap) -> Int {
+        min(gap.durationMinutes, FocusGaps.maxBlockMinutes)
+    }
+
+    private func durationLabel(_ gap: FocusGap) -> String {
+        gap.durationMinutes > FocusGaps.maxBlockMinutes
+            ? String(localized: "\(FocusGaps.maxBlockMinutes)+ min")
+            : String(localized: "\(gap.durationMinutes) min")
+    }
+
     private func undoBanner(
         systemImage: String,
         message: String,
@@ -997,5 +1113,45 @@ private struct MacTaskRowObserver<Content: View>: View {
         if let task = store.tasks[id: taskID] {
             content(task)
         }
+    }
+}
+
+/// #992 S3 (Mac chrome): pick one of today's open tasks for the gap.
+private struct MacGapTaskPickerSheet: View {
+    let gap: FocusGap
+    let tasks: [TaskListFeature.TaskItemState]
+    let onPick: (TaskListFeature.TaskItemState) -> Void
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            List(tasks) { task in
+                Button {
+                    onPick(task)
+                } label: {
+                    Text(task.title)
+                        .font(.subheadline)
+                        .foregroundStyle(.primary)
+                        .lineLimit(1)
+                }
+            }
+            .navigationTitle(String(
+                localized: "Choose a task for your \(gap.durationMinutes)-minute block"
+            ))
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(String(localized: "Cancel")) { dismiss() }
+                }
+            }
+            .overlay {
+                if tasks.isEmpty {
+                    ContentUnavailableView(
+                        String(localized: "No open tasks for today"),
+                        systemImage: "checkmark.circle"
+                    )
+                }
+            }
+        }
+        .frame(minWidth: 420, minHeight: 320)
     }
 }

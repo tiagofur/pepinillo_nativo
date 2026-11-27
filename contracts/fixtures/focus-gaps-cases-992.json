@@ -1,0 +1,25 @@
+{
+  "issue": 992,
+  "description": "Shared case table for the «Huecos de hoy» engine (#992 S2, Apple round). fixedNow is interpreted in the DEVICE local timezone: suites must build it from these local components (2026-11-27 is a Friday). Events are minute offsets from the START OF THE FIXED DAY (isAllDay marks an all-day event, which occupies the whole day). expectedGaps are {startMin, endMin} minute offsets from the start of the fixed day, in display order (by start). Semantics: gaps run strictly BETWEEN merged busy intervals — nothing before the first busy block or after the last one counts (an empty or single-event day has NO gaps, per issue S1); the window starts at max(now, day start), so gaps are truncated to it and dropped when the remainder is under the 25-minute minimum; overlapping and touching events merge into one busy block; an all-day event makes the whole day busy. At most 3 gaps are returned: the 3 LONGEST, then ordered by start.",
+  "fixedNow": { "year": 2026, "month": 11, "day": 27, "hour": 12, "minute": 0 },
+  "minimumGapMinutes": 25,
+  "maxShown": 3,
+  "cases": [
+    { "name": "one clean gap between two meetings, usable part starts at now", "events": [ { "startMin": 600, "endMin": 660 }, { "startMin": 780, "endMin": 840 } ], "expectedGaps": [ { "startMin": 720, "endMin": 780 } ] },
+    { "name": "a 20-minute gap is below the minimum and dropped", "events": [ { "startMin": 600, "endMin": 660 }, { "startMin": 680, "endMin": 720 } ], "expectedGaps": [] },
+    { "name": "overlapping events merge into one busy block", "events": [ { "startMin": 600, "endMin": 690 }, { "startMin": 660, "endMin": 750 }, { "startMin": 780, "endMin": 840 } ], "expectedGaps": [ { "startMin": 750, "endMin": 780 } ] },
+    { "name": "touching events leave nothing between them", "events": [ { "startMin": 600, "endMin": 660 }, { "startMin": 660, "endMin": 720 } ], "expectedGaps": [] },
+    { "name": "an all-day event occupies the whole day", "events": [ { "startMin": 0, "endMin": 1440, "isAllDay": true }, { "startMin": 600, "endMin": 660 } ], "expectedGaps": [] },
+    { "name": "a past gap is truncated to now and survives when still long enough", "events": [ { "startMin": 540, "endMin": 600 }, { "startMin": 750, "endMin": 810 } ], "expectedGaps": [ { "startMin": 720, "endMin": 750 } ] },
+    { "name": "a gap that ends before now is gone", "events": [ { "startMin": 540, "endMin": 600 }, { "startMin": 630, "endMin": 690 } ], "expectedGaps": [] },
+    { "name": "an empty day has no gaps (issue S1)", "events": [], "expectedGaps": [] },
+    { "name": "a single busy block leaves nothing between", "events": [ { "startMin": 600, "endMin": 660 } ], "expectedGaps": [] },
+    { "name": "an event fully contained in another merges silently", "events": [ { "startMin": 540, "endMin": 720 }, { "startMin": 570, "endMin": 600 }, { "startMin": 780, "endMin": 840 } ], "expectedGaps": [ { "startMin": 720, "endMin": 780 } ] },
+    { "name": "more than 3 gaps after now: the 3 longest win, ordered by start (gaps of 50/70/55/45)", "events": [ { "startMin": 480, "endMin": 500 }, { "startMin": 530, "endMin": 560 }, { "startMin": 600, "endMin": 640 }, { "startMin": 740, "endMin": 750 }, { "startMin": 800, "endMin": 810 }, { "startMin": 880, "endMin": 890 }, { "startMin": 945, "endMin": 955 }, { "startMin": 1000, "endMin": 1010 } ], "expectedGaps": [ { "startMin": 750, "endMin": 800 }, { "startMin": 810, "endMin": 880 }, { "startMin": 890, "endMin": 945 } ] },
+    { "name": "a contained event inside an all-day day changes nothing", "events": [ { "startMin": 0, "endMin": 1440, "isAllDay": true }, { "startMin": 570, "endMin": 600 } ], "expectedGaps": [] },
+    { "name": "a degenerate-span all-day event still occupies the day (discriminates the guard)", "events": [ { "startMin": 600, "endMin": 660 }, { "startMin": 780, "endMin": 840 }, { "startMin": 0, "endMin": 0, "isAllDay": true } ], "expectedGaps": [] },
+    { "name": "a 24-minute gap floors below the minimum", "events": [ { "startMin": 600, "endMin": 660 }, { "startMin": 684, "endMin": 720 } ], "expectedGaps": [] },
+    { "name": "an exactly-25-minute gap survives (truncated to now)", "events": [ { "startMin": 600, "endMin": 660 }, { "startMin": 745, "endMin": 770 } ], "expectedGaps": [ { "startMin": 720, "endMin": 745 } ] },
+    { "name": "zero-duration events are ignored", "events": [ { "startMin": 600, "endMin": 600 }, { "startMin": 660, "endMin": 720 }, { "startMin": 780, "endMin": 840 } ], "expectedGaps": [ { "startMin": 720, "endMin": 780 } ] }
+  ]
+}
