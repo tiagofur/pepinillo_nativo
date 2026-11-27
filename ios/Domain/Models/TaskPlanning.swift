@@ -98,3 +98,314 @@ public enum TaskPlanning {
         calendar.compare(date, to: now, toGranularity: .day) == .orderedDescending
     }
 }
+
+/// Issue #994 (S1/S2): a planned date typed at the END of capture text.
+/// Pure, on-device, no AI — the same grammar the web
+/// (`web/src/lib/domain/tasks/natural-date.ts`) and Android
+/// (`NaturalDateParser.kt`) resolvers implement from
+/// contracts/fixtures/natural-date-cases-994.json. See
+/// odd/tasks/994-natural-dates.md §Algoritmo for the shared semantics:
+/// only the END of the text is interpreted; morning-phrase guards block the
+/// parse («Café de la mañana» keeps its title); numeric dates are always
+/// day/month (dd/mm — never month/day) with real-calendar roundtrip
+/// validity; the trailing punctuation mark and the preposition/article right
+/// before the date (el, del, para el, on, for, by, na, ...) travel with it;
+/// weekday == today falls to the next week; no match → the input is returned
+/// byte-identical with no date; a match that would empty the title is not a
+/// match.
+public enum NaturalDateParser {
+
+    public struct Parsed: Equatable, Sendable {
+        /// Original text minus the recognized span, re-trimmed.
+        public let title: String
+        /// Start of the resolved local day, or nil.
+        public let plannedDate: Date?
+
+        init(title: String, plannedDate: Date?) {
+            self.title = title
+            self.plannedDate = plannedDate
+        }
+    }
+
+    private enum PhraseKind {
+        case today
+        case tomorrow
+        case dayAfterTomorrow
+        case weekday(Int)
+    }
+
+    private struct DatePhrase {
+        let phrase: String
+        let kind: PhraseKind
+    }
+
+    /// Every parent phrase precedes its suffixes («pasado mañana» before
+    /// «mañana», «segunda-feira» before «segunda») so the longer reading
+    /// wins; exact-suffix matching makes the rest of the order irrelevant.
+    /// Keep this order aligned with the Android/web tables.
+    private static let phrases: [DatePhrase] = [
+        DatePhrase(phrase: "pasado mañana", kind: .dayAfterTomorrow),
+        DatePhrase(phrase: "pasado manana", kind: .dayAfterTomorrow),
+        DatePhrase(phrase: "day after tomorrow", kind: .dayAfterTomorrow),
+        DatePhrase(phrase: "depois de amanhã", kind: .dayAfterTomorrow),
+        DatePhrase(phrase: "depois de amanha", kind: .dayAfterTomorrow),
+        DatePhrase(phrase: "segunda-feira", kind: .weekday(1)),
+        DatePhrase(phrase: "segunda feira", kind: .weekday(1)),
+        DatePhrase(phrase: "terça-feira", kind: .weekday(2)),
+        DatePhrase(phrase: "terca-feira", kind: .weekday(2)),
+        DatePhrase(phrase: "terça feira", kind: .weekday(2)),
+        DatePhrase(phrase: "terca feira", kind: .weekday(2)),
+        DatePhrase(phrase: "quarta-feira", kind: .weekday(3)),
+        DatePhrase(phrase: "quarta feira", kind: .weekday(3)),
+        DatePhrase(phrase: "quinta-feira", kind: .weekday(4)),
+        DatePhrase(phrase: "quinta feira", kind: .weekday(4)),
+        DatePhrase(phrase: "sexta-feira", kind: .weekday(5)),
+        DatePhrase(phrase: "sexta feira", kind: .weekday(5)),
+        DatePhrase(phrase: "miércoles", kind: .weekday(3)),
+        DatePhrase(phrase: "miercoles", kind: .weekday(3)),
+        DatePhrase(phrase: "sábado", kind: .weekday(6)),
+        DatePhrase(phrase: "sabado", kind: .weekday(6)),
+        DatePhrase(phrase: "amanhã", kind: .tomorrow),
+        DatePhrase(phrase: "amanha", kind: .tomorrow),
+        DatePhrase(phrase: "wednesday", kind: .weekday(3)),
+        DatePhrase(phrase: "tuesday", kind: .weekday(2)),
+        DatePhrase(phrase: "thursday", kind: .weekday(4)),
+        DatePhrase(phrase: "saturday", kind: .weekday(6)),
+        DatePhrase(phrase: "lunes", kind: .weekday(1)),
+        DatePhrase(phrase: "martes", kind: .weekday(2)),
+        DatePhrase(phrase: "jueves", kind: .weekday(4)),
+        DatePhrase(phrase: "viernes", kind: .weekday(5)),
+        DatePhrase(phrase: "domingo", kind: .weekday(7)),
+        DatePhrase(phrase: "monday", kind: .weekday(1)),
+        DatePhrase(phrase: "friday", kind: .weekday(5)),
+        DatePhrase(phrase: "sunday", kind: .weekday(7)),
+        DatePhrase(phrase: "segunda", kind: .weekday(1)),
+        DatePhrase(phrase: "terça", kind: .weekday(2)),
+        DatePhrase(phrase: "terca", kind: .weekday(2)),
+        DatePhrase(phrase: "quarta", kind: .weekday(3)),
+        DatePhrase(phrase: "quinta", kind: .weekday(4)),
+        DatePhrase(phrase: "sexta", kind: .weekday(5)),
+        DatePhrase(phrase: "mañana", kind: .tomorrow),
+        DatePhrase(phrase: "manana", kind: .tomorrow),
+        DatePhrase(phrase: "tomorrow", kind: .tomorrow),
+        DatePhrase(phrase: "today", kind: .today),
+        DatePhrase(phrase: "hoy", kind: .today),
+        DatePhrase(phrase: "hoje", kind: .today)
+    ]
+
+    /// Prepositions/articles that travel with the date. Longest-first, one
+    /// phrase per match, single pass — compounds are units, not loops.
+    private static let stripPhrases = [
+        "el próximo",
+        "el proximo",
+        "para el",
+        "la próxima",
+        "la proxima",
+        "na próxima",
+        "na proxima",
+        "próxima",
+        "proxima",
+        "próximo",
+        "proximo",
+        "next",
+        "del",
+        "el",
+        "on",
+        "for",
+        "by",
+        "em",
+        "na",
+        "no",
+        "para"
+    ]
+
+    /// Phrases that mean a time of day, not a future day — they block the parse.
+    private static let guardPhrases = [
+        "de la mañana",
+        "por la mañana",
+        "esta mañana",
+        "de manhã",
+        "da manhã",
+        "pela manhã",
+        "esta manhã"
+    ]
+
+    private static let trailingPunctuation: Set<Character> = [".", ",", "!", "?"]
+
+    /// The exact JS `\s` set (the shared spec's "whitespace") — NOT
+    /// Character.isWhitespace, which diverges on U+001C–U+001F (included
+    /// there, excluded by JS) and U+FEFF (excluded there, included by JS).
+    /// Judge B P1 of PR-b: cross-platform S2 equivalence requires this set.
+    fileprivate static func isJsWhitespace(_ c: Character) -> Bool {
+        switch c {
+        case "\t", "\n", "\u{000B}", "\u{000C}", "\r", " ", "\u{00A0}", "\u{1680}",
+             "\u{2028}", "\u{2029}", "\u{202F}", "\u{205F}", "\u{3000}", "\u{FEFF}":
+            return true
+        default:
+            return ("\u{2000}"..."\u{200A}").contains(c)
+        }
+    }
+
+    private static let isoRegex = try! NSRegularExpression(pattern: "(?:^|[\\t\\n\\u000B\\f\\r\\u0020\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF])([0-9]{4})-([0-9]{2})-([0-9]{2})$")
+    private static let dayMonthYearRegex = try! NSRegularExpression(pattern: "(?:^|[\\t\\n\\u000B\\f\\r\\u0020\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF])([0-9]{1,2})/([0-9]{1,2})/([0-9]{4})$")
+    private static let dayMonthRegex = try! NSRegularExpression(pattern: "(?:^|[\\t\\n\\u000B\\f\\r\\u0020\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF])([0-9]{1,2})/([0-9]{1,2})$")
+
+    public static func parse(
+        _ text: String,
+        now: Date = Date(),
+        calendar: Calendar = .current
+    ) -> Parsed {
+        let trimmed = text.trimJsWhitespace()
+        if trimmed.isEmpty { return Parsed(title: trimmed, plannedDate: nil) }
+
+        // The probe drops ONE trailing punctuation mark so «el viernes.»
+        // matches; with no match the original text is returned untouched.
+        var probe = trimmed
+        if let last = probe.last, trailingPunctuation.contains(last) {
+            probe = String(probe.dropLast()).rstripWhitespace()
+        }
+        if probe.isEmpty { return Parsed(title: trimmed, plannedDate: nil) }
+        let lowerProbe = probe.lowercased()
+
+        let noMatch = Parsed(title: trimmed, plannedDate: nil)
+
+        // Morning-of-day phrases are never dates.
+        if guardPhrases.contains(where: { endsAtWordBoundary(lowerProbe, $0) }) {
+            return noMatch
+        }
+
+        // Empty title after stripping ⇒ not a match (the text IS the date only).
+        func finish(_ day: Date?, droppingSuffixOf phrase: String) -> Parsed {
+            var title = String(probe.dropLast(phrase.count)).rstripWhitespace()
+            let lowerTitle = title.lowercased()
+            for strip in stripPhrases where endsAtWordBoundary(lowerTitle, strip) {
+                title = String(title.dropLast(strip.count)).rstripWhitespace()
+                break
+            }
+            if title.isEmpty { return noMatch }
+            return Parsed(
+                title: title,
+                plannedDate: day.map { TaskPlanning.plannedDay($0, calendar: calendar) }
+            )
+        }
+
+        // 1. Numeric dates (unambiguous) — ISO first, then dd/mm/yyyy, then dd/mm.
+        let probeRange = NSRange(probe.startIndex..., in: probe)
+        func group(_ match: NSTextCheckingResult, _ index: Int) -> String {
+            guard let range = Range(match.range(at: index), in: probe) else { return "" }
+            return String(probe[range])
+        }
+        if let match = isoRegex.firstMatch(in: probe, range: probeRange) {
+            guard let day = realCalendarDay(
+                Int(group(match, 1)) ?? -1, Int(group(match, 2)) ?? -1, Int(group(match, 3)) ?? -1,
+                calendar
+            ) else { return noMatch }
+            return finish(day, droppingSuffixOf: String(probe[Range(match.range, in: probe)!]))
+        }
+        if let match = dayMonthYearRegex.firstMatch(in: probe, range: probeRange) {
+            guard let day = realCalendarDay(
+                Int(group(match, 3)) ?? -1, Int(group(match, 2)) ?? -1, Int(group(match, 1)) ?? -1,
+                calendar
+            ) else { return noMatch }
+            return finish(day, droppingSuffixOf: String(probe[Range(match.range, in: probe)!]))
+        }
+        if let match = dayMonthRegex.firstMatch(in: probe, range: probeRange) {
+            let dayOfMonth = Int(group(match, 1)) ?? -1
+            let month = Int(group(match, 2)) ?? -1
+            let year = calendar.component(.year, from: now)
+            guard let candidate = realCalendarDay(year, month, dayOfMonth, calendar) else {
+                return noMatch
+            }
+            let resolved: Date
+            if calendar.compare(candidate, to: now, toGranularity: .day) == .orderedAscending,
+               let nextYear = realCalendarDay(year + 1, month, dayOfMonth, calendar) {
+                resolved = nextYear
+            } else {
+                resolved = candidate
+            }
+            return finish(resolved, droppingSuffixOf: String(probe[Range(match.range, in: probe)!]))
+        }
+
+        // 2. Grammar phrases.
+        for candidate in phrases where endsAtWordBoundary(lowerProbe, candidate.phrase) {
+            return finish(resolvePhrase(candidate.kind, now: now, calendar: calendar),
+                          droppingSuffixOf: candidate.phrase)
+        }
+
+        return noMatch
+    }
+
+    // MARK: - Shared grammar helpers
+
+    /// Word boundary = start of text or a JS-`\s` whitespace character,
+    /// NEVER punctuation (regex \b would accept «compra:viernes»).
+    private static func endsAtWordBoundary(_ lower: String, _ phrase: String) -> Bool {
+        guard lower.hasSuffix(phrase) else { return false }
+        let start = lower.count - phrase.count
+        if start == 0 { return true }
+        let before = lower[lower.index(lower.startIndex, offsetBy: start - 1)]
+        return isJsWhitespace(before)
+    }
+
+    /// Real-calendar roundtrip: constructing a nonexistent day (Feb 31) must
+    /// fail, not roll over.
+    private static func realCalendarDay(
+        _ year: Int, _ month: Int, _ day: Int, _ calendar: Calendar
+    ) -> Date? {
+        var components = DateComponents()
+        components.year = year
+        components.month = month
+        components.day = day
+        components.hour = 12
+        guard let date = calendar.date(from: components) else { return nil }
+        let readBack = calendar.dateComponents([.year, .month, .day], from: date)
+        guard readBack.year == year, readBack.month == month, readBack.day == day else { return nil }
+        return date
+    }
+
+    private static func resolvePhrase(
+        _ kind: PhraseKind, now: Date, calendar: Calendar
+    ) -> Date {
+        let day = calendar.startOfDay(for: now)
+        switch kind {
+        case .today:
+            return day
+        case .tomorrow:
+            return calendar.date(byAdding: .day, value: 1, to: day)!
+        case .dayAfterTomorrow:
+            return calendar.date(byAdding: .day, value: 2, to: day)!
+        case .weekday(let isoWeekday):
+            // ISO weekday (1=Mon..7=Sun); weekday == today → next week (S1).
+            let rawWeekday = calendar.component(.weekday, from: day)  // 1 = Sunday … 7 = Saturday
+            let isoToday = rawWeekday == 1 ? 7 : rawWeekday - 1
+            var delta = (isoWeekday - isoToday + 7) % 7
+            if delta == 0 { delta = 7 }
+            return calendar.date(byAdding: .day, value: delta, to: day)!
+        }
+    }
+}
+
+private extension String {
+    /// Trailing JS-`\s` whitespace only.
+    func rstripWhitespace() -> String {
+        var end = endIndex
+        while end > startIndex, NaturalDateParser.isJsWhitespace(self[index(before: end)]) {
+            end = index(before: end)
+        }
+        return String(self[startIndex..<end])
+    }
+
+    /// Trim of the exact JS `\s` set (JS `String.prototype.trim` semantics),
+    /// not `.whitespacesAndNewlines` (diverges on U+001C–U+001F / U+FEFF).
+    func trimJsWhitespace() -> String {
+        var start = startIndex
+        var end = endIndex
+        while start < end, NaturalDateParser.isJsWhitespace(self[start]) {
+            start = index(after: start)
+        }
+        while end > start, NaturalDateParser.isJsWhitespace(self[index(before: end)]) {
+            end = index(before: end)
+        }
+        return String(self[start..<end])
+    }
+}
