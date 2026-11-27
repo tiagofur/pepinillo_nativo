@@ -55,7 +55,7 @@
     <string name="completed_tasks">Completed tasks</string>
 
     <!-- Tiles -->
-    <string name="tile_tasks_title">Tasks (%1$d/%2$d done)</string>
+    <string name="tile_tasks_title">Tasks today (%1$d/%2$d done)</string>
     <string name="tile_no_tasks">No tasks</string>
     <string name="tile_locked_tasks">Unlock Tasks tile</string>
     <string name="tile_locked_focus">Unlock Focus tile</string>

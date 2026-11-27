@@ -336,7 +336,7 @@ struct AppFeature {
         Reduce { state, action in
             let pushTasksToWatch: (State) -> Effect<Action> = { [watchClient] state in
                 let watchTasks = state.tasks.tasks
-                    .filter { $0.scheduledForToday }
+                    .filter(AppFeature.isWatchTodayTask)
                     .map { task in
                         WatchTaskItem(
                             id: task.id,
@@ -1328,7 +1328,7 @@ struct AppFeature {
                     guard let id = UUID(uuidString: idStr) else { return .none }
                     return .send(.tasks(.setTaskCompleted(id, isCompleted)))
                 case .requestTasks:
-                    let tasks = state.tasks.tasks.filter { $0.scheduledForToday }
+                    let tasks = state.tasks.tasks.filter(AppFeature.isWatchTodayTask)
                     let watchTasks = tasks.map { task in
                         WatchTaskItem(
                             id: task.id,
@@ -1767,8 +1767,35 @@ struct AppFeature {
         .run { [watchClient, persistence] _ in
             guard let stats = try? await persistence.fetchDailyStats(Date.now) else { return }
             let tasks = (try? await persistence.fetchTasks()) ?? []
-            let todayTasks = tasks.filter { $0.scheduledForToday }
+            // S7 (#991): the watch dashboard reads the unified «Hoy» rule for
+            // the ACTIVE total, but completed-today is counted separately —
+            // bucket(.completed) would zero it by construction (juez PR-c).
             let startOfDay = Calendar.current.startOfDay(for: Date.now)
+            let todayTasks = tasks.filter { dto in
+                !dto.isCompleted
+                    && {
+                        if case .today = TaskPlanning.bucket(
+                            plannedDate: dto.plannedDate,
+                            dueDate: dto.dueDate,
+                            scheduledForToday: dto.scheduledForToday,
+                            isCompleted: false,
+                            now: Date.now
+                        ) {
+                            return true
+                        }
+                        return false
+                    }()
+            }
+            let completedToday = tasks.filter { dto in
+                guard dto.isCompleted else { return false }
+                if let completedAt = dto.completedAt {
+                    return Calendar.current.isDateInToday(completedAt)
+                }
+                if let planned = dto.plannedDate {
+                    return planned <= startOfDay
+                }
+                return dto.scheduledForToday
+            }
             let sessions = (try? await persistence.fetchSessions(startOfDay, Date.now)) ?? []
             let longestMinutes = sessions.map { Int($0.actualDuration) / 60 }.max() ?? 0
             let allStats = (try? await persistence.fetchDailyStatsRange(Date.distantPast, Date.now)) ?? []
@@ -1784,7 +1811,7 @@ struct AppFeature {
             let dashStats = WatchDashboardStats(
                 todayMinutes: stats.totalFocusMinutes,
                 sessionsCompleted: stats.sessionsCompleted,
-                tasksCompleted: todayTasks.filter(\.isCompleted).count,
+                tasksCompleted: completedToday.count,
                 tasksTotal: todayTasks.count,
                 streakDays: streakResult.days,
                 pomodoroMinutes: stats.pomodoroMinutes,
@@ -2304,4 +2331,22 @@ extension CelebrationMilestone {
         }
         return nil
     }
+}
+
+
+/// Unified «Hoy» rule for the watch payload (issue #991 S7): the watch list,
+/// complications and stats read the same buckets as the app.
+fileprivate extension AppFeature {
+    static func isWatchTodayTask(_ task: TaskListFeature.TaskItemState) -> Bool {
+        if case .today = TaskPlanning.bucket(
+            plannedDate: task.plannedDate,
+            dueDate: task.dueDate,
+            scheduledForToday: task.scheduledForToday,
+            isCompleted: task.isCompleted
+        ) {
+            return true
+        }
+        return false
+    }
+
 }

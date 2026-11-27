@@ -24,13 +24,31 @@ struct MacTodayView: View {
             if let completedAt = task.completedAt {
                 return Calendar.current.isDateInToday(completedAt)
             }
+            // Legacy flag fallback: plan assigned to today or earlier (#991 S6).
+            if let planned = task.plannedDate {
+                return planned <= Calendar.current.startOfDay(for: .now)
+            }
             return task.scheduledForToday
         }.count
     }
 
+    private var isTaskInToday: (TaskListFeature.TaskItemState) -> Bool {
+        { task in
+            if case .today = TaskPlanning.bucket(
+                plannedDate: task.plannedDate,
+                dueDate: task.dueDate,
+                scheduledForToday: task.scheduledForToday,
+                isCompleted: task.isCompleted
+            ) {
+                return true
+            }
+            return false
+        }
+    }
+
     private var nextTask: TaskListFeature.TaskItemState? {
         tasks.tasks
-            .filter { $0.scheduledForToday && !$0.isCompleted }
+            .filter { isTaskInToday($0) && !$0.isCompleted }
             .sorted {
                 if $0.priority != $1.priority {
                     return $0.priority > $1.priority

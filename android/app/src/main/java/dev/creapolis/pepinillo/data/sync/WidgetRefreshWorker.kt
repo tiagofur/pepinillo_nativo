@@ -26,6 +26,7 @@ import dev.creapolis.pepinillo.widget.WidgetTask
 import dev.creapolis.pepinillo.widget.WidgetTaskStateManager
 import kotlinx.coroutines.flow.first
 import java.util.concurrent.TimeUnit
+import dev.creapolis.pepinillo.domain.tasks.TaskPlanning
 
 private const val TAG = "WidgetRefreshWorker"
 private const val WORK_NAME = "widget_refresh_periodic"
@@ -69,7 +70,19 @@ class WidgetRefreshWorker @AssistedInject constructor(
             val startOfDay = SessionRepository.startOfDay(System.currentTimeMillis())
             val completedToday = taskRepository.getCompletedTodayCount(startOfDay)
 
-            val widgetTasks = activeTasks.take(5).map { task ->
+            // Issue #991 (S7): the widget fallback and the Wear tile show the
+            // unified «Hoy» list — same resolver as the app lists (every push
+            // path must agree; flagged by the PR-c judge).
+            val todayTasks = activeTasks.filter {
+                TaskPlanning.bucket(
+                    plannedDate = it.plannedDate,
+                    dueDate = it.dueDate,
+                    scheduledForToday = it.scheduledForToday,
+                    isCompleted = it.isCompleted,
+                ) is TaskPlanning.Bucket.Today
+            }
+
+            val widgetTasks = todayTasks.take(5).map { task ->
                 val energyEmoji = when (task.energyLevel) {
                     EnergyLevel.Deep -> "\uD83D\uDD25" // 🔥
                     EnergyLevel.Regular -> "\u26A1"     // ⚡

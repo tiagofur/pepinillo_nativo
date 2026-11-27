@@ -41,6 +41,7 @@ struct TasksWidgetQueryTests {
         sortOrder: Int = 0,
         createdAt: Date? = nil,
         scheduledForToday: Bool = false,
+        plannedDate: Date? = nil,
         dueDate: Date? = nil,
         isCompleted: Bool = false,
         isLocallyDeleted: Bool = false,
@@ -51,6 +52,7 @@ struct TasksWidgetQueryTests {
         task.sortOrder = sortOrder
         if let createdAt { task.createdAt = createdAt }
         task.scheduledForToday = scheduledForToday
+        task.plannedDate = plannedDate
         task.dueDate = dueDate
         task.isCompleted = isCompleted
         task.isLocallyDeleted = isLocallyDeleted
@@ -127,10 +129,41 @@ struct TasksWidgetQueryTests {
         try insert("Overdue", in: container, sortOrder: 3, dueDate: yesterday)
         try insert("Upcoming", in: container, sortOrder: 4, dueDate: tomorrow)
         try insert("Inbox", in: container, sortOrder: 5)
+        // S7 (#991): planned tasks join the unified rule.
+        try insert("PlannedToday", in: container, sortOrder: 6, plannedDate: now)
+        try insert("Postponed", in: container, sortOrder: 7, plannedDate: yesterday)
+        try insert("PlannedFuture", in: container, sortOrder: 8, plannedDate: tomorrow)
 
         let today = try TasksWidgetQuery.todayTasks(in: container, now: now, calendar: calendar)
 
-        #expect(Set(today.map(\.title)) == ["Scheduled", "DueToday", "Overdue"])
+        #expect(
+            Set(today.map(\.title))
+                == ["Scheduled", "DueToday", "Overdue", "PlannedToday", "Postponed"]
+        )
+    }
+
+    // MARK: - #984 (re-verified by the PR-c judge): future-planned backlog
+    // must not crowd today's task out through the fetch limit.
+
+    @Test func todayTaskSurvivesLargeFuturePlannedBacklog() throws {
+        let (container, dir) = try makeContainer(label: "future-planned-crowd")
+        defer { cleanup(dir) }
+        let calendar = Calendar.current
+        let now = Date.now
+        let todayStart = calendar.startOfDay(for: now)
+        let tomorrow = try #require(calendar.date(byAdding: .day, value: 1, to: todayStart))
+
+        // Today's task sorts AFTER the backlog (created later, higher order).
+        try insert("Today's task", in: container, sortOrder: 100, plannedDate: now)
+        // 60 far-future plans sort before it and would crowd a fetch that
+        // admitted them (fetchLimit 50).
+        for i in 0..<60 {
+            try insert("Future \(i)", in: container, sortOrder: i, plannedDate: tomorrow)
+        }
+
+        let today = try TasksWidgetQuery.todayTasks(in: container, now: now, calendar: calendar)
+        #expect(today.count == 1)
+        #expect(today.first?.title == "Today's task")
     }
 
     // MARK: - S3: widget display order
