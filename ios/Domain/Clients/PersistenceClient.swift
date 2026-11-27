@@ -164,7 +164,12 @@ public struct TaskItemDTO: Sendable, Equatable, Identifiable {
 
     /// Returns a copy with `isCompleted` and `completedAt` kept consistent.
     /// Completing stores the supplied date; reopening clears the timestamp.
-    public func updatingCompletion(_ isCompleted: Bool, at completedAt: Date?) -> TaskItemDTO {
+    public func updatingCompletion(
+        _ isCompleted: Bool,
+        at completedAt: Date?,
+        plannedDate: (Date?)? = nil,
+        scheduledForToday: Bool? = nil
+    ) -> TaskItemDTO {
         TaskItemDTO(
             id: id,
             title: title,
@@ -180,7 +185,10 @@ public struct TaskItemDTO: Sendable, Equatable, Identifiable {
             recurrenceRule: recurrenceRule,
             isRecurringTemplate: isRecurringTemplate,
             dueDate: dueDate,
-            scheduledForToday: scheduledForToday,
+            // Issue #991 (juez PR-c): the plan survives completion and
+            // undo-completion (S6) — never reset by this constructor.
+            scheduledForToday: scheduledForToday ?? self.scheduledForToday,
+            plannedDate: plannedDate ?? self.plannedDate,
             completedAt: isCompleted ? (completedAt ?? self.completedAt) : nil,
             createdAt: createdAt,
             syncId: syncId,

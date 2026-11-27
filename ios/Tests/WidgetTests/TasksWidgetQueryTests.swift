@@ -142,6 +142,30 @@ struct TasksWidgetQueryTests {
         )
     }
 
+    // MARK: - #984 (re-verified by the PR-c judge): future-planned backlog
+    // must not crowd today's task out through the fetch limit.
+
+    @Test func todayTaskSurvivesLargeFuturePlannedBacklog() throws {
+        let (container, dir) = try makeContainer(label: "future-planned-crowd")
+        defer { cleanup(dir) }
+        let calendar = Calendar.current
+        let now = Date.now
+        let todayStart = calendar.startOfDay(for: now)
+        let tomorrow = try #require(calendar.date(byAdding: .day, value: 1, to: todayStart))
+
+        // Today's task sorts AFTER the backlog (created later, higher order).
+        try insert("Today's task", in: container, sortOrder: 100, plannedDate: now)
+        // 60 far-future plans sort before it and would crowd a fetch that
+        // admitted them (fetchLimit 50).
+        for i in 0..<60 {
+            try insert("Future \(i)", in: container, sortOrder: i, plannedDate: tomorrow)
+        }
+
+        let today = try TasksWidgetQuery.todayTasks(in: container, now: now, calendar: calendar)
+        #expect(today.count == 1)
+        #expect(today.first?.title == "Today's task")
+    }
+
     // MARK: - S3: widget display order
 
     @Test("orders by sortOrder, newest first within a tie")

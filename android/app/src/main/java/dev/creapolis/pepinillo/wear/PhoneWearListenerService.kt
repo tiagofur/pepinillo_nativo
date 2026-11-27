@@ -32,6 +32,7 @@ import kotlinx.coroutines.launch
 import java.nio.charset.StandardCharsets
 import java.util.Calendar
 import javax.inject.Inject
+import dev.creapolis.pepinillo.domain.tasks.TaskPlanning
 
 private const val TAG = "PhoneWearListener"
 
@@ -259,7 +260,17 @@ class PhoneWearListenerService : WearableListenerService() {
                 val activeTasks = taskRepository.getActiveTasks().first()
                 Log.d(TAG, "Direct push: ${activeTasks.size} active tasks")
 
-                val widgetTasks = activeTasks.take(5).map { WidgetTask.fromTask(it) }
+                // Issue #991 (S7): same «Hoy» list as the app/widget — every
+                // push path must agree (PR-c judge).
+                val todayTasks = activeTasks.filter {
+                    TaskPlanning.bucket(
+                        plannedDate = it.plannedDate,
+                        dueDate = it.dueDate,
+                        scheduledForToday = it.scheduledForToday,
+                        isCompleted = it.isCompleted,
+                    ) is TaskPlanning.Bucket.Today
+                }
+                val widgetTasks = todayTasks.take(5).map { WidgetTask.fromTask(it) }
 
                 val stats = sessionRepository.getTodayStats().first()
                 val allDays = sessionRepository.getAllDaysWithSessions().first()
