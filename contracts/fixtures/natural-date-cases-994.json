@@ -48,6 +48,10 @@
     { "name": "dd/mm must be a real calendar day (29/2 only in leap years)", "input": "Informe 29/2", "expectedTitle": "Informe 29/2", "expectedDate": null },
     { "name": "dd/mm equal to today resolves to today", "input": "Informe 27/11", "expectedTitle": "Informe", "expectedDate": { "kind": "explicit", "year": 2026, "month": 11, "day": 27 } },
     { "name": "numeric date with trailing punctuation travels together", "input": "Informe 3/12.", "expectedTitle": "Informe", "expectedDate": { "kind": "explicit", "year": 2026, "month": 12, "day": 3 } },
-    { "name": "ISO month/day out of range never parses", "input": "Cierre 2026-13-45", "expectedTitle": "Cierre 2026-13-45", "expectedDate": null }
+    { "name": "ISO month/day out of range never parses", "input": "Cierre 2026-13-45", "expectedTitle": "Cierre 2026-13-45", "expectedDate": null },
+    { "name": "BOM between words is whitespace (JS \\uFEFF)", "input": "informe\uFEFFviernes", "expectedTitle": "informe", "expectedDate": { "kind": "nextWeekday", "weekday": 5 } },
+    { "name": "U+001F separator is not whitespace", "input": "informe\u001Fviernes", "expectedTitle": "informe\u001Fviernes", "expectedDate": null },
+    { "name": "pt guard «pela manhã» blocks the parse", "input": "Comprar pela manhã", "expectedTitle": "Comprar pela manhã", "expectedDate": null },
+    { "name": "non-ASCII digits are not dates (JS \\d is ASCII-only)", "input": "Nota ٣/٤", "expectedTitle": "Nota ٣/٤", "expectedDate": null }
   ]
 }
