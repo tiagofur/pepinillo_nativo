@@ -94,6 +94,9 @@ data class TaskDto(
     val recurringTemplateId: String? = null,
     val dueDate: String? = null,
     val scheduledForToday: Boolean = false,
+    // Local calendar day the user plans to work on this (issue #991 S9),
+    // encoded as ISO instant of local noon (same convention as dueDate).
+    val plannedDate: String? = null,
     val sortOrder: Int = 0,
     val createdDate: String? = null,
     val finishDate: String? = null,

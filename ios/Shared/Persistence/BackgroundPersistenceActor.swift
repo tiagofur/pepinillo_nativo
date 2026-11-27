@@ -67,6 +67,7 @@ public actor BackgroundPersistenceActor {
             existing.isRecurringTemplate = taskDTO.isRecurringTemplate
             existing.dueDate = taskDTO.dueDate
             existing.scheduledForToday = taskDTO.scheduledForToday
+            existing.plannedDate = taskDTO.plannedDate
             existing.isDirty = true  // Mark dirty for sync
             // Set nextOccurrence when recurrence rule is first applied
             if taskDTO.isRecurringTemplate, existing.nextOccurrence == nil,
@@ -93,6 +94,7 @@ public actor BackgroundPersistenceActor {
             newTask.isRecurringTemplate = taskDTO.isRecurringTemplate
             newTask.dueDate = taskDTO.dueDate
             newTask.scheduledForToday = taskDTO.scheduledForToday
+            newTask.plannedDate = taskDTO.plannedDate
             newTask.isDirty = true  // New tasks are dirty
             if taskDTO.isRecurringTemplate,
                let rule = taskDTO.recurrenceRule,

@@ -21,7 +21,11 @@ type Task struct {
 	DueDate           *time.Time `json:"dueDate"`
 	CompletedAt       *time.Time `json:"completedAt"`
 	ScheduledForToday bool       `json:"scheduledForToday"`
-	SortOrder         int        `json:"sortOrder"`
+	// PlannedDate is the local calendar day the user plans to work on this
+	// task (issue #991 S9). Replaces ScheduledForToday, which expired
+	// client-side; past plans stay visible as "postponed" (S6).
+	PlannedDate *time.Time `json:"plannedDate"`
+	SortOrder   int        `json:"sortOrder"`
 	IsFinished        bool       `json:"isFinished" gorm:"default:false;not null"`
 	Priority          int        `json:"priority" gorm:"default:0;not null"`
 	Category          *string    `json:"category"`

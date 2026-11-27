@@ -831,6 +831,7 @@ func canonicalWireFixtureDecodes() throws {
     let dto = try JSONDecoder().decode(TaskSyncDTO.self, from: raw)
     #expect(dto.syncId == "fixture-989-canonical")
     #expect(dto.dueDate == "2026-11-26T12:00:00Z")
+    #expect(dto.plannedDate == "2026-11-26T12:00:00Z", "issue #991 S9: the plan travels on the wire")
     #expect(dto.completedAt == nil)
     #expect(dto.scheduledForToday == true)
     #expect(dto.sortOrder == 6)

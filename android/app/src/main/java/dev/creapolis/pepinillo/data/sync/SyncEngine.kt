@@ -281,7 +281,8 @@ class SyncEngine @Inject constructor(
                         .map { dto ->
                             val entity = dto.toEntity()
                             entity.copy(plannedDate = entity.plannedDate ?: planBySyncId[dto.syncId])
-                        }
+                        } // PR-D: the wire carries plannedDate; the local fallback
+                        // still defends rows echoed by an un-migrated server.
                     if (mergedTaskEntities.isNotEmpty()) {
                         taskDao.upsertAll(mergedTaskEntities)
                     }
@@ -509,9 +510,11 @@ class SyncEngine @Inject constructor(
                     // pre-PR-A guard existed only because the server could not
                     // carry the flag).
                     scheduledForToday = serverEntity.scheduledForToday,
-                    // plannedDate is local-only until #991 PR-D puts it on the
-                    // wire — preserving local here, server truth then (PR-D).
-                    plannedDate = local.plannedDate,
+                    // Issue #991 PR-D: plannedDate travels on the wire now —
+                    // server truth wins, same as dueDate/flag (the initial-upload
+                    // converge path below still re-attaches the local plan for
+                    // un-migrated remote rows).
+                    plannedDate = serverEntity.plannedDate ?: local.plannedDate,
                     sortOrder = serverEntity.sortOrder,
                     recurrenceRule = serverEntity.recurrenceRule,
                     recurringTemplateID = serverEntity.recurringTemplateID,
@@ -1009,6 +1012,9 @@ class SyncEngine @Inject constructor(
             recurringTemplateId = recurringTemplateID,
             dueDate = dueDate?.toRfc3339(),
             scheduledForToday = scheduledForToday,
+            // Issue #991 S9: the plan travels on the wire — local midnight
+            // millis to ISO instant (same encoder as dueDate).
+            plannedDate = plannedDate?.toRfc3339(),
             sortOrder = sortOrder,
             isFinished = isCompleted,
             priority = when (priority) {

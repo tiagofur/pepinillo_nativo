@@ -31,7 +31,18 @@
   "isDeleted": false,
   "updatedAt": "2026-11-25T08:00:00Z",
   "subTasks": [
-    { "id": 7, "taskId": 42, "title": "first step", "isFinished": true },
-    { "id": 8, "taskId": 42, "title": "second step", "isFinished": false }
-  ]
+    {
+      "id": 7,
+      "taskId": 42,
+      "title": "first step",
+      "isFinished": true
+    },
+    {
+      "id": 8,
+      "taskId": 42,
+      "title": "second step",
+      "isFinished": false
+    }
+  ],
+  "plannedDate": "2026-11-26T12:00:00Z"
 }

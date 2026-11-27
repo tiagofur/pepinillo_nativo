@@ -3151,7 +3151,19 @@ components:
             legacy rows completed before this field existed (issue #989).
         scheduledForToday:
           type: boolean
-          description: User pinned the task to Today ("Añadir a Hoy"); expires client-side per platform rules (issue #989).
+          description: >-
+            User pinned the task to Today ("Añadir a Hoy"); expires client-side
+            per platform rules (issue #989). Superseded by plannedDate
+            (issue #991) — kept for un-updated clients, derived as
+            "planned ≤ today" by #991 clients.
+        plannedDate:
+          type: ["string", "null"]
+          format: date-time
+          description: >-
+            Local calendar day the user plans to work on this task (issue #991
+            S9). Replaces scheduledForToday: past plans stay visible as
+            "postponed" (S6), future plans list under Upcoming. Clients encode
+            it as noon-UTC of the local day (same convention as dueDate).
         sortOrder:
           type: integer
           description: Manual plan order (drag order), stable per task (issue #989).

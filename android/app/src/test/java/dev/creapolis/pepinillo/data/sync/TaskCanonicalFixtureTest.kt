@@ -31,6 +31,9 @@ class TaskCanonicalFixtureTest {
         assertEquals("2026-11-26", dto.dueDate!!.substring(0, 10))
         assertNull("unfinished fixture carries completedAt = NULL", dto.completedAt)
         assertTrue("scheduledForToday must survive the decode", dto.scheduledForToday)
+        // Issue #991 S9: the plan travels on the wire.
+        org.junit.Assert.assertNotNull("plannedDate must survive the decode", dto.plannedDate)
+        org.junit.Assert.assertEquals("2026-11-26", dto.plannedDate!!.substring(0, 10))
         assertEquals(6, dto.sortOrder)
         assertEquals("shallow", dto.energyLevel)
         assertEquals(5, dto.completedPomodoros)

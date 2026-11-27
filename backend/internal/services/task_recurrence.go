@@ -192,6 +192,9 @@ func buildRecurringInstance(template domain.Task, day time.Time, now time.Time) 
 		// read the same day.
 		instance.FinishDate = &finish
 		instance.DueDate = &finish
+		// S8 (#991): server-spawned instances are born planned on their
+		// occurrence day, matching the client-side recurrence writers.
+		instance.PlannedDate = &finish
 	}
 
 	return instance

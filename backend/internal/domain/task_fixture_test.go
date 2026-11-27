@@ -25,6 +25,10 @@ func TestCanonicalWireFixtureDecodes(t *testing.T) {
 	if task.DueDate == nil || task.DueDate.Format("2006-01-02") != "2026-11-26" {
 		t.Fatalf("dueDate = %v, want the fixture day", task.DueDate)
 	}
+	// Issue #991 S9: the plan travels on the wire.
+	if task.PlannedDate == nil || task.PlannedDate.Format("2006-01-02") != "2026-11-26" {
+		t.Fatalf("plannedDate = %v, want the fixture day", task.PlannedDate)
+	}
 	if task.CompletedAt != nil {
 		t.Fatalf("unfinished fixture must carry completedAt = NULL, got %v", task.CompletedAt)
 	}

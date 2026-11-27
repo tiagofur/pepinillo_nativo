@@ -737,6 +737,7 @@ public final class SwiftDataPersistenceService {
             // clear them. Strictly newer means another device really edited.
             if serverUpdatedAt > local.updatedAt {
                 local.scheduledForToday = serverTask.scheduledForToday ?? false
+                local.plannedDate = serverTask.plannedDate.flatMap(ISO8601DateFormatter().date(from:))
                 local.sortOrder = serverTask.sortOrder ?? 0
             }
             local.serverId = serverTask.id
