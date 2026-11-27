@@ -196,10 +196,19 @@ export function parseNaturalDateSuffix(text: string, now: Date): NaturalDatePars
 	if (m) {
 		const day = Number(m[1]);
 		const month = Number(m[2]);
-		if (!isValidDay(now.getFullYear(), month, day)) return noMatch;
-		let year = now.getFullYear();
-		if (localNoon(year, month, day).getTime() < startOfToday(now).getTime()) year += 1;
-		return finish(localDateKey(localNoon(year, month, day)), m.index);
+		// Always the next real calendar day (S1): «29/2» lands on the next
+		// leap year, never rolls over to March 1st and never stays in the past.
+		const baseYear = now.getFullYear();
+		let resolved: Date | null = null;
+		for (let year = baseYear; year <= baseYear + 8; year += 1) {
+			const candidate = isValidDay(year, month, day) ? localNoon(year, month, day) : null;
+			if (candidate && candidate.getTime() >= startOfToday(now).getTime()) {
+				resolved = candidate;
+				break;
+			}
+		}
+		if (!resolved) return noMatch;
+		return finish(localDateKey(resolved), m.index);
 	}
 
 	// 2. Grammar phrases, longest-first.

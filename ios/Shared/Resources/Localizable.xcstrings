@@ -135,6 +135,28 @@
         }
       }
     },
+    "\"%@\" planned for %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "\"%@\" planned for %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "\"%@\" planificada para %@"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "\"%@\" planejada para %@"
+          }
+        }
+      }
+    },
     "—" : {
       "localizations" : {
         "es" : {

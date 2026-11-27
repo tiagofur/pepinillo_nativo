@@ -8,8 +8,10 @@
 	import { plan } from '$lib/stores/plan.svelte';
 	import { app } from '$lib/stores/app.svelte';
 	import { toast } from '$lib/stores/toast.svelte';
-	import { t } from '$lib/i18n/i18n.svelte';
+	import { t, currentLocale } from '$lib/i18n/i18n.svelte';
 	import type { MessageKey } from '$lib/i18n/messages';
+	import { parseNaturalDateSuffix } from '$lib/domain/tasks/natural-date';
+	import { derivedLegacyFlag, formatDueShort } from '$lib/domain/tasks/plan';
 	import Icon from '$lib/design/Icon.svelte';
 
 	interface Command {
@@ -113,9 +115,36 @@
 	async function runResult(result: (typeof results)[number] | undefined): Promise<void> {
 		if (!result) return;
 		if (result.kind === 'capture') {
-			const task = await plan.addTask(result.label);
+			// #994: a natural-language date at the end of the capture plans the
+			// task and leaves the title; «Quitar fecha» on the toast restores
+			// the original text.
+			const now = new Date();
+			const parsed = parseNaturalDateSuffix(result.label, now);
+			const overrides = parsed.plannedDate
+				? { plannedDate: parsed.plannedDate, scheduledForToday: derivedLegacyFlag(parsed.plannedDate, now) }
+				: {};
+			const task = await plan.addTask(parsed.title, overrides);
 			if (task) {
-				toast.show(t('quickCapture.captured', { title: task.title }));
+				if (parsed.plannedDate) {
+					const originalTitle = result.label;
+					toast.show(
+						t('plan.taskParsedBanner', {
+							title: parsed.title,
+							date: formatDueShort(parsed.plannedDate, currentLocale())
+						}),
+						{
+							actionLabel: t('plan.removeDate'),
+							onAction: () =>
+								void plan.updateTask(task.id, {
+									plannedDate: null,
+									scheduledForToday: false,
+									title: originalTitle
+								})
+						}
+					);
+				} else {
+					toast.show(t('quickCapture.captured', { title: task.title }));
+				}
 				value = '';
 				plan.capNotice = false;
 				open = false;

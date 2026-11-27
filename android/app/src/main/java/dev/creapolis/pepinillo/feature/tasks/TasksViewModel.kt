@@ -1,6 +1,9 @@
 package dev.creapolis.pepinillo.feature.tasks
 
 import android.content.Context
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -10,6 +13,7 @@ import dev.creapolis.pepinillo.core.billing.FeatureGate
 import dev.creapolis.pepinillo.data.repository.TaskRepository
 import dev.creapolis.pepinillo.domain.tasks.TaskPlanning
 import dev.creapolis.pepinillo.domain.tasks.DueDateEncoding
+import dev.creapolis.pepinillo.domain.tasks.NaturalDateParser
 import dev.creapolis.pepinillo.domain.timer.FocusEngine
 import dev.creapolis.pepinillo.feature.tasks.model.EnergyLevel
 import dev.creapolis.pepinillo.feature.tasks.model.MAX_TASK_TITLE_LENGTH
@@ -171,7 +175,14 @@ class TasksViewModel @Inject constructor(
 
     private val _undoEvent = MutableStateFlow<UndoState?>(null)
     val undoEvent: StateFlow<UndoState?> = _undoEvent.asStateFlow()
+
+    /// Quick-add that recognized a natural-language date (#994 S4): the
+    /// snackbar offers «Quitar fecha», which clears the plan and restores
+    /// the recognized text into the title.
+    private val _parsedDateUndoEvent = MutableStateFlow<ParsedDateUndoState?>(null)
+    val parsedDateUndoEvent: StateFlow<ParsedDateUndoState?> = _parsedDateUndoEvent.asStateFlow()
     private var undoExpiryJob: Job? = null
+    private var parsedDateUndoExpiryJob: Job? = null
 
     private val _successMessage = MutableStateFlow<Int?>(null)
     val successMessage: StateFlow<Int?> = _successMessage.asStateFlow()
@@ -246,28 +257,54 @@ class TasksViewModel @Inject constructor(
                 return@launch
             }
             val currentFilter = _selectedFilter.value
+            // #994: a natural-language date typed at the END of the text
+            // replaces/refreshes the pill default; the recognized span leaves
+            // the title and «Quitar fecha» can put it back (S4/S5).
+            val trimmedTitle = title.trim()
+            val parsed = NaturalDateParser.parse(trimmedTitle, System.currentTimeMillis())
+            val effectiveTitle = parsed.title.ifBlank { trimmedTitle }
             // S5 (#991): quick add inherits a planned date — today from «Hoy»,
             // tomorrow from «Próximas». No deadline is invented anymore.
-            val plannedDate = when (currentFilter) {
+            val plannedDate = parsed.plannedDate ?: when (currentFilter) {
                 TaskFilter.Today -> TaskPlanning.plannedDay()
                 TaskFilter.Upcoming -> TaskPlanning.plannedDay(
                     Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, 1) }.timeInMillis
                 )
                 else -> null
             }
+            val newSortOrder =
+                (taskRepository.getAllTasks().first().maxOfOrNull { it.sortOrder } ?: -1) + 1
 
             taskRepository.addTask(
                 Task(
-                    title = title.trim().take(MAX_TASK_TITLE_LENGTH),
+                    title = effectiveTitle.take(MAX_TASK_TITLE_LENGTH),
                     scheduledForToday = currentFilter == TaskFilter.Today,
                     plannedDate = plannedDate,
                     dueDate = null,
                     // max+1 over the repository snapshot: tasks.size collides with an
                     // existing sort order when the list contains non-contiguous orders.
-                    sortOrder = (taskRepository.getAllTasks().first().maxOfOrNull { it.sortOrder } ?: -1) + 1,
+                    sortOrder = newSortOrder,
                 ),
             ).onSuccess {
-                if (currentFilter == TaskFilter.Completed) {
+                if (parsed.plannedDate != null) {
+                    // The undo snackbar replaces the plain «añadida» toast for
+                    // this add — one transient surface, not two.
+                    val created = taskRepository.getAllTasks().first()
+                        .firstOrNull { it.sortOrder == newSortOrder }
+                    if (created != null) {
+                        parsedDateUndoExpiryJob?.cancel()
+                        _parsedDateUndoEvent.value = ParsedDateUndoState(
+                            taskId = created.id,
+                            title = trimmedTitle,
+                            dateText = SimpleDateFormat("EEE d", Locale.getDefault())
+                                .format(Date(parsed.plannedDate)),
+                        )
+                        parsedDateUndoExpiryJob = launch {
+                            delay(UNDO_SNACKBAR_DURATION_MS)
+                            _parsedDateUndoEvent.value = null
+                        }
+                    }
+                } else if (currentFilter == TaskFilter.Completed) {
                     _successMessage.value = R.string.msg_task_added_to_inbox
                 } else {
                     _successMessage.value = R.string.msg_task_added
@@ -325,6 +362,33 @@ class TasksViewModel @Inject constructor(
         _undoEvent.value = null
     }
 
+    /// «Quitar fecha» for the last quick-add that recognized a natural
+    /// language date (#994 S4): clears the plan and puts the recognized
+    /// text back into the title.
+    fun undoParsedDate() {
+        val state = _parsedDateUndoEvent.value ?: return
+        parsedDateUndoExpiryJob?.cancel()
+        _parsedDateUndoEvent.value = null
+        viewModelScope.launch {
+            val task = taskRepository.getAllTasks().first()
+                .firstOrNull { it.id == state.taskId } ?: return@launch
+            taskRepository.updateTask(
+                task.copy(
+                    title = state.title.take(MAX_TASK_TITLE_LENGTH),
+                    plannedDate = null,
+                    scheduledForToday = false,
+                )
+            ).onFailure {
+                _errorEvent.emit(R.string.msg_task_update_failed)
+            }
+        }
+    }
+
+    fun dismissParsedDateUndo() {
+        parsedDateUndoExpiryJob?.cancel()
+        _parsedDateUndoEvent.value = null
+    }
+
     fun reorderTasks(fromIndex: Int, toIndex: Int) {
         if (fromIndex == toIndex) return
         val currentTasks = uiState.value.filteredTasks.toMutableList()
@@ -351,4 +415,13 @@ class TasksViewModel @Inject constructor(
 
 data class UndoState(
     val task: Task,
+)
+
+/// Quick-add whose natural-language date can be undone (#994 S4).
+data class ParsedDateUndoState(
+    val taskId: String,
+    /// The exact text the parser removed — restored on «Quitar fecha».
+    val title: String,
+    /// Pre-formatted planned day for the snackbar message.
+    val dateText: String,
 )
