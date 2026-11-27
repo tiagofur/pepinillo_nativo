@@ -1064,6 +1064,9 @@ class SyncEngine @Inject constructor(
             recurrenceRule = recurrenceRule,
             recurringTemplateID = recurringTemplateId,
             dueDate = dueDate?.let { parseRfc3339(it, fallback = 0L).takeIf { d -> d > 0L } },
+            // Issue #991 PR-D (juez r1): the plan decodes off the wire like
+            // dueDate — without this, pulled rows lose the plan server-side.
+            plannedDate = plannedDate?.let { parseRfc3339(it, fallback = 0L).takeIf { d -> d > 0L } },
             scheduledForToday = scheduledForToday,
             sortOrder = sortOrder,
             estimatedPomodoros = estimatedPomodoros,

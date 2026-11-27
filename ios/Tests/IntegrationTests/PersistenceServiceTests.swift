@@ -668,6 +668,41 @@ struct PersistenceServiceTests {
         #expect(legacyDueToday.scheduledForToday == true, "legacy due-today keeps its pin")
     }
 
+    // MARK: - Issue #991 PR-D (juez r1): the pull INSERT branch carries plans
+
+    @MainActor
+    @Test("upsertTaskFromServer insert branch lands the server planned date")
+    func upsertTaskFromServerInsertsPlannedDate() throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("pepinillo-planning-insert-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let storeURL = dir.appendingPathComponent("test.sqlite")
+
+        let schema = Schema(versionedSchema: SchemaV7.self)
+        let config = ModelConfiguration(schema: schema, url: storeURL, cloudKitDatabase: .none)
+        let container = try ModelContainer(for: schema, configurations: [config])
+        let context = container.mainContext
+        let service = SwiftDataPersistenceService(context: context)
+
+        let iso = ISO8601DateFormatter()
+        let planned = iso.date(from: "2026-11-28T12:00:00Z")!
+        let dto = TaskSyncDTO(
+            syncId: "pull-insert-991",
+            title: "Pulled with plan",
+            dueDate: nil,
+            scheduledForToday: false,
+            plannedDate: iso.string(from: planned),
+            isFinished: false
+        )
+        try service.upsertTaskFromServer(dto)
+
+        let fetched = try context.fetch(FetchDescriptor<TaskItem>())
+        let task = try #require(fetched.first { $0.title == "Pulled with plan" })
+        #expect(task.plannedDate != nil, "the insert branch must land the server plan (juez r1)")
+        #expect(Calendar.current.isDate(task.plannedDate!, inSameDayAs: planned))
+    }
+
     // MARK: - AchievementRecord persistence (S1-S2)
 
     @Test("AchievementRecord persists unlock state across contexts")
