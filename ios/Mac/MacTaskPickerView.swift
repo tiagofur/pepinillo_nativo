@@ -57,18 +57,9 @@ struct MacTaskPickerView: View {
             .focused($isSearchFocused)
             .padding(.horizontal, 16)
             .padding(.bottom, 10)
-            .onSubmit {
-                // Spotlight flow: Return links the first match. The decision
-                // (and its zero-match no-op) is the shared, tested function.
-                if case .link = QuickOpenKeyDecision.decide(
-                    keyCode: QuickOpenKeyDecision.returnKeyCode,
-                    hasCommand: false,
-                    hasMatches: !filteredTasks.isEmpty
-                ), let first = filteredTasks.first {
-                    onSelectTask(first.id, first.title, first.energyLevel.icon)
-                    dismiss()
-                }
-            }
+            // Return is handled exclusively by the key monitor below — it
+            // sees every Return while the picker is up, so a submit handler
+            // here would be dead code.
             .onAppear {
                 isSearchFocused = true
                 // Issues #993 (S3) / #1021 (S1–S2): ⌘↩ links the first match
@@ -77,6 +68,21 @@ struct MacTaskPickerView: View {
                 // through to the Start/Pause menu item (⌘↩). Local monitor:
                 // intercepts BEFORE that menu equivalent can fire.
                 monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+                    // IME composition (japanese/chinese/korean): Return
+                    // confirms the marked text and is never ours to take
+                    // (dual review of #1035 — the field editor owns it).
+                    if let client = NSApp.keyWindow?.firstResponder as? NSTextInputClient,
+                       client.hasMarkedText() {
+                        return event
+                    }
+                    // Key auto-repeat of our keys: the first press already
+                    // acted; a repeat must not re-link (and one arriving
+                    // after dismissal would otherwise reach Start/Pause).
+                    if event.isARepeat,
+                       event.keyCode == QuickOpenKeyDecision.returnKeyCode
+                        || event.keyCode == QuickOpenKeyDecision.keypadEnterKeyCode {
+                        return nil
+                    }
                     // Only our keys: any modifier, or Return/keypad Enter.
                     guard event.modifierFlags.contains(.command)
                             || event.keyCode == QuickOpenKeyDecision.returnKeyCode
@@ -103,8 +109,10 @@ struct MacTaskPickerView: View {
                         if let first = filteredTasks.first {
                             onSelectTask(first.id, first.title, first.energyLevel.icon)
                             dismiss()
+                            // Inside the success path: a broken hasMatches
+                            // invariant must never start a bare session.
+                            onLinkAndStart?()
                         }
-                        onLinkAndStart?()
                         return nil
                     }
                 }
