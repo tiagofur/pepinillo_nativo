@@ -819,44 +819,215 @@ struct MacPlanView: View {
         }
     }
 
-}
+    @State private var gapsSheetGap: FocusGap?
 
-/// #992 S3 (Mac chrome): pick one of today's open tasks for the gap.
-private struct MacGapTaskPickerSheet: View {
-    let gap: FocusGap
-    let tasks: [TaskListFeature.TaskItemState]
-    let onPick: (TaskListFeature.TaskItemState) -> Void
-    @Environment(\.dismiss) private var dismiss
 
-    var body: some View {
-        NavigationStack {
-            List(tasks) { task in
-                Button {
-                    onPick(task)
-                } label: {
-                    Text(task.title)
-                        .font(.subheadline)
-                        .foregroundStyle(.primary)
-                        .lineLimit(1)
-                }
-            }
-            .navigationTitle(String(
-                localized: "Choose a task for your \(gap.durationMinutes)-minute block"
-            ))
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button(String(localized: "Cancel")) { dismiss() }
-                }
-            }
-            .overlay {
-                if tasks.isEmpty {
-                    ContentUnavailableView(
-                        String(localized: "No open tasks for today"),
-                        systemImage: "checkmark.circle"
-                    )
-                }
+    private func undoBanner(
+        systemImage: String,
+        message: String,
+        actionLabel: String = String(localized: "Undo"),
+        action: @escaping () -> Void
+    ) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: systemImage)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .accessibilityHidden(true)
+
+            Text(message)
+                .font(.subheadline)
+                .lineLimit(1)
+
+            Spacer()
+
+            Button(actionLabel, action: action)
+                .font(.subheadline.weight(.semibold))
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+        .background {
+            if reduceTransparency {
+                RoundedRectangle(cornerRadius: GlassCornerRadius.tile, style: .continuous)
+                    .fill(Color.pepinilloSecondarySystemGroupedBackground)
+            } else {
+                RoundedRectangle(cornerRadius: GlassCornerRadius.tile, style: .continuous)
+                    .fill(.regularMaterial)
             }
         }
-        .frame(minWidth: 420, minHeight: 320)
+        .shadow(color: .black.opacity(0.12), radius: 8, y: 4)
+        .padding(12)
+    }
+
+    // MARK: - Derived data
+
+    // Issue #990 (S3): candidates computed on the unfiltered Today set — once
+    // the suggestion filter is active, filteredTasks is already narrowed.
+    private var unfilteredToday: IdentifiedArrayOf<TaskListFeature.TaskItemState> {
+        TaskListFeature.planFilteredTasks(store.tasks, filter: .today)
+    }
+
+    private var filteredTasks: IdentifiedArrayOf<TaskListFeature.TaskItemState> {
+        let base: IdentifiedArrayOf<TaskListFeature.TaskItemState>
+        switch filter {
+        case .all:
+            base = IdentifiedArrayOf(uniqueElements: store.tasks.filter {
+                !$0.isRecurringTemplate && !$0.isCompleted
+            })
+        case .today:
+            base = TaskListFeature.planFilteredTasks(store.tasks, filter: .today)
+        case .upcoming:
+            base = TaskListFeature.planFilteredTasks(store.tasks, filter: .upcoming)
+        case .completed:
+            base = TaskListFeature.planFilteredTasks(store.tasks, filter: .completed)
+        }
+
+        // Issue #990 (S4/P0): the energy filter applies to the Mac table too
+        // (grouped mode consumes it via EnergyGroupedTaskList's visibleLevels).
+        let energy = store.energyFilter
+        let energyBase: IdentifiedArrayOf<TaskListFeature.TaskItemState> = energy == .all
+            ? base
+            : IdentifiedArrayOf(uniqueElements: base.filter {
+                $0.energyLevel.rawValue == energy.rawValue
+            })
+
+        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let matching: IdentifiedArrayOf<TaskListFeature.TaskItemState>
+        if query.isEmpty {
+            matching = energyBase
+        } else {
+            matching = IdentifiedArrayOf(uniqueElements: energyBase.filter { task in
+                task.title.localizedCaseInsensitiveContains(query)
+                    || (task.notes?.localizedCaseInsensitiveContains(query) ?? false)
+            })
+        }
+
+        return TaskListFeature.sortedPlanTasks(matching, sortOrder: store.sortOrder)
+    }
+
+    // MARK: - Drag reorder
+
+    /// Dropping plain text from any app (Notes, Safari, Mail…) creates a task —
+    /// a Mac gesture with no iOS equivalent. Row-level drops stay reorder-only:
+    /// their payloads are UUID strings, which are filtered out here.
+    private func createTaskFromDroppedText(_ items: [String]) -> Bool {
+        let title = items.first?
+            .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        guard !title.isEmpty, UUID(uuidString: title) == nil else { return false }
+        store.send(.newTaskTitleChanged(String(title.prefix(200))))
+        store.send(.addTaskTapped)
+        return true
+    }
+
+    private func reorder(
+        _ items: [String],
+        at insertionIndex: Int,
+        tasks: IdentifiedArrayOf<TaskListFeature.TaskItemState>
+    ) {
+        let movingIDs = items.compactMap(UUID.init(uuidString:))
+        guard !movingIDs.isEmpty else { return }
+
+        let movingSet = Set(movingIDs)
+        let source = tasks.map(\.id)
+        let moving = source.filter { movingSet.contains($0) }
+        guard !moving.isEmpty else { return }
+
+        let boundedIndex = min(max(insertionIndex, 0), tasks.count)
+        let insertionOffset = tasks[..<boundedIndex]
+            .filter { !movingSet.contains($0.id) }
+            .count
+
+        var reordered = source.filter { !movingSet.contains($0) }
+        reordered.insert(contentsOf: moving, at: min(insertionOffset, reordered.count))
+        store.send(.planTasksReordered(reordered))
+    }
+}
+
+// MARK: - Inline Title Cell
+
+private struct MacTaskTitleCell: View {
+    let store: StoreOf<TaskListFeature>
+    let taskID: UUID
+    var isSelected: Bool = false
+    @Binding var editingTaskID: UUID?
+    @Binding var editingTitle: String
+    let onCommit: (UUID) -> Void
+    let onCancel: () -> Void
+    var onOpenInspector: () -> Void = {}
+
+    @FocusState private var isFocused: Bool
+    @State private var isHovering = false
+
+    /// Hover-never-only (touch-on-mac guide R1): the inspector affordance must
+    /// survive without a pointer. Selection is the touch path — tap selects the
+    /// row, the ⓘ appears, tap again opens the inspector.
+    private var showsInfoButton: Bool { isHovering || isSelected }
+
+    var body: some View {
+        if let task = store.tasks[id: taskID] {
+            Group {
+                if editingTaskID == taskID {
+                    TextField(String(localized: "Title"), text: $editingTitle)
+                        .textFieldStyle(.plain)
+                        .font(.body)
+                        .focused($isFocused)
+                        .onAppear { isFocused = true }
+                        .onSubmit { onCommit(taskID) }
+                        .onExitCommand { onCancel() }
+                        .onChange(of: isFocused) { _, focused in
+                            if !focused, editingTaskID == taskID {
+                                onCommit(taskID)
+                            }
+                        }
+                        .accessibilityLabel(String(localized: "Title"))
+                } else {
+                    HStack(spacing: 6) {
+                        Text(task.title)
+                            .font(.body)
+                            .strikethrough(task.isCompleted)
+                            .foregroundStyle(task.isCompleted ? Color.secondary : Color.primary)
+                            .lineLimit(1)
+
+                        Spacer(minLength: 8)
+
+                        // Reminders-style trailing ⓘ: appears on hover or row
+                        // selection as the row's visible signal that details
+                        // live in the inspector (double-click and ⌘⌥I remain
+                        // the power paths).
+                        Button(action: onOpenInspector) {
+                            Image(systemName: "info.circle")
+                                .font(.callout)
+                                .foregroundStyle(.secondary)
+                                .frame(minWidth: TouchTargets.macMinimum, minHeight: 30)
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .opacity(showsInfoButton ? 1 : 0)
+                        .animation(.easeOut(duration: 0.15), value: showsInfoButton)
+                        // Hidden must also be un-clickable: at opacity(0) the
+                        // button otherwise leaves an invisible 22pt hot zone
+                        // at the trailing edge of the cell.
+                        .allowsHitTesting(showsInfoButton)
+                        .help(String(localized: "Show Details (⌘⌥I)"))
+                        .accessibilityLabel(String(localized: "Show Details"))
+                    }
+                    .onHover { hovering in
+                        isHovering = hovering
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity, minHeight: 30, alignment: .leading)
+        }
+    }
+}
+
+private struct MacTaskRowObserver<Content: View>: View {
+    let store: StoreOf<TaskListFeature>
+    let taskID: UUID
+    let content: (TaskListFeature.TaskItemState) -> Content
+
+    var body: some View {
+        if let task = store.tasks[id: taskID] {
+            content(task)
+        }
     }
 }
