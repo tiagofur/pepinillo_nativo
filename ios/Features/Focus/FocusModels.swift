@@ -402,3 +402,40 @@ public struct FocusSessionResult: Sendable, Equatable {
     }
     #endif
 }
+
+// MARK: - Quick Open (⌘K) keyboard decision
+
+/// Issue #1021: what the Mac Quick Open picker does with a key press.
+/// Pure so `PepinilloTests` can pin it; the AppKit key monitor routes every
+/// Return/keypad-Enter press through `decide`.
+enum QuickOpenKeyDecision: Equatable {
+    /// kVK_Return
+    static let returnKeyCode = 36
+    /// kVK_ANSI_KeypadEnter
+    static let keypadEnterKeyCode = 76
+
+    /// Not one of the picker's keys — let AppKit dispatch it.
+    case passThrough
+    /// One of the picker's keys, but nothing to link — swallow it so it never
+    /// reaches the Start/Pause menu item (⌘↩), which would start a bare
+    /// session (#1021 S1).
+    case consume
+    /// Link the first match and close.
+    case link
+    /// Link the first match, close, and start the session if idle.
+    case linkAndStart
+
+    static func decide(
+        keyCode: Int,
+        hasCommand: Bool,
+        hasMatches: Bool
+    ) -> QuickOpenKeyDecision {
+        guard keyCode == returnKeyCode || keyCode == keypadEnterKeyCode else {
+            return .passThrough
+        }
+        if hasCommand {
+            return hasMatches ? .linkAndStart : .consume
+        }
+        return hasMatches ? .link : .consume
+    }
+}
