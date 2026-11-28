@@ -66,7 +66,6 @@ struct EnergyGroupedTaskList: View {
     // Sections order: deep first (highest cognitive demand), then shallow, then admin
     private let sectionOrder: [EnergyLevel] = [.deep, .shallow, .admin]
 
-
     private var visibleLevels: [EnergyLevel] {
         switch store.energyFilter {
         case .all:     return sectionOrder

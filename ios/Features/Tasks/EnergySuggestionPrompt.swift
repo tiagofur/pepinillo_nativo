@@ -4,8 +4,8 @@
 // Issue #990: the hour-based energy suggestion promoted from an informative
 // banner to an actionable filter (S2–S4). Shared by Plan on iOS and macOS.
 //
-// UX brief (issue comment): same anatomy as the existing EnergySuggestionBanner
-// (rounded 12, level tint, icon + "X · suggested now" + reason); tap anywhere
+// UX brief (issue comment): anatomy of the retired informational banner it
+// superseded (rounded 12, level tint, icon + "X · suggested now" + reason); tap
 // filters the list to that level; while active the same surface becomes the
 // active-filter bar ("Filtered by X · Show all ✕"); hidden when the level has
 // no candidate tasks in Today (S3); dismiss (✕) only hides the suggestion for
