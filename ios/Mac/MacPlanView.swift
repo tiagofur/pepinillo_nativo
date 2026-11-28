@@ -863,7 +863,7 @@ struct MacPlanView: View {
     // Issue #990 (S3): candidates computed on the unfiltered Today set — once
     // the suggestion filter is active, filteredTasks is already narrowed.
     private var unfilteredToday: IdentifiedArrayOf<TaskListFeature.TaskItemState> {
-        TaskListFeature.planFilteredTasks(store.tasks, filter: .today)
+        TaskListFeature.todayUnfilteredTasks(store.tasks)
     }
 
     private var filteredTasks: IdentifiedArrayOf<TaskListFeature.TaskItemState> {

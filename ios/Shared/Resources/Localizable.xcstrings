@@ -3959,6 +3959,73 @@
         }
       }
     },
+    "Filter by %@" : {
+      "comment" : "VoiceOver label for the actionable energy suggestion (#990 S7).",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Filtrar por %@"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Filtrar por %@"
+          }
+        }
+      }
+    },
+    "Show all" : {
+      "comment" : "Clears the energy filter and restores the full Today list (#990 S4).",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mostrar todo"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mostrar tudo"
+          }
+        }
+      }
+    },
+    "Show all levels" : {
+      "comment" : "VoiceOver label for the energy filter's clear action.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mostrar todos los niveles"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mostrar todos os níveis"
+          }
+        }
+      }
+    },
+    " · showing only this level" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : " · mostrando solo este nivel"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : " · mostrando apenas este nível"
+          }
+        }
+      }
+    },
     "Add your birth date manually in Edit Profile" : {
       "comment" : "A label that describes how to add a user's birth date manually.",
       "extractionState" : "stale",
@@ -4113,13 +4180,13 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Administrador"
+            "value" : "Admin"
           }
         },
         "pt" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Administrador"
+            "value" : "Admin"
           }
         }
       }

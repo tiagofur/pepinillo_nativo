@@ -135,4 +135,14 @@ extension TaskListFeature {
             }
         }
     }
+
+    /// The unfiltered Today set the energy suggestion's S3 candidate check
+    /// reads — computed before any energy or search narrowing (#990). One
+    /// function for PlanTaskList (iOS) and MacPlanView (macOS) so both
+    /// platforms decide "the suggested level has candidates" identically.
+    static func todayUnfilteredTasks(
+        _ tasks: IdentifiedArrayOf<TaskItemState>
+    ) -> IdentifiedArrayOf<TaskItemState> {
+        planFilteredTasks(tasks, filter: .today)
+    }
 }
