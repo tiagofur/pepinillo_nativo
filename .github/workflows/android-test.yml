@@ -5,11 +5,17 @@ on:
     branches: [main]
     paths:
       - 'android/**'
+      # Shared case tables read at runtime by the unit suites: a fixture-only
+      # change must run the suites that assert against it.
+      - 'contracts/fixtures/**'
       - '.github/workflows/android-test.yml'
   pull_request:
     branches: [main]
     paths:
       - 'android/**'
+      # Shared case tables read at runtime by the unit suites: a fixture-only
+      # change must run the suites that assert against it.
+      - 'contracts/fixtures/**'
       - '.github/workflows/android-test.yml'
   workflow_dispatch:
 

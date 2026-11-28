@@ -59,10 +59,24 @@ cd ios && xcodegen generate
 xcodebuild test -scheme "Pepinillo Dev" \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro'
 
-# Build macOS (sin test target)
-xcodebuild build -scheme "PepinilloMac Dev" -destination 'platform=macOS'
+# Build macOS (sin test target). El scheme Dev compila ActivityKit en macOS
+# (MAC_LIVE_ACTIVITIES, solo en Debug) y exige el SDK 27.3: con Xcode 27.2
+# estable, apunta DEVELOPER_DIR a Xcode-beta. DerivedData propio, y bórralo.
+cd ios && xcodegen generate
+DEVELOPER_DIR=/Applications/Xcode-beta.app/Contents/Developer \
+xcodebuild -project Pepinillo.xcodeproj -scheme "PepinilloMac Dev" -configuration Debug \
+  -destination 'platform=macOS' -derivedDataPath /tmp/pep-<tema>-dd -skipMacroValidation \
+  CODE_SIGNING_ALLOWED=NO build
 ```
 
+- **Un diff que toca archivos del target Mac no se entrega sin compilarlos**
+  (`ios/Mac/**`, `ios/App/AppFeature.swift`, `ios/App/MacCommands.swift`,
+  `ios/Features/**`, `ios/Domain/**`, `ios/Shared/**`). Pega la salida de la
+  compilación en la evidencia. `swiftc -parse` no basta: solo revisa sintaxis
+  y no detecta un miembro borrado — así `main` quedó roto en #1019. «Compila
+  solo en Xcode» no es un waiver válido (`docs/verification.md` §2.6).
+- **En una extracción, compara el inventario de declaraciones** del archivo de
+  origen antes y después: lo único que puede desaparecer es lo que se movió.
 - Verifica siempre las transiciones de estado del reducer y sus efectos con
   `TestStore`.
 - Suites que tocan `AppGroupDefaults` se marcan `.serialized`
