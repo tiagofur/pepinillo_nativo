@@ -186,8 +186,7 @@ struct PlanTaskList: View {
     // S3 candidates are computed on the UNFILTERED Today set — once the
     // suggestion filter is active, filteredTasks is already narrowed.
     private var todayUnfiltered: IdentifiedArrayOf<TaskListFeature.TaskItemState> {
-        let filtered = TaskListFeature.planFilteredTasks(store.tasks, filter: .today)
-        return TaskListFeature.sortedPlanTasks(filtered, sortOrder: store.sortOrder)
+        TaskListFeature.todayUnfilteredTasks(store.tasks)
     }
 
     @ViewBuilder
