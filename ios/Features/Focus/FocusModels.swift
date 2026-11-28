@@ -406,8 +406,8 @@ public struct FocusSessionResult: Sendable, Equatable {
 // MARK: - Quick Open (⌘K) keyboard decision
 
 /// Issue #1021: what the Mac Quick Open picker does with a key press.
-/// Pure so `PepinilloTests` can pin it; both the AppKit key monitor and the
-/// search field's submit route through `decide`.
+/// Pure so `PepinilloTests` can pin it; the AppKit key monitor routes every
+/// Return/keypad-Enter press through `decide`.
 enum QuickOpenKeyDecision: Equatable {
     /// kVK_Return
     static let returnKeyCode = 36

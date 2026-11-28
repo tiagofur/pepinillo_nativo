@@ -48,7 +48,7 @@ struct QuickOpenKeyDecisionTests {
         )
     }
 
-    // MARK: Plain Return (no command) — the TextField path
+    // MARK: Plain Return (no command)
 
     @Test func plainReturnWithMatchesLinks() {
         #expect(
