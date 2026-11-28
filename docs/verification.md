@@ -94,13 +94,18 @@ aprobación humana.
 5. **Evidencia en el PR**: comando exacto + resultado observado (la plantilla
    exige secciones `## Verification Evidence` y valida `check_pr_metadata.py`).
 6. **Un diff que toca archivos del target Mac no se entrega sin compilarlos.**
-   Entran en `PepinilloMac` (`ios/project.yml`): `ios/Mac/**`,
-   `ios/App/AppFeature.swift`, `ios/App/MacCommands.swift`, `ios/Features/**`,
-   `ios/Domain/**` e `ios/Shared/**`. La evidencia es la salida de la
-   compilación (`BUILD SUCCEEDED`). `swiftc -parse` solo revisa sintaxis y no
-   detecta un miembro borrado: así llegó `main` roto en #1019. «Compila solo en
-   Xcode» no es un waiver válido; no figura en la lista cerrada de
-   `CHECKPOINTS.md` y el comando de arriba demuestra que sí compila.
+   El inventario autoritativo es el bloque `sources:` del target `PepinilloMac`
+   en `ios/project.yml` — incluye, entre otros: `ios/Mac/**`,
+   `App/AppFeature.swift`, `App/MacCommands.swift`, `App/DemoDataSeeder.swift`,
+   `Features/**` (con las exclusiones declaradas ahí),
+   `PepinilloIntents/**` salvo `FocusFilterIntent.swift`,
+   `PepinilloLiveActivity/**`, `Domain/**` y `Shared/**`. Ante la duda, mira
+   `project.yml`, no esta lista. La evidencia es la salida de la compilación
+   (`BUILD SUCCEEDED`). `swiftc -parse` solo revisa sintaxis y no detecta un
+   miembro borrado: así llegó `main` roto en #1019. «Compila solo en Xcode»
+   no es un waiver válido: `CHECKPOINTS.md` admite solo compuertas ejecutables
+   (scripts, tests y CI — no promesas en prosa), y el comando de arriba
+   demuestra que sí compila.
 7. **Una extracción se verifica con inventario de declaraciones**, antes y
    después: lo único que puede desaparecer del archivo de origen es lo que se
    movió.

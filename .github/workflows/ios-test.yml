@@ -332,8 +332,9 @@ jobs:
       - name: Print Xcode version
         run: xcodebuild -version
 
-      - name: Cache Swift Package Manager
-        uses: actions/cache@v4
+      - name: Restore Swift Package Manager cache
+        id: spm
+        uses: actions/cache/restore@v4
         with:
           path: |
             ${{ env.CLONED_SOURCE_PACKAGES_PATH }}
@@ -366,6 +367,7 @@ jobs:
             -derivedDataPath "$RUNNER_TEMP/DerivedData" \
             -clonedSourcePackagesDirPath "$CLONED_SOURCE_PACKAGES_PATH" \
             -skipMacroValidation \
+            -skipPackagePluginValidation \
             CODE_SIGNING_ALLOWED=NO \
             COMPILER_INDEX_STORE_ENABLE=NO \
             ARCHS=arm64 \
@@ -373,3 +375,12 @@ jobs:
             SWIFT_OPTIMIZATION_LEVEL=-Onone \
             GCC_OPTIMIZATION_LEVEL=0 \
             build
+      - name: Save Swift Package Manager cache
+        if: github.event_name == 'push'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            ${{ env.CLONED_SOURCE_PACKAGES_PATH }}
+            ~/Library/Caches/org.swift.swiftpm
+          key: ${{ steps.spm.outputs.cache-primary-key }}
+

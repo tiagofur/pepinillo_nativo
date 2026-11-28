@@ -69,12 +69,13 @@ xcodebuild -project Pepinillo.xcodeproj -scheme "PepinilloMac Dev" -configuratio
   CODE_SIGNING_ALLOWED=NO build
 ```
 
-- **Un diff que toca archivos del target Mac no se entrega sin compilarlos**
-  (`ios/Mac/**`, `ios/App/AppFeature.swift`, `ios/App/MacCommands.swift`,
-  `ios/Features/**`, `ios/Domain/**`, `ios/Shared/**`). Pega la salida de la
-  compilación en la evidencia. `swiftc -parse` no basta: solo revisa sintaxis
-  y no detecta un miembro borrado — así `main` quedó roto en #1019. «Compila
-  solo en Xcode» no es un waiver válido (`docs/verification.md` §2.6).
+- **Un diff que toca archivos del target Mac no se entrega sin compilarlos.**
+  El inventario autoritativo es el bloque `sources:` del target `PepinilloMac`
+  en `ios/project.yml` (no una lista a mano: incluye además de lo obvio
+  `App/DemoDataSeeder.swift`, `PepinilloIntents/**` y `PepinilloLiveActivity/**`).
+  Pega la salida de la compilación en la evidencia. `swiftc -parse` no basta —
+  así `main` quedó roto en #1019. «Compila solo en Xcode» no es un waiver
+  (`docs/verification.md` §2.6).
 - **En una extracción, compara el inventario de declaraciones** del archivo de
   origen antes y después: lo único que puede desaparecer es lo que se movió.
 - Verifica siempre las transiciones de estado del reducer y sus efectos con
