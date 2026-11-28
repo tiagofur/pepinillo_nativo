@@ -13,76 +13,11 @@
 //   • The active EnergyFilter narrows which sections are rendered:
 //     if filter != .all, only the matching section is shown.
 //   • Empty sections are hidden entirely to avoid visual clutter.
-//   • The time-of-day suggestion banner appears at the top of the list
-//     when grouping is active. It is dismissible and resets on cold launch.
+//   • The actionable energy suggestion lives ABOVE the list (PlanTaskList);
+//     this view renders sections only — no suggestion surface here (#1022 S2).
 
 import SwiftUI
 import ComposableArchitecture
-
-// MARK: - Energy Suggestion Banner
-
-struct EnergySuggestionBanner: View {
-    let suggestedLevel: EnergyLevel
-    let hour: Int
-    let onDismiss: () -> Void
-
-    var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: suggestedLevel.icon)
-                .font(.title3)
-                .foregroundStyle(suggestedLevel.color)
-                .frame(width: 28)
-
-            VStack(alignment: .leading, spacing: 2) {
-                (Text(suggestedLevel.displayName)
-                    .foregroundStyle(suggestedLevel.color)
-                + Text(String(localized: " · suggested now"))
-                    .foregroundStyle(.secondary))
-                    .font(.subheadline.weight(.semibold))
-
-                Text(EnergySuggestion.suggestionReason(forHour: hour))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(2)
-            }
-
-            Spacer(minLength: 0)
-
-            Button {
-                withAnimation(.easeOut(duration: 0.2)) {
-                    onDismiss()
-                }
-                HapticManager.impact(.light)
-            } label: {
-                Image(systemName: "xmark")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
-                    .padding(6)
-                    .background(.quaternary, in: Circle())
-                    .frame(minWidth: 44, minHeight: 44)  // HIG 44pt minimum (issue #90)
-                    .contentShape(Circle())
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel(String(localized: "Dismiss energy suggestion"))
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 11)
-        .background(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(suggestedLevel.color.opacity(0.08))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .stroke(suggestedLevel.color.opacity(0.22), lineWidth: 1)
-                )
-        )
-        .padding(.horizontal, 12)
-        .padding(.top, 8)
-        .transition(.asymmetric(
-            insertion: .move(edge: .top).combined(with: .opacity),
-            removal: .opacity
-        ))
-    }
-}
 
 // MARK: - Energy Section Header
 
@@ -131,13 +66,6 @@ struct EnergyGroupedTaskList: View {
     // Sections order: deep first (highest cognitive demand), then shallow, then admin
     private let sectionOrder: [EnergyLevel] = [.deep, .shallow, .admin]
 
-    private var currentHour: Int {
-        Calendar.current.component(.hour, from: currentDate)
-    }
-
-    private var suggestedLevel: EnergyLevel {
-        EnergySuggestion.suggestedLevel(forHour: currentHour)
-    }
 
     private var visibleLevels: [EnergyLevel] {
         switch store.energyFilter {
@@ -150,20 +78,6 @@ struct EnergyGroupedTaskList: View {
 
     var body: some View {
         List {
-            // Suggestion banner as a List item so it scrolls with content
-            // Issue #990 round 2: the actionable prompt above the list owns
-            // the suggestion surface while a filter is active — the legacy
-            // informational banner would contradict it.
-            if !store.energySuggestionDismissed && store.energyFilter == .all {
-                EnergySuggestionBanner(
-                    suggestedLevel: suggestedLevel,
-                    hour: currentHour,
-                    onDismiss: { store.send(.energySuggestionDismissed) }
-                )
-                .listRowInsets(EdgeInsets())
-                .listRowBackground(Color.clear)
-                .listRowSeparator(.hidden)
-            }
 
             ForEach(visibleLevels, id: \.self) { level in
                 let sectionTasks = TaskListFeature.sortedPlanTasks(
@@ -237,7 +151,6 @@ struct EnergyGroupedTaskList: View {
         .scrollContentBackground(.hidden)
         .background(Color.clear)
         .animation(.smooth(duration: 0.3), value: filteredTasks.map(\.id))
-        .animation(.smooth(duration: 0.2), value: store.energySuggestionDismissed)
         .refreshable { store.send(.refresh) }
         .sheet(item: $planPickDateTarget) { targetID in
             PlanDatePickerSheet(draft: $planPickDateDraft) { confirmed in
