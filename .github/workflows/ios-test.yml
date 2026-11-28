@@ -5,11 +5,17 @@ on:
     branches: [main]
     paths:
       - 'ios/**'
+      # Shared case tables decoded by the iOS suites: a fixture-only change
+      # must run the suites that assert against it.
+      - 'contracts/fixtures/**'
       - '.github/workflows/ios-test.yml'
   pull_request:
     branches: [main]
     paths:
       - 'ios/**'
+      # Shared case tables decoded by the iOS suites: a fixture-only change
+      # must run the suites that assert against it.
+      - 'contracts/fixtures/**'
       - '.github/workflows/ios-test.yml'
   workflow_dispatch:
     inputs:
@@ -293,3 +299,88 @@ jobs:
         with:
           path: ios/DerivedData
           key: ${{ steps.dd.outputs.cache-primary-key }}
+
+  # macOS compile gate (#1020). Restores the `macos-build` job that #909
+  # retired until GitHub shipped a macOS 27 SDK image; `xcode-27` is that
+  # image (Apple Silicon, Xcode 27.x). The Mac target has no test target and
+  # shares none with iOS, so its only automated check is that it compiles —
+  # which is exactly the check #1019 slipped through: a PR deleted 211 lines
+  # of Mac-only code and every other gate stayed green.
+  # Staging, not Dev: the Dev scheme compiles ActivityKit on macOS
+  # (MAC_LIVE_ACTIVITIES), which needs the 27.3 SDK GitHub does not ship yet.
+  # Staging type-checks every Mac source without it.
+  # No DerivedData cache on purpose: a PR-side cache evicts main's warm
+  # entries (issue #921) and the cold build is the price of the gate.
+  macos-build:
+    runs-on: xcode-27
+    timeout-minutes: 45
+
+    defaults:
+      run:
+        working-directory: ios
+
+    env:
+      CLONED_SOURCE_PACKAGES_PATH: ${{ github.workspace }}/.spm-cache
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Print Xcode version
+        run: xcodebuild -version
+
+      - name: Restore Swift Package Manager cache
+        id: spm
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ${{ env.CLONED_SOURCE_PACKAGES_PATH }}
+            ~/Library/Caches/org.swift.swiftpm
+          key: ${{ runner.os }}-xcode27-spm-${{ hashFiles('ios/project.yml', 'ios/**/Package.resolved') }}
+          restore-keys: |
+            ${{ runner.os }}-xcode27-spm-
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Build PepinilloMac (Staging, unsigned)
+        # The gate verifies compilation (type-check of every Swift source),
+        # not optimization:
+        # - ARCHS=arm64: the target ships universal; one slice type-checks
+        #   all sources and halves build work/memory.
+        # - SWIFT_OPTIMIZATION_LEVEL=-Onone + GCC_OPTIMIZATION_LEVEL=0:
+        #   whole-module optimized builds of this target died silently on
+        #   GitHub runners (stalled 8-19 min, exit 65, no error lines — the
+        #   OOM signature). -Onone keeps each frontend's memory small.
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -scheme "PepinilloMac Staging" \
+            -destination 'platform=macOS' \
+            -configuration Staging \
+            -derivedDataPath "$RUNNER_TEMP/DerivedData" \
+            -clonedSourcePackagesDirPath "$CLONED_SOURCE_PACKAGES_PATH" \
+            -skipMacroValidation \
+            -skipPackagePluginValidation \
+            CODE_SIGNING_ALLOWED=NO \
+            COMPILER_INDEX_STORE_ENABLE=NO \
+            ARCHS=arm64 \
+            SWIFT_ENABLE_EXPLICIT_MODULES=NO \
+            SWIFT_OPTIMIZATION_LEVEL=-Onone \
+            GCC_OPTIMIZATION_LEVEL=0 \
+            build
+      - name: Save Swift Package Manager cache
+        if: github.event_name == 'push'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            ${{ env.CLONED_SOURCE_PACKAGES_PATH }}
+            ~/Library/Caches/org.swift.swiftpm
+          key: ${{ steps.spm.outputs.cache-primary-key }}
+

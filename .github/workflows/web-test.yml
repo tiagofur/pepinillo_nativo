@@ -1,0 +1,67 @@
+name: Web Tests
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'web/**'
+      # Shared case tables decoded by the vitest suites: a fixture-only change
+      # must run the suites that assert against it.
+      - 'contracts/fixtures/**'
+      - '.github/workflows/web-test.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'web/**'
+      - 'contracts/fixtures/**'
+      - '.github/workflows/web-test.yml'
+  workflow_dispatch:
+
+# Cancel stale runs on the same PR/branch.
+concurrency:
+  group: web-test-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Web had no gate before merge until #1020: the vitest suite only ran inside
+  # the production deploy, so a broken PR merged first and failed afterwards.
+  # `pnpm check` is blind to unresolved imports in components (#948), which is
+  # why the build is part of the gate and not just the tests.
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    defaults:
+      run:
+        working-directory: web
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+          cache-dependency-path: web/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Unit tests
+        run: pnpm test
+
+      - name: Type check
+        run: pnpm check
+
+      - name: Build static site
+        # The build guard (#973) refuses an empty API base URL so a bundle with
+        # dead auth/sync can never ship. Repo variables are not available on
+        # forks, so the opt-out is scoped to that case only.
+        env:
+          PUBLIC_API_BASE_URL: ${{ vars.PUBLIC_API_BASE_URL }}
+          PEP_ALLOW_UNCONFIGURED_BUILD: ${{ vars.PUBLIC_API_BASE_URL == '' && '1' || '' }}
+        run: pnpm build

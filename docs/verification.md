@@ -40,8 +40,15 @@ Instrumentados Room: `./gradlew :app:connectedDebugAndroidTest`
 cd ios && xcodegen generate                   # obligatorio tras tocar project.yml
 # iPhone/iPad (scheme con PepinilloTests):
 xcodebuild -scheme "Pepinillo Dev" -destination 'platform=iOS Simulator,name=iPhone 17 Pro' test
-# macOS (sin target de tests; la lógica Mac se prueba en el simulador iOS):
-xcodebuild -scheme "PepinilloMac Dev" -destination 'platform=macOS' build
+# macOS (sin target de tests; la lógica Mac se prueba en el simulador iOS).
+# El scheme Dev compila ActivityKit en macOS (MAC_LIVE_ACTIVITIES, solo en
+# Debug) y por eso exige el SDK 27.3: con Xcode 27.2 estable, apunta
+# DEVELOPER_DIR a Xcode-beta. Usa un DerivedData propio y bórralo al terminar.
+cd ios && xcodegen generate
+DEVELOPER_DIR=/Applications/Xcode-beta.app/Contents/Developer \
+xcodebuild -project Pepinillo.xcodeproj -scheme "PepinilloMac Dev" -configuration Debug \
+  -destination 'platform=macOS' -derivedDataPath /tmp/pep-<tema>-dd -skipMacroValidation \
+  CODE_SIGNING_ALLOWED=NO build          # ~10 min en frío, 1–3 min incremental
 ```
 CI: `.github/workflows/ios-test.yml` (macos-15, `xcodegen generate`, trust de
 macros, simulador iPhone 16/17) ejecuta solo subconjuntos `-only-testing:`
@@ -49,9 +56,10 @@ macros, simulador iPhone 16/17) ejecuta solo subconjuntos `-only-testing:`
 **caché de DerivedData** para build incremental (frío ~32 min → caliente
 ~15 min, issue #902). La cadena watch se compila dentro del job (la app iOS la
 embebe a nivel de target); iPad comparte target con iPhone (app universal).
-**El target Mac NO compila en GHA** (necesita SDK macOS 27 / Xcode 27.x por
-las APIs touch-on-Mac de #845–#851; GHA solo ofrece 26.x — ver issue de
-seguimiento): la validación de compilación Mac sigue siendo local.
+**El target Mac compila en CI desde #1020**: el job `macos-build` del mismo
+workflow (runner `xcode-27`, Xcode 27.x) compila `PepinilloMac Staging` sin
+firmar en cada PR que toque `ios/**`. El scheme `Dev` necesita el SDK 27.3,
+que GitHub todavía no ofrece, y se compila en local con el comando de arriba.
 Trucos: `-parallel-testing-enabled NO`, timeouts por test (120/180 s) para
 evitar hangs de simulador.
 
@@ -85,16 +93,35 @@ aprobación humana.
    en lugar de saltarlo en silencio.
 5. **Evidencia en el PR**: comando exacto + resultado observado (la plantilla
    exige secciones `## Verification Evidence` y valida `check_pr_metadata.py`).
+6. **Un diff que toca archivos del target Mac no se entrega sin compilarlos.**
+   El inventario autoritativo es el bloque `sources:` del target `PepinilloMac`
+   en `ios/project.yml` — incluye, entre otros: `ios/Mac/**`,
+   `App/AppFeature.swift`, `App/MacCommands.swift`, `App/DemoDataSeeder.swift`,
+   `Features/**` (con las exclusiones declaradas ahí),
+   `PepinilloIntents/**` salvo `FocusFilterIntent.swift`,
+   `PepinilloLiveActivity/**`, `Domain/**` y `Shared/**`. Ante la duda, mira
+   `project.yml`, no esta lista. La evidencia es la salida de la compilación
+   (`BUILD SUCCEEDED`). `swiftc -parse` solo revisa sintaxis y no detecta un
+   miembro borrado: así llegó `main` roto en #1019. «Compila solo en Xcode»
+   no es un waiver válido: `CHECKPOINTS.md` admite solo compuertas ejecutables
+   (scripts, tests y CI — no promesas en prosa), y el comando de arriba
+   demuestra que sí compila.
+7. **Una extracción se verifica con inventario de declaraciones**, antes y
+   después: lo único que puede desaparecer del archivo de origen es lo que se
+   movió.
 
 ---
 
 ## 3. Mapa de workflows CI
+
+Las tablas de casos compartidas de `contracts/fixtures/` son fuente de verdad de las suites de iOS, Android y web, así que los tres workflows se disparan también cuando solo cambia un fixture.
 
 | Workflow | Disparador | Qué hace |
 | :--- | :--- | :--- |
 | `secret-scan.yml` | PRs y push a `main` | `check_secrets.py` sobre árbol y rango de commits |
 | `test.yml` | PR/push `backend/**` | build + `go test -race` contra Postgres/Redis |
 | `deploy.yml` | push `main` tocando `backend/**` | test + SCP + rebuild `api` + healthcheck en VPS |
-| `android-test.yml` | PR/push `android/**` | subconjunto de unit tests |
-| `ios-test.yml` | PR/push `ios/**` | subconjunto `-only-testing:` en simulador iOS + caché DerivedData (cadena watch incluida; el target Mac necesita SDK 27 y no compila en GHA) |
+| `android-test.yml` | PR/push `android/**`, `contracts/fixtures/**` | subconjunto de unit tests |
+| `ios-test.yml` | PR/push `ios/**`, `contracts/fixtures/**` | subconjunto `-only-testing:` en simulador iOS + caché DerivedData (cadena watch incluida) **y job `macos-build`**: compila `PepinilloMac Staging` en el runner `xcode-27` (#1020) |
+| `web-test.yml` | PR/push `web/**`, `contracts/fixtures/**` | `pnpm test` + `pnpm check` + `pnpm build` antes del merge (#1020). El build forma parte de la compuerta porque `pnpm check` no detecta un import faltante en un componente (#948) |
 | `windows-build.yml` | PR/push `windows/**` | Core tests + builds x64/ARM64 (plataforma en pausa; se mantiene por si se reanuda) |
