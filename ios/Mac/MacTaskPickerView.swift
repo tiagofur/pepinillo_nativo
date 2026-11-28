@@ -58,24 +58,55 @@ struct MacTaskPickerView: View {
             .padding(.horizontal, 16)
             .padding(.bottom, 10)
             .onSubmit {
-                // Spotlight flow: Return links the first match.
-                if let first = filteredTasks.first {
+                // Spotlight flow: Return links the first match. The decision
+                // (and its zero-match no-op) is the shared, tested function.
+                if case .link = QuickOpenKeyDecision.decide(
+                    keyCode: QuickOpenKeyDecision.returnKeyCode,
+                    hasCommand: false,
+                    hasMatches: !filteredTasks.isEmpty
+                ), let first = filteredTasks.first {
                     onSelectTask(first.id, first.title, first.energyLevel.icon)
                     dismiss()
                 }
             }
             .onAppear {
                 isSearchFocused = true
-                // Issue #993 (S3): ⌘↩ links the first match and starts if
-                // idle. Local monitor: intercepts BEFORE the Start/Pause
-                // menu equivalent (⌘↩) can fire while the popover is up.
+                // Issues #993 (S3) / #1021 (S1–S2): ⌘↩ links the first match
+                // and starts if idle; keypad Enter behaves like Return; with
+                // zero matches our keys are CONSUMED so they never fall
+                // through to the Start/Pause menu item (⌘↩). Local monitor:
+                // intercepts BEFORE that menu equivalent can fire.
                 monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
-                    guard event.keyCode == 36, event.modifierFlags.contains(.command),
-                          let first = filteredTasks.first else { return event }
-                    onSelectTask(first.id, first.title, first.energyLevel.icon)
-                    dismiss()
-                    onLinkAndStart?()
-                    return nil
+                    // Only our keys: any modifier, or Return/keypad Enter.
+                    guard event.modifierFlags.contains(.command)
+                            || event.keyCode == QuickOpenKeyDecision.returnKeyCode
+                            || event.keyCode == QuickOpenKeyDecision.keypadEnterKeyCode
+                    else { return event }
+                    switch QuickOpenKeyDecision.decide(
+                        keyCode: Int(event.keyCode),
+                        hasCommand: event.modifierFlags.contains(.command),
+                        hasMatches: !filteredTasks.isEmpty
+                    ) {
+                    case .passThrough:
+                        return event
+                    case .consume:
+                        // #1021 S1: ⌘↩ on the picker with no matches must not
+                        // start a bare session via the menu shortcut.
+                        return nil
+                    case .link:
+                        if let first = filteredTasks.first {
+                            onSelectTask(first.id, first.title, first.energyLevel.icon)
+                            dismiss()
+                        }
+                        return nil
+                    case .linkAndStart:
+                        if let first = filteredTasks.first {
+                            onSelectTask(first.id, first.title, first.energyLevel.icon)
+                            dismiss()
+                        }
+                        onLinkAndStart?()
+                        return nil
+                    }
                 }
             }
             .onDisappear {
